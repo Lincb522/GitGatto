@@ -39,7 +39,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.14.0"
         currentBuild = info["CFBundleVersion"] as? String ?? "33"
         releaseNotes = Self.bundledReleaseNotes(version: currentVersion)
-        state = Self.hasSignedUpdateConfiguration(info) ? .ready : .configurationRequired
+        state = Self.hasUpdateConfiguration(info) ? .ready : .configurationRequired
         super.init()
     }
 
@@ -124,14 +124,13 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         state = .failed(message: error.localizedDescription)
     }
 
-    static func hasSignedUpdateConfiguration(_ info: [String: Any]) -> Bool {
+    static func hasUpdateConfiguration(_ info: [String: Any]) -> Bool {
         guard let feed = info["SUFeedURL"] as? String,
               let url = URL(string: feed),
-              url.scheme?.lowercased() == "https",
-              let publicKey = info["SUPublicEDKey"] as? String else {
+              url.scheme?.lowercased() == "https" else {
             return false
         }
-        return !publicKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return true
     }
 
     private static func bundledReleaseNotes(version: String) -> [AppReleaseNote] {

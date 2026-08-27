@@ -1,6 +1,6 @@
 # 更新日志
 
-GitGatto 的正式版本以 GitHub Release 为发布记录。应用内更新中心读取同一份发布说明；安装包仍通过签名 Appcast 验证后安装。
+GitGatto 的正式版本以 GitHub Release 为发布记录。应用内更新中心读取同一份发布说明并通过 GitHub Appcast 安装发布包。
 
 ## 0.14.0 — 2026-08-27
 

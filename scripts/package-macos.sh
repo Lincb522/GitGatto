@@ -9,7 +9,6 @@ BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
 VERSION="0.14.0"
 BUILD="33"
 FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
-SIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 ICON_MASTER="$ROOT/Assets/GitGatto-AppIcon.svg"
 
 if [[ "$FEED_URL" != https://* ]]; then
@@ -56,7 +55,6 @@ render_icon 1024 icon_512x512@2x.png
 iconutil -c icns "$ICON_WORK" -o "$APP/Contents/Resources/AppIcon.icns"
 
 /usr/bin/python3 - "$APP/Contents/Info.plist" "$VERSION" "$BUILD" "$FEED_URL" <<'PY'
-import os
 import plistlib
 import sys
 
@@ -78,22 +76,17 @@ info = {
     "SUEnableAutomaticChecks": False,
     "SUAutomaticallyUpdate": False,
 }
-public_key = os.environ.get("GITGATTO_UPDATE_PUBLIC_KEY", "").strip()
-if public_key:
-    info["SUPublicEDKey"] = public_key
 with open(path, "wb") as handle:
     plistlib.dump(info, handle, sort_keys=False)
 PY
 
 chmod +x "$APP/Contents/MacOS/GitGatto"
-if [[ "$SIGN_IDENTITY" == "-" ]]; then
-    codesign --force --deep --sign - "$APP"
-else
-    codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP"
-fi
+codesign --force --deep --sign - "$APP"
+codesign --force --sign - -r='designated => identifier "dev.gitgatto.client"' "$APP"
 
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 codesign --verify --deep --strict "$APP"
+codesign --verify --deep --strict -R='identifier "dev.gitgatto.client"' "$APP"
 ARCHS="$(lipo -archs "$APP/Contents/MacOS/GitGatto")"
 [[ "$ARCHS" == *arm64* && "$ARCHS" == *x86_64* ]]
 otool -L "$APP/Contents/MacOS/GitGatto" | grep -q '@rpath/Sparkle.framework'

@@ -244,7 +244,7 @@ struct UpdateCenterView: View {
 
     private var statusSymbol: String {
         switch manager.state {
-        case .configurationRequired: "key.slash"
+        case .configurationRequired: "arrow.down.circle"
         case .ready: "arrow.down.app"
         case .checking: "arrow.triangle.2.circlepath"
         case .current: "checkmark.seal.fill"
@@ -256,7 +256,8 @@ struct UpdateCenterView: View {
     private func statusColor(_ palette: AppPalette) -> Color {
         switch manager.state {
         case .current: palette.success
-        case .failed, .configurationRequired: palette.warning
+        case .failed: palette.warning
+        case .configurationRequired: palette.primary
         default: palette.primary
         }
     }

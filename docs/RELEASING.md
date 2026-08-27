@@ -1,6 +1,6 @@
 # 发布与应用内更新
 
-GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.4 完成下载、签名验证、安装和重新启动。更新中心通过 GitHub Releases API 展示版本历史与 Markdown 更新日志。
+GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.4 完成下载、安装和重新启动。更新中心通过 GitHub Releases API 展示版本历史与 Markdown 更新日志。
 
 ## 版本
 
@@ -12,19 +12,7 @@ GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.4 
 
 构建号必须递增。
 
-## 更新签名
-
-使用 Sparkle 提供的 `generate_keys` 创建 EdDSA 密钥。私钥由发布者控制并保存在其正常安全存储中；不得提交到仓库、写入应用包或输出到日志。
-
-打包时只传入公钥：
-
-```bash
-GITGATTO_UPDATE_PUBLIC_KEY='PUBLIC_KEY' \
-GITGATTO_CODESIGN_IDENTITY='Developer ID Application: …' \
-./scripts/package-macos.sh
-```
-
-`GITGATTO_UPDATE_PUBLIC_KEY` 未设置时仍能生成开发包，但更新中心会明确显示“尚未配置更新通道”，不会启动不受签名保护的更新。
+## 更新地址
 
 安装更新源固定指向 GitHub Release 附件：
 
@@ -49,10 +37,11 @@ cp Sources/GitGatto/Resources/zh-Hans.lproj/ReleaseNotes.md \
 ```
 
 脚本输出固定为 `dist/GitGatto.app`，使用临时目录完成构建与验证后再替换现有应用包。
+应用主包使用固定的 `dev.gitgatto.client` 代码签名要求，使连续版本可由 Sparkle 识别为同一应用。
 
 ## 生成 Appcast
 
-在包含签名 ZIP 和同名 Markdown 发布说明的目录运行 Sparkle 的 `generate_appcast`。工具会把 Markdown 写入 Appcast；下载地址直接指向当前 GitHub Release：
+在包含 ZIP 和同名 Markdown 发布说明的目录运行 Sparkle 的 `generate_appcast`。工具会把 Markdown 写入 Appcast；下载地址直接指向当前 GitHub Release：
 
 ```bash
 .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
@@ -74,9 +63,9 @@ cp Sources/GitGatto/Resources/zh-Hans.lproj/ReleaseNotes.md \
 
 - GitHub Release 已公开，Appcast 与 ZIP 可通过 HTTPS 匿名读取。
 - Appcast 版本、构建号、下载地址与发布说明正确。
-- ZIP 的 EdDSA 签名可由应用包内的 `SUPublicEDKey` 验证。
-- 使用正式 Developer ID 签名并完成公证。
+- ZIP 解压后包含完整的 `GitGatto.app`，应用标识保持为 `dev.gitgatto.client`。
+- Appcast 不包含 `sparkle:edSignature`，应用包使用打包脚本生成的代码签名要求。
 - 在上一正式版本中完成“读取 GitHub 更新日志 → 检查 → 下载 → 安装 → 重新启动”的升级验证。
 - 更新前后的本地仓库、设置、Agent 对话和译文保持可用。
 
-仓库未公开或尚无正式 GitHub Release 时，应用显示包内更新记录；不得将未签名附件作为安装更新提供。
+仓库尚无正式 GitHub Release 时，应用显示包内更新记录。

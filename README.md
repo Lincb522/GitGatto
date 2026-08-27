@@ -13,7 +13,7 @@ GitGatto 是一款原生开发、由 Agent 驱动的 macOS Git 管理工具。�
 - **Agent**：分别配置项目 Agent 与翻译执行器，支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义 CLI；两条执行通道互不阻塞。
 - **提交起草**：从当前项目的真实暂存 Diff 起草简洁或完整提交信息，可直接提交并推送或重新起草。
 - **错误诊断**：完整展示 Git 输出、应用错误代码、退出代码、仓库和脱敏后的诊断信息。
-- **应用内更新**：更新中心直接读取 GitHub Releases 的版本与更新日志；签名 Appcast 负责下载、验证和安装，发布页在应用内打开。
+- **应用内更新**：更新中心直接读取 GitHub Releases 的版本与更新日志；GitHub Appcast 负责下载和安装发布包，发布页在应用内打开。
 - **本地化与外观**：简体中文和英文、浅色和深色外观、默认专业主题、轻毛玻璃主题与可配置强调色。
 
 ## 环境
@@ -50,7 +50,7 @@ swift test
 open dist/GitGatto.app
 ```
 
-脚本始终替换 `dist/GitGatto.app`，不会按版本创建输出目录。发布签名与更新源配置见 [发布与更新](docs/RELEASING.md)。
+脚本始终替换 `dist/GitGatto.app`，不会按版本创建输出目录。发布包与更新源配置见 [发布与更新](docs/RELEASING.md)。
 
 ## 项目结构
 

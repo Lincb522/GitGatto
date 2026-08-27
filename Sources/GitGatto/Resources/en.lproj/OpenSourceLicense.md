@@ -12,4 +12,4 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 ## Third-party software
 
-GitGatto uses Sparkle 2 for signed updates. Sparkle is Copyright © 2006–2026 Andy Matuschak, Kornel Lesiński, Mayur Pawashe, C.W. Betts, the Sparkle Project, and contributors, and is available under the MIT License. See `THIRD_PARTY_NOTICES.md` in the repository for full attribution.
+GitGatto uses Sparkle 2 for application updates. Sparkle is Copyright © 2006–2026 Andy Matuschak, Kornel Lesiński, Mayur Pawashe, C.W. Betts, the Sparkle Project, and contributors, and is available under the MIT License. See `THIRD_PARTY_NOTICES.md` in the repository for full attribution.

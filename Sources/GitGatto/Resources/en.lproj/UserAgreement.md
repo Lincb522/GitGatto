@@ -20,7 +20,7 @@ Agent-generated commit messages, code changes, translations, and reply drafts ma
 
 ## 5. Updates
 
-The built-in updater retrieves releases and verifies the publisher signature before installation. Updates may fix defects, change compatibility, or alter features. Release notes are shown before installation.
+The built-in updater retrieves packages from GitHub Releases and requests confirmation before installation. Updates may fix defects, change compatibility, or alter features. Release notes are shown before installation.
 
 ## 6. Acceptable use
 

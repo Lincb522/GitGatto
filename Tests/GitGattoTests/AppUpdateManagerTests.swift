@@ -3,26 +3,17 @@ import Testing
 
 @Suite("App update configuration")
 struct AppUpdateManagerTests {
-    @Test("Requires an HTTPS feed and a nonempty EdDSA public key")
+    @Test("Uses the HTTPS GitHub release feed")
     @MainActor
-    func validatesSignedFeedConfiguration() {
-        #expect(AppUpdateManager.hasSignedUpdateConfiguration([
-            "SUFeedURL": "https://updates.example.com/appcast.xml",
-            "SUPublicEDKey": "public-key"
+    func validatesFeedConfiguration() {
+        #expect(AppUpdateManager.hasUpdateConfiguration([
+            "SUFeedURL": "https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml"
         ]))
 
-        #expect(!AppUpdateManager.hasSignedUpdateConfiguration([
-            "SUFeedURL": "http://updates.example.com/appcast.xml",
-            "SUPublicEDKey": "public-key"
+        #expect(!AppUpdateManager.hasUpdateConfiguration([
+            "SUFeedURL": "http://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml"
         ]))
 
-        #expect(!AppUpdateManager.hasSignedUpdateConfiguration([
-            "SUFeedURL": "https://updates.example.com/appcast.xml"
-        ]))
-
-        #expect(!AppUpdateManager.hasSignedUpdateConfiguration([
-            "SUFeedURL": "https://updates.example.com/appcast.xml",
-            "SUPublicEDKey": "  \n"
-        ]))
+        #expect(!AppUpdateManager.hasUpdateConfiguration([:]))
     }
 }

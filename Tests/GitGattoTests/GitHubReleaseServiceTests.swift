@@ -4,7 +4,7 @@ import Testing
 
 @Suite("GitHub release updates")
 struct GitHubReleaseServiceTests {
-    @Test("Uses the GitHub repository for release metadata and the signed appcast")
+    @Test("Uses the GitHub repository for release metadata and the appcast")
     func repositoryEndpoints() {
         #expect(AppLinks.releasesAPI.absoluteString == "https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=10")
         #expect(AppLinks.updateFeed.absoluteString == "https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml")

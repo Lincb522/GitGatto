@@ -12,4 +12,4 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 ## 第三方组件
 
-GitGatto 使用 Sparkle 2 处理签名更新。Sparkle Copyright © 2006–2026 Andy Matuschak、Kornel Lesiński、Mayur Pawashe、C.W. Betts、Sparkle Project 及贡献者，并依据 MIT License 提供。完整归属信息见项目根目录 `THIRD_PARTY_NOTICES.md`。
+GitGatto 使用 Sparkle 2 处理应用更新。Sparkle Copyright © 2006–2026 Andy Matuschak、Kornel Lesiński、Mayur Pawashe、C.W. Betts、Sparkle Project 及贡献者，并依据 MIT License 提供。完整归属信息见项目根目录 `THIRD_PARTY_NOTICES.md`。
