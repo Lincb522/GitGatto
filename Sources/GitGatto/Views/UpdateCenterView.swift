@@ -86,10 +86,12 @@ struct UpdateCenterView: View {
                 Text(statusTitle)
                     .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(palette.ink)
-                Text(statusDetail)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(palette.mutedInk)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let statusErrorDetail {
+                    Text(statusErrorDetail)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(palette.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer()
         }
@@ -99,7 +101,6 @@ struct UpdateCenterView: View {
         VStack(spacing: 0) {
             UpdateToggleRow(
                 titleKey: "update.automatic_checks",
-                detailKey: "update.automatic_checks.body",
                 isOn: Binding(
                     get: { manager.automaticallyChecksForUpdates },
                     set: { manager.setAutomaticallyChecksForUpdates($0) }
@@ -109,7 +110,6 @@ struct UpdateCenterView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
             UpdateToggleRow(
                 titleKey: "update.automatic_downloads",
-                detailKey: "update.automatic_downloads.body",
                 isOn: Binding(
                     get: { manager.automaticallyDownloadsUpdates },
                     set: { manager.setAutomaticallyDownloadsUpdates($0) }
@@ -222,15 +222,9 @@ struct UpdateCenterView: View {
         }
     }
 
-    private var statusDetail: String {
-        switch manager.state {
-        case .configurationRequired: L10n.text("update.status.configuration_required.body")
-        case .ready: L10n.text("update.status.ready.body")
-        case .checking: L10n.text("update.status.checking.body")
-        case .current: L10n.text("update.status.current.body")
-        case let .updateAvailable(_, build): L10n.format("update.status.available.body", build)
-        case let .failed(message): message
-        }
+    private var statusErrorDetail: String? {
+        guard case let .failed(message) = manager.state else { return nil }
+        return message
     }
 
     @ViewBuilder
@@ -459,7 +453,6 @@ private struct VersionMetric: View {
 
 private struct UpdateToggleRow: View {
     let titleKey: String
-    let detailKey: String
     @Binding var isOn: Bool
     let isEnabled: Bool
     @Environment(\.colorScheme) private var colorScheme
@@ -467,20 +460,15 @@ private struct UpdateToggleRow: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.text(titleKey))
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                Text(L10n.text(detailKey))
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(palette.mutedInk)
-            }
+            Text(L10n.text(titleKey))
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(palette.ink)
             Spacer()
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .disabled(!isEnabled)
         }
         .padding(.horizontal, 15)
-        .frame(minHeight: 62)
+        .frame(minHeight: 50)
     }
 }
