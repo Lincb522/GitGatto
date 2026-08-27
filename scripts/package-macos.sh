@@ -6,13 +6,24 @@ OUTPUT_DIR="${1:-$ROOT/dist}"
 FINAL_APP="$OUTPUT_DIR/GitGatto.app"
 STAGE_ROOT=""
 BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
-VERSION="0.14.0"
-BUILD="33"
+VERSION="${GITGATTO_VERSION:-0.14.0}"
+BUILD="${GITGATTO_BUILD_NUMBER:-33}"
 FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
+CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 ICON_MASTER="$ROOT/Assets/GitGatto-AppIcon.svg"
 
 if [[ "$FEED_URL" != https://* ]]; then
     print -u2 "GITGATTO_UPDATE_FEED_URL must use HTTPS."
+    exit 1
+fi
+
+if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
+    print -u2 "GITGATTO_VERSION must use major.minor.patch."
+    exit 1
+fi
+
+if [[ ! "$BUILD" =~ '^[0-9]+$' ]]; then
+    print -u2 "GITGATTO_BUILD_NUMBER must be numeric."
     exit 1
 fi
 
@@ -81,12 +92,30 @@ with open(path, "wb") as handle:
 PY
 
 chmod +x "$APP/Contents/MacOS/GitGatto"
-codesign --force --deep --sign - "$APP"
-codesign --force --sign - -r='designated => identifier "dev.gitgatto.client"' "$APP"
+if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
+    codesign --force --deep --sign - "$APP"
+    codesign --force --sign - -r='designated => identifier "dev.gitgatto.client"' "$APP"
+else
+    SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
+    SPARKLE_VERSION="$SPARKLE/Versions/B"
+    SIGN_ARGS=(--force --timestamp --options runtime --sign "$CODESIGN_IDENTITY")
+
+    codesign $SIGN_ARGS "$SPARKLE_VERSION/XPCServices/Installer.xpc"
+    codesign $SIGN_ARGS --preserve-metadata=entitlements "$SPARKLE_VERSION/XPCServices/Downloader.xpc"
+    codesign $SIGN_ARGS "$SPARKLE_VERSION/Autoupdate"
+    codesign $SIGN_ARGS "$SPARKLE_VERSION/Updater.app"
+    codesign $SIGN_ARGS "$SPARKLE"
+    codesign $SIGN_ARGS "$APP"
+fi
 
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 codesign --verify --deep --strict "$APP"
-codesign --verify --deep --strict -R='identifier "dev.gitgatto.client"' "$APP"
+if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
+    codesign --verify --deep --strict -R='identifier "dev.gitgatto.client"' "$APP"
+else
+    codesign -d --verbose=4 "$APP" 2>&1 | grep -q '^Authority=Developer ID Application:'
+    codesign -d --verbose=4 "$APP" 2>&1 | grep -q '^Runtime Version='
+fi
 ARCHS="$(lipo -archs "$APP/Contents/MacOS/GitGatto")"
 [[ "$ARCHS" == *arm64* && "$ARCHS" == *x86_64* ]]
 otool -L "$APP/Contents/MacOS/GitGatto" | grep -q '@rpath/Sparkle.framework'

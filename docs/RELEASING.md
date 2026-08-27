@@ -2,15 +2,22 @@
 
 GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.4 完成下载、安装和重新启动。更新中心通过 GitHub Releases API 展示版本历史与 Markdown 更新日志。
 
+## GitHub Actions 凭据
+
+正式发布由 `.github/workflows/release-macos.yml` 完成。仓库的 Actions Secrets 必须包含：
+
+- `BUILD_CERTIFICATE_BASE64`：包含私钥的 Developer ID Application `.p12` 文件的 Base64 内容
+- `P12_PASSWORD`：导出 `.p12` 时设置的密码
+- `APPLE_ID`：Apple Developer 账号
+- `APPLE_APP_SPECIFIC_PASSWORD`：该账号生成的 App 专用密码
+
+`developerID_application.cer` 只包含公钥证书，不能用于 CI 签名。必须在持有对应私钥的钥匙串中同时选择证书与私钥并导出 `.p12`。Team ID 与签名身份已固定为 `7VJKFX4HF8` 和 `Developer ID Application: chengbo lin (7VJKFX4HF8)`。
+
+GitHub Actions 在临时钥匙串中导入证书，任务结束后删除该钥匙串。Apple 账号、证书密码和私钥不会写入仓库或构建产物。
+
 ## 版本
 
-发布前同步修改：
-
-- `scripts/package-macos.sh` 中的 `VERSION` 与 `BUILD`
-- `AppUpdateManager` 在 Swift Package 调试运行时使用的回退版本
-- `CHANGELOG.md`、两种语言的 `ReleaseNotes.md` 与 GitHub Release 说明
-
-构建号必须递增。
+正式标签使用 `vMajor.Minor.Patch`。工作流从标签生成应用版本，并使用版本号生成递增构建号。发布前更新 `CHANGELOG.md`、两种语言的 `ReleaseNotes.md` 与应用内相关版本回退值。
 
 ## 更新地址
 
@@ -26,45 +33,41 @@ https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml
 https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=10
 ```
 
-## 生成发布包
+## 本地构建
 
 ```bash
 ./scripts/package-macos.sh
-mkdir -p dist/releases
-ditto -c -k --keepParent dist/GitGatto.app dist/releases/GitGatto-0.14.0.zip
-cp Sources/GitGatto/Resources/zh-Hans.lproj/ReleaseNotes.md \
-  dist/releases/GitGatto-0.14.0.md
+./scripts/create-dmg.sh dist/GitGatto.app dist/GitGatto.dmg
 ```
 
-脚本输出固定为 `dist/GitGatto.app`，使用临时目录完成构建与验证后再替换现有应用包。
-应用主包使用固定的 `dev.gitgatto.client` 代码签名要求，使连续版本可由 Sparkle 识别为同一应用。
+未设置 `GITGATTO_CODESIGN_IDENTITY` 时，本地应用使用临时签名，适合开发验证。正式工作流使用 Developer ID Application 签名所有 Sparkle 嵌套组件与应用主包，并启用 Hardened Runtime 和安全时间戳。
 
-## 生成 Appcast
+## 正式发布
 
-在包含 ZIP 和同名 Markdown 发布说明的目录运行 Sparkle 的 `generate_appcast`。工具会把 Markdown 写入 Appcast；下载地址直接指向当前 GitHub Release：
+完成发布说明后创建并推送标签：
 
 ```bash
-.build/artifacts/sparkle/Sparkle/bin/generate_appcast \
-  --embed-release-notes \
-  --download-url-prefix "https://github.com/Lincb522/GitGatto/releases/download/v0.14.0/" \
-  --full-release-notes-url "https://github.com/Lincb522/GitGatto/releases" \
-  dist/releases
+git tag v0.15.0
+git push origin v0.15.0
 ```
 
-生成后创建 `v0.14.0` GitHub Release，正文使用该版本的更新日志，并上传：
+工作流按顺序执行：
 
-- `GitGatto-0.14.0.zip`
-- `appcast.xml`
-- 生成的增量更新文件（如有）
+1. 测试并构建通用架构应用。
+2. 使用 Developer ID Application 签名应用及 Sparkle 嵌套组件。
+3. 将应用提交 Apple 公证并装订票据。
+4. 创建、签名并公证 `GitGatto-<version>.dmg`，再装订 DMG 票据。
+5. 从 DMG 生成 `appcast.xml`。
+6. 创建或更新 GitHub Release，上传 DMG、Appcast、更新说明与 SHA-256 文件。
 
 旧版本通过 `releases/latest/download/appcast.xml` 跟随最新正式 Release。草稿和预发布版本不会成为稳定通道的 `latest` Release。
 
 发布前检查：
 
-- GitHub Release 已公开，Appcast 与 ZIP 可通过 HTTPS 匿名读取。
+- GitHub Release 已公开，Appcast 与 DMG 可通过 HTTPS 匿名读取。
 - Appcast 版本、构建号、下载地址与发布说明正确。
-- ZIP 解压后包含完整的 `GitGatto.app`，应用标识保持为 `dev.gitgatto.client`。
-- Appcast 不包含 `sparkle:edSignature`，应用包使用打包脚本生成的代码签名要求。
+- DMG 包含完整的 `GitGatto.app` 与“应用程序”入口，应用标识保持为 `dev.gitgatto.client`。
+- 应用和 DMG 的 Developer ID 签名、公证票据、Gatekeeper 评估与磁盘映像校验全部通过。
 - 在上一正式版本中完成“读取 GitHub 更新日志 → 检查 → 下载 → 安装 → 重新启动”的升级验证。
 - 更新前后的本地仓库、设置、Agent 对话和译文保持可用。
 
