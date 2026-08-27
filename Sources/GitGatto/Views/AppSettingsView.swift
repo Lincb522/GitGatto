@@ -45,7 +45,6 @@ struct AppSettingsView: View {
         .padding(AppThemeLayout.workspaceInset)
         .frame(minWidth: 800, minHeight: 650)
         .background(Color.clear)
-        .ignoresSafeArea(.container, edges: .top)
 #if DEBUG
         .background(
             DebugSnapshotCapture(
