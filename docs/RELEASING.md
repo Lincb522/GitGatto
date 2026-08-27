@@ -29,13 +29,13 @@ GITGATTO_CODESIGN_IDENTITY='Developer ID Application: …' \
 安装更新源固定指向 GitHub Release 附件：
 
 ```text
-https://github.com/ZIJIU522/GitGatto/releases/latest/download/appcast.xml
+https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml
 ```
 
 开发或镜像验证可用 `GITGATTO_UPDATE_FEED_URL` 覆盖；脚本拒绝非 HTTPS 地址。应用内更新日志使用：
 
 ```text
-https://api.github.com/repos/ZIJIU522/GitGatto/releases?per_page=10
+https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=10
 ```
 
 ## 生成发布包
@@ -57,8 +57,8 @@ cp Sources/GitGatto/Resources/zh-Hans.lproj/ReleaseNotes.md \
 ```bash
 .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
   --embed-release-notes \
-  --download-url-prefix "https://github.com/ZIJIU522/GitGatto/releases/download/v0.14.0/" \
-  --full-release-notes-url "https://github.com/ZIJIU522/GitGatto/releases" \
+  --download-url-prefix "https://github.com/Lincb522/GitGatto/releases/download/v0.14.0/" \
+  --full-release-notes-url "https://github.com/Lincb522/GitGatto/releases" \
   dist/releases
 ```
 

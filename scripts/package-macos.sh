@@ -8,7 +8,7 @@ STAGE_ROOT=""
 BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
 VERSION="0.14.0"
 BUILD="33"
-FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/ZIJIU522/GitGatto/releases/latest/download/appcast.xml}"
+FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
 SIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 ICON_MASTER="$ROOT/Assets/GitGatto-AppIcon.svg"
 

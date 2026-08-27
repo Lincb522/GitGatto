@@ -23,7 +23,7 @@ GitGatto 是 macOS 14 及以上版本的 SwiftUI 应用。界面状态由 `Works
 
 ## 更新流程
 
-1. 更新中心从 `ZIJIU522/GitGatto` 的 GitHub Releases API 读取版本记录和更新日志。
+1. 更新中心从 `Lincb522/GitGatto` 的 GitHub Releases API 读取版本记录和更新日志。
 2. Sparkle 从 GitHub Release 的 `appcast.xml` 检查版本与构建号。
 3. 下载包通过 EdDSA 公钥验证。
 4. 标准安装器显示同一版本的发布信息并请求用户确认。

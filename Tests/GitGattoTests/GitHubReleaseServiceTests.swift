@@ -6,8 +6,8 @@ import Testing
 struct GitHubReleaseServiceTests {
     @Test("Uses the GitHub repository for release metadata and the signed appcast")
     func repositoryEndpoints() {
-        #expect(AppLinks.releasesAPI.absoluteString == "https://api.github.com/repos/ZIJIU522/GitGatto/releases?per_page=10")
-        #expect(AppLinks.updateFeed.absoluteString == "https://github.com/ZIJIU522/GitGatto/releases/latest/download/appcast.xml")
+        #expect(AppLinks.releasesAPI.absoluteString == "https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=10")
+        #expect(AppLinks.updateFeed.absoluteString == "https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml")
     }
 
     @Test("Decodes published release notes and ignores drafts")
@@ -21,7 +21,7 @@ struct GitHubReleaseServiceTests {
                 "name": "GitGatto 0.14.0",
                 "body": "## Added\n\n- GitHub release notes",
                 "published_at": "2026-08-27T08:00:00Z",
-                "html_url": "https://github.com/ZIJIU522/GitGatto/releases/tag/v0.14.0",
+                "html_url": "https://github.com/Lincb522/GitGatto/releases/tag/v0.14.0",
                 "draft": false,
                 "prerelease": false
               },
@@ -31,7 +31,7 @@ struct GitHubReleaseServiceTests {
                 "name": "",
                 "body": null,
                 "published_at": "2026-08-28T08:00:00Z",
-                "html_url": "https://github.com/ZIJIU522/GitGatto/releases/tag/v0.15.0-beta.1",
+                "html_url": "https://github.com/Lincb522/GitGatto/releases/tag/v0.15.0-beta.1",
                 "draft": false,
                 "prerelease": true
               },
@@ -41,7 +41,7 @@ struct GitHubReleaseServiceTests {
                 "name": "Draft",
                 "body": "Not published",
                 "published_at": null,
-                "html_url": "https://github.com/ZIJIU522/GitGatto/releases/tag/v0.16.0",
+                "html_url": "https://github.com/Lincb522/GitGatto/releases/tag/v0.16.0",
                 "draft": true,
                 "prerelease": false
               }

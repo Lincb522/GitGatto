@@ -44,7 +44,7 @@ final class AppNavigationModel: ObservableObject {
 }
 
 enum AppLinks {
-    static let repositoryOwner = "ZIJIU522"
+    static let repositoryOwner = "Lincb522"
     static let repositoryName = "GitGatto"
     static let website = URL(string: "https://gitgatto.app")!
     static let sourceRepository = URL(
