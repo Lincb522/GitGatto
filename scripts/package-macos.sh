@@ -1,0 +1,115 @@
+#!/bin/zsh
+set -euo pipefail
+
+ROOT="${0:A:h:h}"
+OUTPUT_DIR="${1:-$ROOT/dist}"
+FINAL_APP="$OUTPUT_DIR/GitGatto.app"
+STAGE_ROOT=""
+BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
+VERSION="0.14.0"
+BUILD="33"
+FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://raw.githubusercontent.com/ZIJIU522/GitGatto/main/appcast.xml}"
+SIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
+ICON_MASTER="$ROOT/Assets/GitGatto-AppIcon.svg"
+
+if [[ "$FEED_URL" != https://* ]]; then
+    print -u2 "GITGATTO_UPDATE_FEED_URL must use HTTPS."
+    exit 1
+fi
+
+mkdir -p "$OUTPUT_DIR"
+STAGE_ROOT="$(mktemp -d "$OUTPUT_DIR/.GitGatto-stage.XXXXXX")"
+APP="$STAGE_ROOT/GitGatto.app"
+ICON_WORK="$STAGE_ROOT/GitGatto.iconset"
+
+cleanup() {
+    [[ -n "$STAGE_ROOT" && -d "$STAGE_ROOT" ]] && rm -rf "$STAGE_ROOT"
+}
+trap cleanup EXIT INT TERM
+
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks" "$ICON_WORK"
+
+swift build --package-path "$ROOT" -c release --arch arm64 --arch x86_64
+BIN_DIR="$(swift build --package-path "$ROOT" -c release --arch arm64 --arch x86_64 --show-bin-path)"
+
+cp "$BIN_DIR/GitGatto" "$APP/Contents/MacOS/GitGatto"
+ditto "$BIN_DIR/GitGatto_GitGatto.bundle" "$APP/Contents/Resources/GitGatto_GitGatto.bundle"
+ditto "$BIN_DIR/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/GitGatto"
+
+render_icon() {
+    local size="$1"
+    local destination="$2"
+    sips -s format png -z "$size" "$size" "$ICON_MASTER" --out "$ICON_WORK/$destination" >/dev/null
+}
+
+render_icon 16 icon_16x16.png
+render_icon 32 icon_16x16@2x.png
+render_icon 32 icon_32x32.png
+render_icon 64 icon_32x32@2x.png
+render_icon 128 icon_128x128.png
+render_icon 256 icon_128x128@2x.png
+render_icon 256 icon_256x256.png
+render_icon 512 icon_256x256@2x.png
+render_icon 512 icon_512x512.png
+render_icon 1024 icon_512x512@2x.png
+iconutil -c icns "$ICON_WORK" -o "$APP/Contents/Resources/AppIcon.icns"
+
+/usr/bin/python3 - "$APP/Contents/Info.plist" "$VERSION" "$BUILD" "$FEED_URL" <<'PY'
+import os
+import plistlib
+import sys
+
+path, version, build, feed_url = sys.argv[1:]
+info = {
+    "CFBundleExecutable": "GitGatto",
+    "CFBundleIdentifier": "dev.gitgatto.client",
+    "CFBundleName": "GitGatto",
+    "CFBundleDisplayName": "GitGatto",
+    "CFBundlePackageType": "APPL",
+    "CFBundleDevelopmentRegion": "en",
+    "CFBundleLocalizations": ["en", "zh-Hans"],
+    "CFBundleShortVersionString": version,
+    "CFBundleVersion": build,
+    "CFBundleIconFile": "AppIcon",
+    "LSMinimumSystemVersion": "14.0",
+    "NSHighResolutionCapable": True,
+    "SUFeedURL": feed_url,
+    "SUEnableAutomaticChecks": False,
+    "SUAutomaticallyUpdate": False,
+}
+public_key = os.environ.get("GITGATTO_UPDATE_PUBLIC_KEY", "").strip()
+if public_key:
+    info["SUPublicEDKey"] = public_key
+with open(path, "wb") as handle:
+    plistlib.dump(info, handle, sort_keys=False)
+PY
+
+chmod +x "$APP/Contents/MacOS/GitGatto"
+if [[ "$SIGN_IDENTITY" == "-" ]]; then
+    codesign --force --deep --sign - "$APP"
+else
+    codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP"
+fi
+
+plutil -lint "$APP/Contents/Info.plist" >/dev/null
+codesign --verify --deep --strict "$APP"
+ARCHS="$(lipo -archs "$APP/Contents/MacOS/GitGatto")"
+[[ "$ARCHS" == *arm64* && "$ARCHS" == *x86_64* ]]
+otool -L "$APP/Contents/MacOS/GitGatto" | grep -q '@rpath/Sparkle.framework'
+otool -l "$APP/Contents/MacOS/GitGatto" | grep -q '@executable_path/../Frameworks'
+[[ -x "$APP/Contents/Frameworks/Sparkle.framework/Versions/Current/Sparkle" ]]
+[[ -f "$APP/Contents/Resources/GitGatto_GitGatto.bundle/Contents/Resources/en.lproj/UserAgreement.md" ]]
+[[ -f "$APP/Contents/Resources/GitGatto_GitGatto.bundle/Contents/Resources/zh-Hans.lproj/UserAgreement.md" ]]
+
+rm -rf "$BACKUP_APP"
+if [[ -e "$FINAL_APP" ]]; then
+    mv "$FINAL_APP" "$BACKUP_APP"
+fi
+if ! mv "$APP" "$FINAL_APP"; then
+    [[ -e "$BACKUP_APP" ]] && mv "$BACKUP_APP" "$FINAL_APP"
+    exit 1
+fi
+rm -rf "$BACKUP_APP"
+
+print "$FINAL_APP"
