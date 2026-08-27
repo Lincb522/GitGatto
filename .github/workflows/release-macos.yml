@@ -23,7 +23,6 @@ jobs:
       P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-      KEYCHAIN_PATH: ${{ runner.temp }}/gitgatto-signing.keychain-db
 
     steps:
       - name: Check out source
@@ -55,6 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           CERTIFICATE_PATH="$RUNNER_TEMP/developer-id-application.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/gitgatto-signing.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
 
           print -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
@@ -164,4 +164,4 @@ jobs:
       - name: Remove temporary signing keychain
         if: always()
         shell: zsh {0}
-        run: security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+        run: security delete-keychain "$RUNNER_TEMP/gitgatto-signing.keychain-db" 2>/dev/null || true
