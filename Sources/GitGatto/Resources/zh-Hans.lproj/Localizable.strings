@@ -261,6 +261,7 @@
 "update.current_build" = "构建号";
 "update.channel" = "更新通道";
 "update.channel.stable" = "稳定版";
+"update.channel.github" = "GitHub Releases";
 "update.automatic_checks" = "自动检查更新";
 "update.automatic_checks.body" = "定期读取签名更新源，不中断当前工作。";
 "update.automatic_downloads" = "自动下载更新";
@@ -277,6 +278,16 @@
 "update.status.available" = "GitGatto %@ 可用";
 "update.status.available.body" = "构建 %@ 已进入更新安装流程。";
 "update.status.failed" = "无法检查更新";
+"update.release_notes.title" = "更新日志";
+"update.release_notes.source.github" = "GitHub Releases";
+"update.release_notes.source.bundled" = "当前版本";
+"update.release_notes.refresh" = "刷新更新日志";
+"update.release_notes.failed" = "无法读取 GitHub 更新日志，正在显示应用内记录。";
+"update.release_notes.empty" = "GitHub 仓库还没有已发布版本，正在显示应用内记录。";
+"update.release_notes.current" = "GitGatto %@";
+"update.release_notes.prerelease" = "预发布";
+"update.release_notes.no_details" = "此版本没有附加说明。";
+"update.release_notes.view_on_github" = "在应用内查看 GitHub 发布页";
 
 "help.title" = "GitGatto 使用指南";
 "help.short_title" = "使用指南";

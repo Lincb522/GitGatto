@@ -44,7 +44,17 @@ final class AppNavigationModel: ObservableObject {
 }
 
 enum AppLinks {
+    static let repositoryOwner = "ZIJIU522"
+    static let repositoryName = "GitGatto"
     static let website = URL(string: "https://gitgatto.app")!
-    static let sourceRepository = URL(string: "https://github.com/ZIJIU522/GitGatto")!
+    static let sourceRepository = URL(
+        string: "https://github.com/\(repositoryOwner)/\(repositoryName)"
+    )!
     static let releases = sourceRepository.appendingPathComponent("releases")
+    static let releasesAPI = URL(
+        string: "https://api.github.com/repos/\(repositoryOwner)/\(repositoryName)/releases?per_page=10"
+    )!
+    static let updateFeed = URL(
+        string: "https://github.com/\(repositoryOwner)/\(repositoryName)/releases/latest/download/appcast.xml"
+    )!
 }

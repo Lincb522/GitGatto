@@ -40,7 +40,7 @@ struct GitGattoApp: App {
         Window(L10n.text("update.title"), id: "updates") {
             AppThemeRoot { UpdateCenterView(manager: updateManager) }
         }
-        .defaultSize(width: 660, height: 540)
+        .defaultSize(width: 760, height: 720)
         .windowStyle(.hiddenTitleBar)
 
         Window(L10n.text("legal.title"), id: "legal-documents") {

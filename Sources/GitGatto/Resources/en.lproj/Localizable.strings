@@ -261,6 +261,7 @@
 "update.current_build" = "Build";
 "update.channel" = "Channel";
 "update.channel.stable" = "Stable";
+"update.channel.github" = "GitHub Releases";
 "update.automatic_checks" = "Check Automatically";
 "update.automatic_checks.body" = "Periodically check the signed update feed without interrupting your work.";
 "update.automatic_downloads" = "Download Automatically";
@@ -277,6 +278,16 @@
 "update.status.available" = "GitGatto %@ is available";
 "update.status.available.body" = "Build %@ is ready in the update installer.";
 "update.status.failed" = "Could not check for updates";
+"update.release_notes.title" = "Release Notes";
+"update.release_notes.source.github" = "GitHub Releases";
+"update.release_notes.source.bundled" = "Current Version";
+"update.release_notes.refresh" = "Refresh release notes";
+"update.release_notes.failed" = "GitHub release notes could not be loaded. The bundled record is shown instead.";
+"update.release_notes.empty" = "The GitHub repository has no published releases yet. The bundled record is shown instead.";
+"update.release_notes.current" = "GitGatto %@";
+"update.release_notes.prerelease" = "Prerelease";
+"update.release_notes.no_details" = "No additional notes were provided for this release.";
+"update.release_notes.view_on_github" = "View GitHub Release in App";
 
 "help.title" = "GitGatto Help";
 "help.short_title" = "User Guide";

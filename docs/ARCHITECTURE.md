@@ -10,7 +10,8 @@ GitGatto 是 macOS 14 及以上版本的 SwiftUI 应用。界面状态由 `Works
 - `GitHubService`：通过 GitHub CLI 标准凭据调用 API、Fork 与克隆；令牌不进入应用进程的展示与持久层。
 - `CodexService`：项目 Agent 与翻译各有独立配置、进程和取消通道；自定义 CLI 模板只展开受支持的参数占位符。
 - `RepositoryDiscoveryService`：仅在用户手动发起后扫描；结果必须是当前用户可读写并可管理的 Git 仓库，添加由用户逐项确认。
-- `AppUpdateManager`：包装 Sparkle 更新器。只有 `SUFeedURL` 使用 HTTPS 且应用包含 `SUPublicEDKey` 时才启动更新通道。
+- `GitHubReleaseService`：通过 GitHub Releases API 读取正式版本、发布日期和 Markdown 更新日志，不接触 GitHub 凭据。
+- `AppUpdateManager`：合并 GitHub 发布记录与 Sparkle 安装状态。只有 `SUFeedURL` 使用 HTTPS 且应用包含 `SUPublicEDKey` 时才启动安装通道。
 - `GlobalErrorHandler`：把 Git、GitHub、Agent 与系统故障归一为稳定错误报告，并在显示前脱敏。
 
 ## 状态与持久化
@@ -22,10 +23,10 @@ GitGatto 是 macOS 14 及以上版本的 SwiftUI 应用。界面状态由 `Works
 
 ## 更新流程
 
-1. 更新中心请求 HTTPS Appcast。
-2. Sparkle 比较版本和构建号。
+1. 更新中心从 `ZIJIU522/GitGatto` 的 GitHub Releases API 读取版本记录和更新日志。
+2. Sparkle 从 GitHub Release 的 `appcast.xml` 检查版本与构建号。
 3. 下载包通过 EdDSA 公钥验证。
-4. 标准安装器显示发布信息并请求用户确认。
+4. 标准安装器显示同一版本的发布信息并请求用户确认。
 5. 安装完成后重新启动 GitGatto。
 
 签名私钥不属于应用运行时或仓库内容。发布配置见 [RELEASING.md](RELEASING.md)。

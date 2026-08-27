@@ -24,6 +24,13 @@ enum L10n {
         named name: String,
         preferredLanguages: [String] = AppPreferencesStore.load().language.preferredLanguages
     ) -> URL? {
+        localizedDocumentURL(named: name, preferredLanguages: preferredLanguages)
+    }
+
+    static func localizedDocumentURL(
+        named name: String,
+        preferredLanguages: [String] = AppPreferencesStore.load().language.preferredLanguages
+    ) -> URL? {
         let language = preferredLanguages
             .first { $0.lowercased().hasPrefix("zh") } == nil ? "en" : "zh-Hans"
         return resourceBundle.url(

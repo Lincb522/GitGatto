@@ -17,11 +17,17 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
     @Published private(set) var lastCheckedAt: Date?
     @Published private(set) var automaticallyChecksForUpdates = false
     @Published private(set) var automaticallyDownloadsUpdates = false
+    @Published private(set) var releaseNotes: [AppReleaseNote]
+    @Published private(set) var releaseNotesSource: AppReleaseNotesSource = .bundled
+    @Published private(set) var isLoadingReleaseNotes = false
+    @Published private(set) var releaseNotesError: String?
 
     let currentVersion: String
     let currentBuild: String
 
     private var didStart = false
+    private var didLoadGitHubReleaseNotes = false
+    private let releaseService = GitHubReleaseService()
     private lazy var updaterController = SPUStandardUpdaterController(
         startingUpdater: false,
         updaterDelegate: self,
@@ -32,6 +38,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         let info = Bundle.main.infoDictionary ?? [:]
         currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.14.0"
         currentBuild = info["CFBundleVersion"] as? String ?? "33"
+        releaseNotes = Self.bundledReleaseNotes(version: currentVersion)
         state = Self.hasSignedUpdateConfiguration(info) ? .ready : .configurationRequired
         super.init()
     }
@@ -75,6 +82,33 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         automaticallyDownloadsUpdates = enabled
     }
 
+    func refreshReleaseNotes(force: Bool = false) async {
+        guard !isLoadingReleaseNotes else { return }
+        guard force || !didLoadGitHubReleaseNotes else { return }
+
+        isLoadingReleaseNotes = true
+        releaseNotesError = nil
+        lastCheckedAt = Date()
+        defer { isLoadingReleaseNotes = false }
+
+        do {
+            let githubReleaseNotes = try await releaseService.releases()
+            try Task.checkCancellation()
+            didLoadGitHubReleaseNotes = true
+            if githubReleaseNotes.isEmpty {
+                releaseNotesError = L10n.text("update.release_notes.empty")
+            } else {
+                releaseNotes = githubReleaseNotes
+                releaseNotesSource = .github
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            didLoadGitHubReleaseNotes = true
+            releaseNotesError = L10n.text("update.release_notes.failed")
+        }
+    }
+
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         state = .updateAvailable(
             version: item.displayVersionString,
@@ -98,5 +132,23 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
             return false
         }
         return !publicKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private static func bundledReleaseNotes(version: String) -> [AppReleaseNote] {
+        guard let url = L10n.localizedDocumentURL(named: "ReleaseNotes"),
+              let body = try? String(contentsOf: url, encoding: .utf8) else {
+            return []
+        }
+        return [
+            AppReleaseNote(
+                id: "bundled-\(version)",
+                version: version,
+                title: L10n.format("update.release_notes.current", version),
+                body: body,
+                publishedAt: nil,
+                webURL: AppLinks.releases,
+                isPrerelease: false
+            )
+        ]
     }
 }
