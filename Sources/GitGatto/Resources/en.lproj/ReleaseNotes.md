@@ -1,11 +1,14 @@
 ## Added
 
-- Added worktree, stash, file timeline, repository diagnostics, and conflict resolution workspaces.
-- Added GitHub Actions and pull request review workspaces.
-- Added a light and dark console theme with animated operation status.
+- Repository summaries can now be collapsed manually and automatically compact while reading documentation.
+- Update actions now animate checking, available-update, and completed-check states.
 
 ## Improved
 
-- Reworked code, diff, and conflict surfaces with consistent line numbers, syntax hierarchy, and action toolbars.
-- Added primary-language colors to repository lists and details.
-- Improved Git state refresh, remote synchronization, and error diagnostics.
+- Soft Glass and Console themes now reserve consistent space for window controls.
+- The About window uses a compact size with complete theme coverage.
+- Checking for updates now starts immediately without opening Update Center.
+
+## Fixed
+
+- Fixed current versions being reported as failed update checks.
