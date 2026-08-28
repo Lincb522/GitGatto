@@ -33,7 +33,7 @@ struct GitGattoApp: App {
                 )
             }
         }
-        .defaultSize(width: 660, height: 385)
+        .defaultSize(width: 660, height: 361)
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
 

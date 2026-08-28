@@ -48,7 +48,7 @@ struct AboutGitGattoView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: 104)
+            .frame(height: theme == .softGlass ? 92 : 104)
             .modifier(AboutHeaderChrome(theme: theme))
 
             VStack(alignment: .leading, spacing: 11) {
@@ -131,7 +131,7 @@ struct AboutGitGattoView: View {
     private func aboutContentSize(for theme: AppVisualTheme) -> NSSize {
         switch theme {
         case .softGlass:
-            NSSize(width: 660, height: 385)
+            NSSize(width: 660, height: 361)
         case .standard, .console:
             NSSize(width: 660, height: 341)
         }
@@ -164,32 +164,13 @@ private struct AboutHeaderChrome: ViewModifier {
     let theme: AppVisualTheme
     @Environment(\.colorScheme) private var colorScheme
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        let palette = AppPalette(colorScheme)
-        content
-            .background(alignment: .top) {
-                let shape = RoundedRectangle(
-                    cornerRadius: theme == .softGlass ? 18 : 0,
-                    style: .continuous
-                )
-                ZStack {
-                    shape.fill(
-                        theme == .softGlass
-                            ? (colorScheme == .dark ? Color.black.opacity(0.50) : Color.white.opacity(0.58))
-                            : palette.sidebar
-                    )
-                    if theme == .softGlass {
-                        shape.stroke(
-                            colorScheme == .dark
-                                ? Color.white.opacity(0.12)
-                                : Color.white.opacity(0.72),
-                            lineWidth: 1
-                        )
-                    }
-                }
-                .frame(height: 136)
-                .offset(y: -32)
-            }
+        if theme == .softGlass {
+            content
+        } else {
+            content.background(AppPalette(colorScheme, theme: theme).sidebar)
+        }
     }
 }
 

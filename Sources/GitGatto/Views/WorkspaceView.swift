@@ -77,7 +77,6 @@ struct WorkspaceView: View {
                         HStack(spacing: AppThemeLayout.panelSpacing) {
                             WorkspaceBrandBar(compact: compactSidebar)
                                 .frame(width: sidebarWidth)
-                                .appGlassPanel(cornerRadius: 16, elevated: false)
 
                             RepositoryTopBar(model: model)
                         }
@@ -200,10 +199,8 @@ struct WorkspaceView: View {
 
 private struct WorkspaceBrandBar: View {
     let compact: Bool
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let palette = AppPalette(colorScheme)
         HStack(spacing: 0) {
             AppBrandLockup(
                 iconSize: compact ? 34 : 38,
@@ -218,7 +215,6 @@ private struct WorkspaceBrandBar: View {
         }
         .padding(.trailing, 12)
         .frame(height: AppThemeLayout.topBarHeight)
-        .background(palette.sidebar.opacity(0.18))
     }
 }
 
