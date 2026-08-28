@@ -81,7 +81,7 @@ struct AppSettingsView: View {
     private func standardSidebar(_ palette: AppPalette) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             AppBrandLockup(iconSize: 36, wordmarkWidth: 100, spacing: 8)
-                .padding(.leading, AppThemeLayout.titlebarBrandLeading)
+                .padding(.leading, 20)
                 .frame(height: 72, alignment: .leading)
 
             VStack(spacing: 4) {
