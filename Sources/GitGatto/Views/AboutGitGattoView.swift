@@ -60,7 +60,7 @@ struct AboutGitGattoView: View {
                     Button {
                         openWindow(id: "release-history")
                     } label: {
-                        Label(L10n.text("release_history.title"), systemImage: "clock.arrow.circlepath")
+                        GattoLabel(L10n.text("release_history.title"), systemImage: "clock.arrow.circlepath")
                     }
                     .buttonStyle(SecondaryButtonStyle())
                 }
@@ -82,7 +82,7 @@ struct AboutGitGattoView: View {
             .appGlassPanel()
 
             HStack(spacing: 10) {
-                Label("ZIJIU522", systemImage: "person.crop.circle")
+                GattoLabel("ZIJIU522", systemImage: "person.crop.circle")
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(palette.mutedInk)
 
@@ -91,14 +91,14 @@ struct AboutGitGattoView: View {
                 Button {
                     NSWorkspace.shared.open(AppLinks.website)
                 } label: {
-                    Label(L10n.text("about.website"), systemImage: "globe")
+                    GattoLabel(L10n.text("about.website"), systemImage: "globe")
                 }
                 .buttonStyle(SecondaryButtonStyle())
 
                 Button {
                     NSWorkspace.shared.open(AppLinks.sourceRepository)
                 } label: {
-                    Label(L10n.text("about.source"), systemImage: "chevron.left.forwardslash.chevron.right")
+                    GattoLabel(L10n.text("about.source"), systemImage: "chevron.left.forwardslash.chevron.right")
                 }
                 .buttonStyle(SecondaryButtonStyle())
 
@@ -185,7 +185,7 @@ private struct AboutLegalButton: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: document.icon)
+                Image(gattoSymbol: document.icon)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(palette.primary)
                     .frame(width: 30, height: 30)
@@ -203,7 +203,7 @@ private struct AboutLegalButton: View {
                 }
 
                 Spacer()
-                Image(systemName: "chevron.right")
+                Image(gattoSymbol: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(palette.subtleInk)
             }

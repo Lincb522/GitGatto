@@ -75,7 +75,7 @@ struct WorktreeWorkspaceView: View {
                 if model.activeWorktreeOperation == .create {
                     ProgressView().controlSize(.small)
                 } else {
-                    Label(L10n.text("worktree.action.create"), systemImage: "plus")
+                    GattoLabel(L10n.text("worktree.action.create"), systemImage: "plus")
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
@@ -106,7 +106,7 @@ struct WorktreeWorkspaceView: View {
                     .foregroundStyle(palette.mutedInk)
                 Spacer()
                 if model.worktrees.contains(where: { model.worktreeAgentRuns[$0.id]?.state == .running }) {
-                    Label(L10n.text("worktree.agent.running_short"), systemImage: "sparkles")
+                    GattoLabel(L10n.text("worktree.agent.running_short"), systemImage: "sparkles")
                         .font(font(size: 9.5, weight: .semibold))
                         .foregroundStyle(palette.accent)
                 }
@@ -118,7 +118,7 @@ struct WorktreeWorkspaceView: View {
 
             if model.worktrees.isEmpty {
                 VStack(spacing: 9) {
-                    Image(systemName: "arrow.triangle.branch")
+                    Image(gattoSymbol: "arrow.triangle.branch")
                         .font(.system(size: 22, weight: .medium))
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("worktree.empty"))
@@ -163,7 +163,7 @@ struct WorktreeWorkspaceView: View {
 
             if let error = model.worktreeError {
                 Rectangle().fill(palette.divider).frame(height: 1)
-                Label(error, systemImage: "exclamationmark.triangle.fill")
+                GattoLabel(error, systemImage: "exclamationmark.triangle.fill")
                     .font(font(size: 10.5, weight: .medium))
                     .foregroundStyle(palette.danger)
                     .textSelection(.enabled)
@@ -185,7 +185,7 @@ struct WorktreeWorkspaceView: View {
             }
         } else {
             VStack(spacing: 9) {
-                Image(systemName: "rectangle.split.2x1")
+                Image(gattoSymbol: "rectangle.split.2x1")
                     .font(.system(size: 22, weight: .medium))
                     .foregroundStyle(palette.subtleInk)
                 Text(L10n.text("worktree.selection.empty"))
@@ -202,7 +202,7 @@ struct WorktreeWorkspaceView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: theme == .console ? 4 : 9, style: .continuous)
                         .fill(worktree.isMain ? palette.primarySoft : palette.accentSoft)
-                    Image(systemName: worktree.isMain ? "house.fill" : "arrow.triangle.branch")
+                    Image(gattoSymbol: worktree.isMain ? "house.fill" : "arrow.triangle.branch")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(worktree.isMain ? palette.primary : palette.accent)
                 }
@@ -230,7 +230,7 @@ struct WorktreeWorkspaceView: View {
                     Button {
                         confirmsRemoval = true
                     } label: {
-                        Image(systemName: "trash")
+                        Image(gattoSymbol: "trash")
                             .foregroundStyle(palette.danger)
                             .frame(width: 30, height: 30)
                     }
@@ -262,7 +262,7 @@ struct WorktreeWorkspaceView: View {
         let run = model.worktreeAgentRuns[worktree.id]
         return VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: "sparkles")
+                Image(gattoSymbol: "sparkles")
                     .foregroundStyle(palette.accent)
                 Text(L10n.text("worktree.agent.title"))
                     .font(font(size: 13, weight: .semibold))
@@ -331,7 +331,7 @@ struct WorktreeWorkspaceView: View {
                         Button {
                             model.runWorktreeAgent()
                         } label: {
-                            Label(L10n.text("worktree.agent.run"), systemImage: "paperplane.fill")
+                            GattoLabel(L10n.text("worktree.agent.run"), systemImage: "paperplane.fill")
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .disabled(model.worktreeAgentPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -362,7 +362,7 @@ private struct WorktreeRow: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 7) {
                 HStack(spacing: 8) {
-                    Image(systemName: worktree.isMain ? "house.fill" : "arrow.triangle.branch")
+                    Image(gattoSymbol: worktree.isMain ? "house.fill" : "arrow.triangle.branch")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(selected ? palette.primary : palette.mutedInk)
                         .frame(width: 17)
@@ -380,7 +380,7 @@ private struct WorktreeRow: View {
                         .lineLimit(1)
                     Spacer()
                     if worktree.changesCount > 0 {
-                        Label("\(worktree.changesCount)", systemImage: "circle.fill")
+                        GattoLabel("\(worktree.changesCount)", systemImage: "circle.fill")
                             .foregroundStyle(palette.warning)
                     }
                     if worktree.aheadCount > 0 { Text("↑\(worktree.aheadCount)") }
@@ -412,7 +412,7 @@ private struct WorktreeMetric: View {
     let color: Color
 
     var body: some View {
-        Label(value, systemImage: icon)
+        GattoLabel(value, systemImage: icon)
             .font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(color)
     }
@@ -510,7 +510,7 @@ private struct WorktreeAgentResult: View {
                     .foregroundStyle(palette.ink)
                     .textSelection(.enabled)
             } else if let error = run.error {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
+                GattoLabel(error, systemImage: "exclamationmark.triangle.fill")
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(palette.danger)
                     .textSelection(.enabled)
@@ -518,8 +518,8 @@ private struct WorktreeAgentResult: View {
 
             if let operation = run.operation {
                 HStack(spacing: 12) {
-                    Label(L10n.format("worktree.agent.commands", operation.commandCount), systemImage: "terminal")
-                    Label(L10n.format("worktree.agent.files", operation.fileChangeCount), systemImage: "doc.badge.gearshape")
+                    GattoLabel(L10n.format("worktree.agent.commands", operation.commandCount), systemImage: "terminal")
+                    GattoLabel(L10n.format("worktree.agent.files", operation.fileChangeCount), systemImage: "doc.badge.gearshape")
                     Spacer()
                     Text(operation.completedAt.formatted(date: .omitted, time: .shortened))
                 }

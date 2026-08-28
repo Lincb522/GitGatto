@@ -259,7 +259,7 @@ private struct ConsoleSectionRail: View {
                     model.selectedSection = section
                 } label: {
                     VStack(spacing: 5) {
-                        Image(systemName: icon(for: section))
+                        Image(gattoSymbol: icon(for: section))
                             .font(.system(size: 12, weight: .semibold))
                         Text(L10n.text("nav.\(section.rawValue)"))
                             .font(.system(size: 9.5, weight: .medium, design: .monospaced))
@@ -386,7 +386,7 @@ private struct ConsoleRepositoryDock: View {
             Button {
                 openWindow(id: "repository-scanner")
             } label: {
-                Image(systemName: model.isScanningRepositories ? "arrow.triangle.2.circlepath" : "folder.badge.plus")
+                Image(gattoSymbol: model.isScanningRepositories ? "arrow.triangle.2.circlepath" : "folder.badge.plus")
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
@@ -400,7 +400,7 @@ private struct ConsoleRepositoryDock: View {
                     }
                 }
             } label: {
-                Image(systemName: "circle.lefthalf.filled")
+                Image(gattoSymbol: "circle.lefthalf.filled")
                     .frame(width: 28, height: 28)
             }
             .menuStyle(.borderlessButton)
@@ -409,7 +409,7 @@ private struct ConsoleRepositoryDock: View {
             Button {
                 openSettings()
             } label: {
-                Image(systemName: "gearshape")
+                Image(gattoSymbol: "gearshape")
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
@@ -419,7 +419,7 @@ private struct ConsoleRepositoryDock: View {
             Button {
                 openWindow(id: "about")
             } label: {
-                Image(systemName: "info.circle")
+                Image(gattoSymbol: "info.circle")
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
@@ -630,12 +630,12 @@ private struct BranchQuickSwitcher: View {
             showsBranches.toggle()
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "arrow.triangle.branch")
+                Image(gattoSymbol: "arrow.triangle.branch")
                     .font(.system(size: 10.5, weight: .semibold))
                 Text(snapshot.branchName)
                     .font(.system(size: 11.5, weight: .medium, design: .monospaced))
                     .lineLimit(1)
-                Image(systemName: "chevron.down")
+                Image(gattoSymbol: "chevron.down")
                     .font(.system(size: 8.5, weight: .bold))
                     .foregroundStyle(palette.subtleInk)
             }
@@ -659,7 +659,7 @@ private struct BranchQuickSwitcher: View {
                             Task { await model.switchBranch(to: branch.name) }
                         } label: {
                             HStack(spacing: 9) {
-                                Image(systemName: "arrow.triangle.branch")
+                                Image(gattoSymbol: "arrow.triangle.branch")
                                     .font(.system(size: 10.5, weight: .semibold))
                                     .foregroundStyle(branch.name == snapshot.branchName ? palette.primary : palette.subtleInk)
                                     .frame(width: 18)
@@ -669,7 +669,7 @@ private struct BranchQuickSwitcher: View {
                                     .lineLimit(1)
                                 Spacer(minLength: 8)
                                 if branch.name == snapshot.branchName {
-                                    Image(systemName: "checkmark")
+                                    Image(gattoSymbol: "checkmark")
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundStyle(palette.primary)
                                 }
@@ -718,7 +718,7 @@ private struct RepositorySyncStatusView: View {
             if isMonitoring {
                 LiveSyncGlyph()
             } else {
-                Image(systemName: error == nil ? presentation.icon : "exclamationmark.triangle.fill")
+                Image(gattoSymbol: error == nil ? presentation.icon : "exclamationmark.triangle.fill")
             }
             Text(presentation.text)
         }
@@ -741,7 +741,7 @@ private struct LiveSyncGlyph: View {
     @State private var rotation = 0.0
 
     var body: some View {
-        Image(systemName: "arrow.triangle.2.circlepath")
+        Image(gattoSymbol: "arrow.triangle.2.circlepath")
             .font(.system(size: 9.5, weight: .bold))
             .rotationEffect(.degrees(rotation))
             .onAppear { updateAnimation() }
@@ -773,7 +773,7 @@ private struct RemoteSyncButton: View {
                 if isActive {
                     SyncActivityGlyph(direction: direction, size: 10)
                 } else {
-                    Image(systemName: direction == .up ? "arrow.up" : "arrow.down")
+                    Image(gattoSymbol: direction == .up ? "arrow.up" : "arrow.down")
                         .font(.system(size: 11.5, weight: .bold))
                 }
                 Text(L10n.text(isActive ? (direction == .up ? "sync.progress.push" : "sync.progress.pull") : titleKey))
@@ -827,7 +827,7 @@ private struct WelcomeView: View {
                             Task { await model.openRepository(url) }
                         } label: {
                             HStack(spacing: 10) {
-                                Image(systemName: "folder")
+                                Image(gattoSymbol: "folder")
                                     .foregroundStyle(palette.primary)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(url.lastPathComponent)
@@ -839,7 +839,7 @@ private struct WelcomeView: View {
                                         .truncationMode(.middle)
                                 }
                                 Spacer()
-                                Image(systemName: "chevron.right")
+                                Image(gattoSymbol: "chevron.right")
                                     .font(.system(size: 10, weight: .semibold))
                                     .foregroundStyle(palette.subtleInk)
                             }

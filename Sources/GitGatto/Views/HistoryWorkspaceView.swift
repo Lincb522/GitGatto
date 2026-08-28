@@ -63,7 +63,7 @@ private struct CommitNavigator: View {
             VStack(spacing: 11) {
                 HStack {
                     HStack(spacing: 9) {
-                        Image(systemName: "point.3.connected.trianglepath.dotted")
+                        Image(gattoSymbol: "point.3.connected.trianglepath.dotted")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(palette.primary)
                             .frame(width: 28, height: 28)
@@ -398,7 +398,7 @@ private struct CommitInspector: View {
         ZStack {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(palette.primarySoft)
-            Image(systemName: node?.parentHashes.count ?? 0 > 1
+            Image(gattoSymbol: node?.parentHashes.count ?? 0 > 1
                   ? "arrow.triangle.merge"
                   : "point.3.filled.connected.trianglepath.dotted")
                 .font(.system(size: 14, weight: .semibold))
@@ -471,7 +471,7 @@ private struct CommitMetric: View {
     var body: some View {
         HStack(spacing: 4) {
             if let symbol {
-                Image(systemName: symbol)
+                Image(gattoSymbol: symbol)
                     .font(.system(size: 8.5, weight: .semibold))
             }
             Text("\(prefix)\(value)")

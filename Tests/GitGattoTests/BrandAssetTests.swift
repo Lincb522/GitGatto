@@ -5,6 +5,26 @@ import Testing
 
 @Suite("Brand assets")
 struct BrandAssetTests {
+    @Test("Loads the complete generated UI icon set")
+    func generatedUIIconsLoad() throws {
+        let resourceURL = try #require(AppResourceBundle.current.resourceURL)
+        let enumerator = try #require(
+            FileManager.default.enumerator(
+                at: resourceURL,
+                includingPropertiesForKeys: nil
+            )
+        )
+        let iconURLs = enumerator.compactMap { $0 as? URL }.filter {
+            $0.pathExtension == "png" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
+        }
+
+        #expect(iconURLs.count == 117)
+        #expect(GattoIconAssets.assetName(for: "arrow.clockwise") == "gatto-arrow-clockwise")
+        let icon = GattoIconAssets.image(for: "arrow.clockwise")
+        #expect(!icon.representations.isEmpty)
+        #expect(icon.isTemplate)
+    }
+
     @Test("Keeps an editable master and a high-resolution in-app icon")
     func appIconIsVector() throws {
         let url = try #require(

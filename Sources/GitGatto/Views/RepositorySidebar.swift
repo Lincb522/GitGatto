@@ -130,7 +130,7 @@ struct RepositorySidebar: View {
                             if model.isScanningRepositories {
                                 ProgressView().controlSize(.small)
                             } else {
-                                Image(systemName: "folder.badge.plus")
+                                Image(gattoSymbol: "folder.badge.plus")
                                     .font(.system(size: 10.5, weight: .semibold))
                                     .foregroundStyle(palette.subtleInk)
                             }
@@ -222,7 +222,7 @@ struct RepositorySidebar: View {
 
     private func sidebarUtilityIcon(_ systemName: String, palette: AppPalette) -> some View {
         let isStandard = AppVisualTheme.resolved(themeRaw) == .standard
-        return Image(systemName: systemName)
+        return Image(gattoSymbol: systemName)
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(palette.mutedInk)
             .frame(width: isStandard ? 32 : 34, height: isStandard ? 32 : 34)
@@ -254,7 +254,7 @@ private struct SidebarNavigationButton: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(systemName: systemImage)
+                Image(gattoSymbol: systemImage)
                     .font(.system(size: 13, weight: .semibold))
                     .frame(width: 18)
                     .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
@@ -365,7 +365,7 @@ private struct AppearanceControl: View {
         return Button {
             selection = appearance.rawValue
         } label: {
-            Image(systemName: image)
+            Image(gattoSymbol: image)
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
                 .frame(maxWidth: .infinity)

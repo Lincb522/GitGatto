@@ -54,7 +54,7 @@ private struct StashCommandBar: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(palette.primarySoft)
-                Image(systemName: "archivebox.fill")
+                Image(gattoSymbol: "archivebox.fill")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(palette.primary)
             }
@@ -72,7 +72,7 @@ private struct StashCommandBar: View {
             Rectangle().fill(palette.divider).frame(width: 1, height: 30)
 
             HStack(spacing: 8) {
-                Image(systemName: "text.cursor")
+                Image(gattoSymbol: "text.cursor")
                     .font(.system(size: 11))
                     .foregroundStyle(palette.subtleInk)
                 TextField(L10n.text("stash.message.placeholder"), text: $model.stashMessage)
@@ -205,7 +205,7 @@ private struct StashRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(systemName: "archivebox.fill")
+                Image(gattoSymbol: "archivebox.fill")
                     .font(.system(size: 11))
                     .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
                     .frame(width: 22, height: 22)
@@ -353,7 +353,7 @@ private struct StashInspector: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(palette.primarySoft)
-                Image(systemName: "archivebox.fill")
+                Image(gattoSymbol: "archivebox.fill")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(palette.primary)
             }
@@ -394,21 +394,21 @@ private struct StashInspector: View {
             Button {
                 Task { await model.applySelectedStash() }
             } label: {
-                Label(L10n.text("stash.action.apply"), systemImage: "arrow.down.to.line")
+                GattoLabel(L10n.text("stash.action.apply"), systemImage: "arrow.down.to.line")
             }
             .buttonStyle(SecondaryButtonStyle())
 
             Button {
                 Task { await model.popSelectedStash() }
             } label: {
-                Label(L10n.text("stash.action.pop"), systemImage: "archivebox")
+                GattoLabel(L10n.text("stash.action.pop"), systemImage: "archivebox")
             }
             .buttonStyle(PrimaryButtonStyle())
 
             Button(role: .destructive) {
                 isConfirmingDrop = true
             } label: {
-                Image(systemName: "trash")
+                Image(gattoSymbol: "trash")
             }
             .help(L10n.text("stash.action.drop"))
         }
@@ -424,7 +424,7 @@ private struct StashMetric: View {
     var body: some View {
         HStack(spacing: 4) {
             if let symbol {
-                Image(systemName: symbol).font(.system(size: 8.5, weight: .semibold))
+                Image(gattoSymbol: symbol).font(.system(size: 8.5, weight: .semibold))
             }
             Text("\(prefix)\(value)")
         }

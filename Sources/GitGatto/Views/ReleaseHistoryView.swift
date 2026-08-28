@@ -88,7 +88,7 @@ struct ReleaseHistoryView: View {
             Button {
                 Task { await manager.refreshReleaseNotes(force: true) }
             } label: {
-                Label(L10n.text("update.release_notes.refresh"), systemImage: "arrow.clockwise")
+                GattoLabel(L10n.text("update.release_notes.refresh"), systemImage: "arrow.clockwise")
             }
             .buttonStyle(SecondaryButtonStyle())
             .disabled(manager.isLoadingReleaseNotes)
@@ -115,7 +115,7 @@ struct ReleaseHistoryView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
 
             if let error = manager.releaseNotesError {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
+                GattoLabel(error, systemImage: "exclamationmark.triangle.fill")
                     .font(.system(size: 10.5))
                     .foregroundStyle(palette.warning)
                     .fixedSize(horizontal: false, vertical: true)
@@ -176,7 +176,7 @@ struct ReleaseHistoryView: View {
                     Button {
                         browserPage = InAppBrowserPage(url: release.webURL)
                     } label: {
-                        Label(L10n.text("update.release_notes.view_on_github"), systemImage: "arrow.up.right.square")
+                        GattoLabel(L10n.text("update.release_notes.view_on_github"), systemImage: "arrow.up.right.square")
                     }
                     .buttonStyle(SecondaryButtonStyle())
                 }

@@ -85,8 +85,10 @@ struct GitHubLanguageIcon: View {
                 RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
                     .fill(style.requiresLightBackdrop ? Color(white: 0.96) : palette.raisedSurface)
                     .overlay {
-                        Image(systemName: "chevron.left.forwardslash.chevron.right")
-                            .font(.system(size: size * 0.34, weight: .semibold))
+                        GattoIcon(
+                            symbol: "chevron.left.forwardslash.chevron.right",
+                            size: size * 0.45
+                        )
                             .foregroundStyle(Color(hex: style.colorHex) ?? palette.subtleInk)
                     }
                     .overlay {
@@ -97,8 +99,7 @@ struct GitHubLanguageIcon: View {
                 RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
                     .fill(palette.raisedSurface)
                     .overlay {
-                        Image(systemName: "shippingbox.fill")
-                            .font(.system(size: size * 0.38, weight: .semibold))
+                        GattoIcon(symbol: "shippingbox.fill", size: size * 0.48)
                             .foregroundStyle(palette.subtleInk)
                     }
                     .overlay {
@@ -112,8 +113,7 @@ struct GitHubLanguageIcon: View {
                     .fill(palette.surface)
                     .frame(width: size * 0.42, height: size * 0.42)
                     .overlay {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: size * 0.18, weight: .bold))
+                        GattoIcon(symbol: "lock.fill", size: size * 0.24)
                             .foregroundStyle(palette.ink)
                     }
                     .overlay {

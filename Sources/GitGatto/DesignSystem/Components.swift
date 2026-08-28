@@ -122,7 +122,7 @@ struct ToolbarIconButton: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            Image(systemName: systemName)
+            Image(gattoSymbol: systemName)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(isDisabled ? palette.subtleInk : (isActive ? palette.primary : palette.mutedInk))
                 .rotationEffect(.degrees(rotation))
@@ -180,7 +180,7 @@ struct SearchField: View {
         let palette = AppPalette(colorScheme)
         let theme = AppVisualTheme.resolved(themeRaw)
         HStack(spacing: 7) {
-            Image(systemName: "magnifyingglass")
+            Image(gattoSymbol: "magnifyingglass")
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             TextField(L10n.text(placeholderKey), text: $text)
@@ -191,7 +191,7 @@ struct SearchField: View {
                 Button {
                     text = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(gattoSymbol: "xmark.circle.fill")
                         .font(.system(size: 11))
                         .foregroundStyle(palette.subtleInk)
                 }
@@ -304,7 +304,7 @@ struct OperationToast: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
+            Image(gattoSymbol: "checkmark.circle.fill")
                 .foregroundStyle(palette.success)
             Text(notice.message)
                 .font(.system(size: 12.5, weight: .medium))
@@ -367,7 +367,7 @@ struct SyncActivityGlyph: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        Image(systemName: direction == .up ? "arrow.up" : "arrow.down")
+        Image(gattoSymbol: direction == .up ? "arrow.up" : "arrow.down")
             .font(.system(size: size, weight: .bold))
             .foregroundStyle(palette.primary)
             .frame(width: size + 10, height: size + 10)

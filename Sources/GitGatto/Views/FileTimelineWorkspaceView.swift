@@ -63,7 +63,7 @@ struct FileTimelineWorkspaceView: View {
             }
             Spacer(minLength: 12)
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
+                Image(gattoSymbol: "magnifyingglass")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(palette.subtleInk)
                 TextField(L10n.text("file_timeline.search"), text: $model.fileTimelineQuery)
@@ -207,7 +207,7 @@ struct FileTimelineWorkspaceView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                         .fill(palette.primarySoft)
-                    Image(systemName: FileTimelineFileRow.icon(for: file.fileExtension))
+                    Image(gattoSymbol: FileTimelineFileRow.icon(for: file.fileExtension))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(palette.primary)
                 }
@@ -316,7 +316,7 @@ struct FileTimelineWorkspaceView: View {
 
     private func timelineEmpty(_ image: String, key: String, palette: AppPalette) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: image)
+            Image(gattoSymbol: image)
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text(key))
@@ -345,7 +345,7 @@ private struct FileTimelineFileRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 9) {
-                Image(systemName: Self.icon(for: file.fileExtension))
+                Image(gattoSymbol: Self.icon(for: file.fileExtension))
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(selected ? palette.primary : palette.mutedInk)
                     .frame(width: 18)

@@ -164,7 +164,7 @@ struct UpdateCenterView: View {
                 Button {
                     Task { await manager.refreshReleaseNotes(force: true) }
                 } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Image(gattoSymbol: "arrow.clockwise")
                 }
                 .buttonStyle(.plain)
                 .disabled(manager.isLoadingReleaseNotes)
@@ -172,7 +172,7 @@ struct UpdateCenterView: View {
             }
 
             if let error = manager.releaseNotesError {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
+                GattoLabel(error, systemImage: "exclamationmark.triangle.fill")
                     .font(.system(size: 11.5))
                     .foregroundStyle(palette.warning)
             }
@@ -239,7 +239,7 @@ struct UpdateCenterView: View {
         if manager.state == .checking {
             ProgressView().controlSize(.small)
         } else {
-            Image(systemName: statusSymbol)
+            Image(gattoSymbol: statusSymbol)
         }
     }
 
@@ -310,7 +310,7 @@ private struct ReleaseNoteCard: View {
                     }
 
                     Spacer()
-                    Image(systemName: "chevron.down")
+                    Image(gattoSymbol: "chevron.down")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(palette.subtleInk)
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))

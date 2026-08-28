@@ -158,7 +158,7 @@ private struct CodeSurfaceStatusBar: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 12) {
-            Label(CodeSyntax.languageName(for: fileName), systemImage: "curlybraces.square")
+            GattoLabel(CodeSyntax.languageName(for: fileName), systemImage: "curlybraces.square")
             Spacer()
             Text("UTF-8")
             Text("LF")

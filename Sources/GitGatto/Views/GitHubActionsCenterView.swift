@@ -50,7 +50,7 @@ struct GitHubActionsCenterView: View {
     private func workflowBar(_ palette: AppPalette) -> some View {
         HStack(spacing: 10) {
             HStack(spacing: 7) {
-                Image(systemName: "play.circle.fill")
+                Image(gattoSymbol: "play.circle.fill")
                     .foregroundStyle(palette.accent)
                 Text(L10n.text("github.actions.title"))
                     .font(font(size: 13, weight: .semibold))
@@ -69,7 +69,7 @@ struct GitHubActionsCenterView: View {
             Spacer(minLength: 8)
 
             if let error = model.githubActionsError {
-                Image(systemName: "exclamationmark.triangle.fill")
+                Image(gattoSymbol: "exclamationmark.triangle.fill")
                     .foregroundStyle(palette.danger)
                     .help(error)
             }
@@ -164,7 +164,7 @@ struct GitHubActionsCenterView: View {
             }
         } else {
             VStack(spacing: 9) {
-                Image(systemName: "play.circle")
+                Image(gattoSymbol: "play.circle")
                     .font(.system(size: 22))
                     .foregroundStyle(palette.subtleInk)
                 Text(L10n.text("github.actions.selection.empty"))
@@ -206,7 +206,7 @@ struct GitHubActionsCenterView: View {
             Button {
                 inAppBrowserPage = InAppBrowserPage(url: run.webURL, persistent: true)
             } label: {
-                Image(systemName: "arrow.up.right")
+                Image(gattoSymbol: "arrow.up.right")
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
@@ -230,7 +230,7 @@ struct GitHubActionsCenterView: View {
                         }
                     }
                 } label: {
-                    Label(L10n.text("github.actions.action.rerun"), systemImage: "arrow.clockwise")
+                    GattoLabel(L10n.text("github.actions.action.rerun"), systemImage: "arrow.clockwise")
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
@@ -257,7 +257,7 @@ struct GitHubActionsCenterView: View {
                         sectionTitle("github.actions.artifacts", count: detail.artifacts.count, palette: palette)
                         ForEach(detail.artifacts) { artifact in
                             HStack(spacing: 10) {
-                                Image(systemName: "shippingbox")
+                                Image(gattoSymbol: "shippingbox")
                                     .foregroundStyle(palette.accent)
                                     .frame(width: 22)
                                 VStack(alignment: .leading, spacing: 3) {
@@ -303,7 +303,7 @@ struct GitHubActionsCenterView: View {
                                 .stroke(palette.divider, lineWidth: 1)
                         }
                     } else if let error = detail.logError {
-                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                        GattoLabel(error, systemImage: "exclamationmark.triangle.fill")
                             .font(font(size: 10.5, weight: .medium))
                             .foregroundStyle(palette.warning)
                             .textSelection(.enabled)
@@ -335,7 +335,7 @@ struct GitHubActionsCenterView: View {
 
     private func emptyState(_ palette: AppPalette) -> some View {
         VStack(spacing: 11) {
-            Image(systemName: "play.circle")
+            Image(gattoSymbol: "play.circle")
                 .font(.system(size: 24, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text("github.actions.empty"))
@@ -353,7 +353,7 @@ struct GitHubActionsCenterView: View {
 
     private func errorState(_ error: String, palette: AppPalette) -> some View {
         VStack(spacing: 11) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(gattoSymbol: "exclamationmark.triangle.fill")
                 .font(.system(size: 21))
                 .foregroundStyle(palette.danger)
             Text(error)

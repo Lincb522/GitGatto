@@ -72,7 +72,7 @@ struct RepositoryScannerView: View {
                 Button {
                     chooseScanFolders()
                 } label: {
-                    Label(L10n.text("repository.scan.choose_folders"), systemImage: "folder.badge.plus")
+                    GattoLabel(L10n.text("repository.scan.choose_folders"), systemImage: "folder.badge.plus")
                 }
                 .buttonStyle(SecondaryButtonStyle())
 
@@ -85,7 +85,7 @@ struct RepositoryScannerView: View {
                     Button {
                         model.scanForRepositories()
                     } label: {
-                        Label(L10n.text("repository.scan.device"), systemImage: "internaldrive")
+                        GattoLabel(L10n.text("repository.scan.device"), systemImage: "internaldrive")
                     }
                     .buttonStyle(PrimaryButtonStyle())
                 }
@@ -266,7 +266,7 @@ private struct ScannerRepositoryRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                Image(gattoSymbol: isSelected ? "checkmark.square.fill" : "square")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
                     .frame(width: 20)
@@ -318,7 +318,7 @@ private struct ScannerEmptyState: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 10) {
-            Image(systemName: systemImage)
+            Image(gattoSymbol: systemImage)
                 .font(.system(size: 26, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text(titleKey))

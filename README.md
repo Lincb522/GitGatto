@@ -83,6 +83,8 @@ docs/                      架构、贡献、文档与发布规则
 project.yml                XcodeGen 工程源配置
 ```
 
+界面图标资产位于 `Sources/GitGatto/Resources/UIIcons`。运行 `./scripts/inventory-icons.py` 更新语义清单，运行 `./scripts/validate-generated-icons.py` 校验完整性和透明通道。
+
 ## 文档
 
 - [产品约束](PRODUCT.md)

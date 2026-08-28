@@ -48,19 +48,19 @@ private struct EmbeddedBrowserView: View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 Button { browser.goBack() } label: {
-                    Image(systemName: "chevron.left")
+                    Image(gattoSymbol: "chevron.left")
                 }
                 .disabled(!browser.canGoBack)
                 .help(L10n.text("github.browser.back"))
 
                 Button { browser.goForward() } label: {
-                    Image(systemName: "chevron.right")
+                    Image(gattoSymbol: "chevron.right")
                 }
                 .disabled(!browser.canGoForward)
                 .help(L10n.text("github.browser.forward"))
 
                 Button { browser.reload() } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Image(gattoSymbol: "arrow.clockwise")
                 }
                 .help(L10n.text("action.refresh"))
 
@@ -100,7 +100,7 @@ private struct EmbeddedBrowserView: View {
                 InAppWebView(webView: browser.webView)
                 if let error = browser.error {
                     HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
+                        Image(gattoSymbol: "exclamationmark.triangle.fill")
                         Text(L10n.format("github.browser.error", error))
                             .textSelection(.enabled)
                     }

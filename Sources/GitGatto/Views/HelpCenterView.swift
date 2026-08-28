@@ -240,7 +240,7 @@ private struct HelpTopicButton: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(systemName: topic.icon)
+                Image(gattoSymbol: topic.icon)
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                     .frame(width: 18)
@@ -269,7 +269,7 @@ private struct HelpArticleView: View {
         let palette = AppPalette(colorScheme)
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Image(systemName: topic.icon)
+                Image(gattoSymbol: topic.icon)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(palette.primary)
                     .frame(width: 40, height: 40)

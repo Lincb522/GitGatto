@@ -26,7 +26,7 @@ struct LegalDocumentsView: View {
                             navigation.selectedLegalDocument = document
                         } label: {
                             HStack(spacing: 10) {
-                                Image(systemName: document.icon)
+                                Image(gattoSymbol: document.icon)
                                     .font(.system(size: 12.5, weight: .semibold))
                                     .frame(width: 18)
                                 Text(L10n.text(document.titleKey))
@@ -65,7 +65,7 @@ struct LegalDocumentsView: View {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(documentText, forType: .string)
                     } label: {
-                        Label(L10n.text("legal.copy"), systemImage: "doc.on.doc")
+                        GattoLabel(L10n.text("legal.copy"), systemImage: "doc.on.doc")
                     }
                     .buttonStyle(SecondaryButtonStyle())
                 }

@@ -94,7 +94,7 @@ private struct BranchRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(systemName: "arrow.triangle.branch")
+                Image(gattoSymbol: "arrow.triangle.branch")
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(branch.isCurrent ? palette.primary : palette.subtleInk)
                     .frame(width: 22)
@@ -171,7 +171,7 @@ private struct BranchInspector: View {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
                                 .fill(branch.isCurrent ? palette.primarySoft : palette.accentSoft)
                                 .frame(width: 46, height: 46)
-                            Image(systemName: "arrow.triangle.branch")
+                            Image(gattoSymbol: "arrow.triangle.branch")
                                 .font(.system(size: 19, weight: .semibold))
                                 .foregroundStyle(branch.isCurrent ? palette.primary : palette.accent)
                         }

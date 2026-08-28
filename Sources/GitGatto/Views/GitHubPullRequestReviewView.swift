@@ -38,7 +38,7 @@ struct GitHubPullRequestReviewView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: theme == .console ? 4 : 9, style: .continuous)
                     .fill(pullRequest.isDraft ? palette.warningSoft : palette.successSoft)
-                Image(systemName: "arrow.triangle.pull")
+                Image(gattoSymbol: "arrow.triangle.pull")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(pullRequest.isDraft ? palette.warning : palette.success)
             }
@@ -58,7 +58,7 @@ struct GitHubPullRequestReviewView: View {
                     Text(pullRequest.author)
                     Text("·")
                     Text(pullRequest.headBranch)
-                    Image(systemName: "arrow.right")
+                    Image(gattoSymbol: "arrow.right")
                     Text(pullRequest.baseBranch)
                 }
                 .font(.system(size: 10.5, weight: .medium, design: .monospaced))
@@ -81,14 +81,14 @@ struct GitHubPullRequestReviewView: View {
             Button {
                 inAppBrowserPage = InAppBrowserPage(url: pullRequest.webURL, persistent: true)
             } label: {
-                Label(L10n.text("github.review.open_github"), systemImage: "arrow.up.right")
+                GattoLabel(L10n.text("github.review.open_github"), systemImage: "arrow.up.right")
             }
             .buttonStyle(SecondaryButtonStyle())
             Button {
                 model.closePullRequestReview()
                 dismiss()
             } label: {
-                Image(systemName: "xmark")
+                Image(gattoSymbol: "xmark")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(palette.mutedInk)
                     .frame(width: 30, height: 30)
@@ -109,7 +109,7 @@ struct GitHubPullRequestReviewView: View {
                     model.pullRequestReviewTab = tab
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: tab.icon)
+                        Image(gattoSymbol: tab.icon)
                         Text(L10n.text("github.review.tab.\(tab.rawValue)"))
                         if count > 0 {
                             Text("\(count)")
@@ -129,7 +129,7 @@ struct GitHubPullRequestReviewView: View {
             }
             Spacer()
             if let error = model.pullRequestReviewError {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
+                GattoLabel(error, systemImage: "exclamationmark.triangle.fill")
                     .font(font(size: 10, weight: .medium))
                     .foregroundStyle(palette.danger)
                     .lineLimit(1)
@@ -244,7 +244,7 @@ struct GitHubPullRequestReviewView: View {
                     Button {
                         model.draftPullRequestReview()
                     } label: {
-                        Label(L10n.text("github.review.action.agent_draft"), systemImage: "sparkles")
+                        GattoLabel(L10n.text("github.review.action.agent_draft"), systemImage: "sparkles")
                     }
                     .buttonStyle(SecondaryButtonStyle())
                     .disabled(!model.canDraftPullRequestReply)
@@ -271,7 +271,7 @@ struct GitHubPullRequestReviewView: View {
             LazyVStack(spacing: 0) {
                 ForEach(commits) { commit in
                     HStack(spacing: 12) {
-                        Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                        Image(gattoSymbol: "point.topleft.down.to.point.bottomright.curvepath")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(palette.accent)
                             .frame(width: 24)
@@ -372,7 +372,7 @@ struct GitHubPullRequestReviewView: View {
                             Button {
                                 inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
                             } label: {
-                                Image(systemName: "arrow.up.right")
+                                Image(gattoSymbol: "arrow.up.right")
                             }
                             .buttonStyle(.plain)
                             .foregroundStyle(palette.primary)
@@ -403,7 +403,7 @@ struct GitHubPullRequestReviewView: View {
 
     private func errorView(_ message: String, palette: AppPalette) -> some View {
         VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(gattoSymbol: "exclamationmark.triangle.fill")
                 .font(.system(size: 22))
                 .foregroundStyle(palette.danger)
             Text(message)
@@ -420,7 +420,7 @@ struct GitHubPullRequestReviewView: View {
 
     private func empty(_ text: String, icon: String, palette: AppPalette) -> some View {
         VStack(spacing: 9) {
-            Image(systemName: icon)
+            Image(gattoSymbol: icon)
                 .font(.system(size: 21, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(text)
@@ -461,7 +461,7 @@ private struct ConversationEntry: View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {
                 Circle().fill(tint.opacity(0.14))
-                Image(systemName: systemImage)
+                Image(gattoSymbol: systemImage)
                     .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(tint)
             }
@@ -518,7 +518,7 @@ private struct PullRequestFileRow: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 7) {
-                    Image(systemName: viewed ? "checkmark.circle.fill" : "doc.text")
+                    Image(gattoSymbol: viewed ? "checkmark.circle.fill" : "doc.text")
                         .foregroundStyle(viewed ? palette.success : palette.subtleInk)
                         .frame(width: 16)
                     Text(file.path)
@@ -565,7 +565,7 @@ private struct PullRequestFileInspector: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                         .fill(palette.primarySoft)
-                    Image(systemName: "arrow.left.arrow.right")
+                    Image(gattoSymbol: "arrow.left.arrow.right")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(palette.primary)
                 }
@@ -585,7 +585,7 @@ private struct PullRequestFileInspector: View {
                 Button {
                     model.setPullRequestFileViewed(file, viewed: !viewed)
                 } label: {
-                    Label(
+                    GattoLabel(
                         L10n.text(viewed ? "github.review.action.unmark_viewed" : "github.review.action.mark_viewed"),
                         systemImage: viewed ? "eye.slash" : "checkmark"
                     )
@@ -601,7 +601,7 @@ private struct PullRequestFileInspector: View {
 
             if file.patch == nil {
                 VStack(spacing: 9) {
-                    Image(systemName: "doc.badge.ellipsis")
+                    Image(gattoSymbol: "doc.badge.ellipsis")
                         .font(.system(size: 21))
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("github.review.patch.unavailable"))
@@ -672,7 +672,7 @@ struct CheckStateGlyph: View {
         if ["queued", "in_progress", "waiting", "requested", "pending"].contains(status.lowercased()) {
             ProgressView().controlSize(.small).tint(palette.accent).frame(width: 24)
         } else {
-            Image(systemName: icon)
+            Image(gattoSymbol: icon)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(color(palette))
                 .frame(width: 24)

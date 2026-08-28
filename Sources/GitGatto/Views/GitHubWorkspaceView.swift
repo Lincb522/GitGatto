@@ -88,7 +88,7 @@ struct GitHubWorkspaceView: View {
                     inAppBrowserPage = InAppBrowserPage(url: account.webURL, persistent: true)
                 } label: {
                     HStack(spacing: 7) {
-                        Image(systemName: "person.crop.circle.fill")
+                        Image(gattoSymbol: "person.crop.circle.fill")
                         Text(account.login)
                             .lineLimit(1)
                     }
@@ -116,7 +116,7 @@ struct GitHubWorkspaceView: View {
             .frame(width: 152)
 
             HStack(spacing: 7) {
-                Image(systemName: "magnifyingglass")
+                Image(gattoSymbol: "magnifyingglass")
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(palette.subtleInk)
                 TextField(searchPlaceholder, text: $model.githubQuery)
@@ -129,7 +129,7 @@ struct GitHubWorkspaceView: View {
                         model.githubQuery = ""
                         model.searchGitHub()
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        Image(gattoSymbol: "xmark.circle.fill")
                             .font(.system(size: 11))
                             .foregroundStyle(palette.subtleInk)
                     }
@@ -149,7 +149,7 @@ struct GitHubWorkspaceView: View {
             Button {
                 model.searchGitHub()
             } label: {
-                Image(systemName: "arrow.right")
+                Image(gattoSymbol: "arrow.right")
                     .font(.system(size: 11.5, weight: .bold))
                     .frame(width: 16, height: 16)
             }
@@ -201,7 +201,7 @@ struct GitHubWorkspaceView: View {
 
             if model.githubDeveloperResults.isEmpty && !model.isLoadingGitHub {
                 VStack(spacing: 8) {
-                    Image(systemName: "person.crop.circle.badge.questionmark")
+                    Image(gattoSymbol: "person.crop.circle.badge.questionmark")
                         .font(.system(size: 20))
                         .foregroundStyle(palette.subtleInk)
                     Text(
@@ -248,7 +248,7 @@ struct GitHubWorkspaceView: View {
                         AsyncImage(url: profile.avatarURL) { image in
                             image.resizable().scaledToFill()
                         } placeholder: {
-                            Image(systemName: "person.crop.circle.fill")
+                            Image(gattoSymbol: "person.crop.circle.fill")
                                 .resizable()
                                 .foregroundStyle(palette.subtleInk)
                         }
@@ -277,13 +277,13 @@ struct GitHubWorkspaceView: View {
                     }
 
                     HStack(spacing: 20) {
-                        Label(L10n.format("github.developer.followers", profile.followers), systemImage: "person.2")
-                        Label(L10n.format("github.developer.repositories", profile.publicRepositories), systemImage: "shippingbox")
+                        GattoLabel(L10n.format("github.developer.followers", profile.followers), systemImage: "person.2")
+                        GattoLabel(L10n.format("github.developer.repositories", profile.publicRepositories), systemImage: "shippingbox")
                         if let location = profile.location, !location.isEmpty {
-                            Label(location, systemImage: "location")
+                            GattoLabel(location, systemImage: "location")
                         }
                         if let company = profile.company, !company.isEmpty {
-                            Label(company, systemImage: "building.2")
+                            GattoLabel(company, systemImage: "building.2")
                         }
                     }
                     .font(.system(size: 10.5, weight: .medium))
@@ -367,7 +367,7 @@ struct GitHubWorkspaceView: View {
 
             if model.displayedGitHubRepositories.isEmpty && !model.isLoadingGitHub {
                 VStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
+                    Image(gattoSymbol: "magnifyingglass")
                         .font(.system(size: 18))
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("github.search.empty"))
@@ -434,7 +434,7 @@ struct GitHubWorkspaceView: View {
             }
         } else {
             VStack(spacing: 9) {
-                Image(systemName: "shippingbox")
+                Image(gattoSymbol: "shippingbox")
                     .font(.system(size: 22))
                     .foregroundStyle(palette.subtleInk)
                 Text(L10n.text("github.repository.empty"))
@@ -479,7 +479,7 @@ struct GitHubWorkspaceView: View {
                             .lineLimit(2)
                     }
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.compact.up")
+                    Image(gattoSymbol: "chevron.compact.up")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(palette.subtleInk)
                         .frame(width: 28, height: 28)
@@ -489,13 +489,13 @@ struct GitHubWorkspaceView: View {
             .help(L10n.text("github.repository.header.collapse"))
 
             HStack(spacing: 14) {
-                Label(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
-                Label(GitHubNumberFormatter.string(repository.forks), systemImage: "arrow.triangle.branch")
-                Label(GitHubNumberFormatter.string(repository.openIssues), systemImage: "record.circle")
+                GattoLabel(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
+                GattoLabel(GitHubNumberFormatter.string(repository.forks), systemImage: "arrow.triangle.branch")
+                GattoLabel(GitHubNumberFormatter.string(repository.openIssues), systemImage: "record.circle")
                 if let language = repository.language {
                     GitHubLanguageLabel(language: language)
                 }
-                Label(repository.defaultBranch, systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                GattoLabel(repository.defaultBranch, systemImage: "point.topleft.down.to.point.bottomright.curvepath")
             }
             .font(.system(size: 10.5, weight: .medium))
             .foregroundStyle(palette.subtleInk)
@@ -514,7 +514,7 @@ struct GitHubWorkspaceView: View {
                 Button {
                     openProjectWeb(repository.webURL)
                 } label: {
-                    Label(L10n.text("github.action.open_web"), systemImage: "arrow.up.right")
+                    GattoLabel(L10n.text("github.action.open_web"), systemImage: "arrow.up.right")
                         .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.plain)
@@ -567,7 +567,7 @@ struct GitHubWorkspaceView: View {
                             if let language = repository.language {
                                 GitHubLanguageLabel(language: language)
                             }
-                            Label(
+                            GattoLabel(
                                 repository.defaultBranch,
                                 systemImage: "point.topleft.down.to.point.bottomright.curvepath"
                             )
@@ -577,7 +577,7 @@ struct GitHubWorkspaceView: View {
                     }
 
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.compact.down")
+                    Image(gattoSymbol: "chevron.compact.down")
                         .font(.system(size: 12.5, weight: .semibold))
                         .foregroundStyle(palette.subtleInk)
                         .frame(width: 24, height: 24)
@@ -666,7 +666,7 @@ struct GitHubWorkspaceView: View {
             model.selectGitHubProjectDetailTab(tab)
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: image)
+                Image(gattoSymbol: image)
                 Text(L10n.text("github.project.tab.\(tab.rawValue)"))
                 if let count, count > 0 {
                     Text("\(count)")
@@ -752,7 +752,7 @@ struct GitHubWorkspaceView: View {
             Button {
                 model.navigateBackInGitHubReadme()
             } label: {
-                Image(systemName: "chevron.left")
+                Image(gattoSymbol: "chevron.left")
                     .frame(width: 18, height: 18)
             }
             .buttonStyle(.plain)
@@ -813,7 +813,7 @@ struct GitHubWorkspaceView: View {
                         model.translateGitHubReadme(to: .english)
                     }
                 } label: {
-                    Label(L10n.text("codex.action.translate"), systemImage: "character.book.closed")
+                    GattoLabel(L10n.text("codex.action.translate"), systemImage: "character.book.closed")
                         .font(.system(size: 10.5, weight: .semibold))
                 }
                 .menuStyle(.borderlessButton)
@@ -911,7 +911,7 @@ struct GitHubWorkspaceView: View {
                             .joined(separator: "/")
                         model.openGitHubDirectory(parent)
                     } label: {
-                        Image(systemName: "chevron.left")
+                        Image(gattoSymbol: "chevron.left")
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(palette.mutedInk)
@@ -972,7 +972,7 @@ struct GitHubWorkspaceView: View {
 
     private func projectError(_ message: String, palette: AppPalette) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(gattoSymbol: "exclamationmark.triangle.fill")
                 .foregroundStyle(palette.danger)
             Text(message)
                 .font(.system(size: 11.5))
@@ -991,7 +991,7 @@ struct GitHubWorkspaceView: View {
 
     private func unavailableState(_ palette: AppPalette) -> some View {
         VStack(spacing: 14) {
-            Image(systemName: "terminal")
+            Image(gattoSymbol: "terminal")
                 .font(.system(size: 26, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text("github.unavailable.title"))
@@ -1032,7 +1032,7 @@ private struct ProjectEmptyState: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 9) {
-            Image(systemName: systemImage)
+            Image(gattoSymbol: systemImage)
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text(titleKey))
@@ -1054,7 +1054,7 @@ private struct GitHubContentRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: iconName)
+                Image(gattoSymbol: iconName)
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(item.kind == .directory ? palette.accent : palette.subtleInk)
                     .frame(width: 16)
@@ -1069,7 +1069,7 @@ private struct GitHubContentRow: View {
                         .foregroundStyle(palette.subtleInk)
                 }
                 if item.kind == .directory {
-                    Image(systemName: "chevron.right")
+                    Image(gattoSymbol: "chevron.right")
                         .font(.system(size: 8.5, weight: .semibold))
                         .foregroundStyle(palette.subtleInk)
                 }
@@ -1134,7 +1134,7 @@ private struct GitHubCodeFileView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                     .fill(palette.primarySoft)
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                Image(gattoSymbol: "chevron.left.forwardslash.chevron.right")
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(palette.primary)
             }
@@ -1161,13 +1161,13 @@ private struct GitHubCodeFileView: View {
                 Button {
                     openInApp(url)
                 } label: {
-                    Label(L10n.text("github.code.open_github"), systemImage: "arrow.up.right")
+                    GattoLabel(L10n.text("github.code.open_github"), systemImage: "arrow.up.right")
                         .font(.system(size: 10.5, weight: .medium))
                 }
                 .buttonStyle(SecondaryButtonStyle())
             }
             Button { model.closeGitHubFile() } label: {
-                Image(systemName: "xmark")
+                Image(gattoSymbol: "xmark")
                     .font(.system(size: 9.5, weight: .semibold))
                     .foregroundStyle(palette.subtleInk)
                     .frame(width: 24, height: 24)
@@ -1203,7 +1203,7 @@ private struct GitHubCodeFileView: View {
 
     private func errorView(_ error: String, palette: AppPalette) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(gattoSymbol: "exclamationmark.triangle.fill")
                 .foregroundStyle(palette.danger)
             Text(error)
                 .font(.system(size: 11.5))
@@ -1274,7 +1274,7 @@ private struct GitHubRepositoryRow: View {
                             .foregroundStyle(palette.ink)
                             .lineLimit(1)
                         Spacer()
-                        Label(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
+                        GattoLabel(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
                             .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(palette.subtleInk)
                     }
@@ -1317,7 +1317,7 @@ private struct GitHubDeveloperRow: View {
                 AsyncImage(url: developer.avatarURL) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
-                    Image(systemName: "person.crop.circle.fill")
+                    Image(gattoSymbol: "person.crop.circle.fill")
                         .resizable()
                         .foregroundStyle(palette.subtleInk)
                 }
@@ -1335,7 +1335,7 @@ private struct GitHubDeveloperRow: View {
                 }
 
                 Spacer()
-                Image(systemName: "chevron.right")
+                Image(gattoSymbol: "chevron.right")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(palette.subtleInk)
             }
@@ -1360,7 +1360,7 @@ private struct GitHubPullRequestRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "arrow.triangle.pull")
+                Image(gattoSymbol: "arrow.triangle.pull")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(palette.success)
                     .frame(width: 24, height: 24)
@@ -1387,7 +1387,7 @@ private struct GitHubPullRequestRow: View {
                         .lineLimit(1)
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
+                Image(gattoSymbol: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(palette.subtleInk)
             }

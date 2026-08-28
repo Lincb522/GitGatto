@@ -14,7 +14,7 @@ struct GlobalErrorSheet: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "exclamationmark.triangle.fill")
+                Image(gattoSymbol: "exclamationmark.triangle.fill")
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(palette.danger)
                     .frame(width: 30, height: 30)
@@ -90,7 +90,7 @@ struct GlobalErrorSheet: View {
                     NSPasteboard.general.setString(report.diagnosticText, forType: .string)
                     copied = true
                 } label: {
-                    Label(
+                    GattoLabel(
                         L10n.text(copied ? "error.action.copied" : "error.action.copy"),
                         systemImage: copied ? "checkmark" : "doc.on.doc"
                     )
@@ -104,7 +104,7 @@ struct GlobalErrorSheet: View {
                     .keyboardShortcut(.cancelAction)
 
                 Button(action: useAgent) {
-                    Label(L10n.text("error.action.agent_resolve"), systemImage: "sparkles")
+                    GattoLabel(L10n.text("error.action.agent_resolve"), systemImage: "sparkles")
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(!canUseAgent)

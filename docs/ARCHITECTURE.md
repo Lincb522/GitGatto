@@ -26,6 +26,7 @@ GitGatto 是 macOS 14 及以上版本的 SwiftUI 应用。界面状态由 `Works
 - `GitGatto.xcodeproj` 提供应用与测试目标、共享 scheme、Sparkle 依赖和资源构建设置。
 - `project.yml` 是 Xcode 工程结构的唯一编辑源，`scripts/generate-xcodeproj.sh` 负责生成工程文件。
 - `Package.swift` 保持同一源码与依赖的命令行构建入口；`AppResourceBundle` 统一解析 Xcode 主 Bundle、SwiftPM 资源 Bundle 与发行包资源。
+- `GattoIconAssets` 从应用资源 Bundle 加载 imagegen PNG 并以模板图着色；所有界面图标语义由 `docs/icon-system/imagegen-icon-manifest.json` 统一盘点。
 
 ## 更新流程
 

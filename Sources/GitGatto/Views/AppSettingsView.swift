@@ -90,7 +90,7 @@ struct AppSettingsView: View {
                         select(page)
                     } label: {
                         HStack(spacing: 10) {
-                            Image(systemName: page.icon)
+                            Image(gattoSymbol: page.icon)
                                 .font(.system(size: 13, weight: .semibold))
                                 .frame(width: 18)
                                 .foregroundStyle(selectedPage == page ? palette.primary : palette.mutedInk)
@@ -182,7 +182,7 @@ struct AppSettingsView: View {
                     select(page)
                 } label: {
                     VStack(spacing: 5) {
-                        Image(systemName: page.icon)
+                        Image(gattoSymbol: page.icon)
                             .font(.system(size: 13, weight: .semibold))
                         Text(L10n.text(page.titleKey))
                             .font(.system(size: 8.5, weight: .medium, design: .monospaced))
@@ -289,7 +289,7 @@ struct AppSettingsView: View {
                     select(page)
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: page.icon)
+                        Image(gattoSymbol: page.icon)
                             .font(.system(size: 12.5, weight: .semibold))
                         Text(L10n.text(page.titleKey))
                             .font(.system(size: 12, weight: selectedPage == page ? .semibold : .medium))
@@ -315,7 +315,7 @@ struct AppSettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 if includesPageTitle {
                     HStack(spacing: 10) {
-                        Image(systemName: selectedPage.icon)
+                        Image(gattoSymbol: selectedPage.icon)
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(palette.primary)
                             .frame(width: 30, height: 30)
@@ -340,7 +340,7 @@ struct AppSettingsView: View {
     @ViewBuilder
     private func savedState(_ palette: AppPalette) -> some View {
         if showsSavedState {
-            Label(L10n.text("settings.saved"), systemImage: "checkmark.circle.fill")
+            GattoLabel(L10n.text("settings.saved"), systemImage: "checkmark.circle.fill")
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(palette.success)
                 .transition(.opacity)
@@ -542,7 +542,7 @@ private struct ThemeChoiceButton: View {
                         .font(.system(size: 11.5, weight: .medium))
                     Spacer()
                     if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(gattoSymbol: "checkmark.circle.fill")
                             .foregroundStyle(preview.primary)
                     }
                 }
@@ -755,7 +755,7 @@ private struct AccentChoiceButton: View {
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 if isSelected {
-                    Image(systemName: "checkmark")
+                    Image(gattoSymbol: "checkmark")
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(palette.primary)
                 }
@@ -851,7 +851,7 @@ private struct GitSettingsPage: View {
             }
 
             let palette = AppPalette(colorScheme)
-            Label(
+            GattoLabel(
                 L10n.format("repository.scan.managed", model.localRepositories.count),
                 systemImage: "externaldrive.fill"
             )
@@ -902,7 +902,7 @@ private struct GitSettingsPage: View {
         SettingsSection(titleKey: "settings.git.status") {
             let palette = AppPalette(colorScheme)
             HStack(spacing: 9) {
-                Image(systemName: model.liveSyncError == nil ? "dot.radiowaves.left.and.right" : "exclamationmark.triangle.fill")
+                Image(gattoSymbol: model.liveSyncError == nil ? "dot.radiowaves.left.and.right" : "exclamationmark.triangle.fill")
                     .foregroundStyle(model.liveSyncError == nil ? palette.success : palette.warning)
                 Text(model.liveSyncError ?? L10n.text(preferences.liveRefreshEnabled ? "settings.git.status.active" : "settings.git.status.paused"))
                     .font(.system(size: 11.5, weight: .medium))
@@ -1009,7 +1009,7 @@ private struct GitAgentCapabilitiesView: View {
         VStack(alignment: .leading, spacing: 14) {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 10) {
                 ForEach(GitAgentSkill.allCases) { skill in
-                    Label(L10n.text(skill.titleKey), systemImage: skill.systemImage)
+                    GattoLabel(L10n.text(skill.titleKey), systemImage: skill.systemImage)
                         .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(palette.mutedInk)
                         .symbolRenderingMode(.hierarchical)
@@ -1285,7 +1285,7 @@ private struct AISettingsAvailability: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        Label(label, systemImage: availability.state == .available ? "checkmark.circle.fill" : "circle.dotted")
+        GattoLabel(label, systemImage: availability.state == .available ? "checkmark.circle.fill" : "circle.dotted")
             .font(.system(size: 10.5, weight: .semibold))
             .foregroundStyle(availability.state == .available ? palette.success : palette.subtleInk)
     }

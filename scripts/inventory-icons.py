@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "Sources" / "GitGatto"
-OUTPUT = ROOT / "docs" / "icon-system" / "image2-icon-manifest.json"
+OUTPUT = ROOT / "docs" / "icon-system" / "imagegen-icon-manifest.json"
 
 STRING = re.compile(r'"([a-z0-9]+(?:\.[a-z0-9]+)*|[a-z]+)"')
 ICON_MEMBER = re.compile(r'\b(?:var|func)\s+(?:icon|systemImage|symbol|statusSymbol|iconName)\b')
@@ -45,7 +45,12 @@ def extract() -> dict[str, set[str]]:
         relative = path.relative_to(ROOT).as_posix()
         for index, line in enumerate(lines):
             candidates: set[str] = set()
-            if "systemName:" in line or "systemImage:" in line:
+            if (
+                "systemName:" in line
+                or "systemImage:" in line
+                or "gattoSymbol:" in line
+                or "GattoIcon(" in line
+            ):
                 block = "\n".join(lines[max(0, index - 1): min(len(lines), index + 5)])
                 candidates.update(STRING.findall(block))
             if ICON_MEMBER.search(line):
@@ -77,16 +82,14 @@ def main() -> None:
             "sourceSymbol": source_symbol,
             "assetID": asset_id,
             "category": category(source_symbol),
-            "master": f"Sources/GitGatto/Resources/GeneratedIcons/Masters/{asset_id}.png",
-            "targetImageset": f"Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/{asset_id}.imageset",
+            "assetPath": f"Sources/GitGatto/Resources/UIIcons/{asset_id}.png",
             "sourceRefs": sorted(symbols[source_symbol]),
         })
     payload = {
         "schemaVersion": 1,
         "generator": "scripts/inventory-icons.py",
         "source": "SwiftUI systemName/systemImage references and icon properties",
-        "image2Required": True,
-        "image2Entrypoint": None,
+        "imageGenerator": "built-in imagegen",
         "style": {
             "canvas": "256x256 transparent PNG master",
             "delivery": ["24x24@1x", "48x48@2x", "72x72@3x"],

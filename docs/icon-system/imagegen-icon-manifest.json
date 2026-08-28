@@ -2,8 +2,7 @@
   "schemaVersion": 1,
   "generator": "scripts/inventory-icons.py",
   "source": "SwiftUI systemName/systemImage references and icon properties",
-  "image2Required": true,
-  "image2Entrypoint": null,
+  "imageGenerator": "built-in imagegen",
   "style": {
     "canvas": "256x256 transparent PNG master",
     "delivery": [
@@ -34,8 +33,7 @@
       "sourceSymbol": "archivebox",
       "assetID": "gatto-archivebox",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-archivebox.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-archivebox.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-archivebox.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositorySidebar.swift:53",
         "Sources/GitGatto/Views/StashWorkspaceView.swift:404",
@@ -46,8 +44,7 @@
       "sourceSymbol": "archivebox.fill",
       "assetID": "gatto-archivebox-fill",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-archivebox-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-archivebox-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-archivebox-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/StashWorkspaceView.swift:208",
         "Sources/GitGatto/Views/StashWorkspaceView.swift:356",
@@ -58,8 +55,7 @@
       "sourceSymbol": "arrow.clockwise",
       "assetID": "gatto-arrow-clockwise",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-clockwise.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-clockwise.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-clockwise.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:587",
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:82",
@@ -78,8 +74,7 @@
       "sourceSymbol": "arrow.down",
       "assetID": "gatto-arrow-down",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-down.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-down.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:370",
         "Sources/GitGatto/Views/WorkspaceView.swift:776"
@@ -89,8 +84,7 @@
       "sourceSymbol": "arrow.down.app",
       "assetID": "gatto-arrow-down-app",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-down-app.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-down-app.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-app.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/UpdateCenterView.swift:246"
       ]
@@ -99,8 +93,7 @@
       "sourceSymbol": "arrow.down.circle",
       "assetID": "gatto-arrow-down-circle",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-down-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-down-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/UpdateCenterView.swift:246"
       ]
@@ -109,8 +102,7 @@
       "sourceSymbol": "arrow.down.circle.fill",
       "assetID": "gatto-arrow-down-circle-fill",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-down-circle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-down-circle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/UpdateCenterView.swift:246"
       ]
@@ -119,8 +111,7 @@
       "sourceSymbol": "arrow.down.to.line",
       "assetID": "gatto-arrow-down-to-line",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-down-to-line.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-down-to-line.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-to-line.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/StashWorkspaceView.swift:397",
         "Sources/GitGatto/Views/UpdateActionButton.swift:119"
@@ -130,8 +121,7 @@
       "sourceSymbol": "arrow.left.arrow.right",
       "assetID": "gatto-arrow-left-arrow-right",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-left-arrow-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-left-arrow-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-left-arrow-right.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:568"
       ]
@@ -140,8 +130,7 @@
       "sourceSymbol": "arrow.left.arrow.right.square",
       "assetID": "gatto-arrow-left-arrow-right-square",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-left-arrow-right-square.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-left-arrow-right-square.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-left-arrow-right-square.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/DiffInspectorView.swift:290"
       ]
@@ -150,8 +139,7 @@
       "sourceSymbol": "arrow.right",
       "assetID": "gatto-arrow-right",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-right.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:288",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:443",
@@ -163,8 +151,7 @@
       "sourceSymbol": "arrow.triangle.2.circlepath",
       "assetID": "gatto-arrow-triangle-2-circlepath",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-triangle-2-circlepath.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-triangle-2-circlepath.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-2-circlepath.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17",
         "Sources/GitGatto/Views/UpdateActionButton.swift:140",
@@ -177,8 +164,7 @@
       "sourceSymbol": "arrow.triangle.branch",
       "assetID": "gatto-arrow-triangle-branch",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-triangle-branch.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-triangle-branch.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-branch.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17",
         "Sources/GitGatto/Views/AppSettingsView.swift:399",
@@ -202,8 +188,7 @@
       "sourceSymbol": "arrow.triangle.merge",
       "assetID": "gatto-arrow-triangle-merge",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-triangle-merge.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-triangle-merge.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-merge.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17",
         "Sources/GitGatto/Views/HistoryWorkspaceView.swift:401"
@@ -213,8 +198,7 @@
       "sourceSymbol": "arrow.triangle.pull",
       "assetID": "gatto-arrow-triangle-pull",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-triangle-pull.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-triangle-pull.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-pull.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:167",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:41",
@@ -225,8 +209,7 @@
       "sourceSymbol": "arrow.turn.up.left",
       "assetID": "gatto-arrow-turn-up-left",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-turn-up-left.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-turn-up-left.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-turn-up-left.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:518"
       ]
@@ -235,8 +218,7 @@
       "sourceSymbol": "arrow.turn.up.right",
       "assetID": "gatto-arrow-turn-up-right",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-turn-up-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-turn-up-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-turn-up-right.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:518"
       ]
@@ -245,8 +227,7 @@
       "sourceSymbol": "arrow.up",
       "assetID": "gatto-arrow-up",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-up.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-up.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:370",
         "Sources/GitGatto/Views/WorkspaceView.swift:776"
@@ -256,8 +237,7 @@
       "sourceSymbol": "arrow.up.arrow.down",
       "assetID": "gatto-arrow-up-arrow-down",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-up-arrow-down.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-up-arrow-down.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-arrow-down.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/HelpCenterView.swift:77"
       ]
@@ -266,8 +246,7 @@
       "sourceSymbol": "arrow.up.circle",
       "assetID": "gatto-arrow-up-circle",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-up-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-up-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:577"
       ]
@@ -276,8 +255,7 @@
       "sourceSymbol": "arrow.up.forward.app",
       "assetID": "gatto-arrow-up-forward-app",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-up-forward-app.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-up-forward-app.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-forward-app.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:321"
       ]
@@ -286,8 +264,7 @@
       "sourceSymbol": "arrow.up.right",
       "assetID": "gatto-arrow-up-right",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-up-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-up-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-right.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:209",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:375",
@@ -301,8 +278,7 @@
       "sourceSymbol": "arrow.up.right.square",
       "assetID": "gatto-arrow-up-right-square",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-up-right-square.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-up-right-square.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-right-square.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ReleaseHistoryView.swift:179"
       ]
@@ -311,8 +287,7 @@
       "sourceSymbol": "arrow.uturn.backward",
       "assetID": "gatto-arrow-uturn-backward",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-arrow-uturn-backward.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-arrow-uturn-backward.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-uturn-backward.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:255"
       ]
@@ -321,8 +296,7 @@
       "sourceSymbol": "bubble.left",
       "assetID": "gatto-bubble-left",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-bubble-left.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-bubble-left.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-bubble-left.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:177"
       ]
@@ -331,8 +305,7 @@
       "sourceSymbol": "bubble.left.and.bubble.right",
       "assetID": "gatto-bubble-left-and-bubble-right",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-bubble-left-and-bubble-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-bubble-left-and-bubble-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-bubble-left-and-bubble-right.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:700"
       ]
@@ -341,8 +314,7 @@
       "sourceSymbol": "building.2",
       "assetID": "gatto-building-2",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-building-2.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-building-2.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-building-2.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:283",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:286"
@@ -352,8 +324,7 @@
       "sourceSymbol": "character.book.closed",
       "assetID": "gatto-character-book-closed",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-character-book-closed.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-character-book-closed.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-character-book-closed.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:399",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:234",
@@ -365,8 +336,7 @@
       "sourceSymbol": "checkmark",
       "assetID": "gatto-checkmark",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-checkmark.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-checkmark.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:758",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:402",
@@ -379,8 +349,7 @@
       "sourceSymbol": "checkmark.circle",
       "assetID": "gatto-checkmark-circle",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-checkmark-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-checkmark-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17",
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:460",
@@ -392,8 +361,7 @@
       "sourceSymbol": "checkmark.circle.fill",
       "assetID": "gatto-checkmark-circle-fill",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-checkmark-circle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-checkmark-circle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:307",
         "Sources/GitGatto/Views/AppSettingsView.swift:1288",
@@ -414,8 +382,7 @@
       "sourceSymbol": "checkmark.seal",
       "assetID": "gatto-checkmark-seal",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-checkmark-seal.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-checkmark-seal.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-seal.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17"
       ]
@@ -424,8 +391,7 @@
       "sourceSymbol": "checkmark.seal.fill",
       "assetID": "gatto-checkmark-seal-fill",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-checkmark-seal-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-checkmark-seal-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-seal-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/UpdateCenterView.swift:246"
       ]
@@ -434,8 +400,7 @@
       "sourceSymbol": "checkmark.shield",
       "assetID": "gatto-checkmark-shield",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-checkmark-shield.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-checkmark-shield.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-shield.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:700"
       ]
@@ -444,8 +409,7 @@
       "sourceSymbol": "checkmark.square.fill",
       "assetID": "gatto-checkmark-square-fill",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-checkmark-square-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-checkmark-square-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-square-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositoryScannerView.swift:269"
       ]
@@ -454,8 +418,7 @@
       "sourceSymbol": "chevron.compact.down",
       "assetID": "gatto-chevron-compact-down",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-chevron-compact-down.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-chevron-compact-down.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-down.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:580"
       ]
@@ -464,8 +427,7 @@
       "sourceSymbol": "chevron.compact.up",
       "assetID": "gatto-chevron-compact-up",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-chevron-compact-up.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-chevron-compact-up.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-up.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:482"
       ]
@@ -474,8 +436,7 @@
       "sourceSymbol": "chevron.down",
       "assetID": "gatto-chevron-down",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-chevron-down.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-chevron-down.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-down.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/UpdateCenterView.swift:313",
         "Sources/GitGatto/Views/WorkspaceView.swift:638"
@@ -485,8 +446,7 @@
       "sourceSymbol": "chevron.left",
       "assetID": "gatto-chevron-left",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-chevron-left.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-chevron-left.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-left.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:755",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:914",
@@ -497,8 +457,7 @@
       "sourceSymbol": "chevron.left.forwardslash.chevron.right",
       "assetID": "gatto-chevron-left-forwardslash-chevron-right",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-chevron-left-forwardslash-chevron-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-chevron-left-forwardslash-chevron-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-left-forwardslash-chevron-right.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:88",
         "Sources/GitGatto/Models/AppNavigationModel.swift:22",
@@ -512,8 +471,7 @@
       "sourceSymbol": "chevron.right",
       "assetID": "gatto-chevron-right",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-chevron-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-chevron-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-right.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AboutGitGattoView.swift:206",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:498",
@@ -529,8 +487,7 @@
       "sourceSymbol": "circle.dashed",
       "assetID": "gatto-circle-dashed",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-circle-dashed.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-circle-dashed.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-dashed.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:518"
       ]
@@ -539,8 +496,7 @@
       "sourceSymbol": "circle.dotted",
       "assetID": "gatto-circle-dotted",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-circle-dotted.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-circle-dotted.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-dotted.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:1288"
       ]
@@ -549,8 +505,7 @@
       "sourceSymbol": "circle.fill",
       "assetID": "gatto-circle-fill",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-circle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-circle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:383"
       ]
@@ -559,8 +514,7 @@
       "sourceSymbol": "circle.lefthalf.filled",
       "assetID": "gatto-circle-lefthalf-filled",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-circle-lefthalf-filled.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-circle-lefthalf-filled.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-lefthalf-filled.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/WorkspaceView.swift:403"
       ]
@@ -569,8 +523,7 @@
       "sourceSymbol": "clock.arrow.circlepath",
       "assetID": "gatto-clock-arrow-circlepath",
       "category": "git-and-code",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-clock-arrow-circlepath.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-clock-arrow-circlepath.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-clock-arrow-circlepath.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17",
         "Sources/GitGatto/Views/AboutGitGattoView.swift:63",
@@ -583,8 +536,7 @@
       "sourceSymbol": "clock.badge.checkmark",
       "assetID": "gatto-clock-badge-checkmark",
       "category": "git-and-code",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-clock-badge-checkmark.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-clock-badge-checkmark.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-clock-badge-checkmark.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositorySidebar.swift:69",
         "Sources/GitGatto/Views/WorkspaceView.swift:310"
@@ -594,8 +546,7 @@
       "sourceSymbol": "command",
       "assetID": "gatto-command",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-command.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-command.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-command.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/HelpCenterView.swift:77"
       ]
@@ -604,8 +555,7 @@
       "sourceSymbol": "curlybraces.square",
       "assetID": "gatto-curlybraces-square",
       "category": "git-and-code",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-curlybraces-square.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-curlybraces-square.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-curlybraces-square.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodeSurface.swift:161",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:342"
@@ -615,8 +565,7 @@
       "sourceSymbol": "doc",
       "assetID": "gatto-doc",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376"
       ]
@@ -625,8 +574,7 @@
       "sourceSymbol": "doc.badge.ellipsis",
       "assetID": "gatto-doc-badge-ellipsis",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc-badge-ellipsis.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc-badge-ellipsis.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-ellipsis.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:511",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:604",
@@ -637,8 +585,7 @@
       "sourceSymbol": "doc.badge.gearshape",
       "assetID": "gatto-doc-badge-gearshape",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc-badge-gearshape.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc-badge-gearshape.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-gearshape.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:374",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:521",
@@ -649,8 +596,7 @@
       "sourceSymbol": "doc.badge.minus",
       "assetID": "gatto-doc-badge-minus",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc-badge-minus.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc-badge-minus.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-minus.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:284"
       ]
@@ -659,8 +605,7 @@
       "sourceSymbol": "doc.on.doc",
       "assetID": "gatto-doc-on-doc",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc-on-doc.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc-on-doc.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-on-doc.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:294",
         "Sources/GitGatto/Views/GlobalErrorSheet.swift:95",
@@ -671,8 +616,7 @@
       "sourceSymbol": "doc.richtext",
       "assetID": "gatto-doc-richtext",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc-richtext.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc-richtext.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-richtext.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:744"
@@ -682,8 +626,7 @@
       "sourceSymbol": "doc.text",
       "assetID": "gatto-doc-text",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc-text.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc-text.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-text.png",
       "sourceRefs": [
         "Sources/GitGatto/Models/AppNavigationModel.swift:22",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:185",
@@ -696,8 +639,7 @@
       "sourceSymbol": "doc.text.magnifyingglass",
       "assetID": "gatto-doc-text-magnifyingglass",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-doc-text-magnifyingglass.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-doc-text-magnifyingglass.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-text-magnifyingglass.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:700"
       ]
@@ -706,8 +648,7 @@
       "sourceSymbol": "dot.radiowaves.left.and.right",
       "assetID": "gatto-dot-radiowaves-left-and-right",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-dot-radiowaves-left-and-right.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-dot-radiowaves-left-and-right.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-dot-radiowaves-left-and-right.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:905"
       ]
@@ -716,8 +657,7 @@
       "sourceSymbol": "exclamationmark",
       "assetID": "gatto-exclamationmark",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-exclamationmark.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-exclamationmark.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-exclamationmark.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:125"
       ]
@@ -726,8 +666,7 @@
       "sourceSymbol": "exclamationmark.shield",
       "assetID": "gatto-exclamationmark-shield",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-exclamationmark-shield.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-exclamationmark-shield.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-exclamationmark-shield.png",
       "sourceRefs": [
         "Sources/GitGatto/Models/AppNavigationModel.swift:22"
       ]
@@ -736,8 +675,7 @@
       "sourceSymbol": "exclamationmark.triangle.fill",
       "assetID": "gatto-exclamationmark-triangle-fill",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-exclamationmark-triangle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-exclamationmark-triangle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-exclamationmark-triangle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:905",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:144",
@@ -767,8 +705,7 @@
       "sourceSymbol": "externaldrive.fill",
       "assetID": "gatto-externaldrive-fill",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-externaldrive-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-externaldrive-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-externaldrive-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:856"
       ]
@@ -777,8 +714,7 @@
       "sourceSymbol": "eye",
       "assetID": "gatto-eye",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-eye.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-eye.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-eye.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:481",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:189"
@@ -788,8 +724,7 @@
       "sourceSymbol": "eye.slash",
       "assetID": "gatto-eye-slash",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-eye-slash.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-eye-slash.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-eye-slash.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:264",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:590"
@@ -799,8 +734,7 @@
       "sourceSymbol": "folder",
       "assetID": "gatto-folder",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-folder.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-folder.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:308",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:874",
@@ -811,8 +745,7 @@
       "sourceSymbol": "folder.badge.minus",
       "assetID": "gatto-folder-badge-minus",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-folder-badge-minus.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-folder-badge-minus.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder-badge-minus.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:275"
       ]
@@ -821,8 +754,7 @@
       "sourceSymbol": "folder.badge.plus",
       "assetID": "gatto-folder-badge-plus",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-folder-badge-plus.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-folder-badge-plus.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder-badge-plus.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositoryScannerView.swift:151",
         "Sources/GitGatto/Views/RepositoryScannerView.swift:75",
@@ -834,8 +766,7 @@
       "sourceSymbol": "folder.fill",
       "assetID": "gatto-folder-fill",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-folder-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-folder-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1088"
       ]
@@ -844,8 +775,7 @@
       "sourceSymbol": "gearshape",
       "assetID": "gatto-gearshape",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-gearshape.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-gearshape.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-gearshape.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:70",
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376",
@@ -857,8 +787,7 @@
       "sourceSymbol": "globe",
       "assetID": "gatto-globe",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-globe.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-globe.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-globe.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AboutGitGattoView.swift:94"
       ]
@@ -867,8 +796,7 @@
       "sourceSymbol": "hammer",
       "assetID": "gatto-hammer",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-hammer.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-hammer.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-hammer.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:314"
       ]
@@ -877,8 +805,7 @@
       "sourceSymbol": "hand.raised",
       "assetID": "gatto-hand-raised",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-hand-raised.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-hand-raised.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-hand-raised.png",
       "sourceRefs": [
         "Sources/GitGatto/Models/AppNavigationModel.swift:22"
       ]
@@ -887,8 +814,7 @@
       "sourceSymbol": "house.fill",
       "assetID": "gatto-house-fill",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-house-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-house-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-house-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:205",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:365"
@@ -898,8 +824,7 @@
       "sourceSymbol": "info.circle",
       "assetID": "gatto-info-circle",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-info-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-info-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-info-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/WorkspaceView.swift:422"
       ]
@@ -908,8 +833,7 @@
       "sourceSymbol": "internaldrive",
       "assetID": "gatto-internaldrive",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-internaldrive.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-internaldrive.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-internaldrive.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositoryScannerView.swift:88"
       ]
@@ -918,8 +842,7 @@
       "sourceSymbol": "link",
       "assetID": "gatto-link",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-link.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-link.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-link.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1088"
       ]
@@ -928,8 +851,7 @@
       "sourceSymbol": "location",
       "assetID": "gatto-location",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-location.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-location.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-location.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:280",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:281",
@@ -940,18 +862,16 @@
       "sourceSymbol": "lock.fill",
       "assetID": "gatto-lock-fill",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-lock-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-lock-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-lock-fill.png",
       "sourceRefs": [
-        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:115"
+        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:116"
       ]
     },
     {
       "sourceSymbol": "magnifyingglass",
       "assetID": "gatto-magnifyingglass",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-magnifyingglass.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-magnifyingglass.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-magnifyingglass.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:183",
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:66",
@@ -965,8 +885,7 @@
       "sourceSymbol": "minus",
       "assetID": "gatto-minus",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-minus.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-minus.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-minus.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:217"
       ]
@@ -975,8 +894,7 @@
       "sourceSymbol": "minus.circle",
       "assetID": "gatto-minus-circle",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-minus-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-minus-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-minus-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:241"
       ]
@@ -985,8 +903,7 @@
       "sourceSymbol": "minus.circle.fill",
       "assetID": "gatto-minus-circle-fill",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-minus-circle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-minus-circle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-minus-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:682"
       ]
@@ -995,8 +912,7 @@
       "sourceSymbol": "paintpalette",
       "assetID": "gatto-paintpalette",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-paintpalette.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-paintpalette.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-paintpalette.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:399"
       ]
@@ -1005,8 +921,7 @@
       "sourceSymbol": "paperplane.fill",
       "assetID": "gatto-paperplane-fill",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-paperplane-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-paperplane-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-paperplane-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:334"
       ]
@@ -1015,8 +930,7 @@
       "sourceSymbol": "pencil",
       "assetID": "gatto-pencil",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-pencil.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-pencil.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-pencil.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:481"
       ]
@@ -1025,8 +939,7 @@
       "sourceSymbol": "person.2",
       "assetID": "gatto-person-2",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-person-2.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-person-2.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-2.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:280",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:281"
@@ -1036,8 +949,7 @@
       "sourceSymbol": "person.crop.circle",
       "assetID": "gatto-person-crop-circle",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-person-crop-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-person-crop-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AboutGitGattoView.swift:85",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:327"
@@ -1047,8 +959,7 @@
       "sourceSymbol": "person.crop.circle.badge.questionmark",
       "assetID": "gatto-person-crop-circle-badge-questionmark",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-person-crop-circle-badge-questionmark.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-person-crop-circle-badge-questionmark.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-badge-questionmark.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:204"
       ]
@@ -1057,8 +968,7 @@
       "sourceSymbol": "person.crop.circle.fill",
       "assetID": "gatto-person-crop-circle-fill",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-person-crop-circle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-person-crop-circle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1320",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:251",
@@ -1069,8 +979,7 @@
       "sourceSymbol": "photo",
       "assetID": "gatto-photo",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-photo.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-photo.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-photo.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376"
       ]
@@ -1079,8 +988,7 @@
       "sourceSymbol": "play.circle",
       "assetID": "gatto-play-circle",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-play-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-play-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-play-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:167",
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:338",
@@ -1091,8 +999,7 @@
       "sourceSymbol": "play.circle.fill",
       "assetID": "gatto-play-circle-fill",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-play-circle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-play-circle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-play-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:53"
       ]
@@ -1101,8 +1008,7 @@
       "sourceSymbol": "plus",
       "assetID": "gatto-plus",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-plus.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-plus.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-plus.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:217",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:78"
@@ -1112,8 +1018,7 @@
       "sourceSymbol": "plus.circle",
       "assetID": "gatto-plus-circle",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-plus-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-plus-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-plus-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:241"
       ]
@@ -1122,8 +1027,7 @@
       "sourceSymbol": "point.3.connected.trianglepath.dotted",
       "assetID": "gatto-point-3-connected-trianglepath-dotted",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-point-3-connected-trianglepath-dotted.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-point-3-connected-trianglepath-dotted.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-point-3-connected-trianglepath-dotted.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/HistoryWorkspaceView.swift:66"
       ]
@@ -1132,8 +1036,7 @@
       "sourceSymbol": "point.3.filled.connected.trianglepath.dotted",
       "assetID": "gatto-point-3-filled-connected-trianglepath-dotted",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-point-3-filled-connected-trianglepath-dotted.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-point-3-filled-connected-trianglepath-dotted.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-point-3-filled-connected-trianglepath-dotted.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/HistoryWorkspaceView.swift:401"
       ]
@@ -1142,8 +1045,7 @@
       "sourceSymbol": "point.topleft.down.to.point.bottomright.curvepath",
       "assetID": "gatto-point-topleft-down-to-point-bottomright-curvepath",
       "category": "navigation",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-point-topleft-down-to-point-bottomright-curvepath.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-point-topleft-down-to-point-bottomright-curvepath.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-point-topleft-down-to-point-bottomright-curvepath.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:300",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:274",
@@ -1157,8 +1059,7 @@
       "sourceSymbol": "record.circle",
       "assetID": "gatto-record-circle",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-record-circle.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-record-circle.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-record-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:492",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:493",
@@ -1169,8 +1070,7 @@
       "sourceSymbol": "rectangle.split.2x1",
       "assetID": "gatto-rectangle-split-2x1",
       "category": "git-and-code",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-rectangle-split-2x1.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-rectangle-split-2x1.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-rectangle-split-2x1.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositorySidebar.swift:85",
         "Sources/GitGatto/Views/WorkspaceView.swift:310",
@@ -1181,8 +1081,7 @@
       "sourceSymbol": "shippingbox",
       "assetID": "gatto-shippingbox",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-shippingbox.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-shippingbox.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-shippingbox.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:260",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1088",
@@ -1196,18 +1095,16 @@
       "sourceSymbol": "shippingbox.fill",
       "assetID": "gatto-shippingbox-fill",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-shippingbox-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-shippingbox-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-shippingbox-fill.png",
       "sourceRefs": [
-        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:100"
+        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:102"
       ]
     },
     {
       "sourceSymbol": "slider.horizontal.3",
       "assetID": "gatto-slider-horizontal-3",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-slider-horizontal-3.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-slider-horizontal-3.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-slider-horizontal-3.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:399"
       ]
@@ -1216,8 +1113,7 @@
       "sourceSymbol": "sparkles",
       "assetID": "gatto-sparkles",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-sparkles.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-sparkles.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-sparkles.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:399",
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:411",
@@ -1236,8 +1132,7 @@
       "sourceSymbol": "square",
       "assetID": "gatto-square",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-square.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-square.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-square.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositoryScannerView.swift:269"
       ]
@@ -1246,8 +1141,7 @@
       "sourceSymbol": "square.grid.2x2",
       "assetID": "gatto-square-grid-2x2",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-square-grid-2x2.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-square-grid-2x2.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-square-grid-2x2.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:61",
         "Sources/GitGatto/Views/RepositorySidebar.swift:30",
@@ -1258,8 +1152,7 @@
       "sourceSymbol": "square.stack.3d.up",
       "assetID": "gatto-square-stack-3d-up",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-square-stack-3d-up.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-square-stack-3d-up.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-square-stack-3d-up.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/HelpCenterView.swift:77",
         "Sources/GitGatto/Views/RepositorySidebar.swift:45",
@@ -1270,8 +1163,7 @@
       "sourceSymbol": "star",
       "assetID": "gatto-star",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-star.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-star.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-star.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1277",
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:492",
@@ -1282,8 +1174,7 @@
       "sourceSymbol": "stethoscope",
       "assetID": "gatto-stethoscope",
       "category": "git-and-code",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-stethoscope.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-stethoscope.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-stethoscope.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17",
         "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:24",
@@ -1295,8 +1186,7 @@
       "sourceSymbol": "terminal",
       "assetID": "gatto-terminal",
       "category": "git-and-code",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-terminal.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-terminal.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-terminal.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:287",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:511",
@@ -1309,8 +1199,7 @@
       "sourceSymbol": "text.badge.plus",
       "assetID": "gatto-text-badge-plus",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-text-badge-plus.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-text-badge-plus.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-text-badge-plus.png",
       "sourceRefs": [
         "Sources/GitGatto/Support/GitAgentProfile.swift:17"
       ]
@@ -1319,8 +1208,7 @@
       "sourceSymbol": "text.bubble",
       "assetID": "gatto-text-bubble",
       "category": "people-and-web",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-text-bubble.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-text-bubble.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-text-bubble.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:177"
       ]
@@ -1329,8 +1217,7 @@
       "sourceSymbol": "text.cursor",
       "assetID": "gatto-text-cursor",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-text-cursor.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-text-cursor.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-text-cursor.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/StashWorkspaceView.swift:75"
       ]
@@ -1339,8 +1226,7 @@
       "sourceSymbol": "trash",
       "assetID": "gatto-trash",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-trash.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-trash.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-trash.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:77",
         "Sources/GitGatto/Views/StashWorkspaceView.swift:411",
@@ -1351,8 +1237,7 @@
       "sourceSymbol": "tray.and.arrow.down",
       "assetID": "gatto-tray-and-arrow-down",
       "category": "files",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-tray-and-arrow-down.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-tray-and-arrow-down.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-tray-and-arrow-down.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubWorkspaceView.swift:610"
       ]
@@ -1361,8 +1246,7 @@
       "sourceSymbol": "wrench.and.screwdriver",
       "assetID": "gatto-wrench-and-screwdriver",
       "category": "actions-and-tools",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-wrench-and-screwdriver.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-wrench-and-screwdriver.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-wrench-and-screwdriver.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/HelpCenterView.swift:77"
       ]
@@ -1371,8 +1255,7 @@
       "sourceSymbol": "xmark",
       "assetID": "gatto-xmark",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-xmark.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-xmark.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-xmark.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:418",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:91",
@@ -1384,8 +1267,7 @@
       "sourceSymbol": "xmark.circle.fill",
       "assetID": "gatto-xmark-circle-fill",
       "category": "status",
-      "master": "Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-xmark-circle-fill.png",
-      "targetImageset": "Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/gatto-xmark-circle-fill.imageset",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-xmark-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:194",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:682",

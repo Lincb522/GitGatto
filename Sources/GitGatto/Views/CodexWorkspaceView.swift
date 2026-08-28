@@ -49,7 +49,7 @@ struct CodexWorkspaceView: View {
                     Button {
                         model.runGitAgentSkill(skill)
                     } label: {
-                        Label(L10n.text(skill.titleKey), systemImage: skill.systemImage)
+                        GattoLabel(L10n.text(skill.titleKey), systemImage: skill.systemImage)
                     }
                     .disabled(
                         model.codexAvailability.state != .available
@@ -58,7 +58,7 @@ struct CodexWorkspaceView: View {
                     )
                 }
             } label: {
-                Label(L10n.text("codex.action.skills"), systemImage: "square.grid.2x2")
+                GattoLabel(L10n.text("codex.action.skills"), systemImage: "square.grid.2x2")
                     .font(.system(size: 11.5, weight: .semibold))
             }
             .menuStyle(.borderlessButton)
@@ -141,7 +141,7 @@ struct CodexWorkspaceView: View {
                         .id("codex-running")
                     } else if let error = model.codexError {
                         HStack(alignment: .top, spacing: 9) {
-                            Image(systemName: "exclamationmark.triangle.fill")
+                            Image(gattoSymbol: "exclamationmark.triangle.fill")
                                 .foregroundStyle(palette.danger)
                             Text(error)
                                 .font(.system(size: 12.5))
@@ -231,7 +231,7 @@ struct CodexWorkspaceView: View {
                             }
                         }
                     } label: {
-                        Label(L10n.text("codex.action.translate"), systemImage: "character.book.closed")
+                        GattoLabel(L10n.text("codex.action.translate"), systemImage: "character.book.closed")
                             .font(.system(size: 11.5, weight: .semibold))
                     }
                     .menuStyle(.borderlessButton)
@@ -262,7 +262,7 @@ struct CodexWorkspaceView: View {
 
             if let promptStatus {
                 HStack(spacing: 7) {
-                    Image(systemName: model.promptTranslationError == nil ? "checkmark.circle" : "exclamationmark.triangle.fill")
+                    Image(gattoSymbol: model.promptTranslationError == nil ? "checkmark.circle" : "exclamationmark.triangle.fill")
                     Text(promptStatus)
                         .lineLimit(2)
                     Spacer()
@@ -284,7 +284,7 @@ struct CodexWorkspaceView: View {
 
     private func unavailableState(_ palette: AppPalette) -> some View {
         VStack(spacing: 14) {
-            Image(systemName: "terminal")
+            Image(gattoSymbol: "terminal")
                 .font(.system(size: 26, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text("ai.unavailable.title"))
@@ -369,7 +369,7 @@ private struct CodexModeControl: View {
         return Button {
             selection = mode
         } label: {
-            Label(L10n.text("codex.mode.\(mode.rawValue)"), systemImage: image)
+            GattoLabel(L10n.text("codex.mode.\(mode.rawValue)"), systemImage: image)
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                 .padding(.horizontal, 10)
@@ -393,7 +393,7 @@ private struct CodexEmptyState: View {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(palette.accentSoft)
                     .frame(width: 58, height: 58)
-                Image(systemName: "sparkles")
+                Image(gattoSymbol: "sparkles")
                     .font(.system(size: 23, weight: .semibold))
                     .foregroundStyle(palette.accent)
             }
@@ -419,7 +419,7 @@ private struct CodexEmptyState: View {
         Button {
             model.runCodexQuickAction(action)
         } label: {
-            Label(L10n.text("codex.quick.\(action.rawValue)"), systemImage: image)
+            GattoLabel(L10n.text("codex.quick.\(action.rawValue)"), systemImage: image)
                 .font(.system(size: 11.5, weight: .medium))
                 .padding(.horizontal, 10)
                 .frame(height: 31)
@@ -447,7 +447,7 @@ private struct CodexMessageRow: View {
         let palette = AppPalette(colorScheme)
         HStack(alignment: .top, spacing: 10) {
             if message.role == .assistant {
-                Image(systemName: "sparkles")
+                Image(gattoSymbol: "sparkles")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(palette.accent)
                     .frame(width: 26, height: 26)
@@ -478,7 +478,7 @@ private struct CodexMessageRow: View {
                             }
                         } label: {
                             HStack(spacing: 6) {
-                                Image(systemName: operation.mode == .edit ? "pencil" : "eye")
+                                Image(gattoSymbol: operation.mode == .edit ? "pencil" : "eye")
                                 Text(L10n.text("codex.operation.title"))
                                 Text("·")
                                 Text(L10n.text("codex.mode.\(operation.mode.rawValue)"))
@@ -495,7 +495,7 @@ private struct CodexMessageRow: View {
                                 Text("·")
                                 Text(operation.completedAt, style: .time)
                                 if !operation.events.isEmpty {
-                                    Image(systemName: "chevron.right")
+                                    Image(gattoSymbol: "chevron.right")
                                         .font(.system(size: 8.5, weight: .bold))
                                         .rotationEffect(.degrees(showsOperationEvents ? 90 : 0))
                                 }
@@ -508,7 +508,7 @@ private struct CodexMessageRow: View {
                             VStack(alignment: .leading, spacing: 7) {
                                 ForEach(Array(operation.events.enumerated()), id: \.offset) { _, event in
                                     HStack(alignment: .top, spacing: 7) {
-                                        Image(systemName: event.kind == .command ? "terminal" : "doc.badge.ellipsis")
+                                        Image(gattoSymbol: event.kind == .command ? "terminal" : "doc.badge.ellipsis")
                                             .frame(width: 13)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(
@@ -543,7 +543,7 @@ private struct CodexMessageRow: View {
                 if message.role == .assistant, showsCommitActions {
                     VStack(alignment: .leading, spacing: 9) {
                         if automaticallyStagedCount > 0 {
-                            Label(
+                            GattoLabel(
                                 L10n.format("codex.draft.auto_staged", automaticallyStagedCount),
                                 systemImage: "checkmark.circle.fill"
                             )
@@ -559,7 +559,7 @@ private struct CodexMessageRow: View {
                                             .controlSize(.small)
                                             .tint(Color.white)
                                     } else {
-                                        Image(systemName: "checkmark.circle.fill")
+                                        Image(gattoSymbol: "checkmark.circle.fill")
                                     }
                                     Text(L10n.text("action.commit"))
                                 }
@@ -574,7 +574,7 @@ private struct CodexMessageRow: View {
                                         ProgressView()
                                             .controlSize(.small)
                                     } else {
-                                        Image(systemName: "arrow.up.circle")
+                                        Image(gattoSymbol: "arrow.up.circle")
                                     }
                                     Text(L10n.text("codex.action.commit_push"))
                                 }
@@ -584,7 +584,7 @@ private struct CodexMessageRow: View {
                             .opacity(canCommitAndPush ? 1 : 0.48)
 
                             Button(action: rewrite) {
-                                Label(L10n.text("codex.action.rewrite"), systemImage: "arrow.clockwise")
+                                GattoLabel(L10n.text("codex.action.rewrite"), systemImage: "arrow.clockwise")
                             }
                             .buttonStyle(SecondaryButtonStyle())
                             .disabled(!canRewrite || activeCommitOperation != nil)

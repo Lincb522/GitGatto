@@ -116,7 +116,7 @@ private struct UpdateActionGlyph: View {
                     .stroke(color.opacity(0.34), lineWidth: 1)
                     .scaleEffect(1 + wave * 0.28)
                     .opacity(0.72 - wave * 0.48)
-                Image(systemName: "arrow.down.to.line")
+                Image(gattoSymbol: "arrow.down.to.line")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(color)
                     .offset(y: wave * 2 - 1)
@@ -125,19 +125,19 @@ private struct UpdateActionGlyph: View {
             .transition(.opacity.combined(with: .scale(scale: 0.92)))
 
         case .current:
-            Image(systemName: "checkmark.circle.fill")
+            Image(gattoSymbol: "checkmark.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(color)
                 .transition(.opacity.combined(with: .scale(scale: 0.90)))
 
         case .failed:
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(gattoSymbol: "exclamationmark.triangle.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(color)
                 .transition(.opacity.combined(with: .scale(scale: 0.92)))
 
         case .configurationRequired, .ready:
-            Image(systemName: "arrow.triangle.2.circlepath")
+            Image(gattoSymbol: "arrow.triangle.2.circlepath")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(color)
                 .transition(.opacity.combined(with: .scale(scale: 0.92)))

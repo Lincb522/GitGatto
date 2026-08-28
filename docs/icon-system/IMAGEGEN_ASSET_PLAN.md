@@ -1,4 +1,4 @@
-# GitGatto image2 图标资产计划
+# GitGatto imagegen 图标资产计划
 
 当前代码共盘点 **117** 个界面图标语义。清单由 `scripts/inventory-icons.py` 从实际 SwiftUI 调用生成。
 
@@ -10,11 +10,9 @@
 - 不使用底板、渐变、投影、3D、文字、字母、水印、毛边、细碎纹理或模糊。
 - 生成结果作为 template image，由应用主题与状态色统一着色。
 
-## image2 调用
+## imagegen 调用
 
-当前仓库没有可验证的 image2 命令、脚本、API 或 MCP 入口，因此本文件只完成真实资产清单和提示词，不生成替代图片。
-
-确认入口后，每组使用同一风格令牌生成；不得切换到 imagegen、gpt-image、OpenRouter 或自写 OpenAI SDK。
+全套资产已使用 Codex 内置 imagegen 逐项生成，并以首个文件夹图标作为统一风格参考。
 
 ## 分组提示词
 
@@ -68,7 +66,6 @@
 
 ## 落地路径
 
-- 主文件：`Sources/GitGatto/Resources/GeneratedIcons/Masters/gatto-*.png`
-- Xcode imageset：`Sources/GitGatto/Resources/Assets.xcassets/GattoIcons/`
-- 安装脚本：`scripts/install-generated-icons.py`，只有 117 张主文件齐全且尺寸正确时才会写入资产目录。
-- 完整语义、引用位置和目标文件见 `image2-icon-manifest.json`。
+- 运行时资产：`Sources/GitGatto/Resources/UIIcons/gatto-*.png`
+- 校验脚本：`scripts/validate-generated-icons.py`，检查 117 张图标是否齐全、尺寸正确并带透明通道。
+- 完整语义、引用位置和目标文件见 `imagegen-icon-manifest.json`。

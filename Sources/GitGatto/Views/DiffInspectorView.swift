@@ -17,7 +17,7 @@ struct DiffInspectorView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                             .fill(palette.primarySoft)
-                        Image(systemName: "chevron.left.forwardslash.chevron.right")
+                        Image(gattoSymbol: "chevron.left.forwardslash.chevron.right")
                             .font(.system(size: 12.5, weight: .semibold))
                             .foregroundStyle(palette.primary)
                     }
@@ -287,7 +287,7 @@ private struct DiffSurfaceStatusBar: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 12) {
-            Label(CodeSyntax.languageName(for: document.path), systemImage: "arrow.left.arrow.right.square")
+            GattoLabel(CodeSyntax.languageName(for: document.path), systemImage: "arrow.left.arrow.right.square")
             Spacer()
             Text("+\(document.lines.filter { $0.kind.isAddition }.count)")
                 .foregroundStyle(palette.success)
@@ -324,7 +324,7 @@ struct InspectorEmptyState: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 10) {
-            Image(systemName: image)
+            Image(gattoSymbol: image)
                 .font(.system(size: 25, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text(titleKey))

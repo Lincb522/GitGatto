@@ -214,7 +214,7 @@ private struct ChangeRow: View {
 
                 if isHovering || isSelected {
                     Button(action: toggleStage) {
-                        Image(systemName: change.isStaged ? "minus" : "plus")
+                        Image(gattoSymbol: change.isStaged ? "minus" : "plus")
                             .font(.system(size: 10.5, weight: .bold))
                             .foregroundStyle(palette.primary)
                             .frame(width: 24, height: 24)
@@ -236,7 +236,7 @@ private struct ChangeRow: View {
             Button {
                 toggleStage()
             } label: {
-                Label(
+                GattoLabel(
                     L10n.text(change.isStaged ? "action.unstage" : "action.stage"),
                     systemImage: change.isStaged ? "minus.circle" : "plus.circle"
                 )
@@ -252,7 +252,7 @@ private struct ChangeRow: View {
                     Task { await model.discard(change) }
                 }
             } label: {
-                Label(L10n.text("action.discard_changes"), systemImage: "arrow.uturn.backward")
+                GattoLabel(L10n.text("action.discard_changes"), systemImage: "arrow.uturn.backward")
             }
             .disabled(model.activeOperation != nil)
 
@@ -261,7 +261,7 @@ private struct ChangeRow: View {
             Button {
                 Task { await model.ignore(change, scope: .file) }
             } label: {
-                Label(L10n.text("action.ignore_file"), systemImage: "eye.slash")
+                GattoLabel(L10n.text("action.ignore_file"), systemImage: "eye.slash")
             }
             .disabled(model.activeOperation != nil)
 
@@ -272,14 +272,14 @@ private struct ChangeRow: View {
                     }
                 }
             } label: {
-                Label(L10n.text("action.ignore_folder"), systemImage: "folder.badge.minus")
+                GattoLabel(L10n.text("action.ignore_folder"), systemImage: "folder.badge.minus")
             }
             .disabled(folderPaths.isEmpty || model.activeOperation != nil)
 
             Button {
                 Task { await model.ignore(change, scope: .fileExtension) }
             } label: {
-                Label(
+                GattoLabel(
                     L10n.format("action.ignore_extension", fileExtension),
                     systemImage: "doc.badge.minus"
                 )
@@ -291,13 +291,13 @@ private struct ChangeRow: View {
             Button {
                 model.copyAbsolutePath(for: change)
             } label: {
-                Label(L10n.text("action.copy_path"), systemImage: "doc.on.doc")
+                GattoLabel(L10n.text("action.copy_path"), systemImage: "doc.on.doc")
             }
 
             Button {
                 model.copyRelativePath(for: change)
             } label: {
-                Label(L10n.text("action.copy_relative_path"), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                GattoLabel(L10n.text("action.copy_relative_path"), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
             }
 
             Divider()
@@ -305,20 +305,20 @@ private struct ChangeRow: View {
             Button {
                 model.revealInFinder(change)
             } label: {
-                Label(L10n.text("action.reveal_finder"), systemImage: "folder")
+                GattoLabel(L10n.text("action.reveal_finder"), systemImage: "folder")
             }
 
             Button {
                 model.openInXcode(change)
             } label: {
-                Label(L10n.text("action.open_xcode"), systemImage: "hammer")
+                GattoLabel(L10n.text("action.open_xcode"), systemImage: "hammer")
             }
             .disabled(!model.canOpenInXcode)
 
             Button {
                 model.openWithDefaultApplication(change)
             } label: {
-                Label(L10n.text("action.open_default"), systemImage: "arrow.up.forward.app")
+                GattoLabel(L10n.text("action.open_default"), systemImage: "arrow.up.forward.app")
             }
         }
         .confirmationDialog(
@@ -408,7 +408,7 @@ private struct CommitComposer: View {
                         if model.isDraftingCommitMessage {
                             ProgressView().controlSize(.small)
                         } else {
-                            Image(systemName: "sparkles")
+                            Image(gattoSymbol: "sparkles")
                         }
                         Text(L10n.text("commit.agent_draft"))
                     }
@@ -457,7 +457,7 @@ private struct ChangesEmptyState: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 10) {
             Spacer()
-            Image(systemName: "checkmark.circle")
+            Image(gattoSymbol: "checkmark.circle")
                 .font(.system(size: 28, weight: .medium))
                 .foregroundStyle(palette.success)
             Text(L10n.text("changes.empty.title"))

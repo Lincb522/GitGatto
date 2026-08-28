@@ -50,7 +50,7 @@ struct ConflictResolutionWorkspaceView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(palette.warning.opacity(0.13))
-                Image(systemName: "arrow.triangle.branch")
+                Image(gattoSymbol: "arrow.triangle.branch")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(palette.warning)
             }
@@ -122,7 +122,7 @@ struct ConflictResolutionWorkspaceView: View {
                             model.selectConflict(path: path)
                         } label: {
                             HStack(spacing: 9) {
-                                Image(systemName: "exclamationmark")
+                                Image(gattoSymbol: "exclamationmark")
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundStyle(palette.warning)
                                     .frame(width: 24, height: 24)
@@ -182,7 +182,7 @@ struct ConflictResolutionWorkspaceView: View {
 
     private func resolutionToolbar(document: ConflictFileDocument, palette: AppPalette) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "doc.text")
+            Image(gattoSymbol: "doc.text")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(palette.primary)
                 .frame(width: 28, height: 28)
@@ -213,7 +213,7 @@ struct ConflictResolutionWorkspaceView: View {
                 .frame(maxWidth: .infinity)
             ZStack {
                 Rectangle().fill(palette.divider).frame(width: 1)
-                Image(systemName: "chevron.right")
+                Image(gattoSymbol: "chevron.right")
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(palette.subtleInk)
                     .frame(width: 22, height: 22)
@@ -269,7 +269,7 @@ struct ConflictResolutionWorkspaceView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
 
             HStack {
-                Label(L10n.text(selectedSource.titleKey), systemImage: selectedSource.symbol)
+                GattoLabel(L10n.text(selectedSource.titleKey), systemImage: selectedSource.symbol)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(palette.mutedInk)
                 Spacer()
@@ -279,7 +279,7 @@ struct ConflictResolutionWorkspaceView: View {
                             await model.acceptConflictSide(selectedSource == .ours ? .ours : .theirs)
                         }
                     } label: {
-                        Label(
+                        GattoLabel(
                             L10n.text(
                                 selectedSource == .ours
                                     ? "conflict.action.accept_ours"
@@ -305,7 +305,7 @@ struct ConflictResolutionWorkspaceView: View {
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(palette.ink)
                 Spacer()
-                Label(
+                GattoLabel(
                     L10n.text(
                         model.conflictResolutionContainsMarkers
                             ? "conflict.markers_remaining"
@@ -337,7 +337,7 @@ struct ConflictResolutionWorkspaceView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
 
             HStack(spacing: 12) {
-                Label(
+                GattoLabel(
                     CodeSyntax.languageName(for: model.selectedConflictPath ?? "conflict.txt"),
                     systemImage: "curlybraces.square"
                 )
@@ -371,7 +371,7 @@ struct ConflictResolutionWorkspaceView: View {
         VStack(spacing: 14) {
             ZStack {
                 Circle().fill(palette.raisedSurface).frame(width: 62, height: 62)
-                Image(systemName: "doc.badge.gearshape")
+                Image(gattoSymbol: "doc.badge.gearshape")
                     .font(.system(size: 26, weight: .medium))
                     .foregroundStyle(palette.mutedInk)
             }
@@ -399,7 +399,7 @@ struct ConflictResolutionWorkspaceView: View {
         VStack(spacing: 14) {
             ZStack {
                 Circle().fill(palette.successSoft).frame(width: 68, height: 68)
-                Image(systemName: "checkmark")
+                Image(gattoSymbol: "checkmark")
                     .font(.system(size: 25, weight: .bold))
                     .foregroundStyle(palette.success)
             }
@@ -415,7 +415,7 @@ struct ConflictResolutionWorkspaceView: View {
             Button(role: .destructive) {
                 isConfirmingAbort = true
             } label: {
-                Label(L10n.text("conflict.action.abort"), systemImage: "xmark")
+                GattoLabel(L10n.text("conflict.action.abort"), systemImage: "xmark")
             }
             .buttonStyle(SecondaryButtonStyle())
             .disabled(!state.kind.supportsAbort || model.activeOperation != nil)
@@ -440,7 +440,7 @@ struct ConflictResolutionWorkspaceView: View {
                         ProgressView().controlSize(.small)
                     }
                     Text(L10n.text("conflict.action.continue"))
-                    Image(systemName: "arrow.right")
+                    Image(gattoSymbol: "arrow.right")
                 }
             }
             .buttonStyle(PrimaryButtonStyle())

@@ -21,7 +21,7 @@ struct RepositoryDiagnosticsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 VStack(spacing: 9) {
-                    Image(systemName: "stethoscope")
+                    Image(gattoSymbol: "stethoscope")
                         .font(.system(size: 22, weight: .medium))
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("diagnostics.empty"))
@@ -218,7 +218,7 @@ struct RepositoryDiagnosticsView: View {
                     ForEach(Array(diagnostics.hooks.enumerated()), id: \.element.id) { index, hook in
                         if index > 0 { Rectangle().fill(palette.divider).frame(height: 1) }
                         HStack(spacing: 9) {
-                            Image(systemName: hook.isExecutable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            Image(gattoSymbol: hook.isExecutable ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                                 .foregroundStyle(hook.isExecutable ? palette.success : palette.warning)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(hook.name)
@@ -262,7 +262,7 @@ private struct DiagnosticSummaryBadge: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 5) {
-            Image(systemName: count == 0 ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+            Image(gattoSymbol: count == 0 ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
             Text(count == 0 ? L10n.text("diagnostics.summary.passed") : L10n.format("diagnostics.summary.attention", count))
         }
         .font(.system(size: 9.5, weight: .semibold, design: theme == .console ? .monospaced : .default))
@@ -306,7 +306,7 @@ private struct DiagnosticStatusStrip: View {
         palette: AppPalette
     ) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: icon)
+            Image(gattoSymbol: icon)
                 .foregroundStyle(status.color(palette))
             VStack(alignment: .leading, spacing: 2) {
                 Text(L10n.text(key))
@@ -335,7 +335,7 @@ private struct DiagnosticPanel<Content: View>: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: icon)
+                Image(gattoSymbol: icon)
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(status.color(palette))
                 Text(L10n.text(titleKey))
