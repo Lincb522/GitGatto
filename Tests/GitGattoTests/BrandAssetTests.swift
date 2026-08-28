@@ -8,7 +8,7 @@ struct BrandAssetTests {
     @Test("Keeps an editable master and a high-resolution in-app icon")
     func appIconIsVector() throws {
         let url = try #require(
-            Bundle.module.url(forResource: "GitGatto-AppIcon", withExtension: "svg")
+            AppResourceBundle.current.url(forResource: "GitGatto-AppIcon", withExtension: "svg")
         )
         let source = try String(contentsOf: url, encoding: .utf8)
         let image = try #require(NSImage(contentsOf: url))
@@ -22,7 +22,7 @@ struct BrandAssetTests {
         #expect(image.representations.contains { String(describing: type(of: $0)).contains("SVG") })
 
         let pngURL = try #require(
-            Bundle.module.url(forResource: "GitGatto-AppIcon", withExtension: "png")
+            AppResourceBundle.current.url(forResource: "GitGatto-AppIcon", withExtension: "png")
         )
         let png = try #require(NSBitmapImageRep(data: Data(contentsOf: pngURL)))
         #expect(png.pixelsWide == 1024)
@@ -30,7 +30,7 @@ struct BrandAssetTests {
         #expect(png.colorAt(x: 0, y: 0)?.alphaComponent == 0)
 
         let darkURL = try #require(
-            Bundle.module.url(forResource: "GitGatto-AppIcon-Dark", withExtension: "svg")
+            AppResourceBundle.current.url(forResource: "GitGatto-AppIcon-Dark", withExtension: "svg")
         )
         let darkSource = try String(contentsOf: darkURL, encoding: .utf8)
         let darkImage = try #require(NSImage(contentsOf: darkURL))

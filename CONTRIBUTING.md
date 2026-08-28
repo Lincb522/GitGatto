@@ -4,7 +4,9 @@
 
 1. 使用 macOS 14 及以上版本和项目声明的 Swift 工具链。
 2. 从仓库根目录运行 `swift package resolve`。
-3. 使用 `swift run GitGatto` 启动应用，使用 `swift test` 验证行为。
+3. 直接打开 `GitGatto.xcodeproj`，或使用 `swift run GitGatto` 启动应用。
+4. 工程结构以 `project.yml` 为准，修改后运行 `./scripts/generate-xcodeproj.sh`，不要手动编辑生成的 `project.pbxproj`。
+5. 使用共享的 `GitGatto` scheme 或 `swift test` 验证行为。
 
 ## 修改范围
 

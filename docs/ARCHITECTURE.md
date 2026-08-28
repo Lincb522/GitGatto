@@ -19,7 +19,13 @@ GitGatto 是 macOS 14 及以上版本的 SwiftUI 应用。界面状态由 `Works
 - 仓库快照、暂存状态和同步计数由当前仓库的实时读取刷新。
 - 最近仓库、设置、Agent 对话、操作记录和文档译文保存在本机应用支持目录。
 - 移除侧边栏项目只移除目录记录，不删除磁盘仓库。
-- Agent 起草不会写入 Git；提交、推送、Fork 和发布回复由用户再次触发。
+- Agent 起草在暂存区为空时会暂存当前改动；已有暂存内容时保持原边界。提交、推送、Fork 和发布回复由用户再次触发。
+
+## 工程入口
+
+- `GitGatto.xcodeproj` 提供应用与测试目标、共享 scheme、Sparkle 依赖和资源构建设置。
+- `project.yml` 是 Xcode 工程结构的唯一编辑源，`scripts/generate-xcodeproj.sh` 负责生成工程文件。
+- `Package.swift` 保持同一源码与依赖的命令行构建入口；`AppResourceBundle` 统一解析 Xcode 主 Bundle、SwiftPM 资源 Bundle 与发行包资源。
 
 ## 更新流程
 

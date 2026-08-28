@@ -1,13 +1,7 @@
 import Foundation
 
 enum L10n {
-    private static let resourceBundle: Bundle = {
-        if let resources = Bundle.main.resourceURL,
-           let bundle = Bundle(url: resources.appendingPathComponent("GitGatto_GitGatto.bundle")) {
-            return bundle
-        }
-        return Bundle.module
-    }()
+    private static let resourceBundle = AppResourceBundle.current
     private static let localizedBundle = bundle(
         preferredLanguages: AppPreferencesStore.load().language.preferredLanguages
     )

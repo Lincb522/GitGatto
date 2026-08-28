@@ -26,6 +26,20 @@ GitGatto 是一款原生开发、由 Agent 驱动的 macOS Git 管理工具。�
 
 ## 开发
 
+使用 Xcode：
+
+```bash
+open GitGatto.xcodeproj
+```
+
+`GitGatto` scheme 包含应用与测试目标。工程由 `project.yml` 生成；修改工程结构后重新生成：
+
+```bash
+./scripts/generate-xcodeproj.sh
+```
+
+使用 Swift Package Manager：
+
 ```bash
 cd /Users/linchengbo/Documents/GitGatto
 swift run GitGatto
@@ -56,6 +70,8 @@ open dist/GitGatto.app
 
 ```text
 Assets/                    品牌矢量源与应用图标
+Config/                    Xcode 应用配置
+GitGatto.xcodeproj/        可直接打开的共享 Xcode 工程与 scheme
 Sources/GitGatto/App       应用入口与窗口
 Sources/GitGatto/Models    领域模型与持久状态
 Sources/GitGatto/Services  Git、GitHub、Agent、扫描与更新服务
@@ -64,6 +80,7 @@ Sources/GitGatto/Resources 本地化、品牌资源与协议文档
 Tests/GitGattoTests        行为测试
 scripts/                   构建与打包脚本
 docs/                      架构、贡献、文档与发布规则
+project.yml                XcodeGen 工程源配置
 ```
 
 ## 文档

@@ -114,6 +114,7 @@ struct AboutGitGattoView: View {
             .appGlassPanel(cornerRadius: 16, elevated: false)
         }
         .padding(AppThemeLayout.workspaceInset)
+        .offset(y: 14)
         .frame(width: contentSize.width, height: contentSize.height)
         .background(palette.surface)
         .ignoresSafeArea(.container, edges: .top)

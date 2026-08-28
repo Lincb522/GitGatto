@@ -85,7 +85,7 @@ private enum BrandAssets {
     static let darkWordmark = image(named: "GitGatto-Wordmark-Dark", extension: "svg")
 
     static func image(named name: String, extension fileExtension: String) -> NSImage {
-        guard let url = Bundle.module.url(forResource: name, withExtension: fileExtension),
+        guard let url = AppResourceBundle.current.url(forResource: name, withExtension: fileExtension),
               let image = NSImage(contentsOf: url) else {
             return NSImage(size: NSSize(width: 1, height: 1))
         }
