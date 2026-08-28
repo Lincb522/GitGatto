@@ -259,6 +259,9 @@
 
 "update.title" = "软件更新";
 "update.check" = "检查更新";
+"update.action.checking" = "检查中…";
+"update.action.install" = "安装更新";
+"update.action.check_again" = "重新检查";
 "update.view_releases" = "查看发布版本";
 "update.current_version" = "当前版本";
 "update.current_build" = "构建号";

@@ -259,6 +259,9 @@
 
 "update.title" = "Software Update";
 "update.check" = "Check for Updates";
+"update.action.checking" = "Checking…";
+"update.action.install" = "Install Update";
+"update.action.check_again" = "Check Again";
 "update.view_releases" = "View Releases";
 "update.current_version" = "Current Version";
 "update.current_build" = "Build";

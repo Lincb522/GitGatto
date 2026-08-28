@@ -36,12 +36,12 @@ struct AboutGitGattoView: View {
                         AboutMetric(titleKey: "about.version", value: updateManager.currentVersion)
                         AboutMetric(titleKey: "about.build", value: updateManager.currentBuild)
                     }
-                    Button {
+                    UpdateActionButton(
+                        state: updateManager.state,
+                        isEnabled: !updateManager.isConfigured || updateManager.canCheckForUpdates
+                    ) {
                         updateManager.checkForUpdates()
-                    } label: {
-                        Label(L10n.text("update.check"), systemImage: "arrow.triangle.2.circlepath")
                     }
-                    .buttonStyle(PrimaryButtonStyle())
                 }
             }
             .padding(.horizontal, 18)

@@ -207,12 +207,13 @@ struct UpdateCenterView: View {
             }
             .buttonStyle(SecondaryButtonStyle())
 
-            Button(L10n.text("update.check")) {
+            UpdateActionButton(
+                state: manager.state,
+                isEnabled: !manager.isConfigured || manager.canCheckForUpdates
+            ) {
                 manager.checkForUpdates()
                 Task { await manager.refreshReleaseNotes(force: true) }
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(manager.isConfigured && !manager.canCheckForUpdates)
         }
     }
 
