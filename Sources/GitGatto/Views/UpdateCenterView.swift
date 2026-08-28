@@ -3,6 +3,7 @@ import SwiftUI
 struct UpdateCenterView: View {
     @ObservedObject var manager: AppUpdateManager
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openWindow) private var openWindow
     @State private var browserPage: InAppBrowserPage?
 
     var body: some View {
@@ -151,6 +152,11 @@ struct UpdateCenterView: View {
 
                 Spacer()
 
+                Button(L10n.text("release_history.open")) {
+                    openWindow(id: "release-history")
+                }
+                .buttonStyle(SecondaryButtonStyle())
+
                 if manager.isLoadingReleaseNotes {
                     ProgressView().controlSize(.small)
                 }
@@ -175,16 +181,12 @@ struct UpdateCenterView: View {
                 Text(L10n.text("update.release_notes.empty"))
                     .font(.system(size: 12))
                     .foregroundStyle(palette.mutedInk)
-            } else {
-                VStack(spacing: 8) {
-                    ForEach(Array(manager.releaseNotes.enumerated()), id: \.element.id) { index, release in
-                        ReleaseNoteCard(
-                            release: release,
-                            startsExpanded: index == 0,
-                            openURL: { browserPage = InAppBrowserPage(url: $0) }
-                        )
-                    }
-                }
+            } else if let latestRelease = manager.releaseNotes.first {
+                ReleaseNoteCard(
+                    release: latestRelease,
+                    startsExpanded: true,
+                    openURL: { browserPage = InAppBrowserPage(url: $0) }
+                )
             }
         }
     }
@@ -212,7 +214,6 @@ struct UpdateCenterView: View {
                 isEnabled: !manager.isConfigured || manager.canCheckForUpdates
             ) {
                 manager.checkForUpdates()
-                Task { await manager.refreshReleaseNotes(force: true) }
             }
         }
     }
@@ -351,7 +352,7 @@ private struct ReleaseNoteCard: View {
     }
 }
 
-private struct ReleaseNotesMarkdownView: View {
+struct ReleaseNotesMarkdownView: View {
     let text: String
     let openURL: (URL) -> Void
     @Environment(\.colorScheme) private var colorScheme

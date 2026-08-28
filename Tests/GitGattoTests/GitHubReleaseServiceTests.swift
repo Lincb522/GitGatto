@@ -6,8 +6,19 @@ import Testing
 struct GitHubReleaseServiceTests {
     @Test("Uses the GitHub repository for release metadata and the appcast")
     func repositoryEndpoints() {
-        #expect(AppLinks.releasesAPI.absoluteString == "https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=10")
+        #expect(AppLinks.releasesAPI.absoluteString == "https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=100")
         #expect(AppLinks.updateFeed.absoluteString == "https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml")
+    }
+
+    @Test("Follows GitHub's next release page")
+    func decodesNextPageLink() {
+        let header = #"<https://api.github.com/repositories/1/releases?per_page=100&page=2>; rel="next", <https://api.github.com/repositories/1/releases?per_page=100&page=4>; rel="last""#
+
+        #expect(
+            GitHubReleaseService.nextPageURL(from: header)?.absoluteString
+                == "https://api.github.com/repositories/1/releases?per_page=100&page=2"
+        )
+        #expect(GitHubReleaseService.nextPageURL(from: nil) == nil)
     }
 
     @Test("Decodes published release notes and ignores drafts")

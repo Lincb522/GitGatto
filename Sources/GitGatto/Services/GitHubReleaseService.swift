@@ -37,24 +37,35 @@ struct GitHubReleaseService: Sendable {
     }
 
     func releases() async throws -> [AppReleaseNote] {
-        var request = URLRequest(
-            url: AppLinks.releasesAPI,
-            cachePolicy: .reloadRevalidatingCacheData,
-            timeoutInterval: 15
-        )
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("2026-03-10", forHTTPHeaderField: "X-GitHub-Api-Version")
-        request.setValue("GitGatto", forHTTPHeaderField: "User-Agent")
+        var nextURL: URL? = AppLinks.releasesAPI
+        var visitedURLs = Set<URL>()
+        var releases: [AppReleaseNote] = []
 
-        let (data, response) = try await session.data(for: request)
-        try Task.checkCancellation()
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw GitHubReleaseServiceError.invalidResponse
+        while let pageURL = nextURL, visitedURLs.insert(pageURL).inserted {
+            var request = URLRequest(
+                url: pageURL,
+                cachePolicy: .reloadRevalidatingCacheData,
+                timeoutInterval: 15
+            )
+            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+            request.setValue("2026-03-10", forHTTPHeaderField: "X-GitHub-Api-Version")
+            request.setValue("GitGatto", forHTTPHeaderField: "User-Agent")
+
+            let (data, response) = try await session.data(for: request)
+            try Task.checkCancellation()
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw GitHubReleaseServiceError.invalidResponse
+            }
+            guard httpResponse.statusCode == 200 else {
+                throw GitHubReleaseServiceError.httpStatus(httpResponse.statusCode)
+            }
+            releases.append(contentsOf: try Self.decodeReleases(data))
+            nextURL = Self.nextPageURL(from: httpResponse.value(forHTTPHeaderField: "Link"))
         }
-        guard httpResponse.statusCode == 200 else {
-            throw GitHubReleaseServiceError.httpStatus(httpResponse.statusCode)
+
+        return releases.sorted { lhs, rhs in
+            (lhs.publishedAt ?? .distantPast) > (rhs.publishedAt ?? .distantPast)
         }
-        return try Self.decodeReleases(data)
     }
 
     static func decodeReleases(_ data: Data) throws -> [AppReleaseNote] {
@@ -66,6 +77,23 @@ struct GitHubReleaseService: Sendable {
             .sorted { lhs, rhs in
                 (lhs.publishedAt ?? .distantPast) > (rhs.publishedAt ?? .distantPast)
             }
+    }
+
+    static func nextPageURL(from linkHeader: String?) -> URL? {
+        linkHeader?
+            .split(separator: ",")
+            .lazy
+            .compactMap { component -> URL? in
+                let parts = component.split(separator: ";", maxSplits: 1)
+                guard parts.count == 2,
+                      parts[1].trimmingCharacters(in: .whitespaces) == "rel=\"next\"" else {
+                    return nil
+                }
+                let value = parts[0].trimmingCharacters(in: .whitespaces)
+                guard value.hasPrefix("<"), value.hasSuffix(">") else { return nil }
+                return URL(string: String(value.dropFirst().dropLast()))
+            }
+            .first
     }
 }
 

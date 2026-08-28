@@ -127,6 +127,7 @@ struct WorkspaceView: View {
                     && ProcessInfo.processInfo.environment["GITGATTO_SETTINGS_PREVIEW"] != "1"
                     && ProcessInfo.processInfo.environment["GITGATTO_ABOUT_PREVIEW"] != "1"
                     && ProcessInfo.processInfo.environment["GITGATTO_UPDATE_PREVIEW"] != "1"
+                    && ProcessInfo.processInfo.environment["GITGATTO_RELEASE_HISTORY_PREVIEW"] != "1"
                     && ProcessInfo.processInfo.environment["GITGATTO_LEGAL_PREVIEW"] != "1"
                     && ProcessInfo.processInfo.environment["GITGATTO_HELP_PREVIEW"] != "1"
                     && ProcessInfo.processInfo.environment["GITGATTO_SCANNER_PREVIEW"] != "1"
@@ -415,6 +416,16 @@ private struct ConsoleRepositoryDock: View {
             .buttonStyle(.plain)
             .foregroundStyle(palette.mutedInk)
             .help(L10n.text("settings.title"))
+
+            Button {
+                openWindow(id: "about")
+            } label: {
+                Image(systemName: "info.circle")
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(palette.mutedInk)
+            .help(L10n.text("about.title"))
         }
         .padding(.horizontal, 12)
         .background(palette.sidebar)

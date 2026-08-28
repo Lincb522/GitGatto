@@ -287,6 +287,12 @@
 "update.release_notes.prerelease" = "Prerelease";
 "update.release_notes.no_details" = "No additional notes were provided for this release.";
 "update.release_notes.view_on_github" = "View GitHub Release in App";
+"release_history.title" = "Version History";
+"release_history.open" = "Full Version History";
+"release_history.versions" = "Versions";
+"release_history.version" = "Version %@";
+"release_history.current" = "Installed";
+"release_history.empty" = "No release history";
 
 "help.title" = "GitGatto Help";
 "help.short_title" = "User Guide";

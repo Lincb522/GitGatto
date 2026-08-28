@@ -27,7 +27,7 @@ https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml
 开发或镜像验证可用 `GITGATTO_UPDATE_FEED_URL` 覆盖；脚本拒绝非 HTTPS 地址。应用内更新日志使用：
 
 ```text
-https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=10
+https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=100
 ```
 
 ## 本地构建
@@ -44,8 +44,8 @@ https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=10
 完成发布说明后创建并推送标签：
 
 ```bash
-git tag v0.16.0
-git push origin v0.16.0
+git tag v0.16.1
+git push origin v0.16.1
 ```
 
 工作流按顺序执行：

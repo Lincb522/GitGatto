@@ -36,8 +36,8 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     override init() {
         let info = Bundle.main.infoDictionary ?? [:]
-        currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.16.0"
-        currentBuild = info["CFBundleVersion"] as? String ?? "16000"
+        currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.16.1"
+        currentBuild = info["CFBundleVersion"] as? String ?? "16001"
         releaseNotes = Self.bundledReleaseNotes(version: currentVersion)
         state = Self.hasUpdateConfiguration(info) ? .ready : .configurationRequired
         super.init()
@@ -65,6 +65,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         startIfConfigured()
         state = .checking
         lastCheckedAt = Date()
+        Task { await refreshReleaseNotes(force: true) }
         updaterController.checkForUpdates(nil)
     }
 

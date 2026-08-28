@@ -73,7 +73,7 @@ jobs:
           security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -F "$CODESIGN_IDENTITY"
 
       - name: Test
-        run: swift test
+        run: swift test --parallel --num-workers 4
 
       - name: Build and sign application
         shell: zsh {0}

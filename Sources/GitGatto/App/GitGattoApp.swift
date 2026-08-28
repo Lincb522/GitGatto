@@ -33,7 +33,7 @@ struct GitGattoApp: App {
                 )
             }
         }
-        .defaultSize(width: 680, height: 440)
+        .defaultSize(width: 660, height: 385)
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
 
@@ -41,6 +41,12 @@ struct GitGattoApp: App {
             AppThemeRoot { UpdateCenterView(manager: updateManager) }
         }
         .defaultSize(width: 760, height: 720)
+        .windowStyle(.hiddenTitleBar)
+
+        Window(L10n.text("release_history.title"), id: "release-history") {
+            AppThemeRoot { ReleaseHistoryView(manager: updateManager) }
+        }
+        .defaultSize(width: 900, height: 640)
         .windowStyle(.hiddenTitleBar)
 
         Window(L10n.text("legal.title"), id: "legal-documents") {
@@ -98,6 +104,8 @@ private struct DebugPreviewLauncher: View {
                     destination = "about"
                 } else if environment["GITGATTO_UPDATE_PREVIEW"] == "1" {
                     destination = "updates"
+                } else if environment["GITGATTO_RELEASE_HISTORY_PREVIEW"] == "1" {
+                    destination = "release-history"
                 } else if environment["GITGATTO_LEGAL_PREVIEW"] == "1" {
                     destination = "legal-documents"
                 } else if environment["GITGATTO_HELP_PREVIEW"] == "1" {

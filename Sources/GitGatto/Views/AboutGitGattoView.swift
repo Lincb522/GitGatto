@@ -4,35 +4,38 @@ import SwiftUI
 struct AboutGitGattoView: View {
     @ObservedObject var navigation: AppNavigationModel
     @ObservedObject var updateManager: AppUpdateManager
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: AppThemeLayout.panelSpacing) {
-            HStack(spacing: 18) {
-                AppBrandIcon(size: 72)
+        let theme = AppVisualTheme.resolved(themeRaw)
+        let contentSize = aboutContentSize(for: theme)
+        VStack(spacing: theme == .softGlass ? 10 : 0) {
+            HStack(spacing: 15) {
+                AppBrandIcon(size: 60)
                     .padding(
                         .leading,
                         AppThemeLayout.titlebarBrandLeading
                             - AppThemeLayout.workspaceInset
-                            - 18
+                            - 16
                     )
 
-                VStack(alignment: .leading, spacing: 6) {
-                    AppBrandWordmark(width: 148)
+                VStack(alignment: .leading, spacing: 5) {
+                    AppBrandWordmark(width: 140)
                     Text(L10n.text("about.product"))
-                        .font(.system(size: 12.5))
+                        .font(.system(size: 12))
                         .foregroundStyle(palette.mutedInk)
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 360, alignment: .leading)
+                        .frame(maxWidth: 330, alignment: .leading)
                 }
 
-                Spacer(minLength: 14)
+                Spacer(minLength: 10)
 
-                VStack(alignment: .trailing, spacing: 8) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .trailing, spacing: 7) {
+                    HStack(spacing: 7) {
                         AboutMetric(titleKey: "about.version", value: updateManager.currentVersion)
                         AboutMetric(titleKey: "about.build", value: updateManager.currentBuild)
                     }
@@ -44,19 +47,27 @@ struct AboutGitGattoView: View {
                     }
                 }
             }
-            .padding(.horizontal, 18)
-            .frame(height: 132)
-            .background(palette.sidebar.opacity(0.18))
-            .appGlassPanel()
+            .padding(.horizontal, 16)
+            .frame(height: 104)
+            .modifier(AboutHeaderChrome(theme: theme))
 
-            VStack(alignment: .leading, spacing: 14) {
-                Text(L10n.text("about.legal"))
-                    .font(.system(size: 13.5, weight: .semibold))
-                    .foregroundStyle(palette.ink)
+            VStack(alignment: .leading, spacing: 11) {
+                HStack(spacing: 10) {
+                    Text(L10n.text("about.legal"))
+                        .font(.system(size: 13.5, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                    Spacer()
+                    Button {
+                        openWindow(id: "release-history")
+                    } label: {
+                        Label(L10n.text("release_history.title"), systemImage: "clock.arrow.circlepath")
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                }
 
                 LazyVGrid(
                     columns: [GridItem(.flexible()), GridItem(.flexible())],
-                    spacing: 10
+                    spacing: 8
                 ) {
                     ForEach(LegalDocumentKind.allCases) { document in
                         AboutLegalButton(document: document) {
@@ -66,7 +77,7 @@ struct AboutGitGattoView: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(14)
             .background(palette.surface.opacity(0.18))
             .appGlassPanel()
 
@@ -97,15 +108,17 @@ struct AboutGitGattoView: View {
                 .buttonStyle(SecondaryButtonStyle())
                 .keyboardShortcut(.cancelAction)
             }
-            .padding(.horizontal, 18)
-            .frame(height: 62)
+            .padding(.horizontal, 16)
+            .frame(height: 52)
             .background(palette.sidebar.opacity(0.14))
             .appGlassPanel(cornerRadius: 16, elevated: false)
         }
         .padding(AppThemeLayout.workspaceInset)
-        .frame(width: 680, height: 440)
+        .frame(width: contentSize.width, height: contentSize.height)
         .background(palette.surface)
         .ignoresSafeArea(.container, edges: .top)
+        .environment(\.layoutDirection, .leftToRight)
+        .background(AboutWindowSizeController(contentSize: contentSize))
 #if DEBUG
         .background(
             DebugSnapshotCapture(
@@ -113,6 +126,15 @@ struct AboutGitGattoView: View {
             )
         )
 #endif
+    }
+
+    private func aboutContentSize(for theme: AppVisualTheme) -> NSSize {
+        switch theme {
+        case .softGlass:
+            NSSize(width: 660, height: 385)
+        case .standard, .console:
+            NSSize(width: 660, height: 341)
+        }
     }
 }
 
@@ -132,9 +154,42 @@ private struct AboutMetric: View {
                 .foregroundStyle(palette.ink)
         }
         .padding(.horizontal, 11)
-        .frame(minWidth: 72, minHeight: 48, alignment: .leading)
+        .frame(minWidth: 68, minHeight: 44, alignment: .leading)
         .background(palette.raisedSurface)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+private struct AboutHeaderChrome: ViewModifier {
+    let theme: AppVisualTheme
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let palette = AppPalette(colorScheme)
+        content
+            .background(alignment: .top) {
+                let shape = RoundedRectangle(
+                    cornerRadius: theme == .softGlass ? 18 : 0,
+                    style: .continuous
+                )
+                ZStack {
+                    shape.fill(
+                        theme == .softGlass
+                            ? (colorScheme == .dark ? Color.black.opacity(0.50) : Color.white.opacity(0.58))
+                            : palette.sidebar
+                    )
+                    if theme == .softGlass {
+                        shape.stroke(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.12)
+                                : Color.white.opacity(0.72),
+                            lineWidth: 1
+                        )
+                    }
+                }
+                .frame(height: 136)
+                .offset(y: -32)
+            }
     }
 }
 
@@ -151,7 +206,7 @@ private struct AboutLegalButton: View {
                 Image(systemName: document.icon)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(palette.primary)
-                    .frame(width: 34, height: 34)
+                    .frame(width: 30, height: 30)
                     .background(palette.primarySoft)
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
 
@@ -171,7 +226,7 @@ private struct AboutLegalButton: View {
                     .foregroundStyle(palette.subtleInk)
             }
             .padding(.horizontal, 12)
-            .frame(height: 62)
+            .frame(height: 54)
             .background(isHovering ? palette.raisedSurface : palette.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay {
@@ -182,5 +237,39 @@ private struct AboutLegalButton: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
+    }
+}
+
+private struct AboutWindowSizeController: NSViewRepresentable {
+    let contentSize: NSSize
+
+    func makeNSView(context: Context) -> NSView {
+        AboutWindowSizingView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let sizingView = nsView as? AboutWindowSizingView else { return }
+        sizingView.targetSize = contentSize
+        sizingView.enforceWindowSize()
+    }
+}
+
+private final class AboutWindowSizingView: NSView {
+    var targetSize = NSSize(width: 660, height: 341)
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        enforceWindowSize()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(180))
+            self?.enforceWindowSize()
+        }
+    }
+
+    func enforceWindowSize() {
+        guard let window else { return }
+        window.contentMinSize = targetSize
+        window.contentMaxSize = targetSize
+        window.setContentSize(targetSize)
     }
 }

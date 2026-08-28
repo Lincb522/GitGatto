@@ -317,6 +317,7 @@ struct AppThemeRoot<Content: View>: View {
             }
         }
         .tint(palette.primary)
+        .environment(\.layoutDirection, .leftToRight)
         .preferredColorScheme(appearance.colorScheme)
         .onAppear { AppIconAssets.updateApplicationIcon(appearanceRaw: appearanceRaw) }
         .onChange(of: styleSignature) { _, _ in

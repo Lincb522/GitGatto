@@ -287,6 +287,12 @@
 "update.release_notes.prerelease" = "预发布";
 "update.release_notes.no_details" = "此版本没有附加说明。";
 "update.release_notes.view_on_github" = "在应用内查看 GitHub 发布页";
+"release_history.title" = "版本日志";
+"release_history.open" = "完整版本日志";
+"release_history.versions" = "版本";
+"release_history.version" = "版本 %@";
+"release_history.current" = "当前安装";
+"release_history.empty" = "暂无版本日志";
 
 "help.title" = "GitGatto 使用指南";
 "help.short_title" = "使用指南";
