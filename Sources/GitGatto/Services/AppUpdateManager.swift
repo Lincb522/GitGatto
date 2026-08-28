@@ -121,7 +121,16 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
-        state = .failed(message: error.localizedDescription)
+        state = Self.stateAfterAborting(with: error)
+    }
+
+    static func stateAfterAborting(with error: any Error) -> AppUpdateState {
+        let nsError = error as NSError
+        if nsError.domain == SUSparkleErrorDomain,
+           nsError.code == Int(SUError.noUpdateError.rawValue) {
+            return .current
+        }
+        return .failed(message: error.localizedDescription)
     }
 
     static func hasUpdateConfiguration(_ info: [String: Any]) -> Bool {

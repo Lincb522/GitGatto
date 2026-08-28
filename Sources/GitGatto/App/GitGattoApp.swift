@@ -33,7 +33,7 @@ struct GitGattoApp: App {
                 )
             }
         }
-        .defaultSize(width: 680, height: 520)
+        .defaultSize(width: 680, height: 440)
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
 
@@ -145,7 +145,7 @@ private struct GitGattoCommands: Commands {
             }
 
             Button(L10n.text("update.check")) {
-                openWindow(id: "updates")
+                updateManager.checkForUpdates()
             }
         }
 

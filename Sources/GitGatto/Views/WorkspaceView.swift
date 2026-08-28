@@ -209,7 +209,10 @@ private struct WorkspaceBrandBar: View {
                 wordmarkWidth: compact ? 82 : 96,
                 spacing: 7
             )
-            .padding(.leading, compact ? 48 : 52)
+            .padding(
+                .leading,
+                AppThemeLayout.titlebarBrandLeading - AppThemeLayout.workspaceInset
+            )
             Spacer(minLength: 8)
         }
         .padding(.trailing, 12)
@@ -224,20 +227,17 @@ private struct ConsoleBrandBar: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        HStack(spacing: 10) {
-            AppBrandLockup(iconSize: 30, wordmarkWidth: 76, spacing: 7)
-                .padding(.leading, 58)
+        HStack(spacing: 6) {
+            AppBrandLockup(iconSize: 28, wordmarkWidth: 68, spacing: 6)
+                .padding(.leading, AppThemeLayout.titlebarBrandLeading)
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 0)
 
-            HStack(spacing: 5) {
-                ConsoleBreathingLight(isBusy: isBusy)
-                Text(L10n.text(isBusy ? "console.status.running" : "console.status.ready"))
-                    .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(isBusy ? palette.warning : palette.success)
-            }
+            ConsoleBreathingLight(isBusy: isBusy)
+                .help(L10n.text(isBusy ? "console.status.running" : "console.status.ready"))
+                .accessibilityLabel(L10n.text(isBusy ? "console.status.running" : "console.status.ready"))
         }
-        .padding(.trailing, 12)
+        .padding(.trailing, 8)
         .frame(maxHeight: .infinity)
         .background(palette.sidebar)
     }

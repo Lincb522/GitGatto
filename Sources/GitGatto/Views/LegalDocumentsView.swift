@@ -11,7 +11,10 @@ struct LegalDocumentsView: View {
         HStack(spacing: AppThemeLayout.panelSpacing) {
             VStack(spacing: 0) {
                 AppBrandLockup(iconSize: 34, wordmarkWidth: 88, spacing: 7)
-                    .padding(.leading, 46)
+                    .padding(
+                        .leading,
+                        AppThemeLayout.titlebarBrandLeading - AppThemeLayout.workspaceInset
+                    )
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(height: 66)
 

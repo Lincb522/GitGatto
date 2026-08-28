@@ -81,7 +81,7 @@ struct AppSettingsView: View {
     private func standardSidebar(_ palette: AppPalette) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             AppBrandLockup(iconSize: 36, wordmarkWidth: 100, spacing: 8)
-                .padding(.leading, 46)
+                .padding(.leading, AppThemeLayout.titlebarBrandLeading)
                 .frame(height: 72, alignment: .leading)
 
             VStack(spacing: 4) {
@@ -135,7 +135,7 @@ struct AppSettingsView: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 AppBrandLockup(iconSize: 30, wordmarkWidth: 76, spacing: 7)
-                    .padding(.leading, 58)
+                    .padding(.leading, AppThemeLayout.titlebarBrandLeading)
 
                 Rectangle().fill(palette.divider).frame(width: 1, height: 26)
 
@@ -258,7 +258,12 @@ struct AppSettingsView: View {
     private func glassWindowBar(_ palette: AppPalette) -> some View {
         HStack(spacing: 12) {
             AppBrandLockup(iconSize: 38, wordmarkWidth: 102, spacing: 8)
-                .padding(.leading, 46)
+                .padding(
+                    .leading,
+                    AppThemeLayout.titlebarBrandLeading
+                        - AppThemeLayout.workspaceInset
+                        - 10
+                )
 
             Rectangle()
                 .fill(palette.divider)

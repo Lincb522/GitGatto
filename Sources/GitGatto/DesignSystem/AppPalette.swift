@@ -246,6 +246,7 @@ enum AppThemeLayout {
     static var workspaceInset: CGFloat { AppStyleDefaults.theme == .softGlass ? 12 : 0 }
     static var panelSpacing: CGFloat { AppStyleDefaults.theme == .softGlass ? 12 : 0 }
     static var panelCornerRadius: CGFloat { AppStyleDefaults.theme == .softGlass ? 18 : 0 }
+    static let titlebarBrandLeading: CGFloat = 76
     static var controlCornerRadius: CGFloat {
         switch AppStyleDefaults.theme {
         case .standard: 8

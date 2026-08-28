@@ -13,7 +13,12 @@ struct AboutGitGattoView: View {
         VStack(spacing: AppThemeLayout.panelSpacing) {
             HStack(spacing: 18) {
                 AppBrandIcon(size: 72)
-                    .padding(.leading, 46)
+                    .padding(
+                        .leading,
+                        AppThemeLayout.titlebarBrandLeading
+                            - AppThemeLayout.workspaceInset
+                            - 18
+                    )
 
                 VStack(alignment: .leading, spacing: 6) {
                     AppBrandWordmark(width: 148)
@@ -32,7 +37,7 @@ struct AboutGitGattoView: View {
                         AboutMetric(titleKey: "about.build", value: updateManager.currentBuild)
                     }
                     Button {
-                        openWindow(id: "updates")
+                        updateManager.checkForUpdates()
                     } label: {
                         Label(L10n.text("update.check"), systemImage: "arrow.triangle.2.circlepath")
                     }
@@ -98,8 +103,8 @@ struct AboutGitGattoView: View {
             .appGlassPanel(cornerRadius: 16, elevated: false)
         }
         .padding(AppThemeLayout.workspaceInset)
-        .frame(width: 680, height: 520)
-        .background(Color.clear)
+        .frame(width: 680, height: 440)
+        .background(palette.surface)
         .ignoresSafeArea(.container, edges: .top)
 #if DEBUG
         .background(

@@ -1,3 +1,5 @@
+import Foundation
+import Sparkle
 import Testing
 @testable import GitGatto
 
@@ -15,5 +17,25 @@ struct AppUpdateManagerTests {
         ]))
 
         #expect(!AppUpdateManager.hasUpdateConfiguration([:]))
+    }
+
+    @Test("Treats Sparkle's no-update result as the current version")
+    @MainActor
+    func classifiesNoUpdateResult() {
+        let noUpdate = NSError(
+            domain: SUSparkleErrorDomain,
+            code: Int(SUError.noUpdateError.rawValue)
+        )
+        #expect(AppUpdateManager.stateAfterAborting(with: noUpdate) == .current)
+
+        let failure = NSError(
+            domain: SUSparkleErrorDomain,
+            code: Int(SUError.downloadError.rawValue),
+            userInfo: [NSLocalizedDescriptionKey: "Download failed"]
+        )
+        #expect(
+            AppUpdateManager.stateAfterAborting(with: failure)
+                == .failed(message: "Download failed")
+        )
     }
 }
