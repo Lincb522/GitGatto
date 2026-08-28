@@ -113,10 +113,13 @@ jobs:
             "$RELEASE_DIR"
 
           grep -F "GitGatto-$VERSION.dmg" "$RELEASE_DIR/appcast.xml"
-          shasum -a 256 \
-            "$RELEASE_DIR/GitGatto-$VERSION.dmg" \
-            "$RELEASE_DIR/appcast.xml" \
-            > "$RELEASE_DIR/SHA256SUMS"
+          (
+            cd "$RELEASE_DIR"
+            shasum -a 256 \
+              "GitGatto-$VERSION.dmg" \
+              appcast.xml \
+              > SHA256SUMS
+          )
 
       - name: Publish GitHub Release
         env:
