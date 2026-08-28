@@ -3,6 +3,8 @@ import SwiftUI
 
 struct GlobalErrorSheet: View {
     let report: AppErrorReport
+    let canUseAgent: Bool
+    let useAgent: () -> Void
     let dismiss: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -98,8 +100,16 @@ struct GlobalErrorSheet: View {
                 Spacer()
 
                 Button(L10n.text("action.close"), action: dismiss)
-                    .buttonStyle(PrimaryButtonStyle())
-                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(SecondaryButtonStyle())
+                    .keyboardShortcut(.cancelAction)
+
+                Button(action: useAgent) {
+                    Label(L10n.text("error.action.agent_resolve"), systemImage: "sparkles")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!canUseAgent)
+                .opacity(canUseAgent ? 1 : 0.48)
+                .keyboardShortcut(.defaultAction)
             }
             .padding(.horizontal, 20)
             .frame(height: 64)

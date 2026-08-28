@@ -1002,30 +1002,25 @@ private struct AgentSettingsPage: View {
 private struct GitAgentCapabilitiesView: View {
     @Environment(\.colorScheme) private var colorScheme
 
-    private let skills = [
-        "settings.agent.skill.changes",
-        "settings.agent.skill.commits",
-        "settings.agent.skill.history",
-        "settings.agent.skill.conflicts",
-        "settings.agent.skill.pull_requests",
-        "settings.agent.skill.actions"
-    ]
-
-    private let tools = ["git status", "git diff", "git log", "git show", "gh pr", "gh issue", "gh run"]
+    private let tools = ["git status", "git diff", "git log", "git reflog", "git worktree", "git lfs", "gh pr", "gh run"]
 
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(alignment: .leading, spacing: 14) {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 10) {
-                ForEach(skills, id: \.self) { key in
-                    Label(L10n.text(key), systemImage: "checkmark.circle.fill")
+                ForEach(GitAgentSkill.allCases) { skill in
+                    Label(L10n.text(skill.titleKey), systemImage: skill.systemImage)
                         .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(palette.mutedInk)
                         .symbolRenderingMode(.hierarchical)
                 }
             }
 
-            HStack(spacing: 6) {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 78), spacing: 6)],
+                alignment: .leading,
+                spacing: 6
+            ) {
                 ForEach(tools, id: \.self) { tool in
                     Text(tool)
                         .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
@@ -1034,6 +1029,7 @@ private struct GitAgentCapabilitiesView: View {
                         .frame(height: 23)
                         .background(palette.accentSoft)
                         .clipShape(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
 

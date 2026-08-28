@@ -115,9 +115,12 @@ struct WorkspaceView: View {
         .animation(.easeOut(duration: 0.2), value: model.notice?.id)
         .animation(.easeOut(duration: 0.2), value: model.activeOperation)
         .sheet(item: activeErrorBinding) { report in
-            GlobalErrorSheet(report: report) {
-                model.dismissActiveError()
-            }
+            GlobalErrorSheet(
+                report: report,
+                canUseAgent: model.canResolveErrorWithAgent(report),
+                useAgent: { model.resolveErrorWithAgent(report) },
+                dismiss: { model.dismissActiveError() }
+            )
         }
 #if DEBUG
         .background(

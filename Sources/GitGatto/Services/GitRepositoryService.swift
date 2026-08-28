@@ -17,6 +17,17 @@ enum GitRepositoryServiceError: LocalizedError, Sendable {
     }
 }
 
+enum CommitDraftPreparationError: LocalizedError, Sendable, Equatable {
+    case unresolvedConflicts(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case let .unresolvedConflicts(count):
+            L10n.format("codex.error.unresolved_conflicts", count)
+        }
+    }
+}
+
 protocol GitRepositoryServing: Sendable {
     func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot
     func loadRepositoryOverview(at selectedURL: URL) async throws -> RepositorySnapshot
@@ -26,6 +37,7 @@ protocol GitRepositoryServing: Sendable {
     func diff(for change: WorkingTreeChange, in repositoryURL: URL) async throws -> DiffDocument
     func diff(for commit: CommitRecord, in repositoryURL: URL) async throws -> DiffDocument
     func stagedDiff(in repositoryURL: URL) async throws -> String
+    func prepareCommitDraft(in repositoryURL: URL) async throws -> CommitDraftEvidence
     func stashes(in repositoryURL: URL) async throws -> [StashRecord]
     func stashDiff(reference: String, in repositoryURL: URL) async throws -> DiffDocument
     func stashChanges(message: String?, includeUntracked: Bool, in repositoryURL: URL) async throws -> Bool
@@ -66,6 +78,47 @@ extension GitRepositoryServing {
         changes: [WorkingTreeChange]
     ) async throws -> RepositoryOperationState? {
         try await repositoryOperationState(in: repositoryURL)
+    }
+
+    func prepareCommitDraft(in repositoryURL: URL) async throws -> CommitDraftEvidence {
+        let currentState = try await loadLiveState(at: repositoryURL)
+        let conflictCount = currentState.changes.filter {
+            $0.indexStatus == .conflicted || $0.workTreeStatus == .conflicted
+        }.count
+        guard conflictCount == 0 else {
+            throw CommitDraftPreparationError.unresolvedConflicts(conflictCount)
+        }
+
+        let existingDiff = try await stagedDiff(in: repositoryURL)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard existingDiff.isEmpty else {
+            return CommitDraftEvidence(
+                stagedDiff: existingDiff,
+                automaticallyStagedPaths: [],
+                liveState: nil
+            )
+        }
+
+        let paths = currentState.changes
+            .filter { !$0.isStaged }
+            .map(\.path)
+        guard !paths.isEmpty else {
+            return CommitDraftEvidence(
+                stagedDiff: "",
+                automaticallyStagedPaths: [],
+                liveState: currentState
+            )
+        }
+
+        try await stage(paths: paths, in: repositoryURL)
+        let updatedState = try await loadLiveState(at: repositoryURL)
+        let stagedDiff = try await stagedDiff(in: repositoryURL)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return CommitDraftEvidence(
+            stagedDiff: stagedDiff,
+            automaticallyStagedPaths: paths,
+            liveState: updatedState
+        )
     }
 }
 

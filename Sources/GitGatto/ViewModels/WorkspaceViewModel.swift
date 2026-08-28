@@ -324,10 +324,34 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     var canCommitAndPushCodexDraft: Bool {
+        canCommitCodexDraft
+    }
+
+    var canCommitCodexDraft: Bool {
         guard let draft = codexCommitDraft,
               let snapshot else { return false }
         return draft.repositoryURL.standardizedFileURL == snapshot.rootURL.standardizedFileURL
             && !snapshot.stagedChanges.isEmpty
+            && activeOperation == nil
+            && !isCodexRunning
+    }
+
+    var canRewriteCodexCommitDraft: Bool {
+        guard let draft = codexCommitDraft,
+              let snapshot else { return false }
+        return draft.repositoryURL.standardizedFileURL == snapshot.rootURL.standardizedFileURL
+            && activeOperation == nil
+            && !isCodexRunning
+            && codexAvailability.state == .available
+    }
+
+    func canResolveErrorWithAgent(_ report: AppErrorReport) -> Bool {
+        guard report.code.hasPrefix("GG-GIT-"),
+              let reportPath = report.repositoryPath,
+              let repositoryURL = snapshot?.rootURL else { return false }
+        return URL(fileURLWithPath: reportPath, isDirectory: true).standardizedFileURL
+            == repositoryURL.standardizedFileURL
+            && codexAvailability.state == .available
             && activeOperation == nil
             && !isCodexRunning
     }
@@ -386,6 +410,9 @@ final class WorkspaceViewModel: ObservableObject {
 #if DEBUG
         if ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1" {
             loadWorkspacePreviewFixture()
+            if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
+                loadErrorPreviewFixture()
+            }
             return
         }
         githubSearchScope = Self.githubSearchScopeFromArguments() ?? githubSearchScope
@@ -399,15 +426,7 @@ final class WorkspaceViewModel: ObservableObject {
         startAvailabilityProbes()
 #if DEBUG
         if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
-            activeError = GlobalErrorHandler.report(
-                for: GitCommandError(
-                    arguments: ["commit", "-m", "preview"],
-                    exitCode: 128,
-                    message: "error: gpg failed to sign the data\nfatal: failed to write commit object\npre-commit hook exited before the commit was created"
-                ),
-                context: .git(.commit),
-                repositoryURL: snapshot?.rootURL
-            )
+            loadErrorPreviewFixture()
         }
 #endif
     }
@@ -737,6 +756,31 @@ final class WorkspaceViewModel: ObservableObject {
         codexAvailability = CodexAvailability(state: .available, version: nil)
         translationAIAvailability = CodexAvailability(state: .available, version: nil)
         githubAvailability = GitHubAvailability(state: .available, version: nil)
+
+        if ProcessInfo.processInfo.environment["GITGATTO_AGENT_DRAFT_PREVIEW"] == "1" {
+            let userMessage = CodexMessage(
+                role: .user,
+                text: L10n.text("codex.prompt.draft_commit.concise")
+            )
+            let assistantMessage = CodexMessage(
+                role: .assistant,
+                text: "feat: deepen Git Agent workflows",
+                operation: CodexOperationRecord(
+                    mode: .analyze,
+                    commandCount: 0,
+                    fileChangeCount: 0,
+                    completedAt: Date()
+                )
+            )
+            codexMessages = [userMessage, assistantMessage]
+            codexCommitDraft = CodexCommitDraft(
+                messageID: assistantMessage.id,
+                repositoryURL: rootURL,
+                message: assistantMessage.text,
+                automaticallyStagedCount: 1
+            )
+            codexActivity = L10n.text("codex.status.completed_plain")
+        }
 
         guard let accountURL = URL(string: "https://github.com/ZIJIU522") else { return }
         githubAccount = GitHubAccount(login: "ZIJIU522", name: "ZIJIU522", webURL: accountURL)
@@ -1069,6 +1113,18 @@ final class WorkspaceViewModel: ObservableObject {
                 break
             }
         }
+    }
+
+    private func loadErrorPreviewFixture() {
+        activeError = GlobalErrorHandler.report(
+            for: GitCommandError(
+                arguments: ["commit", "-m", "preview"],
+                exitCode: 128,
+                message: "error: gpg failed to sign the data\nfatal: failed to write commit object\npre-commit hook exited before the commit was created"
+            ),
+            context: .git(.commit),
+            repositoryURL: snapshot?.rootURL
+        )
     }
 #endif
 
@@ -3183,26 +3239,73 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func runCodexQuickAction(_ action: CodexQuickAction) {
-        let promptKey: String
-        let includesStagedDiff: Bool
         switch action {
         case .explainChanges:
+            runGitAgentSkill(.workingTree)
+        case .reviewStaged:
+            runGitAgentSkill(.stagedReview)
+        case .draftCommit:
+            runGitAgentSkill(.commitDraft)
+        }
+    }
+
+    func runGitAgentSkill(_ skill: GitAgentSkill) {
+        let promptKey: String
+        let includesStagedDiff: Bool
+        let createsCommitDraft: Bool
+        let automaticallyStagesChanges: Bool
+
+        switch skill {
+        case .workingTree:
             promptKey = "codex.prompt.explain_changes"
             includesStagedDiff = false
-        case .reviewStaged:
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .stagedReview:
             promptKey = "codex.prompt.review_staged"
             includesStagedDiff = true
-        case .draftCommit:
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .commitDraft:
             promptKey = appPreferences.commitDraftDetail == .complete
                 ? "codex.prompt.draft_commit.complete"
                 : "codex.prompt.draft_commit.concise"
             includesStagedDiff = true
+            createsCommitDraft = true
+            automaticallyStagesChanges = true
+        case .repositoryDiagnosis:
+            promptKey = "codex.prompt.diagnose_repository"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .synchronization:
+            promptKey = "codex.prompt.diagnose_sync"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .conflicts:
+            promptKey = "codex.prompt.diagnose_conflicts"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .history:
+            promptKey = "codex.prompt.trace_history"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .githubChecks:
+            promptKey = "codex.prompt.diagnose_github_checks"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
         }
+
         runCodex(
             prompt: L10n.text(promptKey),
             mode: .analyze,
             includesStagedDiff: includesStagedDiff,
-            createsCommitDraft: action == .draftCommit
+            createsCommitDraft: createsCommitDraft,
+            automaticallyStagesChanges: automaticallyStagesChanges
         )
     }
 
@@ -3215,7 +3318,8 @@ final class WorkspaceViewModel: ObservableObject {
             mode: .analyze,
             includesStagedDiff: true,
             createsCommitDraft: true,
-            fillsCommitComposer: true
+            fillsCommitComposer: true,
+            automaticallyStagesChanges: true
         )
     }
 
@@ -3229,20 +3333,44 @@ final class WorkspaceViewModel: ObservableObject {
             ),
             mode: .analyze,
             includesStagedDiff: true,
-            createsCommitDraft: true
+            createsCommitDraft: true,
+            automaticallyStagesChanges: true
         )
     }
 
+    func commitCodexDraft() async {
+        await performCodexDraftCommit(pushesAfterCommit: false)
+    }
+
     func commitAndPushCodexDraft() async {
+        await performCodexDraftCommit(pushesAfterCommit: true)
+    }
+
+    func resolveErrorWithAgent(_ report: AppErrorReport) {
+        guard activeError?.id == report.id,
+              canResolveErrorWithAgent(report) else { return }
+        dismissActiveError()
+        selectedSection = .codex
+        runCodex(
+            prompt: GitAgentProfile.errorResolutionPrompt(for: report),
+            displayPrompt: L10n.format("codex.prompt.resolve_error.display", report.code),
+            mode: .edit
+        )
+    }
+
+    private func performCodexDraftCommit(pushesAfterCommit: Bool) async {
         guard let draft = codexCommitDraft,
               let currentURL = snapshot?.rootURL,
               draft.repositoryURL.standardizedFileURL == currentURL.standardizedFileURL,
               activeOperation == nil,
               !isCodexRunning else { return }
 
-        activeOperation = .commitAndPush
+        let operation: OperationKind = pushesAfterCommit ? .commitAndPush : .commit
+        activeOperation = operation
         codexError = nil
-        codexActivity = L10n.text("codex.status.committing_pushing")
+        codexActivity = L10n.text(
+            pushesAfterCommit ? "codex.status.committing_pushing" : "codex.status.committing"
+        )
         defer { activeOperation = nil }
 
         do {
@@ -3256,25 +3384,49 @@ final class WorkspaceViewModel: ObservableObject {
                 return
             }
 
-            try await service.commitAndPush(message: draft.message, in: currentURL)
+            if pushesAfterCommit {
+                try await service.commitAndPush(message: draft.message, in: currentURL)
+            } else {
+                try await service.commit(message: draft.message, in: currentURL)
+            }
             guard snapshot?.rootURL.standardizedFileURL == currentURL.standardizedFileURL else { return }
             codexCommitDraft = nil
+            if commitMessage == draft.message {
+                commitMessage = ""
+            }
             appendCodexMessage(
-                CodexMessage(role: .assistant, text: L10n.text("codex.message.committed_pushed"))
+                CodexMessage(
+                    role: .assistant,
+                    text: L10n.text(
+                        pushesAfterCommit ? "codex.message.committed_pushed" : "codex.message.committed"
+                    )
+                )
             )
             codexActivity = nil
-            showNotice(.init(message: L10n.text("notice.committed_pushed")))
+            showNotice(
+                .init(
+                    message: L10n.text(
+                        pushesAfterCommit ? "notice.committed_pushed" : "notice.committed"
+                    )
+                )
+            )
             await refresh()
         } catch {
             guard snapshot?.rootURL.standardizedFileURL == currentURL.standardizedFileURL else { return }
             await refresh()
             codexActivity = nil
-            presentError(error, context: .git(.commitAndPush), repositoryURL: currentURL)
+            presentError(error, context: .git(operation), repositoryURL: currentURL)
             if case let GitRepositoryServiceError.pushFailedAfterCommit(details) = error {
                 codexCommitDraft = nil
+                if commitMessage == draft.message {
+                    commitMessage = ""
+                }
                 codexError = L10n.format("codex.error.push_after_commit", details.message)
             } else {
-                codexError = L10n.format("codex.error.commit_push", error.localizedDescription)
+                codexError = L10n.format(
+                    pushesAfterCommit ? "codex.error.commit_push" : "codex.error.commit",
+                    error.localizedDescription
+                )
             }
         }
     }
@@ -3300,10 +3452,12 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func runCodex(
         prompt: String,
+        displayPrompt: String? = nil,
         mode: CodexRunMode,
         includesStagedDiff: Bool = false,
         createsCommitDraft: Bool = false,
-        fillsCommitComposer: Bool = false
+        fillsCommitComposer: Bool = false,
+        automaticallyStagesChanges: Bool = false
     ) {
         let request = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !request.isEmpty,
@@ -3315,7 +3469,7 @@ final class WorkspaceViewModel: ObservableObject {
         let runID = UUID()
         activeCodexRunID = runID
         codexCommitDraft = nil
-        appendCodexMessage(CodexMessage(role: .user, text: request))
+        appendCodexMessage(CodexMessage(role: .user, text: displayPrompt ?? request))
         codexPrompt = ""
         codexError = nil
         codexActivity = L10n.text("codex.status.running")
@@ -3332,21 +3486,37 @@ final class WorkspaceViewModel: ObservableObject {
                 }
             }
 
+            var failureContext: AppErrorContext = .agent
             do {
                 var effectiveRequest = request
+                var automaticallyStagedCount = 0
                 if includesStagedDiff {
                     codexActivity = L10n.text("codex.status.reading_staged")
                     guard !Task.isCancelled,
                           activeCodexRunID == runID,
                           snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
 
-                    let stagedDiff = try await service.stagedDiff(in: repositoryURL)
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let stagedDiff: String
+                    if automaticallyStagesChanges {
+                        failureContext = .git(.stage)
+                        let evidence = try await service.prepareCommitDraft(in: repositoryURL)
+                        automaticallyStagedCount = evidence.automaticallyStagedPaths.count
+                        if let liveState = evidence.liveState {
+                            apply(liveState)
+                        }
+                        stagedDiff = evidence.stagedDiff
+                        failureContext = .agent
+                    } else {
+                        stagedDiff = try await service.stagedDiff(in: repositoryURL)
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                     guard !stagedDiff.isEmpty else {
                         appendCodexMessage(
                             CodexMessage(
                                 role: .assistant,
-                                text: L10n.format("codex.error.no_staged", repositoryURL.lastPathComponent)
+                                text: automaticallyStagesChanges
+                                    ? L10n.format("codex.error.no_changes", repositoryURL.lastPathComponent)
+                                    : L10n.format("codex.error.no_staged", repositoryURL.lastPathComponent)
                             )
                         )
                         codexActivity = nil
@@ -3396,7 +3566,8 @@ final class WorkspaceViewModel: ObservableObject {
                     codexCommitDraft = CodexCommitDraft(
                         messageID: message.id,
                         repositoryURL: repositoryURL,
-                        message: response
+                        message: response,
+                        automaticallyStagedCount: automaticallyStagedCount
                     )
                     if fillsCommitComposer {
                         commitMessage = response
@@ -3421,8 +3592,8 @@ final class WorkspaceViewModel: ObservableObject {
                 guard activeCodexRunID == runID else { return }
                 codexActivity = nil
                 codexError = L10n.format("codex.error.run", error.localizedDescription)
-                if fillsCommitComposer {
-                    presentError(error, context: .agent, repositoryURL: repositoryURL)
+                if fillsCommitComposer || automaticallyStagesChanges || displayPrompt != nil {
+                    presentError(error, context: failureContext, repositoryURL: repositoryURL)
                 }
             }
         }

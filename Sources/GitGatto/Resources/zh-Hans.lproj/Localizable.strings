@@ -54,7 +54,7 @@
 "discard.confirm.action" = "丢弃改动";
 
 "codex.scope" = "Agent 使用已配置的本机 CLI；默认只读，修改模式仅作用于当前仓库";
-"codex.scope.repository" = "当前本地项目：%@ · 已暂存 %d 项";
+"codex.scope.repository" = "当前项目：%@ · %@ · 已暂存 %d · 未暂存 %d";
 "codex.mode.analyze" = "分析";
 "codex.mode.edit" = "允许修改";
 "codex.mode.analyze.help" = "Agent 可以读取仓库，但不能修改文件或 Git 状态";
@@ -71,8 +71,17 @@
 "codex.action.cancel" = "停止";
 "codex.action.clear" = "清空对话";
 "codex.action.retry" = "重新检测";
+"codex.action.skills" = "技能";
 "codex.action.commit_push" = "提交并推送";
 "codex.action.rewrite" = "重新起草";
+"codex.skill.workingTree" = "分析工作区";
+"codex.skill.stagedReview" = "审阅暂存改动";
+"codex.skill.commitDraft" = "起草提交信息";
+"codex.skill.repositoryDiagnosis" = "诊断仓库状态";
+"codex.skill.synchronization" = "诊断同步问题";
+"codex.skill.conflicts" = "分析冲突";
+"codex.skill.history" = "追踪历史";
+"codex.skill.githubChecks" = "诊断 GitHub 检查";
 "codex.quick.explainChanges" = "解释当前改动";
 "codex.quick.reviewStaged" = "审阅已暂存内容";
 "codex.quick.draftCommit" = "起草提交信息";
@@ -82,6 +91,12 @@
 "codex.prompt.draft_commit.complete" = "根据已暂存的改动起草完整的 Git 提交信息：第一行是不超过 72 个字符的摘要，空一行后用 1–3 条简短正文说明动机和影响。只输出提交信息。";
 "codex.prompt.rewrite_commit.concise" = "根据当前已暂存的改动重新起草单行 Git 提交摘要，不超过 72 个字符。换一种更准确、具体的措辞，只输出新的提交信息。";
 "codex.prompt.rewrite_commit.complete" = "根据当前已暂存的改动重新起草完整 Git 提交信息：摘要不超过 72 个字符，正文简要说明动机和影响。只输出新的提交信息。";
+"codex.prompt.diagnose_repository" = "检查当前仓库状态，定位异常的工作区、索引、分支、钩子、Git LFS、子模块或 worktree 状态，并给出基于证据的处理建议。不要修改仓库。";
+"codex.prompt.diagnose_sync" = "检查当前分支、上游以及领先和落后状态，诊断拉取或推送可能失败的原因。不要执行任何远端写入。";
+"codex.prompt.diagnose_conflicts" = "检查当前仓库是否处于 merge、rebase、cherry-pick、revert 或 stash 冲突状态，列出冲突边界和安全的解决顺序。不要修改仓库。";
+"codex.prompt.trace_history" = "使用当前仓库历史追踪最近改动、分支关系和可能的回归来源，给出可核验的提交与文件证据。不要修改仓库。";
+"codex.prompt.diagnose_github_checks" = "读取当前仓库关联的 Pull Request 和 GitHub Actions 检查结果，定位失败步骤及其与本地改动的关系。保持 GitHub 只读。";
+"codex.prompt.resolve_error.display" = "处理 Git 错误 %@";
 "codex.status.checking" = "检测中";
 "codex.status.available" = "可用";
 "codex.status.unavailable" = "不可用";
@@ -97,12 +112,18 @@
 "codex.operation.command" = "命令";
 "codex.operation.file_change" = "文件改动";
 "codex.status.committing_pushing" = "正在提交并推送…";
+"codex.status.committing" = "正在提交…";
+"codex.message.committed" = "本地提交已创建。";
 "codex.message.committed_pushed" = "提交已创建并推送到远程仓库。";
 "codex.error.run" = "Agent 任务失败：%@";
 "codex.error.no_staged" = "当前本地项目“%@”没有已暂存改动。请先在左侧选择正确的本地项目，或暂存文件后重试。";
+"codex.error.no_changes" = "当前项目“%@”没有可用于起草提交信息的改动。";
+"codex.error.unresolved_conflicts" = "检测到 %d 个未解决冲突。请先解决冲突，再起草提交信息。";
 "codex.error.translate" = "翻译失败：%@";
+"codex.error.commit" = "无法创建提交：%@";
 "codex.error.commit_push" = "无法提交并推送：%@";
 "codex.error.push_after_commit" = "提交已创建，但推送失败：%@。处理远端问题后可使用顶部的“推送”重试。";
+"codex.draft.auto_staged" = "已自动暂存 %d 项改动";
 
 "ai.title" = "Agent";
 "ai.settings.title" = "Agent 与翻译 CLI";
@@ -322,8 +343,8 @@
 "help.topic.sync.title" = "提交与同步";
 "help.topic.sync.summary" = "提交只包含暂存区内容；拉取和推送由明确按钮触发，并持续显示运行状态。";
 "help.sync.commit.title" = "创建提交";
-"help.sync.commit.1" = "可以手动填写，也可以在暂存列表下使用“Agent 起草并填入”；简洁或完整格式跟随设置。";
-"help.sync.commit.2" = "生成结果只会填入编辑框，不会自动写入仓库；确认后再选择提交或提交并推送。";
+"help.sync.commit.1" = "可以手动填写，也可以使用“Agent 起草并填入”；没有暂存内容时会先自动暂存当前改动，简洁或完整格式跟随设置。";
+"help.sync.commit.2" = "起草完成后可重新编辑、创建本地提交或提交并推送；所有提交和远端写入仍由明确按钮触发。";
 "help.sync.commit.3" = "提交完成后会重新读取工作区；如果随后推送失败，本地提交仍会保留。";
 "help.sync.remote.title" = "拉取与推送";
 "help.sync.remote.1" = "顶部持续显示已同步、待推送、待拉取、分叉或未设置上游；状态刷新、Agent、拉取和推送运行时都有动效。";
@@ -498,6 +519,7 @@
 "error.detail.time" = "发生时间";
 "error.action.copy" = "复制诊断信息";
 "error.action.copied" = "已复制诊断信息";
+"error.action.agent_resolve" = "交给 Agent 处理";
 "error.recovery.repository" = "确认仓库仍可访问且当前账号拥有读取权限，然后重试。";
 "error.recovery.commit" = "检查暂存区、Git 作者信息和仓库提交钩子，根据完整输出修复后重新提交。";
 "error.recovery.push" = "确认远端、上游分支、网络和账号权限，根据完整输出修复后重新推送。";
@@ -603,13 +625,7 @@
 "settings.agent.draft_detail" = "提交信息详细程度";
 "settings.agent.draft_detail.body" = "简洁模式生成单行摘要；完整模式包含摘要和正文。";
 "settings.agent.engine" = "本机执行器";
-"settings.agent.skill.changes" = "工作区与暂存区分析";
-"settings.agent.skill.commits" = "提交信息与补丁审阅";
-"settings.agent.skill.history" = "历史与分支追踪";
-"settings.agent.skill.conflicts" = "冲突与同步诊断";
-"settings.agent.skill.pull_requests" = "Pull Request 审阅";
-"settings.agent.skill.actions" = "GitHub Actions 排查";
-"settings.agent.tools.body" = "Agent 可使用本地 Git 工具和只读 GitHub CLI 取证；推送、评论、合并等远端写入仍只由明确按钮执行。";
+"settings.agent.tools.body" = "Agent 可诊断工作区、分支同步、冲突、Git LFS、子模块、worktree、钩子、提交历史、Pull Request 与 GitHub Actions；远端写入仍只由明确按钮执行。";
 "settings.translation.title" = "翻译";
 "settings.translation.engine" = "翻译执行器";
 "settings.translation.engine.body" = "与项目 Agent 使用独立进程，仓库任务运行时仍可继续翻译。";

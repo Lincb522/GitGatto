@@ -76,6 +76,81 @@ struct GitRepositoryServiceTests {
         #expect(Set(staged.changes.filter(\.isStaged).map(\.path)) == ["tracked.txt", "new.txt"])
     }
 
+    @Test("Commit drafting stages current changes when the index is empty")
+    func preparesCommitDraftByStagingCurrentChanges() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoCommitDraftTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "before\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "tracked.txt"], at: root)
+        try runGit(["commit", "-m", "Initial commit"], at: root)
+
+        try "after\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try "new\n".write(to: root.appendingPathComponent("new.txt"), atomically: true, encoding: .utf8)
+
+        let evidence = try await GitRepositoryService().prepareCommitDraft(in: root)
+
+        #expect(Set(evidence.automaticallyStagedPaths) == ["tracked.txt", "new.txt"])
+        #expect(evidence.liveState?.changes.allSatisfy(\.isStaged) == true)
+        #expect(evidence.stagedDiff.contains("tracked.txt"))
+        #expect(evidence.stagedDiff.contains("new.txt"))
+        #expect(Set(try runGitOutput(["diff", "--cached", "--name-only"], at: root).split(separator: "\n").map(String.init)) == ["tracked.txt", "new.txt"])
+    }
+
+    @Test("Commit drafting preserves an existing staged boundary")
+    func preservesExistingStagedCommitBoundary() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoCommitBoundaryTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "base\n".write(to: root.appendingPathComponent("base.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "base.txt"], at: root)
+        try runGit(["commit", "-m", "Initial commit"], at: root)
+
+        try "staged\n".write(to: root.appendingPathComponent("staged.txt"), atomically: true, encoding: .utf8)
+        try "unstaged\n".write(to: root.appendingPathComponent("unstaged.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "staged.txt"], at: root)
+
+        let evidence = try await GitRepositoryService().prepareCommitDraft(in: root)
+
+        #expect(evidence.automaticallyStagedPaths.isEmpty)
+        #expect(evidence.liveState == nil)
+        #expect(evidence.stagedDiff.contains("staged.txt"))
+        #expect(!evidence.stagedDiff.contains("unstaged.txt"))
+        #expect(try runGitOutput(["diff", "--cached", "--name-only"], at: root) == "staged.txt")
+    }
+
+    @Test("Commit drafting does not stage unresolved conflicts")
+    func rejectsCommitDraftWithUnresolvedConflicts() async throws {
+        let root = try makeConflictRepository(checkingOut: "main")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = GitRepositoryService()
+
+        let transition = try await service.merge(branch: "feature", in: root)
+        guard case .paused = transition else {
+            Issue.record("Expected merge to pause with a conflict")
+            return
+        }
+
+        do {
+            _ = try await service.prepareCommitDraft(in: root)
+            Issue.record("Expected unresolved conflicts to stop commit drafting")
+        } catch let error as CommitDraftPreparationError {
+            #expect(error == .unresolvedConflicts(1))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
     @Test("Loads tracked state first and enriches untracked files in the live pass")
     func loadsFastRepositoryOverview() async throws {
         let root = FileManager.default.temporaryDirectory

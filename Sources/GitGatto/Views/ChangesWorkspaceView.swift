@@ -357,7 +357,7 @@ private struct CommitComposer: View {
     }
 
     private var canDraft: Bool {
-        model.snapshot?.stagedChanges.isEmpty == false
+        model.snapshot?.changes.isEmpty == false
             && model.codexAvailability.state == .available
             && !model.isCodexRunning
             && model.activeOperation == nil

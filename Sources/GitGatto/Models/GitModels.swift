@@ -146,6 +146,12 @@ struct RepositoryLiveState: Sendable, Equatable {
     let changes: [WorkingTreeChange]
 }
 
+struct CommitDraftEvidence: Sendable, Equatable {
+    let stagedDiff: String
+    let automaticallyStagedPaths: [String]
+    let liveState: RepositoryLiveState?
+}
+
 enum RepositorySyncState: Sendable, Equatable {
     case synced
     case ahead(Int)
@@ -413,6 +419,7 @@ struct CodexCommitDraft: Sendable, Equatable {
     let messageID: UUID
     let repositoryURL: URL
     let message: String
+    let automaticallyStagedCount: Int
 }
 
 struct CodexRunResult: Sendable, Equatable {

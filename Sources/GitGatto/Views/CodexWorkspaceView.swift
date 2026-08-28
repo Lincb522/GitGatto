@@ -44,6 +44,26 @@ struct CodexWorkspaceView: View {
 
             Spacer()
 
+            Menu {
+                ForEach(GitAgentSkill.allCases) { skill in
+                    Button {
+                        model.runGitAgentSkill(skill)
+                    } label: {
+                        Label(L10n.text(skill.titleKey), systemImage: skill.systemImage)
+                    }
+                    .disabled(
+                        model.codexAvailability.state != .available
+                            || model.isCodexRunning
+                            || model.snapshot == nil
+                    )
+                }
+            } label: {
+                Label(L10n.text("codex.action.skills"), systemImage: "square.grid.2x2")
+                    .font(.system(size: 11.5, weight: .semibold))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+
             CodexModeControl(selection: $model.codexRunMode)
 
             ToolbarIconButton(
@@ -71,7 +91,9 @@ struct CodexWorkspaceView: View {
         return L10n.format(
             "codex.scope.repository",
             snapshot.rootURL.lastPathComponent,
-            snapshot.stagedChanges.count
+            snapshot.branchName,
+            snapshot.stagedChanges.count,
+            snapshot.unstagedChanges.count
         )
     }
 
@@ -88,9 +110,17 @@ struct CodexWorkspaceView: View {
                             CodexMessageRow(
                                 message: message,
                                 showsCommitActions: model.codexCommitDraft?.messageID == message.id,
+                                automaticallyStagedCount: model.codexCommitDraft?.messageID == message.id
+                                    ? model.codexCommitDraft?.automaticallyStagedCount ?? 0
+                                    : 0,
+                                canCommit: model.canCommitCodexDraft,
                                 canCommitAndPush: model.canCommitAndPushCodexDraft,
-                                isCommittingAndPushing: model.activeOperation == .commitAndPush,
+                                canRewrite: model.canRewriteCodexCommitDraft,
+                                activeCommitOperation: model.activeOperation,
                                 rewrite: model.rewriteCodexCommitDraft,
+                                commit: {
+                                    Task { await model.commitCodexDraft() }
+                                },
                                 commitAndPush: {
                                     Task { await model.commitAndPushCodexDraft() }
                                 }
@@ -402,9 +432,13 @@ private struct CodexEmptyState: View {
 private struct CodexMessageRow: View {
     let message: CodexMessage
     let showsCommitActions: Bool
+    let automaticallyStagedCount: Int
+    let canCommit: Bool
     let canCommitAndPush: Bool
-    let isCommittingAndPushing: Bool
+    let canRewrite: Bool
+    let activeCommitOperation: OperationKind?
     let rewrite: () -> Void
+    let commit: () -> Void
     let commitAndPush: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     @State private var showsOperationEvents = false
@@ -507,28 +541,54 @@ private struct CodexMessageRow: View {
                 }
 
                 if message.role == .assistant, showsCommitActions {
-                    HStack(spacing: 8) {
-                        Button(action: commitAndPush) {
-                            HStack(spacing: 7) {
-                                if isCommittingAndPushing {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                        .tint(Color.white)
-                                } else {
-                                    Image(systemName: "arrow.up.circle.fill")
-                                }
-                                Text(L10n.text("codex.action.commit_push"))
-                            }
+                    VStack(alignment: .leading, spacing: 9) {
+                        if automaticallyStagedCount > 0 {
+                            Label(
+                                L10n.format("codex.draft.auto_staged", automaticallyStagedCount),
+                                systemImage: "checkmark.circle.fill"
+                            )
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(palette.success)
                         }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .disabled(!canCommitAndPush)
-                        .opacity(canCommitAndPush ? 1 : 0.48)
 
-                        Button(action: rewrite) {
-                            Label(L10n.text("codex.action.rewrite"), systemImage: "arrow.clockwise")
+                        HStack(spacing: 8) {
+                            Button(action: commit) {
+                                HStack(spacing: 7) {
+                                    if activeCommitOperation == .commit {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                            .tint(Color.white)
+                                    } else {
+                                        Image(systemName: "checkmark.circle.fill")
+                                    }
+                                    Text(L10n.text("action.commit"))
+                                }
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .disabled(!canCommit)
+                            .opacity(canCommit ? 1 : 0.48)
+
+                            Button(action: commitAndPush) {
+                                HStack(spacing: 7) {
+                                    if activeCommitOperation == .commitAndPush {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                    } else {
+                                        Image(systemName: "arrow.up.circle")
+                                    }
+                                    Text(L10n.text("codex.action.commit_push"))
+                                }
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                            .disabled(!canCommitAndPush)
+                            .opacity(canCommitAndPush ? 1 : 0.48)
+
+                            Button(action: rewrite) {
+                                Label(L10n.text("codex.action.rewrite"), systemImage: "arrow.clockwise")
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                            .disabled(!canRewrite || activeCommitOperation != nil)
                         }
-                        .buttonStyle(SecondaryButtonStyle())
-                        .disabled(isCommittingAndPushing || !canCommitAndPush)
                     }
                 }
             }

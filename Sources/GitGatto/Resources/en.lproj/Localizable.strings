@@ -54,7 +54,7 @@
 "discard.confirm.action" = "Discard Changes";
 
 "codex.scope" = "Agent uses the configured local CLI; read-only by default, edit mode is limited to this repository";
-"codex.scope.repository" = "Local project: %@ · %d staged";
+"codex.scope.repository" = "Project: %@ · %@ · %d staged · %d unstaged";
 "codex.mode.analyze" = "Analyze";
 "codex.mode.edit" = "Allow Edits";
 "codex.mode.analyze.help" = "Agent can read the repository without changing files or Git state";
@@ -71,8 +71,17 @@
 "codex.action.cancel" = "Stop";
 "codex.action.clear" = "Clear conversation";
 "codex.action.retry" = "Check Again";
+"codex.action.skills" = "Skills";
 "codex.action.commit_push" = "Commit & Push";
 "codex.action.rewrite" = "Rewrite";
+"codex.skill.workingTree" = "Analyze Working Tree";
+"codex.skill.stagedReview" = "Review Staged Changes";
+"codex.skill.commitDraft" = "Draft Commit Message";
+"codex.skill.repositoryDiagnosis" = "Diagnose Repository";
+"codex.skill.synchronization" = "Diagnose Synchronization";
+"codex.skill.conflicts" = "Analyze Conflicts";
+"codex.skill.history" = "Trace History";
+"codex.skill.githubChecks" = "Diagnose GitHub Checks";
 "codex.quick.explainChanges" = "Explain Changes";
 "codex.quick.reviewStaged" = "Review Staged";
 "codex.quick.draftCommit" = "Draft Commit Message";
@@ -82,6 +91,12 @@
 "codex.prompt.draft_commit.complete" = "Draft a complete Git commit message from the staged changes: a summary of no more than 72 characters, then a blank line and 1–3 short body points explaining motivation and impact. Return only the commit message.";
 "codex.prompt.rewrite_commit.concise" = "Rewrite the current staged changes as a more accurate, specific one-line Git commit summary of no more than 72 characters. Return only the new message.";
 "codex.prompt.rewrite_commit.complete" = "Rewrite the current staged changes as a complete Git commit message: a summary of no more than 72 characters and a short body explaining motivation and impact. Return only the new message.";
+"codex.prompt.diagnose_repository" = "Inspect the current repository state for working-tree, index, branch, hook, Git LFS, submodule, or worktree problems and give evidence-based recovery steps. Do not modify the repository.";
+"codex.prompt.diagnose_sync" = "Inspect the current branch, upstream, and ahead/behind state and diagnose likely pull or push failures. Do not perform remote writes.";
+"codex.prompt.diagnose_conflicts" = "Inspect whether the repository is in a merge, rebase, cherry-pick, revert, or stash conflict and list the conflict boundaries and safe resolution order. Do not modify the repository.";
+"codex.prompt.trace_history" = "Trace recent changes, branch relationships, and likely regression sources from repository history with verifiable commit and file evidence. Do not modify the repository.";
+"codex.prompt.diagnose_github_checks" = "Read the current repository's pull request and GitHub Actions check results and identify the failing step and its relationship to local changes. Keep GitHub read-only.";
+"codex.prompt.resolve_error.display" = "Resolve Git error %@";
 "codex.status.checking" = "Checking";
 "codex.status.available" = "Available";
 "codex.status.unavailable" = "Unavailable";
@@ -97,12 +112,18 @@
 "codex.operation.command" = "Command";
 "codex.operation.file_change" = "File change";
 "codex.status.committing_pushing" = "Committing and pushing…";
+"codex.status.committing" = "Committing…";
+"codex.message.committed" = "The local commit was created.";
 "codex.message.committed_pushed" = "The commit was created and pushed to the remote repository.";
 "codex.error.run" = "Agent task failed: %@";
 "codex.error.no_staged" = "The local project “%@” has no staged changes. Select the correct local project in the sidebar, or stage files and try again.";
+"codex.error.no_changes" = "The project “%@” has no changes available for a commit draft.";
+"codex.error.unresolved_conflicts" = "%d unresolved conflicts were found. Resolve them before drafting a commit message.";
 "codex.error.translate" = "Translation failed: %@";
+"codex.error.commit" = "Could not create the commit: %@";
 "codex.error.commit_push" = "Could not commit and push: %@";
 "codex.error.push_after_commit" = "The commit was created, but the push failed: %@. Resolve the remote issue, then retry with Push in the top bar.";
+"codex.draft.auto_staged" = "%d changes automatically staged";
 
 "ai.title" = "Agent";
 "ai.settings.title" = "Agent & Translation CLI";
@@ -322,8 +343,8 @@
 "help.topic.sync.title" = "Commit & Sync";
 "help.topic.sync.summary" = "Commits contain only staged content. Pull and push run only from explicit actions and report their state throughout the operation.";
 "help.sync.commit.title" = "Create a commit";
-"help.sync.commit.1" = "Enter a message or use Draft & Fill with Agent below the staging list. The concise or complete format follows Settings.";
-"help.sync.commit.2" = "A generated message fills the composer but never writes automatically; use Commit or Commit & Push to change the repository.";
+"help.sync.commit.1" = "Enter a message or use Draft & Fill with Agent. When nothing is staged, the current changes are staged first; the concise or complete format follows Settings.";
+"help.sync.commit.2" = "After drafting, edit the message, create a local commit, or commit and push. Commits and remote writes still require an explicit button.";
 "help.sync.commit.3" = "The workspace reloads after a commit. If the following push fails, the local commit remains intact.";
 "help.sync.remote.title" = "Pull and push";
 "help.sync.remote.1" = "The top status continuously reports synced, ahead, behind, diverged, or missing upstream and animates while status, Agent, pull, or push work is active.";
@@ -498,6 +519,7 @@
 "error.detail.time" = "Occurred";
 "error.action.copy" = "Copy Diagnostics";
 "error.action.copied" = "Diagnostics Copied";
+"error.action.agent_resolve" = "Resolve with Agent";
 "error.recovery.repository" = "Confirm the repository is accessible and the current account can read it, then try again.";
 "error.recovery.commit" = "Check the staged changes, Git author identity, and repository hooks. Resolve the complete output, then commit again.";
 "error.recovery.push" = "Check the remote, upstream branch, network, and account permissions. Resolve the complete output, then push again.";
@@ -603,13 +625,7 @@
 "settings.agent.draft_detail" = "Commit Message Detail";
 "settings.agent.draft_detail.body" = "Concise creates a one-line summary; Complete adds a summary and body.";
 "settings.agent.engine" = "Local Executor";
-"settings.agent.skill.changes" = "Working Tree & Staging Analysis";
-"settings.agent.skill.commits" = "Commit & Patch Review";
-"settings.agent.skill.history" = "History & Branch Tracing";
-"settings.agent.skill.conflicts" = "Conflict & Sync Diagnosis";
-"settings.agent.skill.pull_requests" = "Pull Request Review";
-"settings.agent.skill.actions" = "GitHub Actions Diagnosis";
-"settings.agent.tools.body" = "Agent may use local Git tools and read-only GitHub CLI evidence. Pushes, comments, merges, and other remote writes remain explicit app actions.";
+"settings.agent.tools.body" = "Agent can diagnose working trees, branch synchronization, conflicts, Git LFS, submodules, worktrees, hooks, history, pull requests, and GitHub Actions. Remote writes still require an explicit button.";
 "settings.translation.title" = "Translation";
 "settings.translation.engine" = "Translation Executor";
 "settings.translation.engine.body" = "Runs independently from project Agent, so translation remains available during repository tasks.";
