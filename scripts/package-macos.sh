@@ -6,8 +6,8 @@ OUTPUT_DIR="${1:-$ROOT/dist}"
 FINAL_APP="$OUTPUT_DIR/GitGatto.app"
 STAGE_ROOT=""
 BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
-VERSION="${GITGATTO_VERSION:-0.14.0}"
-BUILD="${GITGATTO_BUILD_NUMBER:-33}"
+VERSION="${GITGATTO_VERSION:-0.15.0}"
+BUILD="${GITGATTO_BUILD_NUMBER:-15000}"
 FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
 CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 ICON_MASTER="$ROOT/Assets/GitGatto-AppIcon.svg"
@@ -113,8 +113,9 @@ codesign --verify --deep --strict "$APP"
 if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
     codesign --verify --deep --strict -R='identifier "dev.gitgatto.client"' "$APP"
 else
-    codesign -d --verbose=4 "$APP" 2>&1 | grep -q '^Authority=Developer ID Application:'
-    codesign -d --verbose=4 "$APP" 2>&1 | grep -q '^Runtime Version='
+    CODESIGN_DETAILS="$(codesign -d --verbose=4 "$APP" 2>&1)"
+    grep -q '^Authority=Developer ID Application:' <<< "$CODESIGN_DETAILS"
+    grep -q '^Runtime Version=' <<< "$CODESIGN_DETAILS"
 fi
 ARCHS="$(lipo -archs "$APP/Contents/MacOS/GitGatto")"
 [[ "$ARCHS" == *arm64* && "$ARCHS" == *x86_64* ]]

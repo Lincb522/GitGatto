@@ -1,8 +1,11 @@
 .DS_Store
 .build/
 .swiftpm/
+*.dia
+*.swiftdeps
 dist/
 work/
+output/
 outputs/
 outputs-*/
 *.xcuserstate

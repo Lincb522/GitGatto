@@ -14,17 +14,27 @@ struct BranchesWorkspaceView: View {
                     BranchNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                     Rectangle().fill(palette.divider).frame(width: 1)
-                    BranchInspector(branch: model.selectedBranch)
+                    BranchInspector(model: model, branch: model.selectedBranch)
                 }
-            } else {
+            } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                 HStack(spacing: 10) {
                     BranchNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                         .appGlassPanel(cornerRadius: 14, elevated: false)
-                    BranchInspector(branch: model.selectedBranch)
+                    BranchInspector(model: model, branch: model.selectedBranch)
                         .appGlassPanel(cornerRadius: 14, elevated: false)
                 }
                 .padding(10)
+            } else {
+                HStack(spacing: 8) {
+                    BranchNavigator(model: model)
+                        .frame(width: min(390, max(315, proxy.size.width * 0.35)))
+                        .appConsolePanel()
+                    BranchInspector(model: model, branch: model.selectedBranch)
+                        .appConsolePanel()
+                }
+                .padding(8)
+                .background(palette.background)
             }
         }
     }
@@ -131,8 +141,11 @@ private struct BranchRow: View {
 }
 
 private struct BranchInspector: View {
+    @ObservedObject var model: WorkspaceViewModel
     let branch: BranchRecord?
     @Environment(\.colorScheme) private var colorScheme
+    @State private var isConfirmingMerge = false
+    @State private var isConfirmingRebase = false
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -188,6 +201,23 @@ private struct BranchInspector: View {
                             .stroke(palette.divider, lineWidth: 1)
                     }
 
+                    if !branch.isCurrent {
+                        HStack(spacing: 9) {
+                            Button(L10n.text("branches.quick_switch")) {
+                                Task { await model.switchBranch(to: branch.name) }
+                            }
+
+                            Button(L10n.text("branches.action.merge")) {
+                                isConfirmingMerge = true
+                            }
+
+                            Button(L10n.text("branches.action.rebase")) {
+                                isConfirmingRebase = true
+                            }
+                        }
+                        .disabled(model.activeOperation != nil || model.repositoryOperationState != nil)
+                    }
+
                     Spacer()
                 }
                 .padding(24)
@@ -202,6 +232,43 @@ private struct BranchInspector: View {
             }
         }
         .background(palette.background)
+        .confirmationDialog(
+            L10n.format("branches.merge.confirm.title", branch?.name ?? ""),
+            isPresented: $isConfirmingMerge,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.text("branches.action.merge")) {
+                guard let branch else { return }
+                Task { await model.merge(branch: branch.name) }
+            }
+            Button(L10n.text("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(
+                L10n.format(
+                    "branches.merge.confirm.message",
+                    branch?.name ?? "",
+                    model.snapshot?.branchName ?? ""
+                )
+            )
+        }
+        .confirmationDialog(
+            L10n.format("branches.rebase.confirm.title", branch?.name ?? ""),
+            isPresented: $isConfirmingRebase,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.text("branches.action.rebase"), role: .destructive) {
+                guard let branch else { return }
+                Task { await model.rebaseCurrentBranch(onto: branch.name) }
+            }
+            Button(L10n.text("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(
+                L10n.format(
+                    "branches.rebase.confirm.message",
+                    model.snapshot?.branchName ?? ""
+                )
+            )
+        }
     }
 }
 

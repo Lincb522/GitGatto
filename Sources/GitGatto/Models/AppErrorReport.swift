@@ -4,16 +4,24 @@ enum AppErrorContext: Sendable, Equatable {
     case repositoryOpen
     case repositoryRefresh
     case diffLoad
+    case fileHistory
+    case diagnostics
     case git(OperationKind)
     case agent
+    case worktree
+    case github
 
     fileprivate var codeComponent: String {
         switch self {
         case .repositoryOpen: "REPOSITORY-OPEN"
         case .repositoryRefresh: "REPOSITORY-REFRESH"
         case .diffLoad: "DIFF-LOAD"
+        case .fileHistory: "FILE-HISTORY"
+        case .diagnostics: "DIAGNOSTICS"
         case let .git(operation): "GIT-\(operation.errorCodeComponent)"
         case .agent: "AGENT-RUN"
+        case .worktree: "WORKTREE"
+        case .github: "GITHUB"
         }
     }
 
@@ -22,15 +30,21 @@ enum AppErrorContext: Sendable, Equatable {
         case .repositoryOpen: L10n.text("error.operation.repository_open")
         case .repositoryRefresh: L10n.text("error.operation.repository_refresh")
         case .diffLoad: L10n.text("error.operation.diff_load")
+        case .fileHistory: L10n.text("error.operation.file_history")
+        case .diagnostics: L10n.text("error.operation.diagnostics")
         case let .git(operation): L10n.text(operation.errorOperationKey)
         case .agent: L10n.text("error.operation.agent")
+        case .worktree: L10n.text("error.operation.worktree")
+        case .github: L10n.text("error.operation.github")
         }
     }
 
     fileprivate var recoverySuggestion: String {
         switch self {
-        case .repositoryOpen, .repositoryRefresh, .diffLoad:
+        case .repositoryOpen, .repositoryRefresh, .diffLoad, .fileHistory:
             L10n.text("error.recovery.repository")
+        case .diagnostics:
+            L10n.text("error.recovery.diagnostics")
         case .git(.commit):
             L10n.text("error.recovery.commit")
         case .git(.commitAndPush), .git(.push):
@@ -41,6 +55,10 @@ enum AppErrorContext: Sendable, Equatable {
             L10n.text("error.recovery.git")
         case .agent:
             L10n.text("error.recovery.agent")
+        case .worktree:
+            L10n.text("error.recovery.worktree")
+        case .github:
+            L10n.text("error.recovery.github")
         }
     }
 }
@@ -221,6 +239,16 @@ private extension OperationKind {
         case .switchBranch: "SWITCH-BRANCH"
         case .pull: "PULL"
         case .push: "PUSH"
+        case .merge: "MERGE"
+        case .rebase: "REBASE"
+        case .resolveConflict: "RESOLVE-CONFLICT"
+        case .continueConflictOperation: "CONTINUE-OPERATION"
+        case .skipConflictOperation: "SKIP-OPERATION"
+        case .abortConflictOperation: "ABORT-OPERATION"
+        case .stashSave: "STASH-SAVE"
+        case .stashApply: "STASH-APPLY"
+        case .stashPop: "STASH-POP"
+        case .stashDrop: "STASH-DROP"
         }
     }
 
@@ -235,6 +263,16 @@ private extension OperationKind {
         case .switchBranch: "error.operation.switch_branch"
         case .pull: "error.operation.pull"
         case .push: "error.operation.push"
+        case .merge: "error.operation.merge"
+        case .rebase: "error.operation.rebase"
+        case .resolveConflict: "error.operation.resolve_conflict"
+        case .continueConflictOperation: "error.operation.continue_conflict"
+        case .skipConflictOperation: "error.operation.skip_conflict"
+        case .abortConflictOperation: "error.operation.abort_conflict"
+        case .stashSave: "error.operation.stash_save"
+        case .stashApply: "error.operation.stash_apply"
+        case .stashPop: "error.operation.stash_pop"
+        case .stashDrop: "error.operation.stash_drop"
         }
     }
 }

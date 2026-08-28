@@ -6,14 +6,14 @@ GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.4 
 
 正式发布由 `.github/workflows/release-macos.yml` 完成。仓库的 Actions Secrets 必须包含：
 
-- `BUILD_CERTIFICATE_BASE64`：包含私钥的 Developer ID Application `.p12` 文件的 Base64 内容
-- `P12_PASSWORD`：导出 `.p12` 时设置的密码
-- `APPLE_ID`：Apple Developer 账号
-- `APPLE_APP_SPECIFIC_PASSWORD`：该账号生成的 App 专用密码
+- `MACOS_DEVELOPER_ID_P12_BASE64`：包含私钥的 Developer ID Application `.p12` 文件的 Base64 内容
+- `APP_STORE_CONNECT_KEY_ID`：公证 API Key ID
+- `APP_STORE_CONNECT_ISSUER_ID`：App Store Connect Issuer ID
+- `APP_STORE_CONNECT_PRIVATE_KEY_BASE64`：公证 API Key `.p8` 文件的 Base64 内容
 
-`developerID_application.cer` 只包含公钥证书，不能用于 CI 签名。必须在持有对应私钥的钥匙串中同时选择证书与私钥并导出 `.p12`。Team ID 与签名身份已固定为 `7VJKFX4HF8` 和 `Developer ID Application: chengbo lin (7VJKFX4HF8)`。
+`.cer` 只包含公钥证书，不能用于 CI 签名。`.p12` 必须同时包含 Developer ID Application 证书与对应私钥。Team ID 与签名身份已固定为 `7VJKFX4HF8` 和 `Developer ID Application: chengbo lin (7VJKFX4HF8)`。
 
-GitHub Actions 在临时钥匙串中导入证书，任务结束后删除该钥匙串。Apple 账号、证书密码和私钥不会写入仓库或构建产物。
+GitHub Actions 在临时钥匙串中导入证书，并使用 App Store Connect API Key 公证。临时钥匙串和运行器文件会在任务结束后销毁，私钥不会写入仓库或构建产物。
 
 ## 版本
 

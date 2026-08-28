@@ -26,6 +26,7 @@ enum CommitDraftDetail: String, CaseIterable, Identifiable, Codable, Sendable {
 enum AppVisualTheme: String, CaseIterable, Identifiable, Sendable {
     case standard = "default"
     case softGlass
+    case console
 
     var id: String { rawValue }
 

@@ -57,8 +57,8 @@ struct GitCommandRunner: Sendable {
         let outputPipe = Pipe()
         let errorPipe = Pipe()
 
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["git", "-C", repositoryURL.path] + arguments
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.arguments = ["-C", repositoryURL.path] + arguments
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 

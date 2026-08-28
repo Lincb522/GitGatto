@@ -8,6 +8,7 @@ struct AppSettingsView: View {
     @AppStorage(AppStyleDefaults.accentKey) private var accentRaw = AppAccentChoice.coral.rawValue
     @AppStorage(AppStyleDefaults.customAccentKey) private var customAccentHex = "#4F7DFF"
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedPage: SettingsPage = .appearance
     @State private var showsSavedState = false
 
@@ -22,28 +23,17 @@ struct AppSettingsView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: AppThemeLayout.panelSpacing) {
-            settingsWindowBar(palette)
-                .appGlassPanel()
-
-            settingsNavigation(palette)
-                .appGlassPanel(cornerRadius: 14, elevated: false)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    settingsHeader(palette)
-                    pageContent
-                }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 28)
-                .frame(maxWidth: 720, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+            switch AppVisualTheme.resolved(themeRaw) {
+            case .standard:
+                standardLayout(palette)
+            case .softGlass:
+                softGlassLayout(palette)
+            case .console:
+                consoleLayout(palette)
             }
-            .background(palette.surface.opacity(0.18))
-            .appGlassPanel()
         }
-        .padding(AppThemeLayout.workspaceInset)
-        .frame(minWidth: 800, minHeight: 650)
+        .frame(minWidth: 820, minHeight: 650)
         .background(Color.clear)
 #if DEBUG
         .background(
@@ -54,7 +44,218 @@ struct AppSettingsView: View {
 #endif
     }
 
-    private func settingsWindowBar(_ palette: AppPalette) -> some View {
+    private func standardLayout(_ palette: AppPalette) -> some View {
+        HStack(spacing: 0) {
+            standardSidebar(palette)
+                .frame(width: 216)
+                .background(palette.sidebar)
+
+            Rectangle()
+                .fill(palette.divider)
+                .frame(width: 1)
+
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Text(L10n.text(selectedPage.titleKey))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+
+                    Spacer()
+                    savedState(palette)
+                    saveButton
+                }
+                .padding(.horizontal, 22)
+                .frame(height: 64)
+                .background(palette.surface)
+
+                Rectangle()
+                    .fill(palette.divider)
+                    .frame(height: 1)
+
+                settingsContent(palette, includesPageTitle: false)
+                    .background(palette.background)
+            }
+        }
+    }
+
+    private func standardSidebar(_ palette: AppPalette) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            AppBrandLockup(iconSize: 36, wordmarkWidth: 100, spacing: 8)
+                .padding(.leading, 46)
+                .frame(height: 72, alignment: .leading)
+
+            VStack(spacing: 4) {
+                ForEach(SettingsPage.allCases) { page in
+                    Button {
+                        select(page)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: page.icon)
+                                .font(.system(size: 13, weight: .semibold))
+                                .frame(width: 18)
+                                .foregroundStyle(selectedPage == page ? palette.primary : palette.mutedInk)
+                            Text(L10n.text(page.titleKey))
+                                .font(.system(size: 12.5, weight: selectedPage == page ? .semibold : .medium))
+                                .lineLimit(1)
+                            Spacer(minLength: 0)
+                        }
+                        .foregroundStyle(selectedPage == page ? palette.ink : palette.mutedInk)
+                        .padding(.horizontal, 12)
+                        .frame(height: 38)
+                        .background(selectedPage == page ? palette.primarySoft : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+
+            Spacer()
+        }
+    }
+
+    private func softGlassLayout(_ palette: AppPalette) -> some View {
+        VStack(spacing: 12) {
+            glassWindowBar(palette)
+                .appGlassPanel()
+
+            glassNavigation(palette)
+                .appGlassPanel(cornerRadius: 14, elevated: false)
+
+            settingsContent(palette, includesPageTitle: true)
+                .appGlassPanel()
+        }
+        .padding(12)
+    }
+
+    private func consoleLayout(_ palette: AppPalette) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                AppBrandLockup(iconSize: 30, wordmarkWidth: 76, spacing: 7)
+                    .padding(.leading, 58)
+
+                Rectangle().fill(palette.divider).frame(width: 1, height: 26)
+
+                Text(L10n.text("console.command.settings"))
+                    .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(palette.accent)
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    ConsoleBreathingLight(isBusy: model.isCodexRunning)
+                    Text(L10n.text(model.isCodexRunning ? "console.status.running" : "console.status.ready"))
+                        .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(model.isCodexRunning ? palette.warning : palette.success)
+                }
+                .padding(.trailing, 14)
+            }
+            .frame(height: 58)
+            .background(palette.sidebar)
+
+            Rectangle().fill(palette.divider).frame(height: 1)
+
+            HStack(spacing: 0) {
+                consoleSettingsRail(palette)
+                    .frame(width: 82)
+
+                Rectangle().fill(palette.divider).frame(width: 1)
+
+                settingsContent(palette, includesPageTitle: true)
+                    .background(palette.background)
+
+                Rectangle().fill(palette.divider).frame(width: 1)
+
+                consoleSettingsStatus(palette)
+                    .frame(width: 188)
+            }
+        }
+    }
+
+    private func consoleSettingsRail(_ palette: AppPalette) -> some View {
+        VStack(spacing: 4) {
+            ForEach(SettingsPage.allCases) { page in
+                Button {
+                    select(page)
+                } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: page.icon)
+                            .font(.system(size: 13, weight: .semibold))
+                        Text(L10n.text(page.titleKey))
+                            .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                    }
+                    .foregroundStyle(selectedPage == page ? palette.accent : palette.mutedInk)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(selectedPage == page ? palette.accentSoft : Color.clear)
+                    .overlay(alignment: .leading) {
+                        Rectangle()
+                            .fill(selectedPage == page ? palette.accent : Color.clear)
+                            .frame(width: 2)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(L10n.text(page.titleKey))
+                .accessibilityLabel(L10n.text(page.titleKey))
+                .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 10)
+        .background(palette.sidebar)
+    }
+
+    private func consoleSettingsStatus(_ palette: AppPalette) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.text(selectedPage.titleKey).uppercased())
+                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                .foregroundStyle(palette.accent)
+
+            consoleStatusRow(
+                title: L10n.text("settings.appearance.mode_control"),
+                value: L10n.text("appearance.\(appearanceRaw)"),
+                palette: palette
+            )
+            consoleStatusRow(
+                title: L10n.text("settings.appearance.theme_section"),
+                value: L10n.text("theme.console"),
+                palette: palette
+            )
+            consoleStatusRow(
+                title: L10n.text("settings.appearance.accent_section"),
+                value: L10n.text("accent.\(accentRaw)"),
+                palette: palette
+            )
+
+            Spacer(minLength: 10)
+            savedState(palette)
+            saveButton
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(16)
+        .background(palette.sidebar)
+    }
+
+    private func consoleStatusRow(title: String, value: String, palette: AppPalette) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                .foregroundStyle(palette.subtleInk)
+            Text(value)
+                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                .foregroundStyle(palette.ink)
+                .lineLimit(2)
+        }
+    }
+
+    private func glassWindowBar(_ palette: AppPalette) -> some View {
         HStack(spacing: 12) {
             AppBrandLockup(iconSize: 38, wordmarkWidth: 102, spacing: 8)
                 .padding(.leading, 46)
@@ -68,32 +269,19 @@ struct AppSettingsView: View {
                 .foregroundStyle(palette.ink)
 
             Spacer()
-
-            if showsSavedState {
-                Label(L10n.text("settings.saved"), systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .foregroundStyle(palette.success)
-                    .transition(.opacity)
-            }
-
-            Button(L10n.text("settings.save")) {
-                model.saveSettings()
-                withAnimation(.easeOut(duration: 0.18)) { showsSavedState = true }
-            }
-            .buttonStyle(PrimaryButtonStyle())
+            savedState(palette)
+            saveButton
         }
         .padding(.leading, 10)
         .padding(.trailing, 16)
-        .frame(height: 70)
-        .background(palette.sidebar.opacity(0.22))
+        .frame(height: 64)
     }
 
-    private func settingsNavigation(_ palette: AppPalette) -> some View {
+    private func glassNavigation(_ palette: AppPalette) -> some View {
         HStack(spacing: 6) {
             ForEach(SettingsPage.allCases) { page in
                 Button {
-                    selectedPage = page
-                    showsSavedState = false
+                    select(page)
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: page.icon)
@@ -110,23 +298,65 @@ struct AppSettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
             }
         }
         .padding(7)
         .frame(height: 52)
-        .background(palette.sidebar.opacity(0.18))
     }
 
-    private func settingsHeader(_ palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(L10n.text(selectedPage.titleKey))
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(palette.ink)
-            Text(L10n.text(selectedPage.subtitleKey))
-                .font(.system(size: 12.5))
-                .foregroundStyle(palette.mutedInk)
-                .fixedSize(horizontal: false, vertical: true)
+    private func settingsContent(_ palette: AppPalette, includesPageTitle: Bool) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if includesPageTitle {
+                    HStack(spacing: 10) {
+                        Image(systemName: selectedPage.icon)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(palette.primary)
+                            .frame(width: 30, height: 30)
+                            .background(palette.primarySoft)
+                            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        Text(L10n.text(selectedPage.titleKey))
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                    }
+                    .padding(.bottom, 2)
+                }
+
+                pageContent
+            }
+            .padding(.horizontal, includesPageTitle ? 28 : 26)
+            .padding(.vertical, includesPageTitle ? 24 : 8)
+            .frame(maxWidth: includesPageTitle ? 780 : 860, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+    }
+
+    @ViewBuilder
+    private func savedState(_ palette: AppPalette) -> some View {
+        if showsSavedState {
+            Label(L10n.text("settings.saved"), systemImage: "checkmark.circle.fill")
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(palette.success)
+                .transition(.opacity)
+        }
+    }
+
+    private var saveButton: some View {
+        Button(L10n.text("settings.save")) {
+            model.saveSettings()
+            if reduceMotion {
+                showsSavedState = true
+            } else {
+                withAnimation(.easeOut(duration: 0.18)) { showsSavedState = true }
+            }
+        }
+        .buttonStyle(PrimaryButtonStyle())
+    }
+
+    private func select(_ page: SettingsPage) {
+        selectedPage = page
+        showsSavedState = false
     }
 
     @ViewBuilder
@@ -160,7 +390,6 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var titleKey: String { "settings.\(rawValue).title" }
-    var subtitleKey: String { "settings.\(rawValue).subtitle" }
 
     var icon: String {
         switch self {
@@ -208,7 +437,7 @@ private struct AppearanceSettingsPage: View {
 
         SettingsSection(titleKey: "settings.appearance.theme_section") {
             LazyVGrid(
-                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                columns: [GridItem(.adaptive(minimum: 158, maximum: 238), spacing: 10)],
                 spacing: 10
             ) {
                 ForEach(AppVisualTheme.allCases) { theme in
@@ -227,7 +456,7 @@ private struct AppearanceSettingsPage: View {
 
         SettingsSection(titleKey: "settings.appearance.accent_section") {
             LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
+                columns: accentColumns,
                 spacing: 8
             ) {
                 ForEach(AppAccentChoice.allCases) { accent in
@@ -251,6 +480,14 @@ private struct AppearanceSettingsPage: View {
                         .labelsHidden()
                 }
             }
+        }
+    }
+
+    private var accentColumns: [GridItem] {
+        if selectedTheme == .standard {
+            [GridItem(.adaptive(minimum: 105, maximum: 150), spacing: 8)]
+        } else {
+            Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
         }
     }
 
@@ -287,39 +524,7 @@ private struct ThemeChoiceButton: View {
         )
         Button(action: action) {
             VStack(alignment: .leading, spacing: 10) {
-                ZStack {
-                    LinearGradient(
-                        colors: [preview.background, preview.primarySoft.opacity(0.72)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    HStack(spacing: 8) {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(preview.sidebar)
-                            .frame(width: 54)
-                            .overlay {
-                                VStack(spacing: 5) {
-                                    Circle().fill(preview.primary).frame(width: 9, height: 9)
-                                    RoundedRectangle(cornerRadius: 2).fill(preview.ink.opacity(0.72)).frame(width: 26, height: 4)
-                                    RoundedRectangle(cornerRadius: 2).fill(preview.divider).frame(width: 30, height: 4)
-                                }
-                            }
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(preview.surface)
-                            .overlay {
-                                VStack(spacing: 8) {
-                                    HStack {
-                                        RoundedRectangle(cornerRadius: 2).fill(preview.ink).frame(width: 54, height: 5)
-                                        Spacer()
-                                        RoundedRectangle(cornerRadius: 4).fill(preview.primary).frame(width: 42, height: 12)
-                                    }
-                                    RoundedRectangle(cornerRadius: 4).fill(preview.raisedSurface).frame(height: 28)
-                                }
-                                .padding(10)
-                            }
-                    }
-                    .padding(10)
-                }
+                ThemeLayoutPreview(theme: theme, palette: preview)
                 .frame(height: 92)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay {
@@ -349,6 +554,173 @@ private struct ThemeChoiceButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct ThemeLayoutPreview: View {
+    let theme: AppVisualTheme
+    let palette: AppPalette
+
+    var body: some View {
+        switch theme {
+        case .standard:
+            HStack(spacing: 0) {
+                VStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        Circle().fill(palette.primary).frame(width: 7, height: 7)
+                        RoundedRectangle(cornerRadius: 2).fill(palette.ink).frame(width: 25, height: 4)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    ForEach(0..<3, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(index == 0 ? palette.primarySoft : Color.clear)
+                            .frame(height: 13)
+                            .overlay(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(index == 0 ? palette.primary : palette.mutedInk.opacity(0.56))
+                                    .frame(width: index == 0 ? 30 : 24, height: 3)
+                                    .padding(.leading, 6)
+                            }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(8)
+                .frame(width: 70)
+                .background(palette.sidebar)
+
+                Rectangle().fill(palette.divider).frame(width: 1)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        RoundedRectangle(cornerRadius: 2).fill(palette.ink).frame(width: 50, height: 5)
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 4).fill(palette.primary).frame(width: 40, height: 12)
+                    }
+                    .padding(8)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    VStack(spacing: 7) {
+                        RoundedRectangle(cornerRadius: 3).fill(palette.raisedSurface).frame(height: 18)
+                        RoundedRectangle(cornerRadius: 3).fill(palette.raisedSurface).frame(height: 18)
+                    }
+                    .padding(8)
+                }
+                .background(palette.background)
+            }
+        case .softGlass:
+            ZStack {
+                LinearGradient(
+                    colors: [palette.background, palette.primarySoft.opacity(0.72)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                VStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(palette.raisedSurface)
+                        .frame(height: 20)
+                        .overlay(alignment: .leading) {
+                            HStack(spacing: 4) {
+                                Circle().fill(palette.primary).frame(width: 7, height: 7)
+                                RoundedRectangle(cornerRadius: 2).fill(palette.ink).frame(width: 28, height: 4)
+                            }
+                            .padding(.leading, 7)
+                        }
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(palette.surface)
+                        .frame(height: 15)
+                        .overlay {
+                            HStack(spacing: 8) {
+                                ForEach(0..<4, id: \.self) { index in
+                                    Capsule()
+                                        .fill(index == 0 ? palette.primary : palette.mutedInk.opacity(0.38))
+                                        .frame(width: index == 0 ? 22 : 16, height: 3)
+                                }
+                            }
+                        }
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(palette.raisedSurface)
+                        .overlay {
+                            HStack(spacing: 7) {
+                                RoundedRectangle(cornerRadius: 4).fill(palette.surface).frame(width: 55)
+                                RoundedRectangle(cornerRadius: 4).fill(palette.surface)
+                            }
+                            .padding(7)
+                        }
+                }
+                .padding(8)
+            }
+        case .console:
+            VStack(spacing: 0) {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(palette.success)
+                        .frame(width: 5, height: 5)
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(palette.accent)
+                        .frame(width: 28, height: 3)
+                    Spacer()
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(palette.mutedInk.opacity(0.68))
+                        .frame(width: 34, height: 3)
+                }
+                .padding(.horizontal, 7)
+                .frame(height: 18)
+                .background(palette.sidebar)
+
+                Rectangle().fill(palette.divider).frame(height: 1)
+
+                HStack(spacing: 0) {
+                    VStack(spacing: 4) {
+                        ForEach(0..<4, id: \.self) { index in
+                            RoundedRectangle(cornerRadius: 1)
+                                .fill(index == 0 ? palette.accentSoft : Color.clear)
+                                .frame(height: 12)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 1)
+                                        .fill(index == 0 ? palette.accent : palette.mutedInk.opacity(0.42))
+                                        .frame(width: 8, height: 3)
+                                }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(4)
+                    .frame(width: 28)
+                    .background(palette.sidebar)
+
+                    Rectangle().fill(palette.divider).frame(width: 1)
+
+                    VStack(spacing: 5) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(palette.raisedSurface)
+                            .frame(height: 18)
+                        HStack(spacing: 5) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(palette.surface)
+                                .frame(width: 54)
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(palette.surface)
+                        }
+                    }
+                    .padding(6)
+                    .background(palette.background)
+                }
+
+                Rectangle().fill(palette.divider).frame(height: 1)
+
+                HStack(spacing: 4) {
+                    ForEach(0..<3, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(index == 0 ? palette.accentSoft : palette.raisedSurface)
+                            .frame(width: index == 0 ? 36 : 25, height: 7)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 6)
+                .frame(height: 14)
+                .background(palette.sidebar)
+            }
+            .background(palette.background)
+        }
     }
 }
 
@@ -672,18 +1044,68 @@ private struct SettingsSection<Content: View>: View {
     let titleKey: String
     @ViewBuilder let content: Content
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
 
+    @ViewBuilder
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(alignment: .leading, spacing: 16) {
-            Text(L10n.text(titleKey))
-                .font(.system(size: 13.5, weight: .semibold))
-                .foregroundStyle(palette.ink)
-            content
-        }
-        .padding(.bottom, 22)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(palette.divider).frame(height: 1)
+        switch AppVisualTheme.resolved(themeRaw) {
+        case .softGlass:
+            VStack(alignment: .leading, spacing: 16) {
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                VStack(alignment: .leading, spacing: 15) { content }
+            }
+            .padding(18)
+            .background {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(
+                        colorScheme == .dark
+                            ? Color.black.opacity(0.30)
+                            : Color.white.opacity(0.34)
+                    )
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(
+                        colorScheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.64),
+                        lineWidth: 1
+                    )
+            }
+        case .console:
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 7) {
+                    Text(">")
+                        .foregroundStyle(palette.accent)
+                    Text(L10n.text(titleKey))
+                        .foregroundStyle(palette.ink)
+                }
+                .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+
+                VStack(alignment: .leading, spacing: 14) { content }
+            }
+            .padding(14)
+            .background(palette.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(palette.divider, lineWidth: 1)
+            }
+        case .standard:
+            HStack(alignment: .top, spacing: 26) {
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                    .frame(width: 132, alignment: .leading)
+                VStack(alignment: .leading, spacing: 15) { content }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, 20)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(palette.divider).frame(height: 1)
+            }
         }
     }
 }

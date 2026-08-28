@@ -19,10 +19,126 @@ protocol GitHubServing: Sendable {
         for pullRequest: GitHubPullRequest,
         in repository: GitHubRepository
     ) async throws -> GitHubPullRequestContext
+    func pullRequestReviewCenter(
+        for pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws -> GitHubPullRequestReviewCenter
+    func submitPullRequestReview(
+        body: String,
+        event: GitHubPullRequestReviewEvent,
+        to pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws
+    func postPullRequestReviewComment(
+        body: String,
+        path: String,
+        line: Int,
+        startLine: Int?,
+        to pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws
+    func markPullRequestFile(
+        _ path: String,
+        viewed: Bool,
+        in pullRequest: GitHubPullRequest
+    ) async throws
+    func actionWorkflows(for repository: GitHubRepository) async throws -> [GitHubActionsWorkflow]
+    func actionRuns(for repository: GitHubRepository) async throws -> [GitHubActionsRun]
+    func actionRunDetail(
+        _ run: GitHubActionsRun,
+        in repository: GitHubRepository,
+        includeLog: Bool
+    ) async throws -> GitHubActionsRunDetail
+    func rerunActionRun(
+        _ run: GitHubActionsRun,
+        failedOnly: Bool,
+        in repository: GitHubRepository
+    ) async throws
+    func cancelActionRun(_ run: GitHubActionsRun, in repository: GitHubRepository) async throws
+    func downloadActionArtifact(
+        _ artifact: GitHubActionsArtifact,
+        for run: GitHubActionsRun,
+        to destination: URL,
+        in repository: GitHubRepository
+    ) async throws
     func clone(_ repository: GitHubRepository, into parentDirectory: URL) async throws -> URL
     func forkAndClone(_ repository: GitHubRepository, into parentDirectory: URL) async throws -> URL
     func postComment(_ body: String, to pullRequest: GitHubPullRequest, in repository: GitHubRepository) async throws
     func cancel() async
+}
+
+extension GitHubServing {
+    func pullRequestReviewCenter(
+        for pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws -> GitHubPullRequestReviewCenter {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func submitPullRequestReview(
+        body: String,
+        event: GitHubPullRequestReviewEvent,
+        to pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func postPullRequestReviewComment(
+        body: String,
+        path: String,
+        line: Int,
+        startLine: Int?,
+        to pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func markPullRequestFile(
+        _ path: String,
+        viewed: Bool,
+        in pullRequest: GitHubPullRequest
+    ) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func actionWorkflows(for repository: GitHubRepository) async throws -> [GitHubActionsWorkflow] {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func actionRuns(for repository: GitHubRepository) async throws -> [GitHubActionsRun] {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func actionRunDetail(
+        _ run: GitHubActionsRun,
+        in repository: GitHubRepository,
+        includeLog: Bool
+    ) async throws -> GitHubActionsRunDetail {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func rerunActionRun(
+        _ run: GitHubActionsRun,
+        failedOnly: Bool,
+        in repository: GitHubRepository
+    ) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func cancelActionRun(_ run: GitHubActionsRun, in repository: GitHubRepository) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func downloadActionArtifact(
+        _ artifact: GitHubActionsArtifact,
+        for run: GitHubActionsRun,
+        to destination: URL,
+        in repository: GitHubRepository
+    ) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
 }
 
 enum GitHubServiceError: LocalizedError, Sendable {
@@ -52,7 +168,7 @@ enum GitHubServiceError: LocalizedError, Sendable {
 }
 
 actor GitHubService: GitHubServing {
-    private var currentInvocation: GitHubCommandInvocation?
+    private var currentInvocations: [UUID: GitHubCommandInvocation] = [:]
 
     func probe() async -> GitHubAvailability {
         guard let executableURL = GitHubExecutableLocator.find() else {
@@ -339,6 +455,178 @@ actor GitHubService: GitHubServing {
         )
     }
 
+    func pullRequestReviewCenter(
+        for pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws -> GitHubPullRequestReviewCenter {
+        let root = "repos/\(repository.fullName)/pulls/\(pullRequest.number)"
+        let reviews = try GitHubAPIParser.pullRequestReviews(from: await paginated("\(root)/reviews"))
+        let issueComments = try GitHubAPIParser.pullRequestComments(
+            from: await paginated("repos/\(repository.fullName)/issues/\(pullRequest.number)/comments"),
+            kind: .conversation
+        )
+        let reviewComments = try GitHubAPIParser.pullRequestComments(
+            from: await paginated("\(root)/comments"),
+            kind: .review
+        )
+        let commits = try GitHubAPIParser.pullRequestCommits(from: await paginated("\(root)/commits"))
+        let files = try GitHubAPIParser.pullRequestFiles(from: await paginated("\(root)/files"))
+        let checksResponse = try await api([
+            "--paginate", "--slurp",
+            "-H", "Accept: application/vnd.github+json",
+            "-X", "GET",
+            "repos/\(repository.fullName)/commits/\(pullRequest.headSHA)/check-runs",
+            "-f", "per_page=100"
+        ])
+        let checks = try GitHubAPIParser.pullRequestChecks(from: checksResponse)
+        return GitHubPullRequestReviewCenter(
+            reviews: reviews,
+            comments: (issueComments + reviewComments).sorted { $0.createdAt < $1.createdAt },
+            commits: commits,
+            files: files,
+            checks: checks
+        )
+    }
+
+    func submitPullRequestReview(
+        body: String,
+        event: GitHubPullRequestReviewEvent,
+        to pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws {
+        _ = try await api([
+            "-X", "POST",
+            "repos/\(repository.fullName)/pulls/\(pullRequest.number)/reviews",
+            "-f", "body=\(body)",
+            "-f", "event=\(event.rawValue)"
+        ])
+    }
+
+    func postPullRequestReviewComment(
+        body: String,
+        path: String,
+        line: Int,
+        startLine: Int?,
+        to pullRequest: GitHubPullRequest,
+        in repository: GitHubRepository
+    ) async throws {
+        var arguments = [
+            "-X", "POST",
+            "repos/\(repository.fullName)/pulls/\(pullRequest.number)/comments",
+            "-f", "body=\(body)",
+            "-f", "commit_id=\(pullRequest.headSHA)",
+            "-f", "path=\(path)",
+            "-F", "line=\(line)",
+            "-f", "side=RIGHT"
+        ]
+        if let startLine, startLine < line {
+            arguments.append(contentsOf: ["-F", "start_line=\(startLine)", "-f", "start_side=RIGHT"])
+        }
+        _ = try await api(arguments)
+    }
+
+    func markPullRequestFile(
+        _ path: String,
+        viewed: Bool,
+        in pullRequest: GitHubPullRequest
+    ) async throws {
+        let field = viewed ? "markFileAsViewed" : "unmarkFileAsViewed"
+        let query = "mutation($pullRequestId:ID!,$path:String!){\(field)(input:{pullRequestId:$pullRequestId,path:$path}){clientMutationId}}"
+        _ = try await api([
+            "graphql",
+            "-f", "query=\(query)",
+            "-f", "pullRequestId=\(pullRequest.nodeID)",
+            "-f", "path=\(path)"
+        ])
+    }
+
+    func actionWorkflows(for repository: GitHubRepository) async throws -> [GitHubActionsWorkflow] {
+        let response = try await api([
+            "--paginate", "--slurp", "-X", "GET",
+            "repos/\(repository.fullName)/actions/workflows", "-f", "per_page=100"
+        ])
+        return try GitHubAPIParser.actionWorkflows(from: response)
+    }
+
+    func actionRuns(for repository: GitHubRepository) async throws -> [GitHubActionsRun] {
+        let response = try await api([
+            "--paginate", "--slurp", "-X", "GET",
+            "repos/\(repository.fullName)/actions/runs", "-f", "per_page=100"
+        ])
+        return try GitHubAPIParser.actionRuns(from: response)
+    }
+
+    func actionRunDetail(
+        _ run: GitHubActionsRun,
+        in repository: GitHubRepository,
+        includeLog: Bool
+    ) async throws -> GitHubActionsRunDetail {
+        let jobsResponse = try await api([
+            "--paginate", "--slurp", "-X", "GET",
+            "repos/\(repository.fullName)/actions/runs/\(run.id)/jobs", "-f", "per_page=100"
+        ])
+        let artifactsResponse = try await api([
+            "--paginate", "--slurp", "-X", "GET",
+            "repos/\(repository.fullName)/actions/runs/\(run.id)/artifacts", "-f", "per_page=100"
+        ])
+        var log: String?
+        var logError: String?
+        if includeLog {
+            do {
+                let output = try await execute(
+                    arguments: ["run", "view", String(run.id), "--repo", repository.fullName, "--log"],
+                    currentDirectoryURL: nil
+                )
+                log = String(decoding: output.standardOutput, as: UTF8.self)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                logError = error.localizedDescription
+            }
+        }
+        return GitHubActionsRunDetail(
+            jobs: try GitHubAPIParser.actionJobs(from: jobsResponse),
+            artifacts: try GitHubAPIParser.actionArtifacts(from: artifactsResponse),
+            log: log,
+            logError: logError
+        )
+    }
+
+    func rerunActionRun(
+        _ run: GitHubActionsRun,
+        failedOnly: Bool,
+        in repository: GitHubRepository
+    ) async throws {
+        let action = failedOnly ? "rerun-failed-jobs" : "rerun"
+        _ = try await api([
+            "-X", "POST",
+            "repos/\(repository.fullName)/actions/runs/\(run.id)/\(action)"
+        ])
+    }
+
+    func cancelActionRun(_ run: GitHubActionsRun, in repository: GitHubRepository) async throws {
+        _ = try await api([
+            "-X", "POST",
+            "repos/\(repository.fullName)/actions/runs/\(run.id)/cancel"
+        ])
+    }
+
+    func downloadActionArtifact(
+        _ artifact: GitHubActionsArtifact,
+        for run: GitHubActionsRun,
+        to destination: URL,
+        in repository: GitHubRepository
+    ) async throws {
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        _ = try await execute(
+            arguments: [
+                "run", "download", String(run.id), "--repo", repository.fullName,
+                "--name", artifact.name, "--dir", destination.path
+            ],
+            currentDirectoryURL: destination
+        )
+    }
+
     func clone(_ repository: GitHubRepository, into parentDirectory: URL) async throws -> URL {
         let destination = parentDirectory.appendingPathComponent(repository.name, isDirectory: true)
         guard !FileManager.default.fileExists(atPath: destination.path) else {
@@ -376,11 +664,21 @@ actor GitHubService: GitHubServing {
     }
 
     func cancel() {
-        currentInvocation?.cancel()
+        let invocations = Array(currentInvocations.values)
+        currentInvocations.removeAll()
+        for invocation in invocations {
+            invocation.cancel()
+        }
     }
 
     private func api(_ arguments: [String]) async throws -> Data {
         try await execute(arguments: ["api"] + arguments, currentDirectoryURL: nil).standardOutput
+    }
+
+    private func paginated(_ endpoint: String) async throws -> Data {
+        try await api([
+            "--paginate", "--slurp", "-X", "GET", endpoint, "-f", "per_page=100"
+        ])
     }
 
     private func execute(arguments: [String], currentDirectoryURL: URL?) async throws -> GitHubCommandOutput {
@@ -392,11 +690,10 @@ actor GitHubService: GitHubServing {
             arguments: arguments,
             currentDirectoryURL: currentDirectoryURL
         )
-        currentInvocation = invocation
+        let invocationID = UUID()
+        currentInvocations[invocationID] = invocation
         defer {
-            if currentInvocation === invocation {
-                currentInvocation = nil
-            }
+            currentInvocations[invocationID] = nil
         }
 
         let output = try await withTaskCancellationHandler {
@@ -451,6 +748,60 @@ enum GitHubAPIParser {
         try decode([PullRequestPayload].self, from: data).map(\.model)
     }
 
+    static func pullRequestReviews(from data: Data) throws -> [GitHubPullRequestReview] {
+        try decodePages(ReviewPayload.self, from: data).map(\.model)
+    }
+
+    static func pullRequestComments(
+        from data: Data,
+        kind: GitHubPullRequestComment.Kind
+    ) throws -> [GitHubPullRequestComment] {
+        try decodePages(CommentPayload.self, from: data).map { $0.model(kind: kind) }
+    }
+
+    static func pullRequestCommits(from data: Data) throws -> [GitHubPullRequestCommit] {
+        try decodePages(PullRequestCommitPayload.self, from: data).map(\.model)
+    }
+
+    static func pullRequestFiles(from data: Data) throws -> [GitHubPullRequestFile] {
+        try decodePages(PullRequestFilePayload.self, from: data).map(\.model)
+    }
+
+    static func pullRequestChecks(from data: Data) throws -> [GitHubPullRequestCheck] {
+        if let pages = try? decode([CheckRunsResponse].self, from: data) {
+            return pages.flatMap(\.checkRuns).map(\.model)
+        }
+        return try decode(CheckRunsResponse.self, from: data).checkRuns.map(\.model)
+    }
+
+    static func actionWorkflows(from data: Data) throws -> [GitHubActionsWorkflow] {
+        if let pages = try? decode([WorkflowsResponse].self, from: data) {
+            return pages.flatMap(\.workflows).map(\.model)
+        }
+        return try decode(WorkflowsResponse.self, from: data).workflows.map(\.model)
+    }
+
+    static func actionRuns(from data: Data) throws -> [GitHubActionsRun] {
+        if let pages = try? decode([ActionRunsResponse].self, from: data) {
+            return pages.flatMap(\.workflowRuns).map(\.model)
+        }
+        return try decode(ActionRunsResponse.self, from: data).workflowRuns.map(\.model)
+    }
+
+    static func actionJobs(from data: Data) throws -> [GitHubActionsJob] {
+        if let pages = try? decode([ActionJobsResponse].self, from: data) {
+            return pages.flatMap(\.jobs).map(\.model)
+        }
+        return try decode(ActionJobsResponse.self, from: data).jobs.map(\.model)
+    }
+
+    static func actionArtifacts(from data: Data) throws -> [GitHubActionsArtifact] {
+        if let pages = try? decode([ActionArtifactsResponse].self, from: data) {
+            return pages.flatMap(\.artifacts).map(\.model)
+        }
+        return try decode(ActionArtifactsResponse.self, from: data).artifacts.map(\.model)
+    }
+
     static func readmeMetadata(from data: Data) throws -> GitHubReadmeMetadata {
         try decode(ReadmeMetadataPayload.self, from: data).model
     }
@@ -477,6 +828,13 @@ enum GitHubAPIParser {
         } catch {
             throw GitHubServiceError.invalidResponse
         }
+    }
+
+    private static func decodePages<T: Decodable>(_ type: T.Type, from data: Data) throws -> [T] {
+        if let pages = try? decode([[T]].self, from: data) {
+            return pages.flatMap { $0 }
+        }
+        return try decode([T].self, from: data)
     }
 }
 
@@ -721,7 +1079,10 @@ private struct RepositoryPayload: Decodable {
 
 private struct PullRequestPayload: Decodable {
     struct User: Decodable { let login: String }
-    struct Branch: Decodable { let ref: String }
+    struct Branch: Decodable {
+        let ref: String
+        let sha: String
+    }
 
     let number: Int
     let title: String
@@ -729,6 +1090,7 @@ private struct PullRequestPayload: Decodable {
     let body: String?
     let htmlURL: URL
     let draft: Bool
+    let nodeID: String
     let head: Branch
     let base: Branch
     let updatedAt: Date
@@ -736,6 +1098,7 @@ private struct PullRequestPayload: Decodable {
     enum CodingKeys: String, CodingKey {
         case number, title, user, body, draft, head, base
         case htmlURL = "html_url"
+        case nodeID = "node_id"
         case updatedAt = "updated_at"
     }
 
@@ -748,8 +1111,277 @@ private struct PullRequestPayload: Decodable {
             webURL: htmlURL,
             isDraft: draft,
             headBranch: head.ref,
+            headSHA: head.sha,
             baseBranch: base.ref,
+            nodeID: nodeID,
             updatedAt: updatedAt
+        )
+    }
+}
+
+private struct ReviewPayload: Decodable {
+    struct User: Decodable { let login: String }
+    let id: Int64
+    let user: User
+    let body: String?
+    let state: String
+    let submittedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id, user, body, state
+        case submittedAt = "submitted_at"
+    }
+
+    var model: GitHubPullRequestReview {
+        GitHubPullRequestReview(id: id, author: user.login, body: body, state: state, submittedAt: submittedAt)
+    }
+}
+
+private struct CommentPayload: Decodable {
+    struct User: Decodable { let login: String }
+    let id: Int64
+    let user: User
+    let body: String
+    let createdAt: Date
+    let path: String?
+    let line: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id, user, body, path, line
+        case createdAt = "created_at"
+    }
+
+    func model(kind: GitHubPullRequestComment.Kind) -> GitHubPullRequestComment {
+        GitHubPullRequestComment(
+            id: id,
+            author: user.login,
+            body: body,
+            createdAt: createdAt,
+            path: path,
+            line: line,
+            kind: kind
+        )
+    }
+}
+
+private struct PullRequestCommitPayload: Decodable {
+    struct Commit: Decodable {
+        struct Author: Decodable {
+            let name: String
+            let date: Date?
+        }
+        let message: String
+        let author: Author?
+    }
+    let sha: String
+    let commit: Commit
+
+    var model: GitHubPullRequestCommit {
+        GitHubPullRequestCommit(
+            sha: sha,
+            message: commit.message,
+            author: commit.author?.name ?? "—",
+            date: commit.author?.date
+        )
+    }
+}
+
+private struct PullRequestFilePayload: Decodable {
+    let filename: String
+    let status: String
+    let additions: Int
+    let deletions: Int
+    let changes: Int
+    let patch: String?
+
+    var model: GitHubPullRequestFile {
+        GitHubPullRequestFile(
+            path: filename,
+            status: status,
+            additions: additions,
+            deletions: deletions,
+            changes: changes,
+            patch: patch
+        )
+    }
+}
+
+private struct CheckRunsResponse: Decodable {
+    let checkRuns: [CheckRunPayload]
+    enum CodingKeys: String, CodingKey { case checkRuns = "check_runs" }
+}
+
+private struct CheckRunPayload: Decodable {
+    let id: Int64
+    let name: String
+    let status: String
+    let conclusion: String?
+    let detailsURL: URL?
+    let startedAt: Date?
+    let completedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, status, conclusion
+        case detailsURL = "details_url"
+        case startedAt = "started_at"
+        case completedAt = "completed_at"
+    }
+
+    var model: GitHubPullRequestCheck {
+        GitHubPullRequestCheck(
+            id: id,
+            name: name,
+            status: status,
+            conclusion: conclusion,
+            detailsURL: detailsURL,
+            startedAt: startedAt,
+            completedAt: completedAt
+        )
+    }
+}
+
+private struct WorkflowsResponse: Decodable { let workflows: [WorkflowPayload] }
+private struct WorkflowPayload: Decodable {
+    let id: Int64
+    let name: String
+    let path: String
+    let state: String
+    var model: GitHubActionsWorkflow { .init(id: id, name: name, path: path, state: state) }
+}
+
+private struct ActionRunsResponse: Decodable {
+    let workflowRuns: [ActionRunPayload]
+    enum CodingKeys: String, CodingKey { case workflowRuns = "workflow_runs" }
+}
+
+private struct ActionRunPayload: Decodable {
+    struct Actor: Decodable { let login: String }
+    let id: Int64
+    let workflowID: Int64
+    let name: String?
+    let displayTitle: String
+    let event: String
+    let status: String
+    let conclusion: String?
+    let headBranch: String?
+    let headSHA: String
+    let runNumber: Int
+    let actor: Actor?
+    let createdAt: Date
+    let updatedAt: Date
+    let htmlURL: URL
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, event, status, conclusion, actor
+        case workflowID = "workflow_id"
+        case displayTitle = "display_title"
+        case headBranch = "head_branch"
+        case headSHA = "head_sha"
+        case runNumber = "run_number"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case htmlURL = "html_url"
+    }
+
+    var model: GitHubActionsRun {
+        GitHubActionsRun(
+            id: id,
+            workflowID: workflowID,
+            name: name ?? displayTitle,
+            displayTitle: displayTitle,
+            event: event,
+            status: status,
+            conclusion: conclusion,
+            branch: headBranch,
+            headSHA: headSHA,
+            runNumber: runNumber,
+            actor: actor?.login ?? "—",
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            webURL: htmlURL
+        )
+    }
+}
+
+private struct ActionJobsResponse: Decodable { let jobs: [ActionJobPayload] }
+private struct ActionJobPayload: Decodable {
+    let id: Int64
+    let name: String
+    let status: String
+    let conclusion: String?
+    let startedAt: Date?
+    let completedAt: Date?
+    let htmlURL: URL?
+    let steps: [ActionStepPayload]?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, status, conclusion, steps
+        case startedAt = "started_at"
+        case completedAt = "completed_at"
+        case htmlURL = "html_url"
+    }
+
+    var model: GitHubActionsJob {
+        GitHubActionsJob(
+            id: id,
+            name: name,
+            status: status,
+            conclusion: conclusion,
+            startedAt: startedAt,
+            completedAt: completedAt,
+            webURL: htmlURL,
+            steps: (steps ?? []).map(\.model)
+        )
+    }
+}
+
+private struct ActionStepPayload: Decodable {
+    let number: Int
+    let name: String
+    let status: String
+    let conclusion: String?
+    let startedAt: Date?
+    let completedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case number, name, status, conclusion
+        case startedAt = "started_at"
+        case completedAt = "completed_at"
+    }
+
+    var model: GitHubActionsStep {
+        GitHubActionsStep(
+            number: number,
+            name: name,
+            status: status,
+            conclusion: conclusion,
+            startedAt: startedAt,
+            completedAt: completedAt
+        )
+    }
+}
+
+private struct ActionArtifactsResponse: Decodable { let artifacts: [ActionArtifactPayload] }
+private struct ActionArtifactPayload: Decodable {
+    let id: Int64
+    let name: String
+    let sizeInBytes: Int
+    let expired: Bool
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, expired
+        case sizeInBytes = "size_in_bytes"
+        case expiresAt = "expires_at"
+    }
+
+    var model: GitHubActionsArtifact {
+        GitHubActionsArtifact(
+            id: id,
+            name: name,
+            sizeInBytes: sizeInBytes,
+            isExpired: expired,
+            expiresAt: expiresAt
         )
     }
 }

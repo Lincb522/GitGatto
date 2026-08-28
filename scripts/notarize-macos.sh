@@ -7,12 +7,28 @@ OUTPUT_DMG="${2:-$ROOT/dist/GitGatto.dmg}"
 CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:-}"
 NOTARIZATION_DIR="${GITGATTO_NOTARIZATION_DIR:-${OUTPUT_DMG:h}/notarization}"
 
-for variable in CODESIGN_IDENTITY APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+for variable in \
+    CODESIGN_IDENTITY \
+    APP_STORE_CONNECT_KEY_PATH \
+    APP_STORE_CONNECT_KEY_ID \
+    APP_STORE_CONNECT_ISSUER_ID
+do
     if [[ -z "${(P)variable:-}" ]]; then
         print -u2 "$variable is required."
         exit 1
     fi
 done
+
+if [[ ! -f "$APP_STORE_CONNECT_KEY_PATH" ]]; then
+    print -u2 "App Store Connect private key not found: $APP_STORE_CONNECT_KEY_PATH"
+    exit 1
+fi
+
+NOTARYTOOL_CREDENTIALS=(
+    --key "$APP_STORE_CONNECT_KEY_PATH"
+    --key-id "$APP_STORE_CONNECT_KEY_ID"
+    --issuer "$APP_STORE_CONNECT_ISSUER_ID"
+)
 
 if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
     print -u2 "A Developer ID Application identity is required."
@@ -40,9 +56,7 @@ submit_and_wait() {
     local log="$NOTARIZATION_DIR/$name-log.json"
 
     if ! xcrun notarytool submit "$artifact" \
-        --apple-id "$APPLE_ID" \
-        --team-id "$APPLE_TEAM_ID" \
-        --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+        "${NOTARYTOOL_CREDENTIALS[@]}" \
         --wait \
         --timeout 45m \
         --output-format json >"$result"; then
@@ -58,9 +72,7 @@ submit_and_wait() {
     if [[ "$status" != "Accepted" ]]; then
         if [[ -n "$submission_id" ]]; then
             xcrun notarytool log "$submission_id" \
-                --apple-id "$APPLE_ID" \
-                --team-id "$APPLE_TEAM_ID" \
-                --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+                "${NOTARYTOOL_CREDENTIALS[@]}" \
                 "$log" || true
         fi
         print -u2 "Apple notarization status for ${artifact:t}: ${status:-unknown}"
@@ -69,8 +81,9 @@ submit_and_wait() {
 }
 
 codesign --verify --deep --strict "$APP"
-codesign -d --verbose=4 "$APP" 2>&1 | grep -q '^Authority=Developer ID Application:'
-codesign -d --verbose=4 "$APP" 2>&1 | grep -q '^Runtime Version='
+CODESIGN_DETAILS="$(codesign -d --verbose=4 "$APP" 2>&1)"
+grep -q '^Authority=Developer ID Application:' <<< "$CODESIGN_DETAILS"
+grep -q '^Runtime Version=' <<< "$CODESIGN_DETAILS"
 
 ditto -c -k --keepParent --rsrc "$APP" "$APP_ZIP"
 submit_and_wait "$APP_ZIP" app

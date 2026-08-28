@@ -37,6 +37,13 @@ struct WorkspaceView: View {
                 && !model.isLoadingGitHubFile
         case .codex:
             model.codexAvailability.state != .checking
+        case .timeMachine:
+            !model.isLoadingRepositoryFiles
+                && !model.isLoadingFileTimeline
+                && model.selectedRepositoryFile != nil
+                && model.fileVersionDocument != nil
+        case .diagnostics:
+            model.activeDiagnosticOperation == nil && model.repositoryDiagnostics != nil
         default:
             true
         }
@@ -48,7 +55,8 @@ struct WorkspaceView: View {
             let compactSidebar = proxy.size.width < 1120
             let sidebarWidth: CGFloat = compactSidebar ? 214 : 238
             ZStack(alignment: .top) {
-                if theme == .standard {
+                switch theme {
+                case .standard:
                     HStack(spacing: 0) {
                         RepositorySidebar(model: model, appearanceRaw: $appearanceRaw)
                             .frame(width: proxy.size.width < 1120 ? 208 : 232)
@@ -64,7 +72,7 @@ struct WorkspaceView: View {
                         }
                         .background(palette.background)
                     }
-                } else {
+                case .softGlass:
                     VStack(spacing: AppThemeLayout.panelSpacing) {
                         HStack(spacing: AppThemeLayout.panelSpacing) {
                             WorkspaceBrandBar(compact: compactSidebar)
@@ -85,6 +93,8 @@ struct WorkspaceView: View {
                         }
                     }
                     .padding(AppThemeLayout.workspaceInset)
+                case .console:
+                    consoleLayout(palette: palette)
                 }
 
                 if let operation = model.activeOperation, operation.isRemoteSync {
@@ -136,16 +146,54 @@ struct WorkspaceView: View {
             switch model.selectedSection {
             case .changes:
                 ChangesWorkspaceView(model: model)
+            case .stash:
+                StashWorkspaceView(model: model)
             case .history:
                 HistoryWorkspaceView(model: model)
+            case .timeMachine:
+                FileTimelineWorkspaceView(model: model)
             case .branches:
                 BranchesWorkspaceView(model: model)
+            case .worktrees:
+                WorktreeWorkspaceView(model: model)
+            case .diagnostics:
+                RepositoryDiagnosticsView(model: model)
             case .github:
                 GitHubWorkspaceView(model: model)
             case .codex:
                 CodexWorkspaceView(model: model)
             }
         }
+    }
+
+    private func consoleLayout(palette: AppPalette) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                ConsoleBrandBar(
+                    isBusy: model.activeOperation != nil || model.isCodexRunning || model.isRefreshing
+                )
+                .frame(width: 218)
+
+                Rectangle().fill(palette.divider).frame(width: 1)
+                RepositoryTopBar(model: model)
+            }
+            .frame(height: AppThemeLayout.topBarHeight)
+
+            Rectangle().fill(palette.divider).frame(height: 1)
+
+            HStack(spacing: 0) {
+                ConsoleSectionRail(model: model)
+                    .frame(width: 88)
+                Rectangle().fill(palette.divider).frame(width: 1)
+                workspaceDetail
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+
+            Rectangle().fill(palette.divider).frame(height: 1)
+            ConsoleRepositoryDock(model: model, appearanceRaw: $appearanceRaw)
+                .frame(height: 54)
+        }
+        .background(palette.background)
     }
 }
 
@@ -167,6 +215,209 @@ private struct WorkspaceBrandBar: View {
         .padding(.trailing, 12)
         .frame(height: AppThemeLayout.topBarHeight)
         .background(palette.sidebar.opacity(0.18))
+    }
+}
+
+private struct ConsoleBrandBar: View {
+    let isBusy: Bool
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        HStack(spacing: 10) {
+            AppBrandLockup(iconSize: 30, wordmarkWidth: 76, spacing: 7)
+                .padding(.leading, 58)
+
+            Spacer(minLength: 6)
+
+            HStack(spacing: 5) {
+                ConsoleBreathingLight(isBusy: isBusy)
+                Text(L10n.text(isBusy ? "console.status.running" : "console.status.ready"))
+                    .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(isBusy ? palette.warning : palette.success)
+            }
+        }
+        .padding(.trailing, 12)
+        .frame(maxHeight: .infinity)
+        .background(palette.sidebar)
+    }
+}
+
+private struct ConsoleSectionRail: View {
+    @ObservedObject var model: WorkspaceViewModel
+    @Environment(\.colorScheme) private var colorScheme
+
+    private let sections: [WorkspaceSection] = [
+        .github, .changes, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex
+    ]
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        VStack(spacing: 4) {
+            ForEach(sections) { section in
+                Button {
+                    model.selectedSection = section
+                } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: icon(for: section))
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(L10n.text("nav.\(section.rawValue)"))
+                            .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(model.selectedSection == section ? palette.accent : palette.mutedInk)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(model.selectedSection == section ? palette.accentSoft : Color.clear)
+                    .overlay(alignment: .leading) {
+                        Rectangle()
+                            .fill(model.selectedSection == section ? palette.accent : Color.clear)
+                            .frame(width: 2)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(model.selectedSection == section ? .isSelected : [])
+            }
+
+            Spacer(minLength: 0)
+
+            if let count = railCount {
+                Text(String(format: "%03d", count))
+                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(palette.subtleInk)
+                    .padding(.bottom, 10)
+            }
+        }
+        .padding(.top, 10)
+        .background(palette.sidebar)
+    }
+
+    private var railCount: Int? {
+        switch model.selectedSection {
+        case .github: model.githubAccountRepositories.count
+        case .changes: model.snapshot?.changes.count
+        case .stash: model.stashes.count
+        case .history: model.commitGraph.nodes.count
+        case .timeMachine: model.repositoryFiles.count
+        case .branches: model.snapshot?.branches.count
+        case .worktrees: model.worktrees.count
+        case .diagnostics: model.repositoryDiagnostics?.attentionCount
+        case .codex: nil
+        }
+    }
+
+    private func icon(for section: WorkspaceSection) -> String {
+        switch section {
+        case .github: "square.grid.2x2"
+        case .changes: "square.stack.3d.up"
+        case .stash: "archivebox"
+        case .history: "clock.arrow.circlepath"
+        case .timeMachine: "clock.badge.checkmark"
+        case .branches: "arrow.triangle.branch"
+        case .worktrees: "rectangle.split.2x1"
+        case .diagnostics: "stethoscope"
+        case .codex: "sparkles"
+        }
+    }
+}
+
+private struct ConsoleRepositoryDock: View {
+    @ObservedObject var model: WorkspaceViewModel
+    @Binding var appearanceRaw: String
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        HStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Text(L10n.text("console.command.repositories"))
+                    .foregroundStyle(palette.accent)
+                Text(L10n.text("sidebar.repositories"))
+                    .foregroundStyle(palette.mutedInk)
+                Text(String(format: "%02d", model.localRepositories.count))
+                    .foregroundStyle(palette.subtleInk)
+            }
+            .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+
+            Rectangle().fill(palette.divider).frame(width: 1, height: 24)
+
+            if model.localRepositories.isEmpty {
+                Text(L10n.text("repository.scan.empty"))
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .foregroundStyle(palette.subtleInk)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(model.localRepositories, id: \.standardizedFileURL.path) { url in
+                            let isCurrent = model.snapshot?.rootURL.standardizedFileURL == url.standardizedFileURL
+                            Button {
+                                Task { await model.openRepository(url) }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(isCurrent ? palette.accent : palette.divider)
+                                        .frame(width: 5, height: 5)
+                                    Text(url.lastPathComponent)
+                                        .lineLimit(1)
+                                }
+                                .font(.system(size: 10.5, weight: isCurrent ? .semibold : .medium, design: .monospaced))
+                                .foregroundStyle(isCurrent ? palette.ink : palette.mutedInk)
+                                .padding(.horizontal, 9)
+                                .frame(height: 28)
+                                .background(isCurrent ? palette.accentSoft : palette.raisedSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                        .stroke(isCurrent ? palette.accent : palette.divider, lineWidth: 1)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .help(url.path)
+                        }
+                    }
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                openWindow(id: "repository-scanner")
+            } label: {
+                Image(systemName: model.isScanningRepositories ? "arrow.triangle.2.circlepath" : "folder.badge.plus")
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(model.isScanningRepositories ? palette.accent : palette.mutedInk)
+            .help(L10n.text("repository.scan.open"))
+
+            Menu {
+                ForEach(AppAppearance.allCases) { appearance in
+                    Button(L10n.text("appearance.\(appearance.rawValue)")) {
+                        appearanceRaw = appearance.rawValue
+                    }
+                }
+            } label: {
+                Image(systemName: "circle.lefthalf.filled")
+                    .frame(width: 28, height: 28)
+            }
+            .menuStyle(.borderlessButton)
+            .frame(width: 30)
+
+            Button {
+                openSettings()
+            } label: {
+                Image(systemName: "gearshape")
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(palette.mutedInk)
+            .help(L10n.text("settings.title"))
+        }
+        .padding(.horizontal, 12)
+        .background(palette.sidebar)
     }
 }
 
@@ -216,7 +467,7 @@ private struct RepositoryTopBar: View {
             .padding(.trailing, 16)
             .frame(height: AppThemeLayout.topBarHeight)
             .background(palette.surface)
-        } else {
+        } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
             GeometryReader { proxy in
             let compact = proxy.size.width < 820
             HStack(spacing: 12) {
@@ -267,6 +518,47 @@ private struct RepositoryTopBar: View {
             }
         }
         .frame(height: AppThemeLayout.topBarHeight)
+        } else {
+            GeometryReader { proxy in
+                let compact = proxy.size.width < 820
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 7) {
+                            Text(L10n.text("console.command.git"))
+                                .foregroundStyle(palette.accent)
+                            Text(model.repositoryName ?? L10n.text("app.name"))
+                                .foregroundStyle(palette.ink)
+                                .lineLimit(1)
+                        }
+                        .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
+
+                        if !compact, let path = model.snapshot?.rootURL.path {
+                            Text(path)
+                                .font(.system(size: 9.5, design: .monospaced))
+                                .foregroundStyle(palette.subtleInk)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
+                    .frame(maxWidth: compact ? 150 : 250, alignment: .leading)
+
+                    if let snapshot = model.snapshot {
+                        BranchQuickSwitcher(model: model, snapshot: snapshot)
+                        RepositorySyncStatusView(
+                            state: snapshot.syncState,
+                            isMonitoring: model.isLiveRefreshing || model.isCodexRunning,
+                            error: model.liveSyncError
+                        )
+                    }
+
+                    Spacer(minLength: 8)
+                    repositoryActions(palette: palette, compact: compact)
+                }
+                .padding(.horizontal, 14)
+                .frame(maxHeight: .infinity)
+                .background(palette.surface)
+            }
+            .frame(height: AppThemeLayout.topBarHeight)
         }
     }
 
@@ -310,6 +602,7 @@ private struct RepositoryTopBar: View {
                 model.chooseRepository()
             }
             .buttonStyle(SecondaryButtonStyle())
+            .fixedSize(horizontal: true, vertical: false)
         }
     }
 }
@@ -477,6 +770,7 @@ private struct RemoteSyncButton: View {
                     .lineLimit(1)
             }
             .font(.system(size: 11.5, weight: .semibold))
+            .fixedSize(horizontal: true, vertical: false)
         }
         .buttonStyle(SecondaryButtonStyle())
         .disabled(isDisabled)

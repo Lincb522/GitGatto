@@ -72,6 +72,7 @@ struct GitHubAPIParserTests {
         #expect(repositories.first?.fullName == "octocat/Hello-World")
         #expect(repositories.first?.stars == 1234)
         #expect(repositories.first?.defaultBranch == "main")
+        #expect(repositories.first?.language == "Swift")
     }
 
     @Test("Decodes developer search and profile fields")
@@ -133,8 +134,9 @@ struct GitHubAPIParserTests {
           "body": "Adds cancellation support.",
           "html_url": "https://github.com/octocat/Hello-World/pull/42",
           "draft": false,
-          "head": {"ref": "loading-fix"},
-          "base": {"ref": "main"},
+          "node_id": "PR_kwDO42",
+          "head": {"ref": "loading-fix", "sha": "abcdef1234567890"},
+          "base": {"ref": "main", "sha": "1111111111111111"},
           "updated_at": "2026-08-25T12:30:00Z"
         }]
         """
@@ -143,7 +145,57 @@ struct GitHubAPIParserTests {
 
         #expect(pullRequests.first?.number == 42)
         #expect(pullRequests.first?.headBranch == "loading-fix")
+        #expect(pullRequests.first?.headSHA == "abcdef1234567890")
+        #expect(pullRequests.first?.nodeID == "PR_kwDO42")
         #expect(pullRequests.first?.baseBranch == "main")
+    }
+
+    @Test("Decodes the complete pull request review center payloads")
+    func decodesPullRequestReviewCenterPayloads() throws {
+        let reviews = Data("""
+        [[{"id":11,"user":{"login":"reviewer"},"body":"Looks good","state":"APPROVED","submitted_at":"2026-08-25T12:30:00Z"}]]
+        """.utf8)
+        let comments = Data("""
+        [[{"id":12,"user":{"login":"maintainer"},"body":"Please cover cancellation.","created_at":"2026-08-25T12:31:00Z","path":"Sources/App.swift","line":42}]]
+        """.utf8)
+        let commits = Data("""
+        [[{"sha":"abcdef1234567890","commit":{"message":"Cover cancellation","author":{"name":"Contributor","date":"2026-08-25T12:32:00Z"}}}]]
+        """.utf8)
+        let files = Data("""
+        [[{"filename":"Sources/App.swift","status":"modified","additions":8,"deletions":2,"changes":10,"patch":"@@ -1 +1 @@\\n-old\\n+new"}]]
+        """.utf8)
+        let checks = Data("""
+        [{"check_runs":[{"id":13,"name":"macOS tests","status":"completed","conclusion":"success","details_url":"https://github.com/octocat/Hello-World/actions/runs/1","started_at":"2026-08-25T12:33:00Z","completed_at":"2026-08-25T12:34:00Z"}]}]
+        """.utf8)
+
+        #expect(try GitHubAPIParser.pullRequestReviews(from: reviews).first?.state == "APPROVED")
+        #expect(try GitHubAPIParser.pullRequestComments(from: comments, kind: .review).first?.line == 42)
+        #expect(try GitHubAPIParser.pullRequestCommits(from: commits).first?.shortSHA == "abcdef12")
+        #expect(try GitHubAPIParser.pullRequestFiles(from: files).first?.additions == 8)
+        #expect(try GitHubAPIParser.pullRequestChecks(from: checks).first?.conclusion == "success")
+    }
+
+    @Test("Decodes paginated Actions workflows, runs, jobs, and artifacts")
+    func decodesActionsPayloads() throws {
+        let workflows = Data("""
+        [{"workflows":[{"id":81,"name":"macOS CI","path":".github/workflows/ci.yml","state":"active"}]}]
+        """.utf8)
+        let runs = Data("""
+        [{"workflow_runs":[{"id":617,"workflow_id":81,"name":"macOS CI","display_title":"Build pull request","event":"pull_request","status":"completed","conclusion":"failure","head_branch":"feature/fix","head_sha":"abcdef1234567890","run_number":42,"actor":{"login":"octocat"},"created_at":"2026-08-25T12:30:00Z","updated_at":"2026-08-25T12:34:00Z","html_url":"https://github.com/octocat/Hello-World/actions/runs/617"}]}]
+        """.utf8)
+        let jobs = Data("""
+        [{"jobs":[{"id":71,"name":"build","status":"completed","conclusion":"failure","started_at":"2026-08-25T12:30:00Z","completed_at":"2026-08-25T12:34:00Z","html_url":"https://github.com/octocat/Hello-World/actions/runs/617/job/71","steps":[{"number":1,"name":"Compile","status":"completed","conclusion":"success","started_at":"2026-08-25T12:30:00Z","completed_at":"2026-08-25T12:32:00Z"}]}]}]
+        """.utf8)
+        let artifacts = Data("""
+        [{"artifacts":[{"id":91,"name":"diagnostics","size_in_bytes":2048,"expired":false,"expires_at":"2026-09-25T12:30:00Z"}]}]
+        """.utf8)
+
+        #expect(try GitHubAPIParser.actionWorkflows(from: workflows).first?.name == "macOS CI")
+        let run = try #require(GitHubAPIParser.actionRuns(from: runs).first)
+        #expect(run.workflowID == 81)
+        #expect(run.conclusion == "failure")
+        #expect(try GitHubAPIParser.actionJobs(from: jobs).first?.steps.first?.name == "Compile")
+        #expect(try GitHubAPIParser.actionArtifacts(from: artifacts).first?.sizeInBytes == 2048)
     }
 
     @Test("Decodes and sorts repository contents")

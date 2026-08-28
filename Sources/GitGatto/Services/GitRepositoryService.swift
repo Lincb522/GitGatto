@@ -20,10 +20,17 @@ enum GitRepositoryServiceError: LocalizedError, Sendable {
 protocol GitRepositoryServing: Sendable {
     func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot
     func loadLiveState(at repositoryURL: URL) async throws -> RepositoryLiveState
+    func commitGraph(in repositoryURL: URL) async throws -> CommitGraph
     func fetchRemoteTracking(in repositoryURL: URL) async throws
     func diff(for change: WorkingTreeChange, in repositoryURL: URL) async throws -> DiffDocument
     func diff(for commit: CommitRecord, in repositoryURL: URL) async throws -> DiffDocument
     func stagedDiff(in repositoryURL: URL) async throws -> String
+    func stashes(in repositoryURL: URL) async throws -> [StashRecord]
+    func stashDiff(reference: String, in repositoryURL: URL) async throws -> DiffDocument
+    func stashChanges(message: String?, includeUntracked: Bool, in repositoryURL: URL) async throws -> Bool
+    func applyStash(reference: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func popStash(reference: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func dropStash(reference: String, in repositoryURL: URL) async throws
     func stage(paths: [String], in repositoryURL: URL) async throws
     func unstage(paths: [String], in repositoryURL: URL) async throws
     func switchBranch(to branchName: String, in repositoryURL: URL) async throws
@@ -33,6 +40,15 @@ protocol GitRepositoryServing: Sendable {
     func commitAndPush(message: String, in repositoryURL: URL) async throws
     func pull(in repositoryURL: URL) async throws
     func push(in repositoryURL: URL) async throws
+    func repositoryOperationState(in repositoryURL: URL) async throws -> RepositoryOperationState?
+    func conflictDocument(path: String, in repositoryURL: URL) async throws -> ConflictFileDocument
+    func resolveConflict(path: String, using side: ConflictSide, in repositoryURL: URL) async throws
+    func resolveConflict(path: String, result: String, in repositoryURL: URL) async throws
+    func merge(branch: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func rebase(onto branch: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func continueRepositoryOperation(in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func skipRepositoryOperation(in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func abortRepositoryOperation(in repositoryURL: URL) async throws
 }
 
 actor GitRepositoryService: GitRepositoryServing {
@@ -155,6 +171,23 @@ actor GitRepositoryService: GitRepositoryServing {
         )
     }
 
+    func commitGraph(in repositoryURL: URL) async throws -> CommitGraph {
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: [
+                "log",
+                "--all",
+                "--topo-order",
+                "-n", "300",
+                "--date=iso-strict",
+                "--pretty=format:%H%x1f%h%x1f%P%x1f%D%x1f%an%x1f%ad%x1f%s%x1e"
+            ],
+            acceptedExitCodes: [0, 128]
+        )
+        guard result.exitCode == 0 else { return .empty }
+        return Self.parseCommitGraph(result.text)
+    }
+
     func fetchRemoteTracking(in repositoryURL: URL) async throws {
         let upstream = try await runner.run(
             at: repositoryURL,
@@ -206,6 +239,66 @@ actor GitRepositoryService: GitRepositoryServing {
             arguments: ["diff", "--cached", "--no-color", "--no-ext-diff", "--unified=4"]
         )
         return result.text
+    }
+
+    func stashes(in repositoryURL: URL) async throws -> [StashRecord] {
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["stash", "list", "--format=%gd%x1f%H%x1f%ct%x1f%gs%x1e"]
+        )
+        return Self.parseStashes(result.text)
+    }
+
+    func stashDiff(reference: String, in repositoryURL: URL) async throws -> DiffDocument {
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["stash", "show", "--patch", "--include-untracked", "--no-color", reference]
+        )
+        return GitParsers.diff(from: result.text, path: reference)
+    }
+
+    func stashChanges(
+        message: String?,
+        includeUntracked: Bool,
+        in repositoryURL: URL
+    ) async throws -> Bool {
+        let previous = try await stashHead(in: repositoryURL)
+        var arguments = ["stash", "push"]
+        if includeUntracked {
+            arguments.append("--include-untracked")
+        }
+        if let message, !message.isEmpty {
+            arguments += ["--message", message]
+        }
+        _ = try await runner.run(at: repositoryURL, arguments: arguments)
+        return try await stashHead(in: repositoryURL) != previous
+    }
+
+    func applyStash(reference: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        let arguments = ["stash", "apply", "--index", reference]
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: arguments,
+            acceptedExitCodes: [0, 1]
+        )
+        return try await transition(for: result, arguments: arguments, in: repositoryURL)
+    }
+
+    func popStash(reference: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        let arguments = ["stash", "pop", "--index", reference]
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: arguments,
+            acceptedExitCodes: [0, 1]
+        )
+        return try await transition(for: result, arguments: arguments, in: repositoryURL)
+    }
+
+    func dropStash(reference: String, in repositoryURL: URL) async throws {
+        _ = try await runner.run(
+            at: repositoryURL,
+            arguments: ["stash", "drop", reference]
+        )
     }
 
     func stage(paths: [String], in repositoryURL: URL) async throws {
@@ -356,12 +449,361 @@ actor GitRepositoryService: GitRepositoryServing {
         )
     }
 
+    func repositoryOperationState(in repositoryURL: URL) async throws -> RepositoryOperationState? {
+        let gitDirectoryResult = try await runner.run(
+            at: repositoryURL,
+            arguments: ["rev-parse", "--absolute-git-dir"]
+        )
+        let gitDirectory = URL(
+            fileURLWithPath: gitDirectoryResult.text.trimmingCharacters(in: .whitespacesAndNewlines),
+            isDirectory: true
+        )
+        let conflictedPaths = try await conflictPaths(in: repositoryURL)
+        let fileManager = FileManager.default
+
+        let rebaseMerge = gitDirectory.appendingPathComponent("rebase-merge", isDirectory: true)
+        let rebaseApply = gitDirectory.appendingPathComponent("rebase-apply", isDirectory: true)
+        if fileManager.fileExists(atPath: rebaseMerge.path) {
+            return RepositoryOperationState(
+                kind: .rebase,
+                conflictedPaths: conflictedPaths,
+                progress: rebaseProgress(in: rebaseMerge, currentName: "msgnum", totalName: "end")
+            )
+        }
+        if fileManager.fileExists(atPath: rebaseApply.path) {
+            return RepositoryOperationState(
+                kind: .rebase,
+                conflictedPaths: conflictedPaths,
+                progress: rebaseProgress(in: rebaseApply, currentName: "next", totalName: "last")
+            )
+        }
+        if fileManager.fileExists(atPath: gitDirectory.appendingPathComponent("MERGE_HEAD").path) {
+            return RepositoryOperationState(kind: .merge, conflictedPaths: conflictedPaths, progress: nil)
+        }
+        if fileManager.fileExists(atPath: gitDirectory.appendingPathComponent("CHERRY_PICK_HEAD").path) {
+            return RepositoryOperationState(kind: .cherryPick, conflictedPaths: conflictedPaths, progress: nil)
+        }
+        if fileManager.fileExists(atPath: gitDirectory.appendingPathComponent("REVERT_HEAD").path) {
+            return RepositoryOperationState(kind: .revert, conflictedPaths: conflictedPaths, progress: nil)
+        }
+        guard !conflictedPaths.isEmpty else { return nil }
+        return RepositoryOperationState(kind: .unknown, conflictedPaths: conflictedPaths, progress: nil)
+    }
+
+    func conflictDocument(path: String, in repositoryURL: URL) async throws -> ConflictFileDocument {
+        let stages = try await conflictStages(for: path, in: repositoryURL)
+        let baseData = try await conflictBlob(stage: 1, path: path, availableStages: stages, in: repositoryURL)
+        let oursData = try await conflictBlob(stage: 2, path: path, availableStages: stages, in: repositoryURL)
+        let theirsData = try await conflictBlob(stage: 3, path: path, availableStages: stages, in: repositoryURL)
+        let fileURL = try validatedFileURL(path: path, in: repositoryURL)
+        let resultData = try? Data(contentsOf: fileURL)
+        let allData = [baseData, oursData, theirsData, resultData].compactMap { $0 }
+
+        return ConflictFileDocument(
+            path: path,
+            base: baseData.flatMap(Self.textContent),
+            ours: oursData.flatMap(Self.textContent),
+            theirs: theirsData.flatMap(Self.textContent),
+            result: resultData.flatMap(Self.textContent),
+            isBinary: allData.contains { Self.textContent($0) == nil }
+        )
+    }
+
+    func resolveConflict(path: String, using side: ConflictSide, in repositoryURL: URL) async throws {
+        let stages = try await conflictStages(for: path, in: repositoryURL)
+        let stage = side == .ours ? 2 : 3
+        if stages.contains(stage) {
+            _ = try await runner.run(
+                at: repositoryURL,
+                arguments: ["checkout", side == .ours ? "--ours" : "--theirs", "--", path]
+            )
+            _ = try await runner.run(at: repositoryURL, arguments: ["add", "--", path])
+        } else {
+            _ = try await runner.run(
+                at: repositoryURL,
+                arguments: ["rm", "--ignore-unmatch", "--", path]
+            )
+        }
+    }
+
+    func resolveConflict(path: String, result: String, in repositoryURL: URL) async throws {
+        let fileURL = try validatedFileURL(path: path, in: repositoryURL)
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data(result.utf8).write(to: fileURL, options: .atomic)
+        _ = try await runner.run(at: repositoryURL, arguments: ["add", "--", path])
+    }
+
+    func merge(branch: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        let arguments = ["merge", "--no-edit", "--", branch]
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: arguments,
+            acceptedExitCodes: [0, 1]
+        )
+        return try await transition(for: result, arguments: arguments, in: repositoryURL)
+    }
+
+    func rebase(onto branch: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        let arguments = ["rebase", "--", branch]
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: arguments,
+            acceptedExitCodes: [0, 1]
+        )
+        return try await transition(for: result, arguments: arguments, in: repositoryURL)
+    }
+
+    func continueRepositoryOperation(in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        guard let state = try await repositoryOperationState(in: repositoryURL), state.kind != .unknown else {
+            throw GitCommandError(arguments: ["continue"], exitCode: 128, message: "No Git operation is waiting to continue.")
+        }
+        let arguments = ["-c", "core.editor=true", state.kind.commandName, "--continue"]
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: arguments,
+            acceptedExitCodes: [0, 1]
+        )
+        return try await transition(for: result, arguments: arguments, in: repositoryURL)
+    }
+
+    func skipRepositoryOperation(in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        guard let state = try await repositoryOperationState(in: repositoryURL), state.kind.supportsSkip else {
+            throw GitCommandError(arguments: ["skip"], exitCode: 128, message: "The current Git operation cannot skip a step.")
+        }
+        let arguments = [state.kind.commandName, "--skip"]
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: arguments,
+            acceptedExitCodes: [0, 1]
+        )
+        return try await transition(for: result, arguments: arguments, in: repositoryURL)
+    }
+
+    func abortRepositoryOperation(in repositoryURL: URL) async throws {
+        guard let state = try await repositoryOperationState(in: repositoryURL), state.kind.supportsAbort else {
+            throw GitCommandError(arguments: ["abort"], exitCode: 128, message: "The current Git operation cannot be aborted.")
+        }
+        _ = try await runner.run(
+            at: repositoryURL,
+            arguments: [state.kind.commandName, "--abort"]
+        )
+    }
+
     private func changes(at paths: [String], in repositoryURL: URL) async throws -> [WorkingTreeChange] {
         let status = try await runner.run(
             at: repositoryURL,
             arguments: ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--"] + paths
         )
         return GitParsers.status(from: status.output)
+    }
+
+    private func stashHead(in repositoryURL: URL) async throws -> String? {
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["rev-parse", "--verify", "refs/stash"],
+            acceptedExitCodes: [0, 128]
+        )
+        guard result.exitCode == 0 else { return nil }
+        return result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func conflictPaths(in repositoryURL: URL) async throws -> [String] {
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["diff", "--name-only", "--diff-filter=U", "-z"]
+        )
+        return result.output
+            .split(separator: 0)
+            .map { String(decoding: $0, as: UTF8.self) }
+            .filter { !$0.isEmpty }
+    }
+
+    private func conflictStages(for path: String, in repositoryURL: URL) async throws -> Set<Int> {
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["ls-files", "-u", "-z", "--", path]
+        )
+        return Set(result.output.split(separator: 0).compactMap { entry in
+            let text = String(decoding: entry, as: UTF8.self)
+            guard let tab = text.firstIndex(of: "\t") else { return nil }
+            return text[..<tab]
+                .split(separator: " ")
+                .last
+                .flatMap { Int($0) }
+        })
+    }
+
+    private func conflictBlob(
+        stage: Int,
+        path: String,
+        availableStages: Set<Int>,
+        in repositoryURL: URL
+    ) async throws -> Data? {
+        guard availableStages.contains(stage) else { return nil }
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["show", ":\(stage):\(path)"]
+        )
+        return result.output
+    }
+
+    private func transition(
+        for result: GitCommandResult,
+        arguments: [String],
+        in repositoryURL: URL
+    ) async throws -> RepositoryOperationTransition {
+        if let state = try await repositoryOperationState(in: repositoryURL) {
+            return .paused(state)
+        }
+        guard result.exitCode == 0 else {
+            throw Self.commandError(result: result, arguments: arguments)
+        }
+        return .completed
+    }
+
+    private func rebaseProgress(
+        in directory: URL,
+        currentName: String,
+        totalName: String
+    ) -> RepositoryOperationProgress? {
+        guard let current = Self.integer(in: directory.appendingPathComponent(currentName)),
+              let total = Self.integer(in: directory.appendingPathComponent(totalName)),
+              current > 0,
+              total > 0 else { return nil }
+        return RepositoryOperationProgress(current: current, total: total)
+    }
+
+    private func validatedFileURL(path: String, in repositoryURL: URL) throws -> URL {
+        let root = repositoryURL.standardizedFileURL
+        let candidate = root.appendingPathComponent(path).standardizedFileURL
+        guard candidate.path.hasPrefix(root.path + "/") else {
+            throw GitCommandError(arguments: ["resolve", "--", path], exitCode: 128, message: "Conflict path is outside the repository.")
+        }
+        return candidate
+    }
+
+    private static func textContent(_ data: Data) -> String? {
+        guard !data.contains(0) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private static func integer(in url: URL) -> Int? {
+        guard let value = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        return Int(value.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private static func commandError(result: GitCommandResult, arguments: [String]) -> GitCommandError {
+        let stdout = String(decoding: result.output, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let stderr = String(decoding: result.errorOutput, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let message = [stdout, stderr].filter { !$0.isEmpty }.joined(separator: "\n")
+        return GitCommandError(
+            arguments: arguments,
+            exitCode: result.exitCode,
+            message: message.isEmpty ? "git exited with status \(result.exitCode)" : message
+        )
+    }
+
+    private static func parseStashes(_ value: String) -> [StashRecord] {
+        value.split(separator: "\u{1e}").compactMap { rawRecord in
+            let record = rawRecord.trimmingCharacters(in: .whitespacesAndNewlines)
+            let fields = record.split(separator: "\u{1f}", omittingEmptySubsequences: false)
+            guard fields.count == 4,
+                  let timestamp = TimeInterval(fields[2]) else { return nil }
+            return StashRecord(
+                reference: String(fields[0]),
+                hash: String(fields[1]),
+                createdAt: Date(timeIntervalSince1970: timestamp),
+                summary: String(fields[3])
+            )
+        }
+    }
+
+    private static func parseCommitGraph(_ value: String) -> CommitGraph {
+        struct Entry {
+            let hash: String
+            let shortHash: String
+            let parents: [String]
+            let references: [String]
+            let author: String
+            let date: Date
+            let subject: String
+        }
+
+        let entries: [Entry] = value.split(separator: "\u{1e}").compactMap { rawRecord in
+            let record = rawRecord.trimmingCharacters(in: .whitespacesAndNewlines)
+            let fields = record.split(separator: "\u{1f}", omittingEmptySubsequences: false)
+            guard fields.count == 7,
+                  let date = ISO8601DateFormatter().date(from: String(fields[5])) else { return nil }
+            return Entry(
+                hash: String(fields[0]),
+                shortHash: String(fields[1]),
+                parents: fields[2].split(separator: " ").map(String.init),
+                references: parseReferences(String(fields[3])),
+                author: String(fields[4]),
+                date: date,
+                subject: String(fields[6])
+            )
+        }
+
+        var activeLanes: [String] = []
+        var nodes: [CommitGraphNode] = []
+        var laneCount = 0
+        for entry in entries {
+            let lane: Int
+            if let existing = activeLanes.firstIndex(of: entry.hash) {
+                lane = existing
+            } else {
+                lane = activeLanes.count
+                activeLanes.append(entry.hash)
+            }
+            laneCount = max(laneCount, lane + 1)
+
+            if let firstParent = entry.parents.first {
+                activeLanes[lane] = firstParent
+                for index in activeLanes.indices.reversed()
+                    where index != lane && activeLanes[index] == firstParent {
+                    activeLanes.remove(at: index)
+                }
+                for parent in entry.parents.dropFirst().reversed() where !activeLanes.contains(parent) {
+                    activeLanes.insert(parent, at: min(lane + 1, activeLanes.count))
+                }
+            } else {
+                activeLanes.remove(at: lane)
+            }
+            laneCount = max(laneCount, activeLanes.count)
+            nodes.append(
+                CommitGraphNode(
+                    hash: entry.hash,
+                    shortHash: entry.shortHash,
+                    parentHashes: entry.parents,
+                    references: entry.references,
+                    author: entry.author,
+                    date: entry.date,
+                    subject: entry.subject,
+                    lane: lane
+                )
+            )
+        }
+        return CommitGraph(nodes: nodes, laneCount: laneCount)
+    }
+
+    private static func parseReferences(_ value: String) -> [String] {
+        value.split(separator: ",").map { raw in
+            var reference = raw.trimmingCharacters(in: .whitespaces)
+            if reference.hasPrefix("HEAD -> ") {
+                reference.removeFirst("HEAD -> ".count)
+            }
+            for prefix in ["tag: refs/tags/", "refs/heads/", "refs/remotes/"] where reference.hasPrefix(prefix) {
+                reference.removeFirst(prefix.count)
+                break
+            }
+            return reference
+        }.filter { !$0.isEmpty }
     }
 
     private static func escapeGitIgnore(_ value: String) -> String {
@@ -371,6 +813,18 @@ actor GitRepositoryService: GitRepositoryServing {
                 result.append("\\")
             }
             result.append(character)
+        }
+    }
+}
+
+private extension RepositoryOperationKind {
+    var commandName: String {
+        switch self {
+        case .merge: "merge"
+        case .rebase: "rebase"
+        case .cherryPick: "cherry-pick"
+        case .revert: "revert"
+        case .unknown: ""
         }
     }
 }

@@ -7,7 +7,8 @@ struct PrimaryButtonStyle: ButtonStyle {
     @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
         let palette = AppPalette(colorScheme)
-        if AppVisualTheme.resolved(themeRaw) == .standard {
+        switch AppVisualTheme.resolved(themeRaw) {
+        case .standard:
             configuration.label
                 .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(Color.white)
@@ -17,7 +18,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
                 .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-        } else {
+        case .softGlass:
             configuration.label
                 .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(Color.white)
@@ -35,6 +36,20 @@ struct PrimaryButtonStyle: ButtonStyle {
                 .shadow(color: palette.primary.opacity(configuration.isPressed ? 0.08 : 0.20), radius: 6, y: 3)
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
                 .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+        case .console:
+            configuration.label
+                .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                .foregroundStyle(palette.background)
+                .padding(.horizontal, 13)
+                .frame(height: 30)
+                .background(palette.accent.opacity(configuration.isPressed ? 0.72 : 1))
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .stroke(palette.accent, lineWidth: 1)
+                }
+                .scaleEffect(configuration.isPressed ? 0.98 : 1)
+                .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
         }
     }
 }
@@ -46,7 +61,8 @@ struct SecondaryButtonStyle: ButtonStyle {
     @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
         let palette = AppPalette(colorScheme)
-        if AppVisualTheme.resolved(themeRaw) == .standard {
+        switch AppVisualTheme.resolved(themeRaw) {
+        case .standard:
             configuration.label
                 .font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(palette.ink)
@@ -58,7 +74,7 @@ struct SecondaryButtonStyle: ButtonStyle {
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
                         .stroke(palette.divider, lineWidth: 1)
                 }
-        } else {
+        case .softGlass:
             configuration.label
                 .font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(palette.ink)
@@ -74,6 +90,18 @@ struct SecondaryButtonStyle: ButtonStyle {
                 .overlay {
                     RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                         .stroke(Color.white.opacity(colorScheme == .dark ? 0.10 : 0.66), lineWidth: 1)
+                }
+        case .console:
+            configuration.label
+                .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+                .foregroundStyle(configuration.isPressed ? palette.accent : palette.ink)
+                .padding(.horizontal, 12)
+                .frame(height: 30)
+                .background(configuration.isPressed ? palette.accentSoft : palette.raisedSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .stroke(configuration.isPressed ? palette.accent : palette.divider, lineWidth: 1)
                 }
         }
     }
@@ -150,13 +178,14 @@ struct SearchField: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
+        let theme = AppVisualTheme.resolved(themeRaw)
         HStack(spacing: 7) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
             TextField(L10n.text(placeholderKey), text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12.5))
+                .font(.system(size: theme == .console ? 11.5 : 12.5, design: theme == .console ? .monospaced : .default))
                 .foregroundStyle(palette.ink)
             if !text.isEmpty {
                 Button {
@@ -170,27 +199,68 @@ struct SearchField: View {
             }
         }
         .padding(.horizontal, 10)
-        .frame(height: AppVisualTheme.resolved(themeRaw) == .standard ? 30 : 34)
+        .frame(height: theme == .softGlass ? 34 : 30)
         .background {
-            if AppVisualTheme.resolved(themeRaw) == .standard {
+            switch theme {
+            case .standard:
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(palette.raisedSurface)
-            } else {
+            case .softGlass:
                 RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                     .fill(.ultraThinMaterial)
                 RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                     .fill(palette.raisedSurface.opacity(0.68))
+            case .console:
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(palette.background)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                 .stroke(
-                    AppVisualTheme.resolved(themeRaw) == .standard
-                        ? palette.divider
-                        : Color.white.opacity(colorScheme == .dark ? 0.09 : 0.62),
+                    theme == .softGlass
+                        ? Color.white.opacity(colorScheme == .dark ? 0.09 : 0.62)
+                        : palette.divider,
                     lineWidth: 1
                 )
+        }
+    }
+}
+
+struct ConsoleBreathingLight: View {
+    var isBusy = false
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isPulsing = false
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        let color = isBusy ? palette.warning : palette.success
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.62), lineWidth: 1)
+                .frame(width: 8, height: 8)
+                .scaleEffect(reduceMotion ? 1 : (isPulsing ? 2.25 : 1))
+                .opacity(reduceMotion ? 0 : (isPulsing ? 0 : 0.72))
+            Circle()
+                .fill(color)
+                .frame(width: 7, height: 7)
+                .shadow(color: color.opacity(0.72), radius: 5)
+        }
+        .frame(width: 18, height: 18)
+        .onAppear { updateAnimation() }
+        .onChange(of: isBusy) { _, _ in updateAnimation() }
+        .onChange(of: reduceMotion) { _, _ in updateAnimation() }
+        .accessibilityHidden(true)
+    }
+
+    private func updateAnimation() {
+        isPulsing = false
+        guard !reduceMotion else { return }
+        withAnimation(.easeOut(duration: 1.45).repeatForever(autoreverses: false)) {
+            isPulsing = true
         }
     }
 }

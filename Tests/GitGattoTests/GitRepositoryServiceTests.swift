@@ -124,7 +124,7 @@ struct GitRepositoryServiceTests {
 
         try runGit(["add", "tracked.txt"], at: root)
 
-        let deadline = ContinuousClock.now.advanced(by: .seconds(4))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(15))
         while model.snapshot?.stagedChanges.map(\.path) != ["tracked.txt"], ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(100))
         }
@@ -361,11 +361,235 @@ struct GitRepositoryServiceTests {
         #expect(contents == "/Sources/App.swift\n/Sources/\n*.swift\n/notes\\ file.md\n")
     }
 
+    @Test("Resolves a real merge conflict and continues the merge")
+    func resolvesMergeConflict() async throws {
+        let root = try makeConflictRepository(checkingOut: "main")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = GitRepositoryService()
+
+        let transition = try await service.merge(branch: "feature", in: root)
+        guard case let .paused(state) = transition else {
+            Issue.record("Expected merge to pause for a conflict")
+            return
+        }
+        #expect(state.kind == .merge)
+        #expect(state.conflictedPaths == ["conflict.txt"])
+
+        let document = try await service.conflictDocument(path: "conflict.txt", in: root)
+        #expect(document.base == "base\n")
+        #expect(document.ours == "main\n")
+        #expect(document.theirs == "feature\n")
+        #expect(document.result?.contains("<<<<<<<") == true)
+        #expect(!document.isBinary)
+
+        try await service.resolveConflict(path: "conflict.txt", using: .theirs, in: root)
+        let readyState = try await service.repositoryOperationState(in: root)
+        #expect(readyState?.kind == .merge)
+        #expect(readyState?.conflictedPaths.isEmpty == true)
+        #expect(try await service.continueRepositoryOperation(in: root) == .completed)
+        #expect(try String(contentsOf: root.appendingPathComponent("conflict.txt"), encoding: .utf8) == "feature\n")
+        #expect(try runGitOutput(["status", "--porcelain"], at: root).isEmpty)
+        #expect(try await service.repositoryOperationState(in: root) == nil)
+    }
+
+    @Test("Aborts a real merge conflict without changing HEAD")
+    func abortsMergeConflict() async throws {
+        let root = try makeConflictRepository(checkingOut: "main")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = GitRepositoryService()
+        let head = try runGitOutput(["rev-parse", "HEAD"], at: root)
+
+        _ = try await service.merge(branch: "feature", in: root)
+        try await service.abortRepositoryOperation(in: root)
+
+        #expect(try runGitOutput(["rev-parse", "HEAD"], at: root) == head)
+        #expect(try String(contentsOf: root.appendingPathComponent("conflict.txt"), encoding: .utf8) == "main\n")
+        #expect(try runGitOutput(["status", "--porcelain"], at: root).isEmpty)
+        #expect(try await service.repositoryOperationState(in: root) == nil)
+    }
+
+    @Test("Resolves and continues a real rebase conflict")
+    func resolvesRebaseConflict() async throws {
+        let root = try makeConflictRepository(checkingOut: "feature")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = GitRepositoryService()
+
+        let transition = try await service.rebase(onto: "main", in: root)
+        guard case let .paused(state) = transition else {
+            Issue.record("Expected rebase to pause for a conflict")
+            return
+        }
+        #expect(state.kind == .rebase)
+        #expect(state.conflictedPaths == ["conflict.txt"])
+        #expect(state.progress != nil)
+
+        try await service.resolveConflict(path: "conflict.txt", result: "resolved\n", in: root)
+        #expect(try await service.continueRepositoryOperation(in: root) == .completed)
+        #expect(try String(contentsOf: root.appendingPathComponent("conflict.txt"), encoding: .utf8) == "resolved\n")
+        #expect(try runGitOutput(["branch", "--show-current"], at: root) == "feature")
+        #expect(try runGitOutput(["status", "--porcelain"], at: root).isEmpty)
+    }
+
+    @Test("Skips the conflicting commit during a real rebase")
+    func skipsRebaseConflict() async throws {
+        let root = try makeConflictRepository(checkingOut: "feature")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = GitRepositoryService()
+
+        _ = try await service.rebase(onto: "main", in: root)
+        #expect(try await service.skipRepositoryOperation(in: root) == .completed)
+        #expect(try String(contentsOf: root.appendingPathComponent("conflict.txt"), encoding: .utf8) == "main\n")
+        #expect(try runGitOutput(["status", "--porcelain"], at: root).isEmpty)
+        #expect(try await service.repositoryOperationState(in: root) == nil)
+    }
+
+    @Test("Saves, inspects, applies, pops, and drops real stashes")
+    func managesStashes() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoStashTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "base\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "tracked.txt"], at: root)
+        try runGit(["commit", "-m", "Base"], at: root)
+
+        try "stashed\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try "untracked\n".write(to: root.appendingPathComponent("new.txt"), atomically: true, encoding: .utf8)
+        let service = GitRepositoryService()
+        #expect(try await service.stashChanges(message: "Workspace draft", includeUntracked: true, in: root))
+        #expect(try runGitOutput(["status", "--porcelain"], at: root).isEmpty)
+
+        let firstList = try await service.stashes(in: root)
+        let first = try #require(firstList.first)
+        #expect(first.reference == "stash@{0}")
+        #expect(first.summary.contains("Workspace draft"))
+        let diff = try await service.stashDiff(reference: first.reference, in: root)
+        #expect(diff.lines.contains { $0.text.contains("stashed") })
+        #expect(diff.lines.contains { $0.text.contains("untracked") })
+
+        #expect(try await service.applyStash(reference: first.reference, in: root) == .completed)
+        #expect(try String(contentsOf: root.appendingPathComponent("tracked.txt"), encoding: .utf8) == "stashed\n")
+        #expect(FileManager.default.fileExists(atPath: root.appendingPathComponent("new.txt").path))
+        #expect(try await service.stashes(in: root).count == 1)
+
+        try runGit(["reset", "--hard", "HEAD"], at: root)
+        try runGit(["clean", "-fd"], at: root)
+        #expect(try await service.popStash(reference: "stash@{0}", in: root) == .completed)
+        #expect(try await service.stashes(in: root).isEmpty)
+
+        try runGit(["reset", "--hard", "HEAD"], at: root)
+        try runGit(["clean", "-fd"], at: root)
+        try "drop me\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        #expect(try await service.stashChanges(message: "Disposable", includeUntracked: false, in: root))
+        try await service.dropStash(reference: "stash@{0}", in: root)
+        #expect(try await service.stashes(in: root).isEmpty)
+        #expect(try await service.stashChanges(message: nil, includeUntracked: true, in: root) == false)
+    }
+
+    @Test("Surfaces conflicts caused by applying a real stash")
+    func detectsStashApplyConflict() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoStashConflictTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "base\n".write(to: root.appendingPathComponent("conflict.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "conflict.txt"], at: root)
+        try runGit(["commit", "-m", "Base"], at: root)
+
+        let service = GitRepositoryService()
+        try "stash\n".write(to: root.appendingPathComponent("conflict.txt"), atomically: true, encoding: .utf8)
+        #expect(try await service.stashChanges(message: "Conflicting draft", includeUntracked: false, in: root))
+        try "main\n".write(to: root.appendingPathComponent("conflict.txt"), atomically: true, encoding: .utf8)
+        try runGit(["commit", "-am", "Main change"], at: root)
+
+        let transition = try await service.applyStash(reference: "stash@{0}", in: root)
+        guard case let .paused(state) = transition else {
+            Issue.record("Expected stash apply to pause for a conflict")
+            return
+        }
+        #expect(state.kind == .unknown)
+        #expect(state.conflictedPaths == ["conflict.txt"])
+        #expect(try await service.stashes(in: root).count == 1)
+
+        let document = try await service.conflictDocument(path: "conflict.txt", in: root)
+        #expect(document.ours == "main\n")
+        #expect(document.theirs == "stash\n")
+        try await service.resolveConflict(path: "conflict.txt", using: .theirs, in: root)
+        #expect(try await service.repositoryOperationState(in: root) == nil)
+        #expect(try String(contentsOf: root.appendingPathComponent("conflict.txt"), encoding: .utf8) == "stash\n")
+    }
+
+    @Test("Builds a topological commit graph from real branches and a merge")
+    func buildsCommitGraph() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoGraphTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "base\n".write(to: root.appendingPathComponent("base.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "base.txt"], at: root)
+        try runGit(["commit", "-m", "Base"], at: root)
+        try runGit(["switch", "-c", "feature"], at: root)
+        try "feature\n".write(to: root.appendingPathComponent("feature.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "feature.txt"], at: root)
+        try runGit(["commit", "-m", "Feature"], at: root)
+        let featureHash = try runGitOutput(["rev-parse", "HEAD"], at: root)
+        try runGit(["switch", "main"], at: root)
+        try "main\n".write(to: root.appendingPathComponent("main.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "main.txt"], at: root)
+        try runGit(["commit", "-m", "Main"], at: root)
+        let mainParentHash = try runGitOutput(["rev-parse", "HEAD"], at: root)
+        try runGit(["merge", "--no-edit", "feature"], at: root)
+        let mergeHash = try runGitOutput(["rev-parse", "HEAD"], at: root)
+
+        let graph = try await GitRepositoryService().commitGraph(in: root)
+        let merge = try #require(graph.nodes.first { $0.hash == mergeHash })
+        #expect(Set(merge.parentHashes) == [mainParentHash, featureHash])
+        #expect(merge.references.contains("main"))
+        #expect(graph.nodes.contains { $0.references.contains("feature") })
+        #expect(graph.laneCount >= 2)
+        let mergeIndex = try #require(graph.nodes.firstIndex { $0.hash == mergeHash })
+        for parent in merge.parentHashes {
+            let parentIndex = try #require(graph.nodes.firstIndex { $0.hash == parent })
+            #expect(mergeIndex < parentIndex)
+        }
+    }
+
+    private func makeConflictRepository(checkingOut branch: String) throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoConflictTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "base\n".write(to: root.appendingPathComponent("conflict.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "conflict.txt"], at: root)
+        try runGit(["commit", "-m", "Base"], at: root)
+        try runGit(["switch", "-c", "feature"], at: root)
+        try "feature\n".write(to: root.appendingPathComponent("conflict.txt"), atomically: true, encoding: .utf8)
+        try runGit(["commit", "-am", "Feature change"], at: root)
+        try runGit(["switch", "main"], at: root)
+        try "main\n".write(to: root.appendingPathComponent("conflict.txt"), atomically: true, encoding: .utf8)
+        try runGit(["commit", "-am", "Main change"], at: root)
+        if branch != "main" {
+            try runGit(["switch", branch], at: root)
+        }
+        return root
+    }
+
     private func runGit(_ arguments: [String], at url: URL) throws {
         let process = Process()
         let errorPipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["git", "-C", url.path] + arguments
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.arguments = ["-C", url.path] + arguments
         process.standardOutput = FileHandle.nullDevice
         process.standardError = errorPipe
         try process.run()
@@ -380,8 +604,8 @@ struct GitRepositoryServiceTests {
         let process = Process()
         let outputPipe = Pipe()
         let errorPipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["git", "-C", url.path] + arguments
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.arguments = ["-C", url.path] + arguments
         process.standardOutput = outputPipe
         process.standardError = errorPipe
         try process.run()

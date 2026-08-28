@@ -9,5 +9,6 @@ struct AppThemeTests {
         #expect(AppVisualTheme.resolved("unknown") == .standard)
         #expect(AppVisualTheme.resolved(AppVisualTheme.standard.rawValue) == .standard)
         #expect(AppVisualTheme.resolved(AppVisualTheme.softGlass.rawValue) == .softGlass)
+        #expect(AppVisualTheme.resolved(AppVisualTheme.console.rawValue) == .console)
     }
 }

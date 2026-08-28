@@ -9,14 +9,27 @@ struct ChangesWorkspaceView: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         GeometryReader { proxy in
-            if AppVisualTheme.resolved(themeRaw) == .standard {
+            if let operationState = model.repositoryOperationState {
+                if AppVisualTheme.resolved(themeRaw) == .standard {
+                    ConflictResolutionWorkspaceView(model: model, state: operationState)
+                } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
+                    ConflictResolutionWorkspaceView(model: model, state: operationState)
+                        .appGlassPanel(cornerRadius: 14, elevated: false)
+                        .padding(10)
+                } else {
+                    ConflictResolutionWorkspaceView(model: model, state: operationState)
+                        .appConsolePanel()
+                        .padding(8)
+                        .background(palette.background)
+                }
+            } else if AppVisualTheme.resolved(themeRaw) == .standard {
                 HStack(spacing: 0) {
                     ChangeNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                     Rectangle().fill(palette.divider).frame(width: 1)
                     DiffInspectorView(change: model.selectedChange, document: model.diffDocument)
                 }
-            } else {
+            } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                 HStack(spacing: 10) {
                     ChangeNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
@@ -25,6 +38,16 @@ struct ChangesWorkspaceView: View {
                         .appGlassPanel(cornerRadius: 14, elevated: false)
                 }
                 .padding(10)
+            } else {
+                HStack(spacing: 8) {
+                    ChangeNavigator(model: model)
+                        .frame(width: min(390, max(315, proxy.size.width * 0.35)))
+                        .appConsolePanel()
+                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument)
+                        .appConsolePanel()
+                }
+                .padding(8)
+                .background(palette.background)
             }
         }
     }

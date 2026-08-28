@@ -23,7 +23,7 @@ struct GitHubWorkspaceView: View {
                             Rectangle().fill(palette.divider).frame(width: 1)
                             detailPane(palette)
                         }
-                    } else {
+                    } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                         HStack(spacing: 10) {
                             listPane(palette)
                                 .frame(width: proxy.size.width < 900 ? 270 : 330)
@@ -32,14 +32,23 @@ struct GitHubWorkspaceView: View {
                                 .appGlassPanel(cornerRadius: 14, elevated: false)
                         }
                         .padding(10)
+                    } else {
+                        HStack(spacing: 8) {
+                            listPane(palette)
+                                .frame(width: proxy.size.width < 900 ? 280 : 340)
+                                .appConsolePanel()
+                            detailPane(palette)
+                                .appConsolePanel()
+                        }
+                        .padding(8)
                     }
                 }
             }
         }
-        .background(AppVisualTheme.resolved(themeRaw) == .standard ? palette.background : Color.clear)
+        .background(AppVisualTheme.resolved(themeRaw) == .softGlass ? Color.clear : palette.background)
         .sheet(item: $model.selectedGitHubPullRequest) { pullRequest in
-            GitHubPullRequestSheet(model: model, pullRequest: pullRequest)
-                .frame(minWidth: 680, minHeight: 620)
+            GitHubPullRequestReviewView(model: model, pullRequest: pullRequest)
+                .frame(minWidth: 900, minHeight: 680)
         }
         .sheet(item: $inAppBrowserPage) { page in
             InAppBrowserSheet(url: page.url, persistent: page.persistent)
@@ -429,14 +438,11 @@ struct GitHubWorkspaceView: View {
     private func repositoryHeader(_ repository: GitHubRepository, palette: AppPalette) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(palette.accentSoft)
-                        .frame(width: 44, height: 44)
-                    Image(systemName: repository.isPrivate ? "lock.fill" : "shippingbox.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(palette.accent)
-                }
+                GitHubLanguageIcon(
+                    language: repository.language,
+                    isPrivate: repository.isPrivate,
+                    size: 44
+                )
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(repository.fullName)
@@ -456,7 +462,7 @@ struct GitHubWorkspaceView: View {
                 Label(GitHubNumberFormatter.string(repository.forks), systemImage: "arrow.triangle.branch")
                 Label(GitHubNumberFormatter.string(repository.openIssues), systemImage: "record.circle")
                 if let language = repository.language {
-                    Label(language, systemImage: "chevron.left.forwardslash.chevron.right")
+                    GitHubLanguageLabel(language: language)
                 }
                 Label(repository.defaultBranch, systemImage: "point.topleft.down.to.point.bottomright.curvepath")
             }
@@ -513,6 +519,7 @@ struct GitHubWorkspaceView: View {
             projectTab(.overview, image: "doc.richtext", palette: palette)
             projectTab(.code, image: "chevron.left.forwardslash.chevron.right", palette: palette)
             projectTab(.pullRequests, image: "arrow.triangle.pull", palette: palette, count: model.githubPullRequests.count)
+            projectTab(.actions, image: "play.circle", palette: palette, count: model.githubActionRuns.count)
             Spacer()
         }
         .padding(.horizontal, 18)
@@ -558,6 +565,8 @@ struct GitHubWorkspaceView: View {
             codeBrowser(repository, palette: palette)
         case .pullRequests:
             pullRequestsView(palette)
+        case .actions:
+            GitHubActionsCenterView(model: model)
         }
     }
 
@@ -819,8 +828,7 @@ struct GitHubWorkspaceView: View {
                 } else {
                     ForEach(model.githubPullRequests) { pullRequest in
                         GitHubPullRequestRow(pullRequest: pullRequest) {
-                            model.selectedGitHubPullRequest = pullRequest
-                            model.pullRequestReplyDraft = ""
+                            model.openPullRequestReview(pullRequest)
                         }
                     }
                 }
@@ -959,6 +967,9 @@ private struct GitHubCodeFileView: View {
     @ObservedObject var model: WorkspaceViewModel
     let openInApp: (URL) -> Void
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+
+    private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -987,19 +998,31 @@ private struct GitHubCodeFileView: View {
     }
 
     private func fileHeader(_ item: GitHubContentItem, palette: AppPalette) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "doc.text")
-                .foregroundStyle(palette.subtleInk)
+        HStack(spacing: 11) {
+            ZStack {
+                RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
+                    .fill(palette.primarySoft)
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(palette.primary)
+            }
+            .frame(width: 34, height: 34)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
-                    .font(.system(size: 11.5, weight: .semibold))
+                    .font(.system(size: 12.5, weight: .semibold, design: theme == .console ? .monospaced : .default))
                     .foregroundStyle(palette.ink)
                     .lineLimit(1)
-                Text(item.path)
-                    .font(.system(size: 9.5, design: .monospaced))
-                    .foregroundStyle(palette.subtleInk)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                HStack(spacing: 7) {
+                    Text(item.path)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    if item.size > 0 {
+                        Circle().fill(palette.subtleInk).frame(width: 2.5, height: 2.5)
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(item.size), countStyle: .file))
+                    }
+                }
+                .font(.system(size: 9.5, design: .monospaced))
+                .foregroundStyle(palette.subtleInk)
             }
             Spacer(minLength: 8)
             if let url = item.webURL {
@@ -1009,8 +1032,7 @@ private struct GitHubCodeFileView: View {
                     Label(L10n.text("github.code.open_github"), systemImage: "arrow.up.right")
                         .font(.system(size: 10.5, weight: .medium))
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(palette.primary)
+                .buttonStyle(SecondaryButtonStyle())
             }
             Button { model.closeGitHubFile() } label: {
                 Image(systemName: "xmark")
@@ -1021,33 +1043,14 @@ private struct GitHubCodeFileView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
-        .frame(height: 54)
-        .background(palette.surface)
+        .frame(height: 62)
+        .background(theme == .softGlass ? palette.surface.opacity(0.15) : palette.surface)
     }
 
     @ViewBuilder
     private func fileBody(_ document: GitHubFileDocument, palette: AppPalette) -> some View {
         if let text = document.text {
-            let lines = Array(text.components(separatedBy: "\n").prefix(20_000))
-            ScrollView([.horizontal, .vertical]) {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(lines.indices, id: \.self) { index in
-                        HStack(alignment: .top, spacing: 14) {
-                            Text("\(index + 1)")
-                                .foregroundStyle(palette.subtleInk)
-                                .frame(width: 42, alignment: .trailing)
-                                .textSelection(.disabled)
-                            Text(lines[index].isEmpty ? " " : lines[index])
-                                .foregroundStyle(palette.ink)
-                                .textSelection(.enabled)
-                        }
-                        .font(.system(size: 11.5, design: .monospaced))
-                        .frame(minHeight: 20, alignment: .top)
-                    }
-                }
-                .padding(.vertical, 12)
-                .padding(.trailing, 18)
-            }
+            CodeDocumentView(content: text, fileName: document.name)
         } else {
             VStack(spacing: 12) {
                 ProjectEmptyState(
@@ -1125,25 +1128,34 @@ private struct GitHubRepositoryRow: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: repository.isPrivate ? "lock.fill" : "shippingbox")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
-                    Text(repository.fullName)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                    Spacer()
-                    Label(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(palette.subtleInk)
-                }
-                if let description = repository.description, !description.isEmpty {
-                    Text(description)
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(palette.mutedInk)
-                        .lineLimit(2)
+            HStack(alignment: .top, spacing: 10) {
+                GitHubLanguageIcon(
+                    language: repository.language,
+                    isPrivate: repository.isPrivate,
+                    size: 32
+                )
+
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 6) {
+                        Text(repository.fullName)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                            .lineLimit(1)
+                        Spacer()
+                        Label(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(palette.subtleInk)
+                    }
+                    if let description = repository.description, !description.isEmpty {
+                        Text(description)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(palette.mutedInk)
+                            .lineLimit(2)
+                    }
+                    if let language = repository.language {
+                        GitHubLanguageLabel(language: language, fontSize: 9.5)
+                            .foregroundStyle(palette.subtleInk)
+                    }
                 }
             }
             .padding(.horizontal, 10)
@@ -1254,126 +1266,6 @@ private struct GitHubPullRequestRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-    }
-}
-
-private struct GitHubPullRequestSheet: View {
-    @ObservedObject var model: WorkspaceViewModel
-    let pullRequest: GitHubPullRequest
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var inAppBrowserPage: InAppBrowserPage?
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("#\(pullRequest.number) · \(pullRequest.title)")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                    Text("\(pullRequest.author) · \(pullRequest.headBranch) → \(pullRequest.baseBranch)")
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(palette.subtleInk)
-                }
-                Spacer()
-                Button {
-                    inAppBrowserPage = InAppBrowserPage(url: pullRequest.webURL, persistent: true)
-                } label: {
-                    Image(systemName: "arrow.up.right")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(palette.primary)
-                Button { dismiss() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(palette.mutedInk)
-            }
-            .padding(20)
-            .background(palette.surface)
-
-            Rectangle().fill(palette.divider).frame(height: 1)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    if let body = pullRequest.body, !body.isEmpty {
-                        VStack(alignment: .leading, spacing: 7) {
-                            Text(L10n.text("github.pull_request.description"))
-                                .font(.system(size: 11.5, weight: .semibold))
-                                .foregroundStyle(palette.mutedInk)
-                            Text(body)
-                                .font(.system(size: 12.5))
-                                .foregroundStyle(palette.ink)
-                                .textSelection(.enabled)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(L10n.text("github.ai_reply.title"))
-                                .font(.system(size: 11.5, weight: .semibold))
-                                .foregroundStyle(palette.mutedInk)
-                            Spacer()
-                            if model.isDraftingPullRequestReply {
-                                ProgressView().controlSize(.small)
-                            }
-                        }
-
-                        TextEditor(text: $model.pullRequestReplyDraft)
-                            .font(.system(size: 12.5))
-                            .foregroundStyle(palette.ink)
-                            .scrollContentBackground(.hidden)
-                            .padding(7)
-                            .frame(minHeight: 170)
-                            .background(palette.raisedSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(palette.divider, lineWidth: 1)
-                            }
-                            .disabled(model.isDraftingPullRequestReply || model.activeGitHubOperation == .publishReply)
-
-                        HStack(spacing: 8) {
-                            if model.isDraftingPullRequestReply {
-                                Button(L10n.text("github.action.stop_ai")) {
-                                    model.cancelPullRequestDraft()
-                                }
-                                .buttonStyle(SecondaryButtonStyle())
-                            } else {
-                                Button(L10n.text("github.action.generate_reply")) {
-                                    model.draftPullRequestReply()
-                                }
-                                .buttonStyle(SecondaryButtonStyle())
-                                .disabled(!model.canDraftPullRequestReply)
-                            }
-
-                            Spacer()
-
-                            Button(L10n.text("github.action.publish_reply")) {
-                                model.publishPullRequestReply()
-                            }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .disabled(
-                                model.pullRequestReplyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    || model.isDraftingPullRequestReply
-                                    || model.activeGitHubOperation != nil
-                            )
-                        }
-                    }
-
-                    if let error = model.githubError {
-                        Text(error)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(palette.danger)
-                    }
-                }
-                .padding(20)
-            }
-        }
-        .background(palette.background)
-        .sheet(item: $inAppBrowserPage) { page in
-            InAppBrowserSheet(url: page.url, persistent: page.persistent)
-                .frame(minWidth: 820, minHeight: 640)
-        }
     }
 }
 

@@ -185,6 +185,8 @@ private struct GitGattoCommands: Commands {
             workspaceCommand(.history, shortcut: "3")
             workspaceCommand(.branches, shortcut: "4")
             workspaceCommand(.codex, shortcut: "5")
+            workspaceCommand(.timeMachine, shortcut: "6")
+            workspaceCommand(.diagnostics, shortcut: "7")
         }
 
         CommandMenu(L10n.text("menu.repository")) {

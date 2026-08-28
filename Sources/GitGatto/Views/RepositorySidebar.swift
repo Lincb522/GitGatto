@@ -49,11 +49,28 @@ struct RepositorySidebar: View {
                     model.selectedSection = .changes
                 }
                 SidebarNavigationButton(
+                    titleKey: "nav.stash",
+                    systemImage: "archivebox",
+                    count: model.stashes.isEmpty ? nil : model.stashes.count,
+                    isSelected: model.selectedSection == .stash
+                ) {
+                    model.selectedSection = .stash
+                }
+                SidebarNavigationButton(
                     titleKey: "nav.history",
                     systemImage: "clock.arrow.circlepath",
+                    count: model.commitGraph.nodes.isEmpty ? nil : model.commitGraph.nodes.count,
                     isSelected: model.selectedSection == .history
                 ) {
                     model.selectedSection = .history
+                }
+                SidebarNavigationButton(
+                    titleKey: "nav.timeMachine",
+                    systemImage: "clock.badge.checkmark",
+                    count: model.repositoryFiles.isEmpty ? nil : model.repositoryFiles.count,
+                    isSelected: model.selectedSection == .timeMachine
+                ) {
+                    model.selectedSection = .timeMachine
                 }
                 SidebarNavigationButton(
                     titleKey: "nav.branches",
@@ -62,6 +79,22 @@ struct RepositorySidebar: View {
                     isSelected: model.selectedSection == .branches
                 ) {
                     model.selectedSection = .branches
+                }
+                SidebarNavigationButton(
+                    titleKey: "nav.worktrees",
+                    systemImage: "rectangle.split.2x1",
+                    count: model.worktrees.isEmpty ? nil : model.worktrees.count,
+                    isSelected: model.selectedSection == .worktrees
+                ) {
+                    model.selectedSection = .worktrees
+                }
+                SidebarNavigationButton(
+                    titleKey: "nav.diagnostics",
+                    systemImage: "stethoscope",
+                    count: model.repositoryDiagnostics?.attentionCount,
+                    isSelected: model.selectedSection == .diagnostics
+                ) {
+                    model.selectedSection = .diagnostics
                 }
 
                 Rectangle()

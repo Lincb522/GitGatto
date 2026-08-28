@@ -115,11 +115,53 @@ struct AppPalette {
             dangerSoft = OKLCHColor(0.950, 0.040, 25).color
             warning = OKLCHColor(0.560, 0.150, 80).color
             warningSoft = OKLCHColor(0.955, 0.045, 86).color
+        } else if theme == .console, scheme == .dark {
+            background = OKLCHColor(0.090, 0.018, 150).color
+            sidebar = OKLCHColor(0.115, 0.022, 150).color
+            surface = OKLCHColor(0.125, 0.020, 150).color
+            raisedSurface = OKLCHColor(0.165, 0.026, 150).color
+            ink = OKLCHColor(0.920, 0.040, 145).color
+            mutedInk = OKLCHColor(0.690, 0.050, 145).color
+            subtleInk = OKLCHColor(0.570, 0.045, 145).color
+            divider = OKLCHColor(0.285, 0.055, 145).color
+            primary = selectedPrimary
+            primarySoft = accentChoice == .custom
+                ? selectedPrimary.opacity(0.22)
+                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
+            accent = OKLCHColor(0.760, 0.155, 145).color
+            accentSoft = OKLCHColor(0.215, 0.060, 145).color
+            success = OKLCHColor(0.770, 0.165, 145).color
+            successSoft = OKLCHColor(0.215, 0.060, 145).color
+            danger = OKLCHColor(0.720, 0.175, 25).color
+            dangerSoft = OKLCHColor(0.215, 0.060, 25).color
+            warning = OKLCHColor(0.820, 0.155, 88).color
+            warningSoft = OKLCHColor(0.225, 0.060, 88).color
+        } else if theme == .console {
+            background = OKLCHColor(0.955, 0.003, 145).color
+            sidebar = OKLCHColor(0.915, 0.008, 145).color
+            surface = OKLCHColor(0.985, 0.002, 145).color
+            raisedSurface = OKLCHColor(0.935, 0.006, 145).color
+            ink = OKLCHColor(0.200, 0.012, 145).color
+            mutedInk = OKLCHColor(0.400, 0.018, 145).color
+            subtleInk = OKLCHColor(0.500, 0.015, 145).color
+            divider = OKLCHColor(0.785, 0.012, 145).color
+            primary = selectedPrimary
+            primarySoft = accentChoice == .custom
+                ? selectedPrimary.opacity(0.14)
+                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
+            accent = OKLCHColor(0.440, 0.140, 145).color
+            accentSoft = OKLCHColor(0.910, 0.035, 145).color
+            success = OKLCHColor(0.450, 0.150, 145).color
+            successSoft = OKLCHColor(0.920, 0.035, 145).color
+            danger = OKLCHColor(0.540, 0.180, 25).color
+            dangerSoft = OKLCHColor(0.930, 0.035, 25).color
+            warning = OKLCHColor(0.590, 0.150, 88).color
+            warningSoft = OKLCHColor(0.930, 0.035, 88).color
         } else if scheme == .dark {
-            background = OKLCHColor(0.135, 0.020, 255).color.opacity(0.30)
-            sidebar = OKLCHColor(0.185, 0.014, 255).color.opacity(0.34)
-            surface = OKLCHColor(0.165, 0.012, 255).color.opacity(0.42)
-            raisedSurface = OKLCHColor(0.235, 0.014, 255).color.opacity(0.58)
+            background = OKLCHColor(0.135, 0.020, 255).color.opacity(0.08)
+            sidebar = OKLCHColor(0.185, 0.014, 255).color.opacity(0.20)
+            surface = OKLCHColor(0.165, 0.012, 255).color.opacity(0.24)
+            raisedSurface = OKLCHColor(0.235, 0.014, 255).color.opacity(0.36)
             ink = OKLCHColor(0.950, 0.008, 255).color
             mutedInk = OKLCHColor(0.720, 0.018, 255).color
             subtleInk = OKLCHColor(0.575, 0.016, 255).color
@@ -137,10 +179,10 @@ struct AppPalette {
             warning = OKLCHColor(0.800, 0.145, 86).color
             warningSoft = OKLCHColor(0.295, 0.045, 86).color.opacity(0.72)
         } else {
-            background = OKLCHColor(0.955, 0.020, 255).color.opacity(0.14)
-            sidebar = OKLCHColor(0.985, 0.008, 255).color.opacity(0.30)
-            surface = OKLCHColor(0.995, 0.004, 255).color.opacity(0.38)
-            raisedSurface = OKLCHColor(1.000, 0.000, 0).color.opacity(0.58)
+            background = OKLCHColor(0.955, 0.020, 255).color.opacity(0.04)
+            sidebar = OKLCHColor(0.985, 0.008, 255).color.opacity(0.16)
+            surface = OKLCHColor(0.995, 0.004, 255).color.opacity(0.20)
+            raisedSurface = OKLCHColor(1.000, 0.000, 0).color.opacity(0.32)
             ink = OKLCHColor(0.195, 0.020, 255).color
             mutedInk = OKLCHColor(0.455, 0.022, 255).color
             subtleInk = OKLCHColor(0.600, 0.018, 255).color
@@ -204,7 +246,13 @@ enum AppThemeLayout {
     static var workspaceInset: CGFloat { AppStyleDefaults.theme == .softGlass ? 12 : 0 }
     static var panelSpacing: CGFloat { AppStyleDefaults.theme == .softGlass ? 12 : 0 }
     static var panelCornerRadius: CGFloat { AppStyleDefaults.theme == .softGlass ? 18 : 0 }
-    static var controlCornerRadius: CGFloat { AppStyleDefaults.theme == .softGlass ? 10 : 8 }
+    static var controlCornerRadius: CGFloat {
+        switch AppStyleDefaults.theme {
+        case .standard: 8
+        case .softGlass: 10
+        case .console: 4
+        }
+    }
     static let topBarHeight: CGFloat = 62
 }
 
@@ -256,8 +304,7 @@ struct AppThemeRoot<Content: View>: View {
         ZStack {
             AppThemeBackdrop(
                 theme: theme,
-                colorScheme: effectiveColorScheme,
-                accent: palette.primary
+                colorScheme: effectiveColorScheme
             )
 
             Group {
@@ -280,10 +327,9 @@ struct AppThemeRoot<Content: View>: View {
 struct AppThemeBackdrop: View {
     let theme: AppVisualTheme
     let colorScheme: ColorScheme
-    let accent: Color
 
     var body: some View {
-        if theme == .standard {
+        if theme != .softGlass {
             ZStack {
                 WindowThemeSurface(theme: theme, colorScheme: colorScheme)
                 AppPalette(colorScheme, theme: theme).background
@@ -291,39 +337,9 @@ struct AppThemeBackdrop: View {
             .ignoresSafeArea()
             .accessibilityHidden(true)
         } else {
-            ZStack {
-                WindowThemeSurface(theme: theme, colorScheme: colorScheme)
-
-                LinearGradient(
-                    colors: colorScheme == .dark
-                        ? [
-                            OKLCHColor(0.145, 0.028, 255).color.opacity(0.42),
-                            OKLCHColor(0.105, 0.020, 310).color.opacity(0.34)
-                        ]
-                        : [
-                            OKLCHColor(0.970, 0.032, 245).color.opacity(0.34),
-                            OKLCHColor(0.955, 0.026, 325).color.opacity(0.26)
-                        ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-
-                GeometryReader { proxy in
-                    Circle()
-                        .fill(accent.opacity(colorScheme == .dark ? 0.08 : 0.10))
-                        .frame(width: proxy.size.width * 0.46)
-                        .blur(radius: 90)
-                        .offset(x: proxy.size.width * 0.62, y: -proxy.size.height * 0.18)
-
-                    Circle()
-                        .fill(OKLCHColor(0.730, 0.100, 205).color.opacity(colorScheme == .dark ? 0.06 : 0.08))
-                        .frame(width: proxy.size.width * 0.38)
-                        .blur(radius: 100)
-                        .offset(x: -proxy.size.width * 0.10, y: proxy.size.height * 0.58)
-                }
-            }
-            .ignoresSafeArea()
-            .accessibilityHidden(true)
+            WindowThemeSurface(theme: theme, colorScheme: colorScheme)
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
         }
     }
 }
@@ -399,9 +415,11 @@ private struct AppGlassPanelModifier: ViewModifier {
             content
                 .background {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(palette.surface)
+                        .fill(
+                            colorScheme == .dark
+                                ? Color.black.opacity(elevated ? 0.50 : 0.38)
+                                : Color.white.opacity(elevated ? 0.58 : 0.44)
+                        )
                 }
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay {
@@ -430,6 +448,29 @@ extension View {
         elevated: Bool = true
     ) -> some View {
         modifier(AppGlassPanelModifier(cornerRadius: cornerRadius, elevated: elevated))
+    }
+
+    func appConsolePanel() -> some View {
+        modifier(AppConsolePanelModifier())
+    }
+}
+
+private struct AppConsolePanelModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        let palette = AppPalette(colorScheme)
+        if AppVisualTheme.resolved(themeRaw) == .console {
+            content
+                .background(palette.surface)
+                .overlay {
+                    Rectangle().stroke(palette.divider, lineWidth: 1)
+                }
+        } else {
+            content
+        }
     }
 }
 

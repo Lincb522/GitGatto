@@ -118,10 +118,11 @@ struct IndependentAILaneTests {
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let started = directory.appendingPathComponent("project-started")
+        let release = directory.appendingPathComponent("project-release")
         let completed = directory.appendingPathComponent("project-completed")
         let projectExecutable = directory.appendingPathComponent("project-cli")
         let translationExecutable = directory.appendingPathComponent("translation-cli")
-        try "#!/bin/sh\ntouch '\(started.path)'\nsleep 2\ntouch '\(completed.path)'\nprintf project-complete\n"
+        try "#!/bin/sh\ntouch '\(started.path)'\nwhile [ ! -f '\(release.path)' ]; do sleep 0.02; done\ntouch '\(completed.path)'\nprintf project-complete\n"
             .write(to: projectExecutable, atomically: true, encoding: .utf8)
         try "#!/bin/sh\nprintf translation-complete\n"
             .write(to: translationExecutable, atomically: true, encoding: .utf8)
@@ -149,6 +150,7 @@ struct IndependentAILaneTests {
                 mode: .analyze
             )
         }
+        defer { _ = FileManager.default.createFile(atPath: release.path, contents: Data()) }
 
         for _ in 0..<250 where !FileManager.default.fileExists(atPath: started.path) {
             try await Task.sleep(for: .milliseconds(20))
@@ -157,6 +159,7 @@ struct IndependentAILaneTests {
 
         let translation = try await translationService.translate("hello", target: .simplifiedChinese)
         #expect(!FileManager.default.fileExists(atPath: completed.path))
+        _ = FileManager.default.createFile(atPath: release.path, contents: Data())
         let project = try await projectTask.value
 
         #expect(translation == "translation-complete")

@@ -30,12 +30,18 @@ struct DebugSnapshotCapture: NSViewRepresentable {
                     view.window?.setContentSize(size)
                 }
                 try? await Task.sleep(for: .seconds(2))
-                guard let window = view.window, let contentView = window.contentView else {
+                guard let window = view.window else {
                     NSApp.terminate(nil)
                     return
                 }
 
-                window.displayIfNeeded()
+                let captureWindow = window.attachedSheet ?? NSApp.keyWindow ?? window
+                guard let contentView = captureWindow.contentView else {
+                    NSApp.terminate(nil)
+                    return
+                }
+
+                captureWindow.displayIfNeeded()
                 contentView.layoutSubtreeIfNeeded()
                 contentView.displayIfNeeded()
 
@@ -48,6 +54,9 @@ struct DebugSnapshotCapture: NSViewRepresentable {
 
                 if let data = bitmap.representation(using: .png, properties: [:]) {
                     try? data.write(to: URL(fileURLWithPath: outputPath))
+                }
+                if let sheet = window.attachedSheet {
+                    window.endSheet(sheet)
                 }
                 NSApp.terminate(nil)
             }

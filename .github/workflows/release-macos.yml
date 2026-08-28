@@ -18,11 +18,10 @@ jobs:
     timeout-minutes: 90
     env:
       CODESIGN_IDENTITY: "Developer ID Application: chengbo lin (7VJKFX4HF8)"
-      APPLE_TEAM_ID: "7VJKFX4HF8"
-      BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-      P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      MACOS_DEVELOPER_ID_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
 
     steps:
       - name: Check out source
@@ -32,7 +31,12 @@ jobs:
         shell: zsh {0}
         run: |
           set -euo pipefail
-          for variable in BUILD_CERTIFICATE_BASE64 P12_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD; do
+          for variable in \
+            MACOS_DEVELOPER_ID_P12_BASE64 \
+            APP_STORE_CONNECT_KEY_ID \
+            APP_STORE_CONNECT_ISSUER_ID \
+            APP_STORE_CONNECT_PRIVATE_KEY_BASE64
+          do
             if [[ -z "${(P)variable:-}" ]]; then
               print -u2 "Missing GitHub Actions secret: $variable"
               exit 1
@@ -57,13 +61,13 @@ jobs:
           KEYCHAIN_PATH="$RUNNER_TEMP/gitgatto-signing.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
 
-          print -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          print -n "$MACOS_DEVELOPER_ID_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
           chmod 600 "$CERTIFICATE_PATH"
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$CERTIFICATE_PATH" \
-            -P "$P12_PASSWORD" \
+            -P "GitGattoActions" \
             -A \
             -t cert \
             -f pkcs12 \
@@ -93,10 +97,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/releases
+          PRIVATE_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          print -n "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > "$PRIVATE_KEY_PATH"
+          chmod 600 "$PRIVATE_KEY_PATH"
+
           GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
-          APPLE_ID="$APPLE_ID" \
-          APPLE_TEAM_ID="$APPLE_TEAM_ID" \
-          APPLE_APP_SPECIFIC_PASSWORD="$APPLE_APP_SPECIFIC_PASSWORD" \
+          APP_STORE_CONNECT_KEY_PATH="$PRIVATE_KEY_PATH" \
+          APP_STORE_CONNECT_KEY_ID="$APP_STORE_CONNECT_KEY_ID" \
+          APP_STORE_CONNECT_ISSUER_ID="$APP_STORE_CONNECT_ISSUER_ID" \
             ./scripts/notarize-macos.sh \
               "$PWD/dist/GitGatto.app" \
               "$PWD/dist/releases/GitGatto-$VERSION.dmg"

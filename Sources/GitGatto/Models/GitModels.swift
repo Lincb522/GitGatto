@@ -3,8 +3,12 @@ import SwiftUI
 
 enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable, Codable {
     case changes
+    case stash
     case history
+    case timeMachine
     case branches
+    case worktrees
+    case diagnostics
     case github
     case codex
 
@@ -69,6 +73,36 @@ struct CommitRecord: Identifiable, Sendable, Hashable {
     let subject: String
 
     var id: String { hash }
+}
+
+struct CommitGraphNode: Identifiable, Sendable, Equatable {
+    let hash: String
+    let shortHash: String
+    let parentHashes: [String]
+    let references: [String]
+    let author: String
+    let date: Date
+    let subject: String
+    let lane: Int
+
+    var id: String { hash }
+
+    var commit: CommitRecord {
+        CommitRecord(
+            hash: hash,
+            shortHash: shortHash,
+            author: author,
+            date: date,
+            subject: subject
+        )
+    }
+}
+
+struct CommitGraph: Sendable, Equatable {
+    let nodes: [CommitGraphNode]
+    let laneCount: Int
+
+    static let empty = CommitGraph(nodes: [], laneCount: 0)
 }
 
 struct BranchRecord: Identifiable, Sendable, Hashable {
@@ -157,10 +191,123 @@ enum OperationKind: Sendable, Equatable {
     case switchBranch
     case pull
     case push
+    case merge
+    case rebase
+    case resolveConflict
+    case continueConflictOperation
+    case skipConflictOperation
+    case abortConflictOperation
+    case stashSave
+    case stashApply
+    case stashPop
+    case stashDrop
 
     var isRemoteSync: Bool {
         self == .pull || self == .push || self == .commitAndPush
     }
+}
+
+enum RepositoryOperationKind: String, Sendable, Equatable {
+    case merge
+    case rebase
+    case cherryPick
+    case revert
+    case unknown
+
+    var supportsSkip: Bool {
+        self == .rebase || self == .cherryPick || self == .revert
+    }
+
+    var supportsAbort: Bool {
+        self != .unknown
+    }
+}
+
+struct RepositoryOperationProgress: Sendable, Equatable {
+    let current: Int
+    let total: Int
+}
+
+struct RepositoryOperationState: Sendable, Equatable {
+    let kind: RepositoryOperationKind
+    let conflictedPaths: [String]
+    let progress: RepositoryOperationProgress?
+
+    var canContinue: Bool { conflictedPaths.isEmpty && kind != .unknown }
+}
+
+enum ConflictSide: Sendable, Equatable {
+    case ours
+    case theirs
+}
+
+struct ConflictFileDocument: Sendable, Equatable {
+    let path: String
+    let base: String?
+    let ours: String?
+    let theirs: String?
+    let result: String?
+    let isBinary: Bool
+}
+
+enum RepositoryOperationTransition: Sendable, Equatable {
+    case completed
+    case paused(RepositoryOperationState)
+}
+
+struct StashRecord: Identifiable, Sendable, Equatable {
+    let reference: String
+    let hash: String
+    let createdAt: Date
+    let summary: String
+
+    var id: String { hash }
+
+    var index: Int? {
+        guard let opening = reference.firstIndex(of: "{"),
+              let closing = reference.firstIndex(of: "}") else { return nil }
+        return Int(reference[reference.index(after: opening)..<closing])
+    }
+}
+
+struct GitWorktreeRecord: Identifiable, Sendable, Equatable {
+    let path: URL
+    let headHash: String
+    let branch: String?
+    let isMain: Bool
+    let isLocked: Bool
+    let isPrunable: Bool
+    let changesCount: Int
+    let aheadCount: Int
+    let behindCount: Int
+
+    var id: String { path.standardizedFileURL.path }
+    var shortHash: String { String(headHash.prefix(8)) }
+}
+
+enum GitWorktreeOperationKind: Sendable, Equatable {
+    case refresh
+    case create
+    case remove
+}
+
+enum GitWorktreeAgentState: Sendable, Equatable {
+    case running
+    case completed
+    case failed
+    case cancelled
+}
+
+struct GitWorktreeAgentRun: Sendable, Equatable {
+    let worktreeID: String
+    let prompt: String
+    let mode: CodexRunMode
+    let state: GitWorktreeAgentState
+    let response: String?
+    let error: String?
+    let startedAt: Date
+    let completedAt: Date?
+    let operation: CodexOperationRecord?
 }
 
 struct OperationNotice: Identifiable, Equatable {
@@ -392,10 +539,91 @@ struct GitHubPullRequest: Identifiable, Sendable, Hashable {
     let webURL: URL
     let isDraft: Bool
     let headBranch: String
+    let headSHA: String
     let baseBranch: String
+    let nodeID: String
     let updatedAt: Date
 
     var id: Int { number }
+}
+
+enum GitHubPullRequestReviewTab: String, CaseIterable, Identifiable, Sendable {
+    case conversation
+    case commits
+    case files
+    case checks
+
+    var id: String { rawValue }
+}
+
+enum GitHubPullRequestReviewEvent: String, CaseIterable, Identifiable, Sendable {
+    case comment = "COMMENT"
+    case approve = "APPROVE"
+    case requestChanges = "REQUEST_CHANGES"
+
+    var id: String { rawValue }
+}
+
+struct GitHubPullRequestReview: Identifiable, Sendable, Equatable {
+    let id: Int64
+    let author: String
+    let body: String?
+    let state: String
+    let submittedAt: Date?
+}
+
+struct GitHubPullRequestComment: Identifiable, Sendable, Equatable {
+    enum Kind: Sendable, Equatable {
+        case conversation
+        case review
+    }
+
+    let id: Int64
+    let author: String
+    let body: String
+    let createdAt: Date
+    let path: String?
+    let line: Int?
+    let kind: Kind
+}
+
+struct GitHubPullRequestCommit: Identifiable, Sendable, Equatable {
+    let sha: String
+    let message: String
+    let author: String
+    let date: Date?
+
+    var id: String { sha }
+    var shortSHA: String { String(sha.prefix(8)) }
+}
+
+struct GitHubPullRequestFile: Identifiable, Sendable, Equatable {
+    let path: String
+    let status: String
+    let additions: Int
+    let deletions: Int
+    let changes: Int
+    let patch: String?
+
+    var id: String { path }
+}
+
+struct GitHubPullRequestCheck: Identifiable, Sendable, Equatable {
+    let id: Int64
+    let name: String
+    let status: String
+    let conclusion: String?
+    let detailsURL: URL?
+    let startedAt: Date?
+    let completedAt: Date?
+}
+
+struct GitHubPullRequestReviewCenter: Sendable, Equatable {
+    let reviews: [GitHubPullRequestReview]
+    let comments: [GitHubPullRequestComment]
+    let commits: [GitHubPullRequestCommit]
+    let files: [GitHubPullRequestFile]
+    let checks: [GitHubPullRequestCheck]
 }
 
 struct GitHubPullRequestContext: Sendable {
@@ -408,6 +636,7 @@ enum GitHubProjectDetailTab: String, CaseIterable, Identifiable, Sendable {
     case overview
     case code
     case pullRequests
+    case actions
 
     var id: String { rawValue }
 }
@@ -461,4 +690,71 @@ enum GitHubOperationKind: Sendable, Equatable {
     case clone
     case fork
     case publishReply
+    case submitReview
+    case publishReviewComment
+    case markFileViewed
+    case rerunWorkflow
+    case cancelWorkflow
+    case downloadArtifact
+}
+
+struct GitHubActionsWorkflow: Identifiable, Sendable, Equatable {
+    let id: Int64
+    let name: String
+    let path: String
+    let state: String
+}
+
+struct GitHubActionsRun: Identifiable, Sendable, Equatable {
+    let id: Int64
+    let workflowID: Int64
+    let name: String
+    let displayTitle: String
+    let event: String
+    let status: String
+    let conclusion: String?
+    let branch: String?
+    let headSHA: String
+    let runNumber: Int
+    let actor: String
+    let createdAt: Date
+    let updatedAt: Date
+    let webURL: URL
+}
+
+struct GitHubActionsStep: Identifiable, Sendable, Equatable {
+    let number: Int
+    let name: String
+    let status: String
+    let conclusion: String?
+    let startedAt: Date?
+    let completedAt: Date?
+
+    var id: Int { number }
+}
+
+struct GitHubActionsJob: Identifiable, Sendable, Equatable {
+    let id: Int64
+    let name: String
+    let status: String
+    let conclusion: String?
+    let startedAt: Date?
+    let completedAt: Date?
+    let webURL: URL?
+    let steps: [GitHubActionsStep]
+}
+
+struct GitHubActionsArtifact: Identifiable, Sendable, Equatable {
+    let id: Int64
+    let name: String
+    let sizeInBytes: Int
+    let isExpired: Bool
+    let expiresAt: Date?
+}
+
+struct GitHubActionsRunDetail: Sendable, Equatable {
+    let jobs: [GitHubActionsJob]
+    let artifacts: [GitHubActionsArtifact]
+    let log: String?
+    let logError: String?
 }
