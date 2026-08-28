@@ -7,13 +7,10 @@ GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.4 
 正式发布由 `.github/workflows/release-macos.yml` 完成。仓库的 Actions Secrets 必须包含：
 
 - `MACOS_DEVELOPER_ID_P12_BASE64`：包含私钥的 Developer ID Application `.p12` 文件的 Base64 内容
-- `APP_STORE_CONNECT_KEY_ID`：公证 API Key ID
-- `APP_STORE_CONNECT_ISSUER_ID`：App Store Connect Issuer ID
-- `APP_STORE_CONNECT_PRIVATE_KEY_BASE64`：公证 API Key `.p8` 文件的 Base64 内容
 
 `.cer` 只包含公钥证书，不能用于 CI 签名。`.p12` 必须同时包含 Developer ID Application 证书与对应私钥。Team ID 与签名身份已固定为 `7VJKFX4HF8` 和 `Developer ID Application: chengbo lin (7VJKFX4HF8)`。
 
-GitHub Actions 在临时钥匙串中导入证书，并使用 App Store Connect API Key 公证。临时钥匙串和运行器文件会在任务结束后销毁，私钥不会写入仓库或构建产物。
+GitHub Actions 在临时钥匙串中导入证书。临时钥匙串和运行器文件会在任务结束后销毁，私钥不会写入仓库或构建产物。Apple 公证接入启用前，发布流程只执行 Developer ID 签名。
 
 ## 版本
 
@@ -55,10 +52,9 @@ git push origin v0.15.0
 
 1. 测试并构建通用架构应用。
 2. 使用 Developer ID Application 签名应用及 Sparkle 嵌套组件。
-3. 将应用提交 Apple 公证并装订票据。
-4. 创建、签名并公证 `GitGatto-<version>.dmg`，再装订 DMG 票据。
-5. 从 DMG 生成 `appcast.xml`。
-6. 创建或更新 GitHub Release，上传 DMG、Appcast、更新说明与 SHA-256 文件。
+3. 创建并使用 Developer ID 签名 `GitGatto-<version>.dmg`。
+4. 从 DMG 生成 `appcast.xml`。
+5. 创建或更新 GitHub Release，上传 DMG、Appcast、更新说明与 SHA-256 文件。
 
 旧版本通过 `releases/latest/download/appcast.xml` 跟随最新正式 Release。草稿和预发布版本不会成为稳定通道的 `latest` Release。
 
@@ -67,7 +63,7 @@ git push origin v0.15.0
 - GitHub Release 已公开，Appcast 与 DMG 可通过 HTTPS 匿名读取。
 - Appcast 版本、构建号、下载地址与发布说明正确。
 - DMG 包含完整的 `GitGatto.app` 与“应用程序”入口，应用标识保持为 `dev.gitgatto.client`。
-- 应用和 DMG 的 Developer ID 签名、公证票据、Gatekeeper 评估与磁盘映像校验全部通过。
+- 应用和 DMG 的 Developer ID 签名与磁盘映像校验全部通过。
 - 在上一正式版本中完成“读取 GitHub 更新日志 → 检查 → 下载 → 安装 → 重新启动”的升级验证。
 - 更新前后的本地仓库、设置、Agent 对话和译文保持可用。
 

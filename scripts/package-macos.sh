@@ -10,6 +10,7 @@ VERSION="${GITGATTO_VERSION:-0.15.0}"
 BUILD="${GITGATTO_BUILD_NUMBER:-15000}"
 FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
 CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
+SIGNING_KEYCHAIN="${GITGATTO_SIGNING_KEYCHAIN:-}"
 ICON_MASTER="$ROOT/Assets/GitGatto-AppIcon.svg"
 
 if [[ "$FEED_URL" != https://* ]]; then
@@ -99,6 +100,9 @@ else
     SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
     SPARKLE_VERSION="$SPARKLE/Versions/B"
     SIGN_ARGS=(--force --timestamp --options runtime --sign "$CODESIGN_IDENTITY")
+    if [[ -n "$SIGNING_KEYCHAIN" ]]; then
+        SIGN_ARGS+=(--keychain "$SIGNING_KEYCHAIN")
+    fi
 
     codesign $SIGN_ARGS "$SPARKLE_VERSION/XPCServices/Installer.xpc"
     codesign $SIGN_ARGS --preserve-metadata=entitlements "$SPARKLE_VERSION/XPCServices/Downloader.xpc"

@@ -19,9 +19,6 @@ jobs:
     env:
       CODESIGN_IDENTITY: "Developer ID Application: chengbo lin (7VJKFX4HF8)"
       MACOS_DEVELOPER_ID_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
-      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
 
     steps:
       - name: Check out source
@@ -31,12 +28,7 @@ jobs:
         shell: zsh {0}
         run: |
           set -euo pipefail
-          for variable in \
-            MACOS_DEVELOPER_ID_P12_BASE64 \
-            APP_STORE_CONNECT_KEY_ID \
-            APP_STORE_CONNECT_ISSUER_ID \
-            APP_STORE_CONNECT_PRIVATE_KEY_BASE64
-          do
+          for variable in MACOS_DEVELOPER_ID_P12_BASE64; do
             if [[ -z "${(P)variable:-}" ]]; then
               print -u2 "Missing GitHub Actions secret: $variable"
               exit 1
@@ -92,20 +84,13 @@ jobs:
           GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
             ./scripts/package-macos.sh
 
-      - name: Notarize application and DMG
+      - name: Create release DMG
         shell: zsh {0}
         run: |
           set -euo pipefail
           mkdir -p dist/releases
-          PRIVATE_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
-          print -n "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > "$PRIVATE_KEY_PATH"
-          chmod 600 "$PRIVATE_KEY_PATH"
-
           GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
-          APP_STORE_CONNECT_KEY_PATH="$PRIVATE_KEY_PATH" \
-          APP_STORE_CONNECT_KEY_ID="$APP_STORE_CONNECT_KEY_ID" \
-          APP_STORE_CONNECT_ISSUER_ID="$APP_STORE_CONNECT_ISSUER_ID" \
-            ./scripts/notarize-macos.sh \
+            ./scripts/create-dmg.sh \
               "$PWD/dist/GitGatto.app" \
               "$PWD/dist/releases/GitGatto-$VERSION.dmg"
 
@@ -160,14 +145,6 @@ jobs:
               --notes-file "$NOTES" \
               --latest
           fi
-
-      - name: Upload notarization records
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: notarization-${{ github.ref_name }}
-          path: dist/releases/notarization
-          if-no-files-found: ignore
 
       - name: Remove temporary signing keychain
         if: always()

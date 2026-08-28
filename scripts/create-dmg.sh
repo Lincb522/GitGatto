@@ -5,6 +5,7 @@ ROOT="${0:A:h:h}"
 APP="${1:-$ROOT/dist/GitGatto.app}"
 OUTPUT="${2:-$ROOT/dist/GitGatto.dmg}"
 CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
+SIGNING_KEYCHAIN="${GITGATTO_SIGNING_KEYCHAIN:-}"
 VOLUME_NAME="${GITGATTO_DMG_VOLUME_NAME:-GitGatto}"
 
 if [[ ! -d "$APP" || "${APP:e}" != "app" ]]; then
@@ -34,7 +35,11 @@ hdiutil create \
     "$TEMP_DMG" >/dev/null
 
 if [[ "$CODESIGN_IDENTITY" != "-" ]]; then
-    codesign --force --timestamp --sign "$CODESIGN_IDENTITY" "$TEMP_DMG"
+    SIGN_ARGS=(--force --timestamp --sign "$CODESIGN_IDENTITY")
+    if [[ -n "$SIGNING_KEYCHAIN" ]]; then
+        SIGN_ARGS+=(--keychain "$SIGNING_KEYCHAIN")
+    fi
+    codesign $SIGN_ARGS "$TEMP_DMG"
     codesign --verify --strict --verbose=2 "$TEMP_DMG"
 fi
 
