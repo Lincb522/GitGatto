@@ -1,34 +1,71 @@
 import SwiftUI
 import WebKit
 
+final class GitHubReadmeWebView: WKWebView {
+    var onScrollAwayFromTop: () -> Void = {}
+
+    private var accumulatedScrollDistance: CGFloat = 0
+    private var didReportScrollAwayFromTop = false
+
+    override func scrollWheel(with event: NSEvent) {
+        super.scrollWheel(with: event)
+        registerVerticalScroll(event.scrollingDeltaY)
+    }
+
+    func registerVerticalScroll(_ delta: CGFloat) {
+        guard !didReportScrollAwayFromTop, delta != 0 else { return }
+        accumulatedScrollDistance += abs(delta)
+        guard accumulatedScrollDistance >= 36 else { return }
+        didReportScrollAwayFromTop = true
+        onScrollAwayFromTop()
+    }
+
+    func resetScrollDetection() {
+        accumulatedScrollDistance = 0
+        didReportScrollAwayFromTop = false
+    }
+}
+
 struct GitHubReadmeView: NSViewRepresentable {
     let document: GitHubReadmeDocument
     let colorScheme: ColorScheme
+    let onScrollAwayFromTop: () -> Void
     let onOpenLink: (URL) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onOpenLink: onOpenLink, linkBaseURL: document.linkBaseURL)
+        Coordinator(
+            onOpenLink: onOpenLink,
+            linkBaseURL: document.linkBaseURL
+        )
     }
 
-    func makeNSView(context: Context) -> WKWebView {
+    func makeNSView(context: Context) -> GitHubReadmeWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
         configuration.defaultWebpagePreferences.allowsContentJavaScript = false
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
 
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let webView = GitHubReadmeWebView(frame: .zero, configuration: configuration)
+        webView.onScrollAwayFromTop = onScrollAwayFromTop
         webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground")
         return webView
     }
 
-    func updateNSView(_ webView: WKWebView, context: Context) {
+    func updateNSView(_ webView: GitHubReadmeWebView, context: Context) {
+        webView.onScrollAwayFromTop = onScrollAwayFromTop
         context.coordinator.onOpenLink = onOpenLink
         context.coordinator.linkBaseURL = document.linkBaseURL
         let key = "\(document.html.hashValue):\(colorScheme == .dark)"
         guard context.coordinator.loadedKey != key else { return }
         context.coordinator.loadedKey = key
+        webView.resetScrollDetection()
         webView.loadHTMLString(pageHTML, baseURL: document.linkBaseURL)
+    }
+
+    static func dismantleNSView(_ webView: GitHubReadmeWebView, coordinator: Coordinator) {
+        webView.onScrollAwayFromTop = {}
+        webView.navigationDelegate = nil
     }
 
     private var pageHTML: String {
@@ -143,7 +180,10 @@ struct GitHubReadmeView: NSViewRepresentable {
         var onOpenLink: (URL) -> Void
         var linkBaseURL: URL
 
-        init(onOpenLink: @escaping (URL) -> Void, linkBaseURL: URL) {
+        init(
+            onOpenLink: @escaping (URL) -> Void,
+            linkBaseURL: URL
+        ) {
             self.onOpenLink = onOpenLink
             self.linkBaseURL = linkBaseURL
         }

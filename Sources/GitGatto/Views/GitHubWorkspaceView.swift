@@ -3,8 +3,10 @@ import SwiftUI
 struct GitHubWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
     @State private var inAppBrowserPage: InAppBrowserPage?
+    @State private var isRepositoryHeaderCollapsed = false
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -422,6 +424,14 @@ struct GitHubWorkspaceView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(palette.background)
+            .onChange(of: repository.id) { _, _ in
+                setRepositoryHeaderCollapsed(false)
+            }
+            .onChange(of: model.githubError != nil) { _, hasError in
+                if hasError {
+                    setRepositoryHeaderCollapsed(false)
+                }
+            }
         } else {
             VStack(spacing: 9) {
                 Image(systemName: "shippingbox")
@@ -435,27 +445,48 @@ struct GitHubWorkspaceView: View {
         }
     }
 
+    @ViewBuilder
     private func repositoryHeader(_ repository: GitHubRepository, palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 14) {
-                GitHubLanguageIcon(
-                    language: repository.language,
-                    isPrivate: repository.isPrivate,
-                    size: 44
-                )
+        if isRepositoryHeaderCollapsed {
+            compactRepositoryHeader(repository, palette: palette)
+                .transition(.opacity)
+        } else {
+            expandedRepositoryHeader(repository, palette: palette)
+                .transition(.opacity)
+        }
+    }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(repository.fullName)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                        .textSelection(.enabled)
-                    Text(repository.description ?? L10n.text("github.repository.no_description"))
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(palette.mutedInk)
-                        .lineLimit(2)
+    private func expandedRepositoryHeader(_ repository: GitHubRepository, palette: AppPalette) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                setRepositoryHeaderCollapsed(true)
+            } label: {
+                HStack(alignment: .top, spacing: 14) {
+                    GitHubLanguageIcon(
+                        language: repository.language,
+                        isPrivate: repository.isPrivate,
+                        size: 44
+                    )
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(repository.fullName)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                            .textSelection(.enabled)
+                        Text(repository.description ?? L10n.text("github.repository.no_description"))
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(palette.mutedInk)
+                            .lineLimit(2)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.compact.up")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(palette.subtleInk)
+                        .frame(width: 28, height: 28)
                 }
-                Spacer(minLength: 8)
             }
+            .buttonStyle(.plain)
+            .help(L10n.text("github.repository.header.collapse"))
 
             HStack(spacing: 14) {
                 Label(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
@@ -512,6 +543,103 @@ struct GitHubWorkspaceView: View {
         .padding(.horizontal, 22)
         .padding(.vertical, 18)
         .background(palette.background)
+    }
+
+    private func compactRepositoryHeader(_ repository: GitHubRepository, palette: AppPalette) -> some View {
+        HStack(spacing: 8) {
+            Button {
+                setRepositoryHeaderCollapsed(false)
+            } label: {
+                HStack(spacing: 10) {
+                    GitHubLanguageIcon(
+                        language: repository.language,
+                        isPrivate: repository.isPrivate,
+                        size: 28
+                    )
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(repository.fullName)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                            .lineLimit(1)
+
+                        HStack(spacing: 10) {
+                            if let language = repository.language {
+                                GitHubLanguageLabel(language: language)
+                            }
+                            Label(
+                                repository.defaultBranch,
+                                systemImage: "point.topleft.down.to.point.bottomright.curvepath"
+                            )
+                        }
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(palette.subtleInk)
+                    }
+
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.compact.down")
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(palette.subtleInk)
+                        .frame(width: 24, height: 24)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text("github.repository.header.expand"))
+
+            Rectangle()
+                .fill(palette.divider)
+                .frame(width: 1, height: 24)
+
+            if model.activeGitHubOperation != nil {
+                ProgressView()
+                    .controlSize(.small)
+                Text(model.githubActivity ?? L10n.text("github.status.checking"))
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(palette.mutedInk)
+                    .lineLimit(1)
+                    .frame(maxWidth: 150)
+                ToolbarIconButton(
+                    systemName: "xmark",
+                    helpKey: "github.action.cancel"
+                ) {
+                    model.cancelGitHubOperation()
+                }
+            } else {
+                ToolbarIconButton(
+                    systemName: "tray.and.arrow.down",
+                    helpKey: "github.action.clone"
+                ) {
+                    model.chooseGitHubCloneDestination(fork: false)
+                }
+                ToolbarIconButton(
+                    systemName: "arrow.triangle.branch",
+                    helpKey: "github.action.fork_clone"
+                ) {
+                    model.chooseGitHubCloneDestination(fork: true)
+                }
+                ToolbarIconButton(
+                    systemName: "arrow.up.right",
+                    helpKey: "github.action.open_web"
+                ) {
+                    openProjectWeb(repository.webURL)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 52)
+        .background(palette.surface)
+    }
+
+    private func setRepositoryHeaderCollapsed(_ collapsed: Bool) {
+        guard isRepositoryHeaderCollapsed != collapsed else { return }
+        if reduceMotion {
+            isRepositoryHeaderCollapsed = collapsed
+        } else {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                isRepositoryHeaderCollapsed = collapsed
+            }
+        }
     }
 
     private func projectTabBar(_ palette: AppPalette) -> some View {
@@ -595,12 +723,16 @@ struct GitHubWorkspaceView: View {
 
                 GitHubReadmeView(
                     document: document,
-                    colorScheme: colorScheme
-                ) { url in
-                    if !model.openGitHubReadmeLink(url) {
-                        inAppBrowserPage = InAppBrowserPage(url: url)
+                    colorScheme: colorScheme,
+                    onScrollAwayFromTop: {
+                        setRepositoryHeaderCollapsed(true)
+                    },
+                    onOpenLink: { url in
+                        if !model.openGitHubReadmeLink(url) {
+                            inAppBrowserPage = InAppBrowserPage(url: url)
+                        }
                     }
-                }
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         } else if let error = model.githubReadmeError {
