@@ -44,29 +44,44 @@ actor GitWorktreeService: GitWorktreeServing {
             arguments: ["worktree", "list", "--porcelain", "-z"]
         )
         let entries = Self.parsePorcelain(result.output)
-        var records: [GitWorktreeRecord] = []
-        for (index, entry) in entries.enumerated() {
-            let path = URL(fileURLWithPath: entry.path, isDirectory: true).standardizedFileURL
-            let status = try await runner.run(
-                at: path,
-                arguments: ["status", "--porcelain=v1", "-z", "--untracked-files=all"]
-            )
-            let sync = try await syncCounts(in: path)
-            records.append(
-                GitWorktreeRecord(
-                    path: path,
-                    headHash: entry.headHash,
-                    branch: entry.branch,
-                    isMain: index == 0,
-                    isLocked: entry.isLocked,
-                    isPrunable: entry.isPrunable,
-                    changesCount: GitParsers.status(from: status.output).count,
-                    aheadCount: sync.ahead,
-                    behindCount: sync.behind
-                )
-            )
+        let runner = self.runner
+        return try await withThrowingTaskGroup(of: (Int, GitWorktreeRecord).self) { group in
+            for (index, entry) in entries.enumerated() {
+                group.addTask {
+                    let path = URL(fileURLWithPath: entry.path, isDirectory: true).standardizedFileURL
+                    let statusResult = try await runner.run(
+                        at: path,
+                        arguments: ["status", "--porcelain=v1", "-z", "--branch", "--untracked-files=all"]
+                    )
+                    guard let status = GitParsers.statusSnapshot(from: statusResult.output) else {
+                        throw GitCommandError(
+                            arguments: ["status", "--porcelain=v1", "-z", "--branch", "--untracked-files=all"],
+                            exitCode: statusResult.exitCode,
+                            message: "Git did not return worktree status metadata."
+                        )
+                    }
+                    return (
+                        index,
+                        GitWorktreeRecord(
+                            path: path,
+                            headHash: entry.headHash,
+                            branch: entry.branch,
+                            isMain: index == 0,
+                            isLocked: entry.isLocked,
+                            isPrunable: entry.isPrunable,
+                            changesCount: status.changes.count,
+                            aheadCount: status.aheadCount,
+                            behindCount: status.behindCount
+                        )
+                    )
+                }
+            }
+            var records: [(Int, GitWorktreeRecord)] = []
+            for try await record in group {
+                records.append(record)
+            }
+            return records.sorted { $0.0 < $1.0 }.map(\.1)
         }
-        return records
     }
 
     func createWorktree(
@@ -125,24 +140,6 @@ actor GitWorktreeService: GitWorktreeServing {
         if force { arguments.append("--force") }
         arguments.append(contentsOf: ["--", worktree.path.path])
         _ = try await runner.run(at: repositoryURL, arguments: arguments)
-    }
-
-    private func syncCounts(in worktreeURL: URL) async throws -> (ahead: Int, behind: Int) {
-        let upstream = try await runner.run(
-            at: worktreeURL,
-            arguments: ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
-            acceptedExitCodes: [0, 128]
-        )
-        guard upstream.exitCode == 0 else { return (0, 0) }
-        let counts = try await runner.run(
-            at: worktreeURL,
-            arguments: ["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
-            acceptedExitCodes: [0, 128]
-        )
-        guard counts.exitCode == 0 else { return (0, 0) }
-        let values = counts.text.split(whereSeparator: \Character.isWhitespace).compactMap { Int($0) }
-        guard values.count == 2 else { return (0, 0) }
-        return (values[1], values[0])
     }
 
     static func parsePorcelain(_ data: Data) -> [PorcelainEntry] {

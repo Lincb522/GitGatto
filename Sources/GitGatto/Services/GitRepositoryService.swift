@@ -19,6 +19,7 @@ enum GitRepositoryServiceError: LocalizedError, Sendable {
 
 protocol GitRepositoryServing: Sendable {
     func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot
+    func loadRepositoryOverview(at selectedURL: URL) async throws -> RepositorySnapshot
     func loadLiveState(at repositoryURL: URL) async throws -> RepositoryLiveState
     func commitGraph(in repositoryURL: URL) async throws -> CommitGraph
     func fetchRemoteTracking(in repositoryURL: URL) async throws
@@ -41,6 +42,10 @@ protocol GitRepositoryServing: Sendable {
     func pull(in repositoryURL: URL) async throws
     func push(in repositoryURL: URL) async throws
     func repositoryOperationState(in repositoryURL: URL) async throws -> RepositoryOperationState?
+    func repositoryOperationState(
+        in repositoryURL: URL,
+        changes: [WorkingTreeChange]
+    ) async throws -> RepositoryOperationState?
     func conflictDocument(path: String, in repositoryURL: URL) async throws -> ConflictFileDocument
     func resolveConflict(path: String, using side: ConflictSide, in repositoryURL: URL) async throws
     func resolveConflict(path: String, result: String, in repositoryURL: URL) async throws
@@ -51,123 +56,114 @@ protocol GitRepositoryServing: Sendable {
     func abortRepositoryOperation(in repositoryURL: URL) async throws
 }
 
+extension GitRepositoryServing {
+    func loadRepositoryOverview(at selectedURL: URL) async throws -> RepositorySnapshot {
+        try await loadRepository(at: selectedURL)
+    }
+
+    func repositoryOperationState(
+        in repositoryURL: URL,
+        changes: [WorkingTreeChange]
+    ) async throws -> RepositoryOperationState? {
+        try await repositoryOperationState(in: repositoryURL)
+    }
+}
+
 actor GitRepositoryService: GitRepositoryServing {
     private let runner: GitCommandRunner
+    private var gitDirectoriesByRepositoryPath: [String: URL] = [:]
 
     init(runner: GitCommandRunner = GitCommandRunner()) {
         self.runner = runner
     }
 
     func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot {
-        let rootResult = try await runner.run(at: selectedURL, arguments: ["rev-parse", "--show-toplevel"])
-        let rootPath = rootResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let rootURL = URL(fileURLWithPath: rootPath, isDirectory: true)
+        try await loadRepository(at: selectedURL, untrackedFiles: "all")
+    }
 
-        let branchResult = try await runner.run(at: rootURL, arguments: ["branch", "--show-current"])
-        var branchName = branchResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if branchName.isEmpty {
-            let head = try await runner.run(at: rootURL, arguments: ["rev-parse", "--short", "HEAD"])
-            branchName = head.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    func loadRepositoryOverview(at selectedURL: URL) async throws -> RepositorySnapshot {
+        try await loadRepository(at: selectedURL, untrackedFiles: "no")
+    }
+
+    private func loadRepository(
+        at selectedURL: URL,
+        untrackedFiles: String
+    ) async throws -> RepositorySnapshot {
+        let rootResult = try await runner.run(
+            at: selectedURL,
+            arguments: ["rev-parse", "--show-toplevel", "--absolute-git-dir"]
+        )
+        let rootFields = rootResult.text
+            .split(whereSeparator: \Character.isNewline)
+            .map(String.init)
+        guard let rootPath = rootFields.first else {
+            throw GitCommandError(
+                arguments: ["rev-parse", "--show-toplevel", "--absolute-git-dir"],
+                exitCode: 128,
+                message: "Git did not return a repository root."
+            )
+        }
+        let rootURL = URL(fileURLWithPath: rootPath, isDirectory: true)
+        if rootFields.count > 1 {
+            gitDirectoriesByRepositoryPath[rootURL.standardizedFileURL.path] = URL(
+                fileURLWithPath: rootFields[1],
+                isDirectory: true
+            )
         }
 
-        let statusResult = try await runner.run(
+        async let statusResult = runner.run(
             at: rootURL,
-            arguments: ["status", "--porcelain=v1", "-z", "--untracked-files=all"]
+            arguments: ["status", "--porcelain=v1", "-z", "--branch", "--untracked-files=\(untrackedFiles)"]
         )
-
-        let commitResult = try await runner.run(
+        async let commitResult = runner.run(
             at: rootURL,
             arguments: ["log", "-n", "100", "--date=iso-strict", "--pretty=format:%H%x1f%h%x1f%an%x1f%ad%x1f%s%x1e"],
             acceptedExitCodes: [0, 128]
         )
-
-        let branchListResult = try await runner.run(
+        async let branchListResult = runner.run(
             at: rootURL,
             arguments: ["for-each-ref", "--format=%(refname:short)%00%(objectname:short)%00%(upstream:short)%00", "refs/heads"]
         )
-
-        let upstreamResult = try await runner.run(
-            at: rootURL,
-            arguments: ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
-            acceptedExitCodes: [0, 128]
+        let (statusOutput, commitOutput, branchListOutput) = try await (
+            statusResult,
+            commitResult,
+            branchListResult
         )
-        let upstreamName = upstreamResult.exitCode == 0
-            ? upstreamResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            : nil
-
-        var ahead = 0
-        var behind = 0
-        if upstreamName != nil {
-            let counts = try await runner.run(
-                at: rootURL,
-                arguments: ["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
-                acceptedExitCodes: [0, 128]
-            )
-            if counts.exitCode == 0 {
-                let values = counts.text.split(whereSeparator: \Character.isWhitespace).compactMap { Int($0) }
-                if values.count == 2 {
-                    behind = values[0]
-                    ahead = values[1]
-                }
-            }
-        }
+        let status = try await parsedStatus(
+            statusOutput,
+            in: rootURL,
+            untrackedFiles: untrackedFiles
+        )
 
         return RepositorySnapshot(
             rootURL: rootURL,
-            branchName: branchName,
-            upstreamName: upstreamName,
-            aheadCount: ahead,
-            behindCount: behind,
-            changes: GitParsers.status(from: statusResult.output),
-            commits: GitParsers.commits(from: commitResult.text),
-            branches: GitParsers.branches(from: branchListResult.output, currentBranch: branchName)
+            branchName: status.branchName,
+            upstreamName: status.upstreamName,
+            aheadCount: status.aheadCount,
+            behindCount: status.behindCount,
+            changes: status.changes,
+            commits: GitParsers.commits(from: commitOutput.text),
+            branches: GitParsers.branches(from: branchListOutput.output, currentBranch: status.branchName)
         )
     }
 
     func loadLiveState(at repositoryURL: URL) async throws -> RepositoryLiveState {
-        let branchResult = try await runner.run(at: repositoryURL, arguments: ["branch", "--show-current"])
-        var branchName = branchResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if branchName.isEmpty {
-            let head = try await runner.run(at: repositoryURL, arguments: ["rev-parse", "--short", "HEAD"])
-            branchName = head.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
         let statusResult = try await runner.run(
             at: repositoryURL,
-            arguments: ["status", "--porcelain=v1", "-z", "--untracked-files=all"]
+            arguments: ["status", "--porcelain=v1", "-z", "--branch", "--untracked-files=all"]
         )
-        let upstreamResult = try await runner.run(
-            at: repositoryURL,
-            arguments: ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
-            acceptedExitCodes: [0, 128]
+        let status = try await parsedStatus(
+            statusResult,
+            in: repositoryURL,
+            untrackedFiles: "all"
         )
-        let upstreamName = upstreamResult.exitCode == 0
-            ? upstreamResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            : nil
-
-        var ahead = 0
-        var behind = 0
-        if upstreamName != nil {
-            let counts = try await runner.run(
-                at: repositoryURL,
-                arguments: ["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
-                acceptedExitCodes: [0, 128]
-            )
-            if counts.exitCode == 0 {
-                let values = counts.text.split(whereSeparator: \Character.isWhitespace).compactMap { Int($0) }
-                if values.count == 2 {
-                    behind = values[0]
-                    ahead = values[1]
-                }
-            }
-        }
 
         return RepositoryLiveState(
-            branchName: branchName,
-            upstreamName: upstreamName,
-            aheadCount: ahead,
-            behindCount: behind,
-            changes: GitParsers.status(from: statusResult.output)
+            branchName: status.branchName,
+            upstreamName: status.upstreamName,
+            aheadCount: status.aheadCount,
+            behindCount: status.behindCount,
+            changes: status.changes
         )
     }
 
@@ -450,15 +446,24 @@ actor GitRepositoryService: GitRepositoryServing {
     }
 
     func repositoryOperationState(in repositoryURL: URL) async throws -> RepositoryOperationState? {
-        let gitDirectoryResult = try await runner.run(
-            at: repositoryURL,
-            arguments: ["rev-parse", "--absolute-git-dir"]
-        )
-        let gitDirectory = URL(
-            fileURLWithPath: gitDirectoryResult.text.trimmingCharacters(in: .whitespacesAndNewlines),
-            isDirectory: true
-        )
+        let gitDirectory = try await gitDirectory(in: repositoryURL)
         let conflictedPaths = try await conflictPaths(in: repositoryURL)
+        return operationState(gitDirectory: gitDirectory, conflictedPaths: conflictedPaths)
+    }
+
+    func repositoryOperationState(
+        in repositoryURL: URL,
+        changes: [WorkingTreeChange]
+    ) async throws -> RepositoryOperationState? {
+        let gitDirectory = try await gitDirectory(in: repositoryURL)
+        let conflictedPaths = changes.filter(Self.isConflicted).map(\.path)
+        return operationState(gitDirectory: gitDirectory, conflictedPaths: conflictedPaths)
+    }
+
+    private func operationState(
+        gitDirectory: URL,
+        conflictedPaths: [String]
+    ) -> RepositoryOperationState? {
         let fileManager = FileManager.default
 
         let rebaseMerge = gitDirectory.appendingPathComponent("rebase-merge", isDirectory: true)
@@ -590,6 +595,67 @@ actor GitRepositoryService: GitRepositoryServing {
             at: repositoryURL,
             arguments: [state.kind.commandName, "--abort"]
         )
+    }
+
+    private func parsedStatus(
+        _ result: GitCommandResult,
+        in repositoryURL: URL,
+        untrackedFiles: String
+    ) async throws -> GitStatusSnapshot {
+        guard let status = GitParsers.statusSnapshot(from: result.output) else {
+            throw GitCommandError(
+                arguments: ["status", "--porcelain=v1", "-z", "--branch", "--untracked-files=\(untrackedFiles)"],
+                exitCode: result.exitCode,
+                message: "Git did not return branch status metadata."
+            )
+        }
+        guard status.branchName == "HEAD (no branch)"
+                || status.branchName.hasPrefix("HEAD (detached ") else {
+            return status
+        }
+        let head = try await runner.run(
+            at: repositoryURL,
+            arguments: ["rev-parse", "--short", "HEAD"]
+        )
+        return GitStatusSnapshot(
+            branchName: head.text.trimmingCharacters(in: .whitespacesAndNewlines),
+            upstreamName: nil,
+            aheadCount: 0,
+            behindCount: 0,
+            changes: status.changes
+        )
+    }
+
+    private func gitDirectory(in repositoryURL: URL) async throws -> URL {
+        let repositoryPath = repositoryURL.standardizedFileURL.path
+        if let cached = gitDirectoriesByRepositoryPath[repositoryPath] {
+            return cached
+        }
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["rev-parse", "--absolute-git-dir"]
+        )
+        let directory = URL(
+            fileURLWithPath: result.text.trimmingCharacters(in: .whitespacesAndNewlines),
+            isDirectory: true
+        )
+        gitDirectoriesByRepositoryPath[repositoryPath] = directory
+        return directory
+    }
+
+    private static func isConflicted(_ change: WorkingTreeChange) -> Bool {
+        switch (change.indexStatus, change.workTreeStatus) {
+        case (.deleted, .deleted),
+             (.added, .conflicted),
+             (.conflicted, .deleted),
+             (.conflicted, .added),
+             (.deleted, .conflicted),
+             (.added, .added),
+             (.conflicted, .conflicted):
+            true
+        default:
+            false
+        }
     }
 
     private func changes(at paths: [String], in repositoryURL: URL) async throws -> [WorkingTreeChange] {

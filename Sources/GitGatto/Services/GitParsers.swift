@@ -1,8 +1,69 @@
 import Foundation
 
+struct GitStatusSnapshot: Sendable, Equatable {
+    let branchName: String
+    let upstreamName: String?
+    let aheadCount: Int
+    let behindCount: Int
+    let changes: [WorkingTreeChange]
+}
+
 enum GitParsers {
     static func status(from data: Data) -> [WorkingTreeChange] {
-        let records = data.split(separator: 0, omittingEmptySubsequences: true)
+        statusRecords(data.split(separator: 0, omittingEmptySubsequences: true))
+    }
+
+    static func statusSnapshot(from data: Data) -> GitStatusSnapshot? {
+        var records = data.split(separator: 0, omittingEmptySubsequences: true)
+        guard let first = records.first else { return nil }
+        let header = String(decoding: first, as: UTF8.self)
+        guard header.hasPrefix("## ") else { return nil }
+        records.removeFirst()
+
+        var branchSummary = String(header.dropFirst(3))
+        var ahead = 0
+        var behind = 0
+        var upstreamIsGone = false
+        if let range = branchSummary.range(of: " [", options: .backwards),
+           branchSummary.hasSuffix("]") {
+            let counts = branchSummary[range.upperBound..<branchSummary.index(before: branchSummary.endIndex)]
+            upstreamIsGone = counts == "gone"
+            for component in counts.split(separator: ",") {
+                let fields = component.trimmingCharacters(in: .whitespaces).split(separator: " ")
+                guard fields.count == 2, let value = Int(fields[1]) else { continue }
+                if fields[0] == "ahead" {
+                    ahead = value
+                } else if fields[0] == "behind" {
+                    behind = value
+                }
+            }
+            branchSummary = String(branchSummary[..<range.lowerBound])
+        }
+
+        if branchSummary.hasPrefix("No commits yet on ") {
+            branchSummary.removeFirst("No commits yet on ".count)
+        } else if branchSummary.hasPrefix("Initial commit on ") {
+            branchSummary.removeFirst("Initial commit on ".count)
+        }
+
+        let relationship = branchSummary.components(separatedBy: "...")
+        let branchName = relationship[0]
+        let upstreamName = !upstreamIsGone && relationship.count > 1 && !relationship[1].isEmpty
+            ? relationship[1]
+            : nil
+
+        return GitStatusSnapshot(
+            branchName: branchName,
+            upstreamName: upstreamName,
+            aheadCount: ahead,
+            behindCount: behind,
+            changes: statusRecords(records)
+        )
+    }
+
+    private static func statusRecords<S: Sequence>(_ records: S) -> [WorkingTreeChange]
+    where S.Element: DataProtocol {
+        let records = Array(records)
         var changes: [WorkingTreeChange] = []
         var index = 0
 

@@ -39,19 +39,30 @@ struct GitCommandRunner: Sendable {
         arguments: [String],
         acceptedExitCodes: Set<Int32> = [0]
     ) async throws -> GitCommandResult {
-        try await Task.detached(priority: .userInitiated) {
+        let processBox = GitCommandProcessBox()
+        let task = Task.detached(priority: .userInitiated) {
             try Self.runBlocking(
                 at: repositoryURL,
                 arguments: arguments,
-                acceptedExitCodes: acceptedExitCodes
+                acceptedExitCodes: acceptedExitCodes,
+                processBox: processBox
             )
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            let result = try await task.value
+            try Task.checkCancellation()
+            return result
+        } onCancel: {
+            task.cancel()
+            processBox.cancel()
+        }
     }
 
     private static func runBlocking(
         at repositoryURL: URL,
         arguments: [String],
-        acceptedExitCodes: Set<Int32>
+        acceptedExitCodes: Set<Int32>,
+        processBox: GitCommandProcessBox
     ) throws -> GitCommandResult {
         let process = Process()
         let outputPipe = Pipe()
@@ -61,6 +72,8 @@ struct GitCommandRunner: Sendable {
         process.arguments = ["-C", repositoryURL.path] + arguments
         process.standardOutput = outputPipe
         process.standardError = errorPipe
+        guard !processBox.install(process) else { throw CancellationError() }
+        defer { processBox.clear() }
 
         var environment = ProcessInfo.processInfo.environment
         environment["LC_ALL"] = "C"
@@ -73,6 +86,9 @@ struct GitCommandRunner: Sendable {
         process.environment = environment
 
         try process.run()
+        if processBox.isCancelled {
+            process.terminate()
+        }
 
         let outputBox = GitCommandDataBox()
         let errorBox = GitCommandDataBox()
@@ -90,6 +106,10 @@ struct GitCommandRunner: Sendable {
 
         process.waitUntilExit()
         readGroup.wait()
+
+        if processBox.isCancelled || Task.isCancelled {
+            throw CancellationError()
+        }
 
         let result = GitCommandResult(
             output: outputBox.value,
@@ -132,6 +152,37 @@ struct GitCommandRunner: Sendable {
         return (additionalSearchPaths + inherited)
             .filter { !$0.isEmpty && seen.insert($0).inserted }
             .joined(separator: ":")
+    }
+}
+
+private final class GitCommandProcessBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var process: Process?
+    private var cancelled = false
+
+    var isCancelled: Bool {
+        lock.withLock { cancelled }
+    }
+
+    func install(_ process: Process) -> Bool {
+        lock.withLock {
+            self.process = process
+            return cancelled
+        }
+    }
+
+    func cancel() {
+        let process = lock.withLock {
+            cancelled = true
+            return self.process
+        }
+        if process?.isRunning == true {
+            process?.terminate()
+        }
+    }
+
+    func clear() {
+        lock.withLock { process = nil }
     }
 }
 

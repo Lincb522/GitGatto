@@ -76,6 +76,30 @@ struct GitRepositoryServiceTests {
         #expect(Set(staged.changes.filter(\.isStaged).map(\.path)) == ["tracked.txt", "new.txt"])
     }
 
+    @Test("Loads tracked state first and enriches untracked files in the live pass")
+    func loadsFastRepositoryOverview() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoOverviewTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "tracked\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "tracked.txt"], at: root)
+        try runGit(["commit", "-m", "Initial commit"], at: root)
+        try "new\n".write(to: root.appendingPathComponent("untracked.txt"), atomically: true, encoding: .utf8)
+
+        let service = GitRepositoryService()
+        let overview = try await service.loadRepositoryOverview(at: root)
+        let liveState = try await service.loadLiveState(at: root)
+
+        #expect(overview.branchName == "main")
+        #expect(overview.changes.isEmpty)
+        #expect(liveState.changes.map(\.path) == ["untracked.txt"])
+    }
+
     @Test("Switches to a selected local branch")
     func switchesLocalBranch() async throws {
         let root = FileManager.default.temporaryDirectory

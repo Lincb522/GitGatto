@@ -4,7 +4,13 @@ import Foundation
 
 @MainActor
 final class WorkspaceViewModel: ObservableObject {
-    @Published var selectedSection: WorkspaceSection = .github
+    @Published var selectedSection: WorkspaceSection = .github {
+        didSet {
+            if selectedSection != oldValue {
+                loadSelectedSectionDetails()
+            }
+        }
+    }
     @Published private(set) var snapshot: RepositorySnapshot?
     @Published private(set) var commitGraph: CommitGraph = .empty
     @Published private(set) var diffDocument: DiffDocument?
@@ -184,6 +190,11 @@ final class WorkspaceViewModel: ObservableObject {
     private var githubContentTask: Task<Void, Never>?
     private var githubFileTask: Task<Void, Never>?
     private var liveRefreshTask: Task<Void, Never>?
+    private var repositorySnapshotTask: Task<RepositorySnapshot, Error>?
+    private var repositorySupplementalTask: Task<RepositorySupplementalState, Error>?
+    private var activeRepositoryLoadID: UUID?
+    private var repositoryCache: [String: RepositoryWorkspaceCache] = [:]
+    private var repositoryCacheOrder: [String] = []
     private var repositoryDiscoveryTask: Task<Void, Never>?
     private var repositoryDiscoveryRunID: UUID?
     private var lastRemoteRefreshAt: Date?
@@ -379,25 +390,13 @@ final class WorkspaceViewModel: ObservableObject {
         }
         githubSearchScope = Self.githubSearchScopeFromArguments() ?? githubSearchScope
 #endif
-        codexProbeTask = Task {
-            codexAvailability = await codexService.probe()
-        }
-        translationProbeTask = Task {
-            translationAIAvailability = await translationService.probe()
-        }
-        githubProbeTask = Task {
-            githubAvailability = await githubService.probe()
-            if githubAvailability.state == .available {
-                await loadGitHubAccountRepositories()
-                await loadGitHubRecommendations()
-            }
-        }
         if let argumentURL = Self.repositoryURLFromArguments() {
             await openRepository(argumentURL)
         } else if appPreferences.reopenLastRepository,
                   let recent = recentRepositories.first {
             await openRepository(recent, showFailure: false)
         }
+        startAvailabilityProbes()
 #if DEBUG
         if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
             activeError = GlobalErrorHandler.report(
@@ -1088,65 +1087,99 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func openRepository(_ url: URL, showFailure: Bool = true) async {
+        repositorySnapshotTask?.cancel()
+        repositorySupplementalTask?.cancel()
+        let loadID = UUID()
+        activeRepositoryLoadID = loadID
         isRefreshing = true
-        defer { isRefreshing = false }
+        let requestedPath = url.standardizedFileURL.path
+        if snapshot?.rootURL.standardizedFileURL.path != requestedPath {
+            cacheCurrentRepository()
+            restoreCachedRepository(path: requestedPath)
+        }
+        let snapshotTask = Task { try await service.loadRepositoryOverview(at: url) }
+        repositorySnapshotTask = snapshotTask
 
         do {
-            let loaded = try await service.loadRepository(at: url)
-            let operationState = try await service.repositoryOperationState(in: loaded.rootURL)
-            let loadedStashes = try await service.stashes(in: loaded.rootURL)
-            let loadedGraph = try await service.commitGraph(in: loaded.rootURL)
+            let loaded = try await snapshotTask.value
+            guard activeRepositoryLoadID == loadID else { return }
+            repositorySnapshotTask = nil
             let repositoryChanged = snapshot?.rootURL.standardizedFileURL != loaded.rootURL.standardizedFileURL
             if repositoryChanged {
-                cancelCodex()
-                cancelAllWorktreeAgents()
-                conflictDocumentTask?.cancel()
-                stashDiffTask?.cancel()
-                worktreeRefreshTask?.cancel()
-                repositoryFilesTask?.cancel()
-                fileTimelineTask?.cancel()
-                diagnosticsTask?.cancel()
-                await codexConversationPersistenceTask?.value
-                codexMessages = []
-                codexCommitDraft = nil
-                codexActivity = nil
-                codexError = nil
-                repositoryOperationState = nil
-                selectedConflictPath = nil
-                conflictDocument = nil
-                conflictResolutionText = ""
-                stashes = []
-                selectedStash = nil
-                stashDiffDocument = nil
-                commitGraph = .empty
-                worktrees = []
-                selectedWorktree = nil
-                worktreeAgentRuns = [:]
-                worktreeError = nil
-                repositoryFiles = []
-                fileTimelineQuery = ""
-                selectedRepositoryFile = nil
-                fileRevisions = []
-                selectedFileRevision = nil
-                fileVersionDocument = nil
-                fileBlameLines = []
-                repositoryDiagnostics = nil
-                activeDiagnosticOperation = nil
+                prepareForRepositoryChange()
             }
-            apply(loaded)
-            apply(operationState)
-            apply(loadedStashes)
-            commitGraph = loadedGraph
-            await reloadWorktrees(in: loaded.rootURL)
+            apply(loaded, preservingSelection: !repositoryChanged)
             remember(loaded.rootURL)
             lastRemoteRefreshAt = nil
-            restartLiveRefreshLoop()
-            if repositoryChanged {
-                let savedMessages = (try? await codexConversationStore.load(for: loaded.rootURL)) ?? []
-                guard snapshot?.rootURL.standardizedFileURL == loaded.rootURL.standardizedFileURL else { return }
-                codexMessages = savedMessages
+            isRefreshing = false
+            if hasStarted {
+                startAvailabilityProbes()
             }
+
+            let pendingConversationSave = codexConversationPersistenceTask
+            let service = self.service
+            let worktreeService = self.worktreeService
+            let conversationStore = codexConversationStore
+            let supplementalTask = Task {
+                async let liveState = service.loadLiveState(at: loaded.rootURL)
+                async let stashes = service.stashes(in: loaded.rootURL)
+                async let graph = service.commitGraph(in: loaded.rootURL)
+                async let worktrees = worktreeService.worktrees(in: loaded.rootURL)
+                let values = try await (liveState, stashes, graph, worktrees)
+                let operationState = try await service.repositoryOperationState(
+                    in: loaded.rootURL,
+                    changes: values.0.changes
+                )
+                let loadedState = RepositorySupplementalState(
+                    liveState: values.0,
+                    operationState: operationState,
+                    stashes: values.1,
+                    commitGraph: values.2,
+                    worktrees: values.3,
+                    messages: nil
+                )
+                guard repositoryChanged else { return loadedState }
+                await pendingConversationSave?.value
+                let messages = (try? await conversationStore.load(for: loaded.rootURL)) ?? []
+                return RepositorySupplementalState(
+                    liveState: loadedState.liveState,
+                    operationState: loadedState.operationState,
+                    stashes: loadedState.stashes,
+                    commitGraph: loadedState.commitGraph,
+                    worktrees: loadedState.worktrees,
+                    messages: messages
+                )
+            }
+            repositorySupplementalTask = supplementalTask
+            let supplemental = try await supplementalTask.value
+            guard activeRepositoryLoadID == loadID,
+                  snapshot?.rootURL.standardizedFileURL == loaded.rootURL.standardizedFileURL else { return }
+            repositorySupplementalTask = nil
+            activeRepositoryLoadID = nil
+            apply(supplemental.liveState)
+            apply(supplemental.operationState)
+            apply(supplemental.stashes)
+            commitGraph = supplemental.commitGraph
+            apply(supplemental.worktrees)
+            if let messages = supplemental.messages {
+                codexMessages = messages
+            }
+            cacheCurrentRepository()
+            restartLiveRefreshLoop()
+        } catch is CancellationError {
+            if activeRepositoryLoadID == loadID {
+                repositorySnapshotTask = nil
+                repositorySupplementalTask = nil
+                activeRepositoryLoadID = nil
+                isRefreshing = false
+            }
+            return
         } catch {
+            guard activeRepositoryLoadID == loadID else { return }
+            repositorySnapshotTask = nil
+            repositorySupplementalTask = nil
+            activeRepositoryLoadID = nil
+            isRefreshing = false
             if showFailure {
                 presentError(error, context: .repositoryOpen, repositoryURL: url)
             }
@@ -1155,19 +1188,39 @@ final class WorkspaceViewModel: ObservableObject {
 
     func refresh() async {
         guard let url = snapshot?.rootURL else { return }
+        activeRepositoryLoadID = nil
+        repositorySnapshotTask?.cancel()
+        repositorySupplementalTask?.cancel()
         isRefreshing = true
         defer { isRefreshing = false }
 
         do {
-            let loaded = try await service.loadRepository(at: url)
-            let operationState = try await service.repositoryOperationState(in: loaded.rootURL)
-            let loadedStashes = try await service.stashes(in: loaded.rootURL)
-            let loadedGraph = try await service.commitGraph(in: loaded.rootURL)
+            let loaded = try await service.loadRepositoryOverview(at: url)
+            guard snapshot?.rootURL.standardizedFileURL == url.standardizedFileURL else { return }
             apply(loaded, preservingSelection: true)
-            apply(operationState)
-            apply(loadedStashes)
-            commitGraph = loadedGraph
-            await reloadWorktrees(in: loaded.rootURL)
+            async let liveState = service.loadLiveState(at: loaded.rootURL)
+            async let loadedStashes = service.stashes(in: loaded.rootURL)
+            async let loadedGraph = service.commitGraph(in: loaded.rootURL)
+            async let loadedWorktrees = worktreeService.worktrees(in: loaded.rootURL)
+            let values = try await (liveState, loadedStashes, loadedGraph, loadedWorktrees)
+            let operationState = try await service.repositoryOperationState(
+                in: loaded.rootURL,
+                changes: values.0.changes
+            )
+            let supplemental = RepositorySupplementalState(
+                liveState: values.0,
+                operationState: operationState,
+                stashes: values.1,
+                commitGraph: values.2,
+                worktrees: values.3,
+                messages: nil
+            )
+            guard snapshot?.rootURL.standardizedFileURL == url.standardizedFileURL else { return }
+            apply(supplemental.liveState)
+            apply(supplemental.operationState)
+            apply(supplemental.stashes)
+            commitGraph = supplemental.commitGraph
+            apply(supplemental.worktrees)
         } catch {
             presentError(error, context: .repositoryRefresh, repositoryURL: url)
         }
@@ -1217,7 +1270,10 @@ final class WorkspaceViewModel: ObservableObject {
 
         do {
             let liveState = try await service.loadLiveState(at: repositoryURL)
-            let operationState = try await service.repositoryOperationState(in: repositoryURL)
+            let operationState = try await service.repositoryOperationState(
+                in: repositoryURL,
+                changes: liveState.changes
+            )
             guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
             apply(liveState)
             apply(operationState)
@@ -1513,6 +1569,8 @@ final class WorkspaceViewModel: ObservableObject {
         localRepositories.removeAll { $0.standardizedFileURL.path == path }
         recentRepositories.removeAll { $0.standardizedFileURL == url.standardizedFileURL }
         repositoryRecordsByPath[path] = nil
+        repositoryCache[path] = nil
+        repositoryCacheOrder.removeAll { $0 == path }
         persistRepositoryLists()
     }
 
@@ -3514,12 +3572,7 @@ final class WorkspaceViewModel: ObservableObject {
         do {
             let loaded = try await worktreeService.worktrees(in: repositoryURL)
             guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
-            let selectedID = selectedWorktree?.id
-            worktrees = loaded
-            selectedWorktree = selectedID.flatMap { id in loaded.first { $0.id == id } }
-                ?? loaded.first { !$0.isMain }
-                ?? loaded.first
-            worktreeError = nil
+            apply(loaded)
         } catch is CancellationError {
             return
         } catch {
@@ -3546,11 +3599,22 @@ final class WorkspaceViewModel: ObservableObject {
         } ?? loadedStashes.first
         let selectionChanged = selectedStash != nextSelection
         stashes = loadedStashes
-        if selectionChanged || (nextSelection != nil && stashDiffDocument == nil) {
+        selectedStash = nextSelection
+        if selectedSection == .stash,
+           selectionChanged || (nextSelection != nil && stashDiffDocument == nil) {
             selectStash(nextSelection)
         } else if nextSelection == nil {
             selectStash(nil)
         }
+    }
+
+    private func apply(_ loadedWorktrees: [GitWorktreeRecord]) {
+        let selectedID = selectedWorktree?.id
+        worktrees = loadedWorktrees
+        selectedWorktree = selectedID.flatMap { id in loadedWorktrees.first { $0.id == id } }
+            ?? loadedWorktrees.first { !$0.isMain }
+            ?? loadedWorktrees.first
+        worktreeError = nil
     }
 
     private func apply(_ loaded: RepositorySnapshot, preservingSelection: Bool = false) {
@@ -3566,8 +3630,7 @@ final class WorkspaceViewModel: ObservableObject {
         selectedBranch = selectedBranchID.flatMap { id in loaded.branches.first { $0.id == id } }
             ?? loaded.branches.first
 
-        selectChange(selectedChange)
-        selectCommit(selectedCommit)
+        loadSelectedSectionDetails(force: true)
     }
 
     private func apply(_ liveState: RepositoryLiveState) {
@@ -3589,8 +3652,122 @@ final class WorkspaceViewModel: ObservableObject {
             let updatedSelection = selectedPath.flatMap { path in
                 liveState.changes.first { $0.path == path }
             } ?? liveState.changes.first
-            selectChange(updatedSelection)
+            selectedChange = updatedSelection
+            if selectedSection == .changes {
+                selectChange(updatedSelection)
+            }
         }
+    }
+
+    private func loadSelectedSectionDetails(force: Bool = false) {
+        switch selectedSection {
+        case .changes:
+            guard force || diffDocument?.path != selectedChange?.path else { return }
+            selectChange(selectedChange)
+        case .history:
+            guard force || commitDiffDocument?.path != selectedCommit?.shortHash else { return }
+            selectCommit(selectedCommit)
+        case .stash:
+            guard force || stashDiffDocument?.path != selectedStash?.reference else { return }
+            selectStash(selectedStash)
+        default:
+            break
+        }
+    }
+
+    private func startAvailabilityProbes() {
+        if codexProbeTask == nil {
+            codexProbeTask = Task {
+                codexAvailability = await codexService.probe()
+            }
+        }
+        if translationProbeTask == nil {
+            translationProbeTask = Task {
+                translationAIAvailability = await translationService.probe()
+            }
+        }
+        if githubProbeTask == nil {
+            githubProbeTask = Task {
+                githubAvailability = await githubService.probe()
+                if githubAvailability.state == .available {
+                    await loadGitHubAccountRepositories()
+                    await loadGitHubRecommendations()
+                }
+            }
+        }
+    }
+
+    private func prepareForRepositoryChange() {
+        liveRefreshTask?.cancel()
+        liveRefreshTask = nil
+        cancelCodex()
+        cancelAllWorktreeAgents()
+        diffTask?.cancel()
+        commitDiffTask?.cancel()
+        conflictDocumentTask?.cancel()
+        stashDiffTask?.cancel()
+        worktreeRefreshTask?.cancel()
+        repositoryFilesTask?.cancel()
+        fileTimelineTask?.cancel()
+        diagnosticsTask?.cancel()
+        diffDocument = nil
+        commitDiffDocument = nil
+        codexMessages = []
+        codexCommitDraft = nil
+        codexActivity = nil
+        codexError = nil
+        repositoryOperationState = nil
+        selectedConflictPath = nil
+        conflictDocument = nil
+        conflictResolutionText = ""
+        stashes = []
+        selectedStash = nil
+        stashDiffDocument = nil
+        commitGraph = .empty
+        worktrees = []
+        selectedWorktree = nil
+        worktreeAgentRuns = [:]
+        worktreeError = nil
+        repositoryFiles = []
+        fileTimelineQuery = ""
+        selectedRepositoryFile = nil
+        fileRevisions = []
+        selectedFileRevision = nil
+        fileVersionDocument = nil
+        fileBlameLines = []
+        repositoryDiagnostics = nil
+        activeDiagnosticOperation = nil
+    }
+
+    private func cacheCurrentRepository() {
+        guard let snapshot else { return }
+        let path = snapshot.rootURL.standardizedFileURL.path
+        repositoryCache[path] = RepositoryWorkspaceCache(
+            snapshot: snapshot,
+            operationState: repositoryOperationState,
+            stashes: stashes,
+            commitGraph: commitGraph,
+            worktrees: worktrees,
+            messages: codexMessages
+        )
+        repositoryCacheOrder.removeAll { $0 == path }
+        repositoryCacheOrder.insert(path, at: 0)
+        while repositoryCacheOrder.count > 6 {
+            repositoryCache[repositoryCacheOrder.removeLast()] = nil
+        }
+    }
+
+    private func restoreCachedRepository(path: String) {
+        guard let cached = repositoryCache[path] else { return }
+        prepareForRepositoryChange()
+        apply(cached.snapshot)
+        apply(cached.operationState)
+        apply(cached.stashes)
+        commitGraph = cached.commitGraph
+        apply(cached.worktrees)
+        codexMessages = cached.messages
+        repositoryCacheOrder.removeAll { $0 == path }
+        repositoryCacheOrder.insert(path, at: 0)
     }
 
     private func remember(_ url: URL) {
@@ -3716,4 +3893,22 @@ final class WorkspaceViewModel: ObservableObject {
         return GitHubSearchScope(rawValue: arguments[flagIndex + 1])
     }
 #endif
+}
+
+private struct RepositorySupplementalState: Sendable {
+    let liveState: RepositoryLiveState
+    let operationState: RepositoryOperationState?
+    let stashes: [StashRecord]
+    let commitGraph: CommitGraph
+    let worktrees: [GitWorktreeRecord]
+    let messages: [CodexMessage]?
+}
+
+private struct RepositoryWorkspaceCache {
+    let snapshot: RepositorySnapshot
+    let operationState: RepositoryOperationState?
+    let stashes: [StashRecord]
+    let commitGraph: CommitGraph
+    let worktrees: [GitWorktreeRecord]
+    let messages: [CodexMessage]
 }

@@ -78,8 +78,8 @@ struct GitGattoApp: App {
             WorkspaceView(model: model)
                 .frame(minWidth: 960, minHeight: 620)
                 .task {
-                    updateManager.startIfConfigured()
                     await model.start()
+                    updateManager.startIfConfigured()
                 }
     }
 }
