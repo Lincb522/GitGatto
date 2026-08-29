@@ -1,0 +1,166 @@
+name: Notarize macOS DMG
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to notarize"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notarize-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  notarize:
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      CODESIGN_IDENTITY: "Developer ID Application: chengbo lin (7VJKFX4HF8)"
+      MACOS_DEVELOPER_ID_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.release_tag }}
+
+      - name: Validate release inputs
+        shell: zsh {0}
+        run: |
+          set -euo pipefail
+          for variable in \
+            MACOS_DEVELOPER_ID_P12_BASE64 \
+            APP_STORE_CONNECT_KEY_ID \
+            APP_STORE_CONNECT_ISSUER_ID \
+            APP_STORE_CONNECT_PRIVATE_KEY_BASE64
+          do
+            if [[ -z "${(P)variable:-}" ]]; then
+              print -u2 "Missing GitHub Actions secret: $variable"
+              exit 1
+            fi
+          done
+
+          VERSION="${RELEASE_TAG#v}"
+          if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
+            print -u2 "Release tags must use vMajor.Minor.Patch."
+            exit 1
+          fi
+
+          BUILD_NUMBER="$(python3 -c 'import sys; major, minor, patch = map(int, sys.argv[1].split(".")); print(major * 1_000_000 + minor * 1_000 + patch)' "$VERSION")"
+          print "VERSION=$VERSION" >> "$GITHUB_ENV"
+          print "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+
+      - name: Import signing and notarization credentials
+        shell: zsh {0}
+        run: |
+          set -euo pipefail
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id-application.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/gitgatto-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
+          PRIVATE_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+
+          print -n "$MACOS_DEVELOPER_ID_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          print -n "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > "$PRIVATE_KEY_PATH"
+          chmod 600 "$CERTIFICATE_PATH" "$PRIVATE_KEY_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -P "GitGattoActions" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -F "$CODESIGN_IDENTITY"
+
+          print "GITGATTO_SIGNING_KEYCHAIN=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          print "APP_STORE_CONNECT_KEY_PATH=$PRIVATE_KEY_PATH" >> "$GITHUB_ENV"
+
+      - name: Build and sign application
+        shell: zsh {0}
+        run: |
+          set -euo pipefail
+          GITGATTO_VERSION="$VERSION" \
+          GITGATTO_BUILD_NUMBER="$BUILD_NUMBER" \
+          GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
+          GITGATTO_SIGNING_KEYCHAIN="$GITGATTO_SIGNING_KEYCHAIN" \
+            ./scripts/package-macos.sh
+
+      - name: Notarize and staple application and DMG
+        shell: zsh {0}
+        run: |
+          set -euo pipefail
+          OUTPUT_DIR="$PWD/dist/notarized"
+          NOTARIZATION_DIR="$OUTPUT_DIR/notarization"
+          mkdir -p "$OUTPUT_DIR"
+
+          GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
+          GITGATTO_SIGNING_KEYCHAIN="$GITGATTO_SIGNING_KEYCHAIN" \
+          GITGATTO_NOTARIZATION_DIR="$NOTARIZATION_DIR" \
+          APP_STORE_CONNECT_KEY_PATH="$APP_STORE_CONNECT_KEY_PATH" \
+          APP_STORE_CONNECT_KEY_ID="$APP_STORE_CONNECT_KEY_ID" \
+          APP_STORE_CONNECT_ISSUER_ID="$APP_STORE_CONNECT_ISSUER_ID" \
+            ./scripts/notarize-macos.sh \
+              "$PWD/dist/GitGatto.app" \
+              "$OUTPUT_DIR/GitGatto-$VERSION.dmg"
+
+      - name: Record notarization result
+        if: always()
+        shell: zsh {0}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          output = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          directory = Path("dist/notarized/notarization")
+          rows = []
+          for name in ("app", "dmg"):
+              path = directory / f"{name}.json"
+              if not path.exists():
+                  continue
+              result = json.loads(path.read_text())
+              rows.append((name.upper(), result.get("status", "unknown"), result.get("id", "unavailable")))
+
+          with output.open("a") as handle:
+              handle.write("## Apple notarization\n\n")
+              handle.write("| Artifact | Status | Submission ID |\n")
+              handle.write("| --- | --- | --- |\n")
+              for artifact, status, submission_id in rows:
+                  handle.write(f"| {artifact} | {status} | `{submission_id}` |\n")
+          PY
+
+      - name: Upload notarized artifact and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GitGatto-${{ inputs.release_tag }}-notarized
+          path: |
+            dist/notarized/GitGatto-*.dmg
+            dist/notarized/notarization/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Remove temporary credentials
+        if: always()
+        shell: zsh {0}
+        run: |
+          security delete-keychain "$RUNNER_TEMP/gitgatto-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/developer-id-application.p12" "$RUNNER_TEMP/AuthKey.p8"
