@@ -431,6 +431,7 @@
 		62434AA78BDF531AA1CB3DCF /* RepositoryDiscoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21974E05AB7668106EE25D39 /* RepositoryDiscoveryService.swift */; };
 		62675356C7CF475C80801BFC /* 675-spline-font-database.png in Resources */ = {isa = PBXBuildFile; fileRef = 7FE543A74B715D55A98355F3 /* 675-spline-font-database.png */; };
 		629D9FAD4B0328B811255573 /* 175-eclipse.png in Resources */ = {isa = PBXBuildFile; fileRef = FD828194D5E15243C6457CBE /* 175-eclipse.png */; };
+		62B3F4BA36C603124C523653 /* ProductCopyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58F9255A52D052D724E5F5E /* ProductCopyTests.swift */; };
 		62BD9E5FFAED048A76FDB812 /* 474-nu.png in Resources */ = {isa = PBXBuildFile; fileRef = 04E370F1238E176117C07392 /* 474-nu.png */; };
 		62CD5B52857787523AA2B15E /* 046-avro-idl.png in Resources */ = {isa = PBXBuildFile; fileRef = 02917C3C5A48F4E308233793 /* 046-avro-idl.png */; };
 		63A582F8F83FA3B96BD825DD /* 621-roff-manpage.png in Resources */ = {isa = PBXBuildFile; fileRef = 567F352CB3B2AFF5F4FF8663 /* 621-roff-manpage.png */; };
@@ -2015,6 +2016,7 @@
 		D52F395F24FE3941FBCC34D7 /* gatto-person-crop-circle-fill.svg */ = {isa = PBXFileReference; path = "gatto-person-crop-circle-fill.svg"; sourceTree = "<group>"; };
 		D543863ED7AD4124781C00A3 /* 691-swift.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "691-swift.png"; sourceTree = "<group>"; };
 		D58C66EB8A92794B12A496E0 /* 592-runoff.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "592-runoff.png"; sourceTree = "<group>"; };
+		D58F9255A52D052D724E5F5E /* ProductCopyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCopyTests.swift; sourceTree = "<group>"; };
 		D5A87DCC846B9B5F9315E878 /* 015-asl.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "015-asl.png"; sourceTree = "<group>"; };
 		D5B296D7F43F2F23932C1EB0 /* 385-linux-kernel-module.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "385-linux-kernel-module.png"; sourceTree = "<group>"; };
 		D5B739EF5D5D7AF4ECCD0B6F /* 303-irc-log.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "303-irc-log.png"; sourceTree = "<group>"; };
@@ -3386,6 +3388,7 @@
 				663058658725FAFEFE3F0A39 /* MarketplaceTranslationStoreTests.swift */,
 				694F5B1A0AC7685BD11EB10D /* MenuLocalizationTests.swift */,
 				82786E615DB7F5C875ABE410 /* PersistenceStoreTests.swift */,
+				D58F9255A52D052D724E5F5E /* ProductCopyTests.swift */,
 				BCC90B8A203C02679751AFF8 /* RepositoryDiscoveryServiceTests.swift */,
 				9C3DBAA84E42B40D67B130C8 /* RepositoryMediaSupportTests.swift */,
 			);
@@ -4567,6 +4570,7 @@
 				2619FC0C4AB85B68C274B3DE /* MarketplaceTranslationStoreTests.swift in Sources */,
 				0928DFE721CCBA6142A51383 /* MenuLocalizationTests.swift in Sources */,
 				CC672794EAB69986A71BF998 /* PersistenceStoreTests.swift in Sources */,
+				62B3F4BA36C603124C523653 /* ProductCopyTests.swift in Sources */,
 				C53394B112AF3961A135DBCF /* RepositoryDiscoveryServiceTests.swift in Sources */,
 				65D01D9945A5CF4587BC02B7 /* RepositoryMediaSupportTests.swift in Sources */,
 			);
@@ -4809,7 +4813,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18002;
+				CURRENT_PROJECT_VERSION = 18003;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -4830,7 +4834,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.2;
+				MARKETING_VERSION = 0.18.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -4876,7 +4880,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18002;
+				CURRENT_PROJECT_VERSION = 18003;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -4891,7 +4895,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.2;
+				MARKETING_VERSION = 0.18.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
