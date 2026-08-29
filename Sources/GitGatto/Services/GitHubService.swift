@@ -460,8 +460,12 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
 
     func marketplaceRelease(for repository: GitHubRepository) async throws -> GitHubRelease? {
         let key = repository.fullName.lowercased()
-        if let cached = marketplaceReleaseCache[key], cached.expiresAt > Date() {
-            return cached.release
+        let now = Date()
+        if let cached = marketplaceReleaseCache[key] {
+            if cached.expiresAt > now {
+                return cached.release
+            }
+            marketplaceReleaseCache[key] = nil
         }
         let response = try await api([
             "-X", "GET",
@@ -473,8 +477,12 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
             .first(where: { !$0.assets.isEmpty })
         marketplaceReleaseCache[key] = MarketplaceReleaseCacheEntry(
             release: release,
-            expiresAt: Date().addingTimeInterval(600)
+            expiresAt: now.addingTimeInterval(600)
         )
+        if marketplaceReleaseCache.count > 192,
+           let oldestKey = marketplaceReleaseCache.min(by: { $0.value.expiresAt < $1.value.expiresAt })?.key {
+            marketplaceReleaseCache[oldestKey] = nil
+        }
         return release
     }
 

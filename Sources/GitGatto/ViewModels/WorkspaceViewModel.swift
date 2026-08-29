@@ -216,6 +216,10 @@ final class WorkspaceViewModel: ObservableObject {
     private var readmeAgentTask: Task<Void, Never>?
     private var readmeApplyTask: Task<Void, Never>?
     private var liveRefreshTask: Task<Void, Never>?
+    private var remoteRefreshTask: Task<Void, Never>?
+    private var repositoryEventRefreshTask: Task<Void, Never>?
+    private var activeRepositoryEventRefreshID: UUID?
+    private var repositoryChangeMonitor: RepositoryChangeMonitor?
     private var repositorySnapshotTask: Task<RepositorySnapshot, Error>?
     private var repositorySupplementalTask: Task<RepositorySupplementalState, Error>?
     private var activeRepositoryLoadID: UUID?
@@ -223,7 +227,6 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryCacheOrder: [String] = []
     private var repositoryDiscoveryTask: Task<Void, Never>?
     private var repositoryDiscoveryRunID: UUID?
-    private var lastRemoteRefreshAt: Date?
     private let recentRepositoriesKey = "recentRepositories"
     private let localRepositoriesKey = "managedLocalRepositories"
     private let legacyLocalRepositoriesKey = "localRepositories"
@@ -1253,7 +1256,6 @@ final class WorkspaceViewModel: ObservableObject {
             }
             apply(loaded, preservingSelection: !repositoryChanged)
             remember(loaded.rootURL)
-            lastRemoteRefreshAt = nil
             isRefreshing = false
             if hasStarted {
                 startAvailabilityProbes()
@@ -1372,19 +1374,50 @@ final class WorkspaceViewModel: ObservableObject {
     func restartLiveRefreshLoop() {
         liveRefreshTask?.cancel()
         liveRefreshTask = nil
+        remoteRefreshTask?.cancel()
+        remoteRefreshTask = nil
+        repositoryEventRefreshTask?.cancel()
+        repositoryEventRefreshTask = nil
+        activeRepositoryEventRefreshID = nil
+        repositoryChangeMonitor?.stop()
+        repositoryChangeMonitor = nil
         isLiveRefreshing = false
-        guard appPreferences.liveRefreshEnabled, snapshot != nil else { return }
+        guard let repositoryURL = snapshot?.rootURL else { return }
 
-        let interval = max(0.5, min(appPreferences.liveRefreshInterval, 10))
-        liveRefreshTask = Task { [weak self] in
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(for: .seconds(interval))
-                } catch {
-                    return
+        if appPreferences.liveRefreshEnabled {
+            let monitor = RepositoryChangeMonitor(repositoryURL: repositoryURL) { [weak self] in
+                Task { @MainActor in
+                    self?.scheduleRepositoryEventRefresh()
                 }
-                guard let self else { return }
-                await self.refreshLiveRepositoryState()
+            }
+            repositoryChangeMonitor = monitor
+            monitor.start()
+
+            liveRefreshTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    do {
+                        try await Task.sleep(for: .seconds(30))
+                    } catch {
+                        return
+                    }
+                    guard let self else { return }
+                    await self.refreshLiveRepositoryState()
+                }
+            }
+        }
+
+        if appPreferences.remoteRefreshEnabled, snapshot?.upstreamName != nil {
+            let interval = max(15, appPreferences.remoteRefreshInterval)
+            remoteRefreshTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    do {
+                        try await Task.sleep(for: .seconds(interval))
+                    } catch {
+                        return
+                    }
+                    guard let self else { return }
+                    await self.refreshRemoteTrackingState()
+                }
             }
         }
     }
@@ -1392,24 +1425,11 @@ final class WorkspaceViewModel: ObservableObject {
     private func refreshLiveRepositoryState() async {
         guard let currentSnapshot = snapshot,
               !isRefreshing,
+              !isLiveRefreshing,
               activeOperation == nil else { return }
         let repositoryURL = currentSnapshot.rootURL
         isLiveRefreshing = true
         defer { isLiveRefreshing = false }
-
-        if appPreferences.remoteRefreshEnabled,
-           currentSnapshot.upstreamName != nil,
-           lastRemoteRefreshAt.map({ Date().timeIntervalSince($0) >= max(15, appPreferences.remoteRefreshInterval) }) ?? true {
-            lastRemoteRefreshAt = Date()
-            do {
-                try await service.fetchRemoteTracking(in: repositoryURL)
-                liveSyncError = nil
-            } catch {
-                liveSyncError = L10n.format("sync.error.refresh", error.localizedDescription)
-            }
-        } else if !appPreferences.remoteRefreshEnabled {
-            liveSyncError = nil
-        }
 
         do {
             let liveState = try await service.loadLiveState(at: repositoryURL)
@@ -1420,6 +1440,62 @@ final class WorkspaceViewModel: ObservableObject {
             guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
             apply(liveState)
             apply(operationState)
+            liveSyncError = nil
+        } catch {
+            liveSyncError = L10n.format("sync.error.refresh", error.localizedDescription)
+        }
+    }
+
+    private func scheduleRepositoryEventRefresh() {
+        guard appPreferences.liveRefreshEnabled, snapshot != nil else { return }
+        repositoryEventRefreshTask?.cancel()
+        let refreshID = UUID()
+        activeRepositoryEventRefreshID = refreshID
+        let delay = max(0.15, min(appPreferences.liveRefreshInterval, 2))
+        repositoryEventRefreshTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(delay))
+            } catch {
+                return
+            }
+            guard let self, activeRepositoryEventRefreshID == refreshID else { return }
+            while isLiveRefreshing || activeOperation != nil {
+                do {
+                    try await Task.sleep(for: .milliseconds(150))
+                } catch {
+                    return
+                }
+                guard activeRepositoryEventRefreshID == refreshID else { return }
+            }
+            await refreshLiveRepositoryState()
+            if activeRepositoryEventRefreshID == refreshID {
+                activeRepositoryEventRefreshID = nil
+                repositoryEventRefreshTask = nil
+            }
+        }
+    }
+
+    private func refreshRemoteTrackingState() async {
+        guard let currentSnapshot = snapshot,
+              currentSnapshot.upstreamName != nil,
+              !isRefreshing,
+              !isLiveRefreshing,
+              activeOperation == nil else { return }
+        let repositoryURL = currentSnapshot.rootURL
+        isLiveRefreshing = true
+        defer { isLiveRefreshing = false }
+
+        do {
+            try await service.fetchRemoteTracking(in: repositoryURL)
+            let liveState = try await service.loadLiveState(at: repositoryURL)
+            let operationState = try await service.repositoryOperationState(
+                in: repositoryURL,
+                changes: liveState.changes
+            )
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+            apply(liveState)
+            apply(operationState)
+            liveSyncError = nil
         } catch {
             liveSyncError = L10n.format("sync.error.refresh", error.localizedDescription)
         }
@@ -4369,6 +4445,13 @@ final class WorkspaceViewModel: ObservableObject {
     private func prepareForRepositoryChange() {
         liveRefreshTask?.cancel()
         liveRefreshTask = nil
+        remoteRefreshTask?.cancel()
+        remoteRefreshTask = nil
+        repositoryEventRefreshTask?.cancel()
+        repositoryEventRefreshTask = nil
+        activeRepositoryEventRefreshID = nil
+        repositoryChangeMonitor?.stop()
+        repositoryChangeMonitor = nil
         cancelCodex()
         cancelAllWorktreeAgents()
         diffTask?.cancel()

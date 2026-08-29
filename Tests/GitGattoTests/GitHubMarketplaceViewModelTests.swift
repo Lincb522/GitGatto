@@ -54,6 +54,11 @@ struct GitHubMarketplaceViewModelTests {
     func continuesSearchBeyondFirstPage() async throws {
         let fixture = try PaginatedMarketplaceGitHubFixture()
         let model = GitHubMarketplaceViewModel(github: fixture)
+        var resultPublicationCount = 0
+        let observation = model.$applications.dropFirst().sink { _ in
+            resultPublicationCount += 1
+        }
+        defer { observation.cancel() }
         model.query = "example/App"
         model.search()
 
@@ -61,6 +66,7 @@ struct GitHubMarketplaceViewModelTests {
             if !isLoading { break }
         }
         #expect(model.applications.count == 30)
+        #expect(resultPublicationCount <= 10)
         #expect(model.canLoadMore)
 
         model.loadMore()

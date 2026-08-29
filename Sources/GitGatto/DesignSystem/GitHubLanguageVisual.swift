@@ -30,9 +30,23 @@ enum GitHubLanguageIconAssets {
         })
     }()
 
-    @MainActor private static var imageCache: [String: NSImage] = [:]
-    @MainActor private static var thumbnailCache: [String: NSImage] = [:]
-    @MainActor private static var placeholderCache: [Int: NSImage] = [:]
+    @MainActor private static let imageCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 192
+        cache.totalCostLimit = 40 * 1_024 * 1_024
+        return cache
+    }()
+    @MainActor private static let thumbnailCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 256
+        cache.totalCostLimit = 24 * 1_024 * 1_024
+        return cache
+    }()
+    @MainActor private static let placeholderCache: NSCache<NSNumber, NSImage> = {
+        let cache = NSCache<NSNumber, NSImage>()
+        cache.countLimit = 8
+        return cache
+    }()
 
     private static let availablePixelSizes = [16, 24, 48, 128]
 
@@ -60,7 +74,8 @@ enum GitHubLanguageIconAssets {
     @MainActor
     private static func sourceImage(resourceName: String, pixelSize: Int) -> NSImage? {
         let sizedResourceName = "\(resourceName)-\(pixelSize)"
-        if let cached = imageCache[sizedResourceName] { return cached }
+        let cacheKey = sizedResourceName as NSString
+        if let cached = imageCache.object(forKey: cacheKey) { return cached }
         let bundle = AppResourceBundle.current
         guard let url = bundle.url(forResource: sizedResourceName, withExtension: "png")
                 ?? bundle.url(
@@ -69,7 +84,7 @@ enum GitHubLanguageIconAssets {
                     subdirectory: "LanguageIcons"
                 ),
               let image = NSImage(contentsOf: url) else { return nil }
-        imageCache[sizedResourceName] = image
+        imageCache.setObject(image, forKey: cacheKey, cost: pixelSize * pixelSize * 4)
         return image
     }
 
@@ -77,8 +92,8 @@ enum GitHubLanguageIconAssets {
     static func thumbnail(for language: String?, pointSize: CGFloat) -> NSImage? {
         guard let resourceName = resourceName(for: language) else { return nil }
         let resolvedSize = max(12, pointSize)
-        let key = "\(resourceName):\(Int((resolvedSize * 100).rounded()))"
-        if let cached = thumbnailCache[key] { return cached }
+        let key = "\(resourceName):\(Int((resolvedSize * 100).rounded()))" as NSString
+        if let cached = thumbnailCache.object(forKey: key) { return cached }
         guard let rendered = PixelAlignedImageRenderer.render(pointSize: resolvedSize, sourceForScale: { scale in
             sourceImage(
                 resourceName: resourceName,
@@ -86,15 +101,16 @@ enum GitHubLanguageIconAssets {
             )
         }) else { return nil }
         rendered.isTemplate = false
-        thumbnailCache[key] = rendered
+        let pixelSize = Int(ceil(resolvedSize))
+        thumbnailCache.setObject(rendered, forKey: key, cost: pixelSize * pixelSize * 4 * 14)
         return rendered
     }
 
     @MainActor
     static func placeholder(pointSize: CGFloat) -> NSImage? {
         let resolvedSize = max(12, pointSize)
-        let key = Int((resolvedSize * 100).rounded())
-        if let cached = placeholderCache[key] { return cached }
+        let key = NSNumber(value: Int((resolvedSize * 100).rounded()))
+        if let cached = placeholderCache.object(forKey: key) { return cached }
         let bundle = AppResourceBundle.current
         guard let url = bundle.url(forResource: "placeholder", withExtension: "svg")
                 ?? bundle.url(
@@ -105,7 +121,7 @@ enum GitHubLanguageIconAssets {
               let source = NSImage(contentsOf: url) else { return nil }
         let rendered = PixelAlignedImageRenderer.render(source, pointSize: resolvedSize)
         rendered.isTemplate = false
-        placeholderCache[key] = rendered
+        placeholderCache.setObject(rendered, forKey: key)
         return rendered
     }
 }

@@ -508,6 +508,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     ) async {
         let github = self.github
         let existing = replacingCurrentResults ? [] : applications
+        let existingIDs = Set(existing.map(\.id))
         await withTaskGroup(of: (Int, MarketplaceApplication?).self) { group in
             var iterator = repositories.makeIterator()
             var nextIndex = 0
@@ -523,20 +524,29 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 }
             }
             var pageValues: [Int: MarketplaceApplication] = [:]
+            var completedCount = 0
+            let publishResults = {
+                var known = existingIDs
+                let orderedPage = pageValues
+                    .sorted { $0.key < $1.key }
+                    .map(\.value)
+                    .filter { known.insert($0.id).inserted }
+                let updated = existing + orderedPage
+                guard self.applications != updated else { return }
+                self.applications = updated
+                if self.selectedApplication == nil, let first = updated.first {
+                    self.select(first)
+                }
+            }
             while let (index, value) = await group.next() {
                 guard !Task.isCancelled, self.platform == platform else {
                     group.cancelAll()
                     return
                 }
+                completedCount += 1
                 if let value { pageValues[index] = value }
-                var known = Set(existing.map(\.id))
-                let orderedPage = pageValues
-                    .sorted { $0.key < $1.key }
-                    .map(\.value)
-                    .filter { known.insert($0.id).inserted }
-                applications = existing + orderedPage
-                if selectedApplication == nil, let first = applications.first {
-                    select(first)
+                if completedCount == 1 || completedCount.isMultiple(of: 4) {
+                    publishResults()
                 }
                 if let repository = iterator.next() {
                     let index = nextIndex
@@ -549,6 +559,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                     }
                 }
             }
+            publishResults()
         }
     }
 

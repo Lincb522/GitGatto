@@ -22,8 +22,18 @@ struct GattoIcon: View {
 }
 
 enum GattoIconAssets {
-    nonisolated(unsafe) private static let sourceCache = NSCache<NSString, NSImage>()
-    nonisolated(unsafe) private static let renderedCache = NSCache<NSString, NSImage>()
+    nonisolated(unsafe) private static let sourceCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 256
+        cache.totalCostLimit = 24 * 1_024 * 1_024
+        return cache
+    }()
+    nonisolated(unsafe) private static let renderedCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 512
+        cache.totalCostLimit = 32 * 1_024 * 1_024
+        return cache
+    }()
 
     static func image(for symbol: String) -> NSImage {
         image(for: symbol, pointSize: 18)
@@ -43,7 +53,8 @@ enum GattoIconAssets {
             pointSize: resolvedSize
         )
         image.isTemplate = true
-        renderedCache.setObject(image, forKey: cacheKey)
+        let pixels = Int(ceil(resolvedSize))
+        renderedCache.setObject(image, forKey: cacheKey, cost: pixels * pixels * 4 * 14)
         return image
     }
 
@@ -55,7 +66,7 @@ enum GattoIconAssets {
         let url = bundle.url(forResource: name, withExtension: "svg", subdirectory: "UIIcons")
             ?? bundle.url(forResource: name, withExtension: "svg")
         let image = url.flatMap(NSImage.init(contentsOf:)) ?? NSImage(size: NSSize(width: 18, height: 18))
-        sourceCache.setObject(image, forKey: name as NSString)
+        sourceCache.setObject(image, forKey: name as NSString, cost: 64 * 1_024)
         return image
     }
 
