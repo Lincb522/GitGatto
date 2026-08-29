@@ -27,6 +27,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     private var didStart = false
     private var didLoadGitHubReleaseNotes = false
+    private var progressLaunchRecoveryTask: Task<Void, Never>?
     private let releaseService = GitHubReleaseService()
     private lazy var updaterController = SPUStandardUpdaterController(
         startingUpdater: false,
@@ -117,11 +118,23 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         )
     }
 
+    func updater(_: SPUUpdater, willExtractUpdate _: SUAppcastItem) {
+        progressLaunchRecoveryTask?.cancel()
+        let recovery = SparkleProgressLaunchRecovery(
+            bundleIdentifier: Bundle.main.bundleIdentifier ?? "dev.gitgatto.client"
+        )
+        progressLaunchRecoveryTask = Task {
+            await recovery.run()
+        }
+    }
+
     func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: any Error) {
         state = .current
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
+        progressLaunchRecoveryTask?.cancel()
+        progressLaunchRecoveryTask = nil
         state = Self.stateAfterAborting(with: error)
     }
 
