@@ -989,6 +989,14 @@
 "marketplace.detail.releases" = "版本与下载";
 "marketplace.detail.loading" = "正在加载应用详情…";
 "marketplace.detail.unavailable" = "该应用暂未提供详细介绍。";
+"marketplace.detail.about" = "应用介绍";
+"marketplace.detail.features" = "主要功能";
+"marketplace.detail.screenshots" = "应用截图";
+"marketplace.detail.information" = "应用信息";
+"marketplace.detail.developer" = "开发者";
+"marketplace.detail.latest_version" = "最新版本";
+"marketplace.detail.updated" = "最近更新";
+"marketplace.detail.download_size" = "下载大小";
 "marketplace.error.search.empty_response" = "GitHub 未返回可用的仓库搜索结果。";
 "marketplace.agent.installing" = "Agent 正在处理安装…";
 "marketplace.error.search" = "应用检索失败：%@";

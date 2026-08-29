@@ -989,6 +989,14 @@
 "marketplace.detail.releases" = "Versions & Downloads";
 "marketplace.detail.loading" = "Loading app details…";
 "marketplace.detail.unavailable" = "No detailed description is available.";
+"marketplace.detail.about" = "About";
+"marketplace.detail.features" = "Features";
+"marketplace.detail.screenshots" = "Screenshots";
+"marketplace.detail.information" = "Information";
+"marketplace.detail.developer" = "Developer";
+"marketplace.detail.latest_version" = "Latest Version";
+"marketplace.detail.updated" = "Updated";
+"marketplace.detail.download_size" = "Download Size";
 "marketplace.error.search.empty_response" = "GitHub returned no searchable repository response.";
 "marketplace.agent.installing" = "Agent is handling the installation…";
 "marketplace.error.search" = "App search failed: %@";

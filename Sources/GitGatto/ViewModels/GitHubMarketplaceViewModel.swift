@@ -9,14 +9,15 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published var selectedApplication: MarketplaceApplication?
     @Published private(set) var releases: [GitHubRelease] = []
     @Published var selectedReleaseID: Int64?
-    @Published private(set) var selectedReadme: GitHubReadmeDocument?
+    @Published private(set) var selectedDetails: MarketplaceApplicationDetails?
     @Published private(set) var selectedLogoURL: URL?
-    @Published private(set) var isLoadingReadme = false
+    @Published private(set) var isLoadingDetails = false
     @Published private(set) var isLoadingReleases = false
     @Published private(set) var detailError: String?
     @Published private(set) var isLoading = false
     @Published private(set) var isLoadingMore = false
     @Published private(set) var canLoadMore = false
+    @Published private(set) var searchPage = 0
     @Published private(set) var isUsingAgent = false
     @Published private(set) var isTranslating = false
     @Published private(set) var activeTranslationTarget: CodexTranslationTarget?
@@ -34,13 +35,12 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     private var searchTask: Task<Void, Never>?
     private var loadMoreTask: Task<Void, Never>?
     private var detailTask: Task<Void, Never>?
-    private var readmeTask: Task<Void, Never>?
+    private var detailsTask: Task<Void, Never>?
     private var installTask: Task<Void, Never>?
     private var translationTask: Task<Void, Never>?
     private var translationCacheTask: Task<Void, Never>?
     private var activeSearchID: UUID?
     private var hasLoaded = false
-    private var searchPage = 0
     private var searchInput = ""
     private var resolvedSearchQueries: [String] = []
     private var loadedReleaseApplicationID: String?
@@ -82,7 +82,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         searchTask?.cancel()
         loadMoreTask?.cancel()
         detailTask?.cancel()
-        readmeTask?.cancel()
+        detailsTask?.cancel()
         translationTask?.cancel()
         translationCacheTask?.cancel()
         isLoading = true
@@ -98,9 +98,9 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         selectedApplication = nil
         releases = []
         selectedReleaseID = nil
-        selectedReadme = nil
+        selectedDetails = nil
         selectedLogoURL = nil
-        isLoadingReadme = false
+        isLoadingDetails = false
         isLoadingReleases = false
         detailError = nil
         searchPage = 0
@@ -201,7 +201,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
 
     func select(_ application: MarketplaceApplication?) {
         detailTask?.cancel()
-        readmeTask?.cancel()
+        detailsTask?.cancel()
         translationTask?.cancel()
         translationCacheTask?.cancel()
         isTranslating = false
@@ -211,33 +211,44 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         translations = [:]
         activeTranslationTarget = nil
         translationError = nil
-        selectedReadme = nil
+        selectedDetails = application.map {
+            MarketplaceApplicationDetails.fallback(description: $0.repository.description)
+        }
         selectedLogoURL = application?.ownerAvatarURL
-        isLoadingReadme = application != nil
+        isLoadingDetails = application != nil
         isLoadingReleases = false
         loadedReleaseApplicationID = nil
         detailError = nil
         guard let application else { return }
         restoreTranslations(for: application, release: application.latestRelease)
         let github = self.github
-        readmeTask = Task {
+        detailsTask = Task {
             defer {
                 if selectedApplication?.id == application.id {
-                    isLoadingReadme = false
-                    readmeTask = nil
+                    isLoadingDetails = false
+                    detailsTask = nil
                 }
             }
             do {
                 let document = try await github.readme(for: application.repository)
                 guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
-                selectedReadme = document
-                selectedLogoURL = document.flatMap { GitHubReadmeHTML.primaryImageURL(in: $0) }
-                    ?? application.ownerAvatarURL
+                let details = document.map {
+                    MarketplaceApplicationDetailsExtractor.extract(
+                        from: $0,
+                        repositoryDescription: application.repository.description
+                    )
+                } ?? MarketplaceApplicationDetails.fallback(
+                    description: application.repository.description
+                )
+                selectedDetails = details
+                selectedLogoURL = details.logoURL ?? application.ownerAvatarURL
             } catch is CancellationError {
                 return
             } catch {
                 guard selectedApplication?.id == application.id else { return }
-                selectedReadme = nil
+                selectedDetails = MarketplaceApplicationDetails.fallback(
+                    description: application.repository.description
+                )
                 selectedLogoURL = application.ownerAvatarURL
             }
         }
@@ -570,8 +581,6 @@ final class GitHubMarketplaceViewModel: ObservableObject {
 #if DEBUG
     private func loadPreviewFixture() {
         guard let repositoryURL = URL(string: "https://github.com/Lincb522/GitGatto"),
-              let repositoryRootURL = URL(string: "https://github.com/Lincb522/GitGatto/blob/main/"),
-              let assetRootURL = URL(string: "https://raw.githubusercontent.com/Lincb522/GitGatto/main/"),
               let appIconURL = URL(string: "https://raw.githubusercontent.com/Lincb522/GitGatto/main/Assets/GitGatto-AppIcon.svg"),
               let diskImageURL = URL(string: "https://github.com/Lincb522/GitGatto/releases/download/v0.18.4/GitGatto-0.18.4.dmg"),
               let releaseURL = URL(string: "https://github.com/Lincb522/GitGatto/releases/tag/v0.18.4") else { return }
@@ -619,26 +628,20 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         selectedApplication = application
         releases = [release]
         selectedLogoURL = appIconURL
-        selectedReadme = GitHubReadmeDocument(
-            path: "README.md",
-            html: """
-            <h1>GitGatto</h1>
-            <p>原生构建、由 Agent 驱动的 Git 管理工具，让改动审阅、仓库管理与团队协作自然衔接。</p>
-            <h2>核心能力</h2>
-            <ul>
-              <li>查看工作区改动、提交历史、分支与仓库文件。</li>
-              <li>Agent 始终在当前仓库工作，可起草提交、处理错误并执行 Git 操作。</li>
-              <li>搜索 GitHub 项目与应用发行版，直接下载并管理安装包。</li>
-            </ul>
-            <h2>技术栈</h2>
-            <p>Swift 6 · SwiftUI · AppKit · WebKit · GitHub CLI</p>
-            """,
-            linkBaseURL: repositoryRootURL,
-            linkRootURL: repositoryRootURL,
-            assetBaseURL: assetRootURL,
-            assetRootURL: assetRootURL
+        selectedDetails = MarketplaceApplicationDetails(
+            summary: repository.description,
+            paragraphs: [
+                "GitGatto 将本地工作区、提交历史、仓库文件与 GitHub 协作集中在同一个原生客户端中。"
+            ],
+            features: [
+                "查看工作区改动、提交历史、分支与仓库文件",
+                "在当前仓库使用 Agent 起草提交、处理错误并执行 Git 操作",
+                "搜索 GitHub 项目与应用发行版，直接下载并管理安装包"
+            ],
+            screenshots: [],
+            logoURL: appIconURL
         )
-        isLoadingReadme = false
+        isLoadingDetails = false
     }
 #endif
 }

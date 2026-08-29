@@ -149,22 +149,18 @@ struct GitHubMarketplaceView: View {
                             }
                         }
                         if model.canLoadMore {
-                            Button { model.loadMore() } label: {
-                                HStack(spacing: 7) {
-                                    if model.isLoadingMore {
-                                        ProgressView().controlSize(.small)
-                                    } else {
-                                        Image(gattoSymbol: "chevron.down.circle")
-                                    }
-                                    Text(L10n.text(model.isLoadingMore ? "github.search.loading_more" : "github.search.load_more"))
-                                }
-                                .font(.system(size: 11.5, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 34)
+                            HStack(spacing: 7) {
+                                ProgressView().controlSize(.small)
+                                Text(L10n.text("github.search.loading_more"))
                             }
-                            .buttonStyle(SecondaryButtonStyle())
-                            .disabled(model.isLoadingMore)
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(palette.mutedInk)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 34)
                             .padding(.vertical, 7)
+                            .task(id: model.searchPage) {
+                                model.loadMore()
+                            }
                         }
                     }
                     .padding(8)
@@ -284,31 +280,141 @@ struct GitHubMarketplaceView: View {
         _ application: MarketplaceApplication,
         palette: AppPalette
     ) -> some View {
-        if let document = model.selectedReadme {
-            GitHubReadmeView(
-                document: document,
-                colorScheme: colorScheme,
-                onScrollAwayFromTop: {},
-                onOpenLink: { url in
-                    inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
-                }
-            )
-            .id("marketplace-readme-\(application.id)")
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if model.isLoadingReadme {
+        if model.isLoadingDetails, model.selectedDetails == nil {
             GattoLoadingState(text: L10n.text("marketplace.detail.loading"))
         } else {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.text("marketplace.detail.overview"))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                Text(model.displayedDescription(for: application) ?? L10n.text("marketplace.detail.unavailable"))
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(palette.mutedInk)
+            let details = model.selectedDetails
+                ?? MarketplaceApplicationDetails.fallback(description: application.repository.description)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    if !details.paragraphs.isEmpty {
+                        marketplaceDetailSection(L10n.text("marketplace.detail.about"), palette: palette) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ForEach(Array(details.paragraphs.enumerated()), id: \.offset) { _, paragraph in
+                                    Text(paragraph)
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(palette.mutedInk)
+                                        .lineSpacing(3)
+                                        .textSelection(.enabled)
+                                }
+                            }
+                        }
+                    } else if details.summary?.isEmpty != false {
+                        Text(L10n.text("marketplace.detail.unavailable"))
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(palette.mutedInk)
+                    }
+
+                    if !details.screenshots.isEmpty {
+                        marketplaceDetailSection(L10n.text("marketplace.detail.screenshots"), palette: palette) {
+                            LazyVGrid(
+                                columns: [GridItem(.adaptive(minimum: 230, maximum: 440), spacing: 12)],
+                                spacing: 12
+                            ) {
+                                ForEach(details.screenshots, id: \.absoluteString) { url in
+                                    MarketplaceScreenshotView(url: url)
+                                }
+                            }
+                        }
+                    }
+
+                    if !details.features.isEmpty {
+                        marketplaceDetailSection(L10n.text("marketplace.detail.features"), palette: palette) {
+                            LazyVGrid(
+                                columns: [GridItem(.adaptive(minimum: 220, maximum: 420), spacing: 10)],
+                                spacing: 10
+                            ) {
+                                ForEach(details.features, id: \.self) { feature in
+                                    HStack(alignment: .top, spacing: 9) {
+                                        Image(gattoSymbol: "checkmark.circle.fill")
+                                            .foregroundStyle(palette.primary)
+                                            .font(.system(size: 13, weight: .semibold))
+                                        Text(feature)
+                                            .font(.system(size: 12.5))
+                                            .foregroundStyle(palette.ink)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .padding(12)
+                                    .background(palette.raisedSurface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                            .strokeBorder(palette.divider, lineWidth: 1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    marketplaceInformation(application, palette: palette)
+                }
+                .padding(24)
             }
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+
+    private func marketplaceInformation(
+        _ application: MarketplaceApplication,
+        palette: AppPalette
+    ) -> some View {
+        marketplaceDetailSection(L10n.text("marketplace.detail.information"), palette: palette) {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 150, maximum: 280), spacing: 10)],
+                spacing: 10
+            ) {
+                MarketplaceInformationCell(
+                    title: L10n.text("marketplace.detail.developer"),
+                    value: application.repository.owner,
+                    systemImage: "person.circle"
+                )
+                MarketplaceInformationCell(
+                    title: L10n.text("marketplace.detail.latest_version"),
+                    value: application.latestRelease.tagName,
+                    systemImage: "shippingbox"
+                )
+                MarketplaceInformationCell(
+                    title: L10n.text("marketplace.detail.updated"),
+                    value: application.repository.updatedAt.formatted(date: .abbreviated, time: .omitted),
+                    systemImage: "clock.arrow.circlepath"
+                )
+                if let language = application.repository.language {
+                    MarketplaceInformationCell(
+                        title: L10n.text("github.repository.language.primary"),
+                        value: language,
+                        systemImage: "code"
+                    )
+                }
+                MarketplaceInformationCell(
+                    title: L10n.text("marketplace.detail.download_size"),
+                    value: ByteCountFormatter.string(
+                        fromByteCount: application.matchingAssets.reduce(0) { $0 + $1.size },
+                        countStyle: .file
+                    ),
+                    systemImage: "internaldrive"
+                )
+            }
+
+            Button {
+                inAppBrowserPage = InAppBrowserPage(url: application.repository.webURL, persistent: true)
+            } label: {
+                Label(L10n.text("github.action.open_web"), systemImage: "arrow.up.right.square")
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+    }
+
+    private func marketplaceDetailSection<Content: View>(
+        _ title: String,
+        palette: AppPalette,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(palette.ink)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func releasesPane(
@@ -436,6 +542,78 @@ struct GitHubMarketplaceView: View {
         }
         .buttonStyle(SecondaryButtonStyle())
         .disabled(model.isTranslating)
+    }
+}
+
+private struct MarketplaceInformationCell: View {
+    let title: String
+    let value: String
+    let systemImage: String
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        HStack(spacing: 10) {
+            Image(gattoSymbol: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(palette.primary)
+                .frame(width: 28, height: 28)
+                .background(palette.primarySoft)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(palette.subtleInk)
+                Text(value)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(palette.raisedSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(palette.divider, lineWidth: 1)
+        }
+    }
+}
+
+private struct MarketplaceScreenshotView: View {
+    let url: URL
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.18))) { phase in
+            switch phase {
+            case let .success(image):
+                image
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+            case .failure:
+                Image(gattoSymbol: "photo")
+                    .font(.system(size: 22))
+                    .foregroundStyle(palette.subtleInk)
+            case .empty:
+                ProgressView().controlSize(.small)
+            @unknown default:
+                EmptyView()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 176)
+        .background(palette.raisedSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(palette.divider, lineWidth: 1)
+        }
     }
 }
 
