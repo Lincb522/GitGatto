@@ -6,6 +6,7 @@ import Testing
 struct GitHubReleaseServiceTests {
     @Test("Uses the GitHub repository for release metadata and the appcast")
     func repositoryEndpoints() {
+        #expect(AppLinks.website.absoluteString == "https://gatto.zijiu522.cn")
         #expect(AppLinks.releasesAPI.absoluteString == "https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=100")
         #expect(AppLinks.updateFeed.absoluteString == "https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml")
     }
