@@ -189,12 +189,13 @@ private struct GitGattoCommands: Commands {
         CommandGroup(after: .sidebar) {
             Divider()
             workspaceCommand(.github, shortcut: "1")
-            workspaceCommand(.changes, shortcut: "2")
-            workspaceCommand(.history, shortcut: "3")
-            workspaceCommand(.branches, shortcut: "4")
-            workspaceCommand(.codex, shortcut: "5")
-            workspaceCommand(.timeMachine, shortcut: "6")
-            workspaceCommand(.diagnostics, shortcut: "7")
+            workspaceCommand(.marketplace, shortcut: "2")
+            workspaceCommand(.changes, shortcut: "3")
+            workspaceCommand(.history, shortcut: "4")
+            workspaceCommand(.branches, shortcut: "5")
+            workspaceCommand(.codex, shortcut: "6")
+            workspaceCommand(.timeMachine, shortcut: "7")
+            workspaceCommand(.diagnostics, shortcut: "8")
         }
 
         CommandMenu(L10n.text("menu.repository")) {

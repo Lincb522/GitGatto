@@ -1,4 +1,65 @@
+import AppKit
+import Foundation
 import SwiftUI
+
+enum GitHubLanguageIconAssets {
+    private struct Manifest: Decodable {
+        let totalLanguages: Int
+        let items: [Item]
+    }
+
+    private struct Item: Decodable {
+        let name: String
+        let file: String
+    }
+
+    private static let manifest: Manifest? = {
+        guard let url = AppResourceBundle.current.url(
+            forResource: "GitHubLanguageIcons",
+            withExtension: "json"
+        ), let data = try? Data(contentsOf: url) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try? decoder.decode(Manifest.self, from: data)
+    }()
+
+    private static let resourceNames: [String: String] = {
+        guard let manifest else { return [:] }
+        return Dictionary(uniqueKeysWithValues: manifest.items.map { item in
+            let resourceName = URL(fileURLWithPath: item.file)
+                .deletingPathExtension()
+                .lastPathComponent
+            return (item.name.lowercased(), resourceName)
+        })
+    }()
+
+    @MainActor private static var imageCache: [String: NSImage] = [:]
+
+    static var count: Int { manifest?.totalLanguages ?? 0 }
+
+    static func resourceName(for language: String?) -> String? {
+        guard let language else { return nil }
+        let key = language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !key.isEmpty else { return nil }
+        return resourceNames[key]
+    }
+
+    @MainActor
+    static func image(for language: String?) -> NSImage? {
+        guard let resourceName = resourceName(for: language) else { return nil }
+        if let cached = imageCache[resourceName] { return cached }
+        let bundle = AppResourceBundle.current
+        guard let url = bundle.url(forResource: resourceName, withExtension: "png")
+                ?? bundle.url(
+                    forResource: resourceName,
+                    withExtension: "png",
+                    subdirectory: "LanguageIcons"
+                ),
+              let image = NSImage(contentsOf: url) else { return nil }
+        imageCache[resourceName] = image
+        return image
+    }
+}
 
 struct GitHubLanguageStyle: Equatable, Sendable {
     let colorHex: String
@@ -81,7 +142,19 @@ struct GitHubLanguageIcon: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         ZStack(alignment: .bottomTrailing) {
-            if let style = GitHubLanguageStyle.resolved(language) {
+            if let image = GitHubLanguageIconAssets.image(for: language) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .antialiased(true)
+                    .scaledToFit()
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                            .stroke(palette.divider.opacity(0.72), lineWidth: 1)
+                    }
+            } else if let style = GitHubLanguageStyle.resolved(language) {
                 RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
                     .fill(style.requiresLightBackdrop ? Color(white: 0.96) : palette.raisedSurface)
                     .overlay {

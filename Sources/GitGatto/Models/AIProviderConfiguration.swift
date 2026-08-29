@@ -3,6 +3,8 @@ import Foundation
 enum AIExecutionLane: String, Sendable {
     case project
     case translation
+    case search
+    case installer
 }
 
 enum AIProviderPreset: String, CaseIterable, Identifiable, Codable, Sendable {
@@ -128,7 +130,7 @@ struct AIProviderConfiguration: Codable, Sendable, Equatable {
     func arguments(for lane: AIExecutionLane, mode: CodexRunMode = .analyze) -> [String] {
         let source: String
         switch lane {
-        case .project:
+        case .project, .search, .installer:
             source = mode == .analyze ? analyzeArguments : editArguments
         case .translation:
             source = translationArguments
@@ -155,7 +157,7 @@ enum AIProviderSettings {
     private static let translationKey = "ai.translation.configuration"
 
     static func load(_ lane: AIExecutionLane) -> AIProviderConfiguration {
-        let key = lane == .project ? projectKey : translationKey
+        let key = lane == .translation ? translationKey : projectKey
         guard let data = UserDefaults.standard.data(forKey: key),
               let configuration = try? JSONDecoder().decode(AIProviderConfiguration.self, from: data) else {
             return .preset(.codex)
@@ -164,7 +166,7 @@ enum AIProviderSettings {
     }
 
     static func save(_ configuration: AIProviderConfiguration, lane: AIExecutionLane) {
-        let key = lane == .project ? projectKey : translationKey
+        let key = lane == .translation ? translationKey : projectKey
         guard let data = try? JSONEncoder().encode(configuration) else { return }
         UserDefaults.standard.set(data, forKey: key)
     }

@@ -207,7 +207,8 @@ struct GitHubAPIParserTests {
             "name": "README.md",
             "path": "README.md",
             "size": 2048,
-            "html_url": "https://github.com/octocat/Hello-World/blob/main/README.md"
+            "html_url": "https://github.com/octocat/Hello-World/blob/main/README.md",
+            "download_url": "https://raw.githubusercontent.com/octocat/Hello-World/main/README.md"
           },
           {
             "type": "dir",
@@ -224,6 +225,63 @@ struct GitHubAPIParserTests {
         #expect(contents.map(\.name) == ["Sources", "README.md"])
         #expect(contents.first?.kind == .directory)
         #expect(contents.last?.size == 2048)
+        #expect(contents.last?.downloadURL?.host == "raw.githubusercontent.com")
+    }
+
+    @Test("Decodes release assets used by the download center")
+    func decodesReleases() throws {
+        let payload = """
+        [[{
+          "id": 42,
+          "tag_name": "v2.1.0",
+          "name": "Version 2.1",
+          "body": "Fixes and improvements.",
+          "published_at": "2026-08-28T12:30:00Z",
+          "html_url": "https://github.com/octocat/Hello-World/releases/tag/v2.1.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [{
+            "id": 91,
+            "name": "Hello-World.dmg",
+            "size": 2048,
+            "download_count": 120,
+            "content_type": "application/x-apple-diskimage",
+            "browser_download_url": "https://github.com/octocat/Hello-World/releases/download/v2.1.0/Hello-World.dmg",
+            "created_at": "2026-08-28T12:31:00Z"
+          }]
+        }]]
+        """
+
+        let releases = try GitHubAPIParser.releases(from: Data(payload.utf8))
+
+        #expect(releases.first?.tagName == "v2.1.0")
+        #expect(releases.first?.assets.first?.fileExtension == "dmg")
+        #expect(releases.first?.assets.first?.downloadCount == 120)
+    }
+
+    @Test("Routes only natural-language searches through Agent")
+    func classifiesSearchQueries() {
+        #expect(!GitHubSearchQueryResolver.requiresAgent("owner/project"))
+        #expect(!GitHubSearchQueryResolver.requiresAgent("raycast"))
+        #expect(GitHubSearchQueryResolver.requiresAgent("找一个轻量的 macOS 截图工具"))
+        #expect(GitHubSearchQueryResolver.directQuery("raycast", scope: .projects) == "raycast in:name")
+    }
+
+    @Test("Filters release assets by platform")
+    func filtersMarketplaceAssets() throws {
+        let url = try #require(URL(string: "https://example.com/App.dmg"))
+        let asset = GitHubReleaseAsset(
+            id: 1,
+            name: "App-macOS.dmg",
+            size: 10,
+            downloadCount: 1,
+            contentType: "application/octet-stream",
+            downloadURL: url,
+            createdAt: Date()
+        )
+
+        #expect(MarketplacePlatform.macOS.supports(asset))
+        #expect(!MarketplacePlatform.windows.supports(asset))
     }
 
     @Test("Encodes each repository path segment")

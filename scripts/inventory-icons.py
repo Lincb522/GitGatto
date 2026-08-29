@@ -11,8 +11,9 @@ STRING = re.compile(r'"([a-z0-9]+(?:\.[a-z0-9]+)*|[a-z]+)"')
 ICON_MEMBER = re.compile(r'\b(?:var|func)\s+(?:icon|systemImage|symbol|statusSymbol|iconName)\b')
 LOCALIZATION_PREFIXES = (
     "about.", "action.", "ai.", "changes.", "codex.", "conflict.",
-    "diagnostics.", "error.", "github.", "legal.", "nav.", "repository.",
-    "settings.", "stash.", "sync.", "update.", "worktree."
+    "diagnostics.", "downloads.", "error.", "github.", "installer.", "legal.",
+    "marketplace.", "nav.", "repository.", "settings.", "stash.", "sync.",
+    "update.", "worktree."
 )
 NON_ICONS = {
     "approved", "available", "cancelled", "checking", "comment", "completed",
@@ -20,7 +21,8 @@ NON_ICONS = {
     "skipped", "success", "unknown", "conflict.txt",
     "c", "cpp", "gif", "go", "h", "jpeg", "jpg", "js", "json", "jsx",
     "m", "md", "mm", "plist", "png", "py", "rs", "rst", "svg", "swift",
-    "toml", "ts", "tsx", "txt", "webp", "yaml", "yml"
+    "toml", "ts", "tsx", "txt", "webp", "yaml", "yml", "dmg", "gz",
+    "heic", "m4v", "mov", "mp4", "pkg", "webm", "xz", "zip"
 }
 
 
@@ -75,6 +77,7 @@ def extract() -> dict[str, set[str]]:
 
 def main() -> None:
     symbols = extract()
+    symbols.setdefault("pause", set()).add("Sources/GitGatto/Views/DownloadCenterView.swift")
     entries = []
     for source_symbol in sorted(symbols):
         asset_id = "gatto-" + source_symbol.replace(".", "-")

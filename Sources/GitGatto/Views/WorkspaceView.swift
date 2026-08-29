@@ -2,6 +2,8 @@ import SwiftUI
 
 struct WorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
+    @StateObject private var marketplaceModel = GitHubMarketplaceViewModel()
+    @StateObject private var downloads = AppDownloadManager()
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
     @Environment(\.colorScheme) private var colorScheme
@@ -26,15 +28,21 @@ struct WorkspaceView: View {
     }
 
     private var isSnapshotReady: Bool {
-        guard model.snapshot != nil else { return false }
-        return switch model.selectedSection {
-        case .github:
-            model.githubAvailability.state != .checking
+        if model.selectedSection == .marketplace {
+            return !marketplaceModel.isLoading
+        }
+        if model.selectedSection == .github {
+            return model.githubAvailability.state != .checking
                 && !model.isLoadingGitHub
                 && !model.isLoadingPullRequests
                 && !model.isLoadingGitHubReadme
                 && !model.isLoadingGitHubContents
                 && !model.isLoadingGitHubFile
+        }
+        guard model.snapshot != nil else { return false }
+        return switch model.selectedSection {
+        case .github, .marketplace:
+            true
         case .codex:
             model.codexAvailability.state != .checking
         case .timeMachine:
@@ -64,7 +72,7 @@ struct WorkspaceView: View {
                         Rectangle().fill(palette.divider).frame(width: 1)
 
                         VStack(spacing: 0) {
-                            if model.selectedSection != .github {
+                            if model.selectedSection != .github && model.selectedSection != .marketplace {
                                 RepositoryTopBar(model: model)
                                 Rectangle().fill(palette.divider).frame(height: 1)
                             }
@@ -122,6 +130,13 @@ struct WorkspaceView: View {
                 dismiss: { model.dismissActiveError() }
             )
         }
+        .sheet(isPresented: $downloads.isPresented) {
+            DownloadCenterView(
+                manager: downloads,
+                installWithAgent: marketplaceModel.installWithAgent
+            )
+            .frame(minWidth: 620, minHeight: 520)
+        }
 #if DEBUG
         .background(
             DebugSnapshotCapture(
@@ -142,7 +157,9 @@ struct WorkspaceView: View {
     @ViewBuilder
     private var workspaceDetail: some View {
         if model.selectedSection == .github {
-            GitHubWorkspaceView(model: model)
+            GitHubWorkspaceView(model: model, downloads: downloads)
+        } else if model.selectedSection == .marketplace {
+            GitHubMarketplaceView(model: marketplaceModel, downloads: downloads)
         } else if model.snapshot == nil {
             WelcomeView(model: model)
         } else {
@@ -162,7 +179,9 @@ struct WorkspaceView: View {
             case .diagnostics:
                 RepositoryDiagnosticsView(model: model)
             case .github:
-                GitHubWorkspaceView(model: model)
+                GitHubWorkspaceView(model: model, downloads: downloads)
+            case .marketplace:
+                GitHubMarketplaceView(model: marketplaceModel, downloads: downloads)
             case .codex:
                 CodexWorkspaceView(model: model)
             }
@@ -248,7 +267,7 @@ private struct ConsoleSectionRail: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private let sections: [WorkspaceSection] = [
-        .github, .changes, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex
+        .github, .marketplace, .changes, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex
     ]
 
     var body: some View {
@@ -296,6 +315,7 @@ private struct ConsoleSectionRail: View {
     private var railCount: Int? {
         switch model.selectedSection {
         case .github: model.githubAccountRepositories.count
+        case .marketplace: marketplaceCount
         case .changes: model.snapshot?.changes.count
         case .stash: model.stashes.count
         case .history: model.commitGraph.nodes.count
@@ -310,6 +330,7 @@ private struct ConsoleSectionRail: View {
     private func icon(for section: WorkspaceSection) -> String {
         switch section {
         case .github: "square.grid.2x2"
+        case .marketplace: "arrow.down.app"
         case .changes: "square.stack.3d.up"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
@@ -320,6 +341,8 @@ private struct ConsoleSectionRail: View {
         case .codex: "sparkles"
         }
     }
+
+    private var marketplaceCount: Int? { nil }
 }
 
 private struct ConsoleRepositoryDock: View {

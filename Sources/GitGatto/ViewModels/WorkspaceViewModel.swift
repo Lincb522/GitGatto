@@ -94,6 +94,14 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var githubDeveloperProfile: GitHubDeveloperProfile?
     @Published private(set) var githubDeveloperRepositories: [GitHubRepository] = []
     @Published private(set) var githubPullRequests: [GitHubPullRequest] = []
+    @Published private(set) var githubReleases: [GitHubRelease] = []
+    @Published private(set) var isLoadingGitHubReleases = false
+    @Published private(set) var githubReleasesError: String?
+    @Published private(set) var isSelectedGitHubRepositoryStarred = false
+    @Published private(set) var isUpdatingGitHubStar = false
+    @Published private(set) var isResolvingGitHubSearch = false
+    @Published private(set) var isBeautifyingReadme = false
+    @Published private(set) var readmeAgentError: String?
     @Published var githubProjectDetailTab: GitHubProjectDetailTab = .overview
     @Published private(set) var githubReadme: GitHubReadmeDocument?
     @Published private(set) var translatedGitHubReadme: GitHubReadmeDocument?
@@ -150,6 +158,7 @@ final class WorkspaceViewModel: ObservableObject {
     private let service: any GitRepositoryServing
     private let codexService: any CodexServing
     private let translationService: any CodexServing
+    private let searchService: any CodexServing
     private let githubService: any GitHubServing
     private let codexConversationStore: any CodexConversationStoring
     private let githubReadmeTranslationStore: any GitHubReadmeTranslationStoring
@@ -189,6 +198,9 @@ final class WorkspaceViewModel: ObservableObject {
     private var githubReadmeTranslationCacheTask: Task<Void, Never>?
     private var githubContentTask: Task<Void, Never>?
     private var githubFileTask: Task<Void, Never>?
+    private var githubReleaseTask: Task<Void, Never>?
+    private var githubStarTask: Task<Void, Never>?
+    private var readmeAgentTask: Task<Void, Never>?
     private var liveRefreshTask: Task<Void, Never>?
     private var repositorySnapshotTask: Task<RepositorySnapshot, Error>?
     private var repositorySupplementalTask: Task<RepositorySupplementalState, Error>?
@@ -207,6 +219,7 @@ final class WorkspaceViewModel: ObservableObject {
         service: any GitRepositoryServing = GitRepositoryService(),
         codexService: any CodexServing = CodexService(),
         translationService: any CodexServing = CodexService(lane: .translation),
+        searchService: any CodexServing = CodexService(lane: .search),
         githubService: any GitHubServing = GitHubService(),
         codexConversationStore: any CodexConversationStoring = CodexConversationStore(),
         githubReadmeTranslationStore: any GitHubReadmeTranslationStoring = GitHubReadmeTranslationStore(),
@@ -219,6 +232,7 @@ final class WorkspaceViewModel: ObservableObject {
         self.service = service
         self.codexService = codexService
         self.translationService = translationService
+        self.searchService = searchService
         self.githubService = githubService
         self.codexConversationStore = codexConversationStore
         self.githubReadmeTranslationStore = githubReadmeTranslationStore
@@ -393,6 +407,20 @@ final class WorkspaceViewModel: ObservableObject {
             && translationAIAvailability.state == .available
             && !isTranslatingGitHubReadme
             && !isPromptTranslating
+    }
+
+    var selectedGitHubLocalRepositoryURL: URL? {
+        guard let repository = selectedGitHubRepository else { return nil }
+        return localRepositories.first {
+            $0.lastPathComponent.compare(repository.name, options: .caseInsensitive) == .orderedSame
+        }
+    }
+
+    var canBeautifySelectedReadme: Bool {
+        selectedGitHubLocalRepositoryURL != nil
+            && codexAvailability.state == .available
+            && !isCodexRunning
+            && !isBeautifyingReadme
     }
 
     var canDraftPullRequestReply: Bool {
@@ -2143,23 +2171,38 @@ final class WorkspaceViewModel: ObservableObject {
             defer { isLoadingGitHub = false }
             do {
                 hasGitHubSearched = true
+                isResolvingGitHubSearch = GitHubSearchQueryResolver.requiresAgent(query)
+                let resolvedQuery: String
+                if isResolvingGitHubSearch {
+                    resolvedQuery = try await searchService.resolveGitHubSearchQuery(
+                        query,
+                        scope: githubSearchScope
+                    )
+                } else {
+                    resolvedQuery = GitHubSearchQueryResolver.directQuery(query, scope: githubSearchScope)
+                }
+                isResolvingGitHubSearch = false
                 switch githubSearchScope {
                 case .projects:
-                    let repositories = try await githubService.searchRepositories(query: query)
+                    let repositories = try await githubService.searchRepositories(query: resolvedQuery)
                     guard !Task.isCancelled else { return }
-                    githubSearchResults = repositories
+                    let sorted = GitHubFuzzySearch.sorted(repositories, query: query)
+                    githubSearchResults = sorted
                     githubDeveloperResults = []
-                    selectGitHubRepository(repositories.first)
+                    selectGitHubRepository(sorted.first)
                 case .developers:
-                    let developers = try await githubService.searchDevelopers(query: query)
+                    let developers = try await githubService.searchDevelopers(query: resolvedQuery)
                     guard !Task.isCancelled else { return }
-                    githubDeveloperResults = developers
+                    let sorted = GitHubFuzzySearch.sorted(developers, query: query)
+                    githubDeveloperResults = sorted
                     githubSearchResults = []
-                    selectGitHubDeveloper(developers.first)
+                    selectGitHubDeveloper(sorted.first)
                 }
             } catch is CancellationError {
+                isResolvingGitHubSearch = false
                 return
             } catch {
+                isResolvingGitHubSearch = false
                 if githubSearchScope == .developers {
                     githubDeveloperError = L10n.format("github.error.developer", error.localizedDescription)
                 } else {
@@ -2262,6 +2305,12 @@ final class WorkspaceViewModel: ObservableObject {
         }
         selectedGitHubRepository = repository
         githubPullRequests = []
+        githubReleases = []
+        githubReleasesError = nil
+        isLoadingGitHubReleases = false
+        isSelectedGitHubRepositoryStarred = false
+        isUpdatingGitHubStar = false
+        readmeAgentError = nil
         githubActionWorkflows = []
         githubActionRuns = []
         selectedGitHubActionWorkflow = nil
@@ -2305,6 +2354,9 @@ final class WorkspaceViewModel: ObservableObject {
         githubReadmeTranslationCacheTask?.cancel()
         githubContentTask?.cancel()
         githubFileTask?.cancel()
+        githubReleaseTask?.cancel()
+        githubStarTask?.cancel()
+        readmeAgentTask?.cancel()
         guard let repository else {
             isLoadingPullRequests = false
             isLoadingPullRequestReview = false
@@ -2313,11 +2365,14 @@ final class WorkspaceViewModel: ObservableObject {
             isLoadingGitHubReadme = false
             isLoadingGitHubContents = false
             isLoadingGitHubFile = false
+            isLoadingGitHubReleases = false
+            isBeautifyingReadme = false
             return
         }
 
         loadGitHubReadme(for: repository)
         loadGitHubDirectory(path: "", repository: repository)
+        loadGitHubStarState(for: repository)
 
         isLoadingPullRequests = true
         pullRequestTask = Task {
@@ -2343,6 +2398,80 @@ final class WorkspaceViewModel: ObservableObject {
         githubProjectDetailTab = tab
         if tab == .actions, githubActionRuns.isEmpty {
             refreshGitHubActions()
+        } else if tab == .releases, githubReleases.isEmpty {
+            loadGitHubReleases()
+        }
+    }
+
+    func loadGitHubReleases() {
+        guard let repository = selectedGitHubRepository, !isLoadingGitHubReleases else { return }
+        githubReleaseTask?.cancel()
+        isLoadingGitHubReleases = true
+        githubReleasesError = nil
+        githubReleaseTask = Task {
+            defer {
+                if selectedGitHubRepository?.id == repository.id {
+                    isLoadingGitHubReleases = false
+                }
+            }
+            do {
+                let releases = try await githubService.releases(for: repository)
+                guard !Task.isCancelled, selectedGitHubRepository?.id == repository.id else { return }
+                githubReleases = releases
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedGitHubRepository?.id == repository.id else { return }
+                githubReleasesError = L10n.format("github.releases.error", error.localizedDescription)
+            }
+        }
+    }
+
+    func toggleSelectedGitHubRepositoryStar() {
+        guard let repository = selectedGitHubRepository, !isUpdatingGitHubStar else { return }
+        let newValue = !isSelectedGitHubRepositoryStarred
+        isUpdatingGitHubStar = true
+        githubStarTask?.cancel()
+        githubStarTask = Task {
+            defer { if selectedGitHubRepository?.id == repository.id { isUpdatingGitHubStar = false } }
+            do {
+                try await githubService.setStarred(newValue, repository: repository)
+                guard !Task.isCancelled, selectedGitHubRepository?.id == repository.id else { return }
+                isSelectedGitHubRepositoryStarred = newValue
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedGitHubRepository?.id == repository.id else { return }
+                githubError = L10n.format("github.star.error", error.localizedDescription)
+            }
+        }
+    }
+
+    func beautifySelectedReadme(style: ReadmeAgentStyle) {
+        guard canBeautifySelectedReadme, let repositoryURL = selectedGitHubLocalRepositoryURL else { return }
+        readmeAgentTask?.cancel()
+        isBeautifyingReadme = true
+        readmeAgentError = nil
+        readmeAgentTask = Task {
+            defer { isBeautifyingReadme = false }
+            do {
+                _ = try await codexService.run(
+                    prompt: GitAgentProfile.readmePrompt(style: style),
+                    context: [],
+                    in: repositoryURL,
+                    mode: .edit
+                )
+                guard !Task.isCancelled else { return }
+                if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL {
+                    await refresh()
+                    selectedSection = .changes
+                }
+                showNotice(.init(message: L10n.text("github.readme.agent.completed")))
+            } catch is CancellationError {
+                return
+            } catch {
+                readmeAgentError = L10n.format("github.readme.agent.error", error.localizedDescription)
+            }
         }
     }
 
@@ -2973,6 +3102,22 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    private func loadGitHubStarState(for repository: GitHubRepository) {
+        githubStarTask?.cancel()
+        githubStarTask = Task {
+            do {
+                let starred = try await githubService.isStarred(repository)
+                guard !Task.isCancelled, selectedGitHubRepository?.id == repository.id else { return }
+                isSelectedGitHubRepositoryStarred = starred
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedGitHubRepository?.id == repository.id else { return }
+                isSelectedGitHubRepositoryStarred = false
+            }
+        }
+    }
+
     private func loadGitHubAccountRepositories() async {
         guard githubAvailability.state == .available, !isLoadingGitHub else { return }
         isLoadingGitHub = true
@@ -3295,6 +3440,11 @@ final class WorkspaceViewModel: ObservableObject {
             automaticallyStagesChanges = false
         case .githubChecks:
             promptKey = "codex.prompt.diagnose_github_checks"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .readme:
+            promptKey = "codex.prompt.readme"
             includesStagedDiff = false
             createsCommitDraft = false
             automaticallyStagesChanges = false

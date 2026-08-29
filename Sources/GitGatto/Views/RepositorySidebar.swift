@@ -34,6 +34,14 @@ struct RepositorySidebar: View {
                     model.selectedSection = .github
                 }
 
+                SidebarNavigationButton(
+                    titleKey: "nav.marketplace",
+                    systemImage: "arrow.down.app",
+                    isSelected: model.selectedSection == .marketplace
+                ) {
+                    model.selectedSection = .marketplace
+                }
+
                 Rectangle()
                     .fill(palette.divider)
                     .frame(height: 1)
@@ -123,8 +131,13 @@ struct RepositorySidebar: View {
                         CountBadge(count: model.localRepositories.count, emphasized: false)
                     }
                     Spacer()
-                    Button {
-                        openWindow(id: "repository-scanner")
+                    Menu {
+                        Button(L10n.text("action.open_repository")) {
+                            model.chooseRepository()
+                        }
+                        Button(L10n.text("repository.scan.open")) {
+                            openWindow(id: "repository-scanner")
+                        }
                     } label: {
                         ZStack {
                             if model.isScanningRepositories {
@@ -138,8 +151,10 @@ struct RepositorySidebar: View {
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
-                    .help(L10n.text("repository.scan.open"))
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help(L10n.text("action.open_repository"))
                 }
                 .padding(.horizontal, 10)
 

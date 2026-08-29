@@ -10,6 +10,7 @@ enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable, Codable {
     case worktrees
     case diagnostics
     case github
+    case marketplace
     case codex
 
     var id: String { rawValue }
@@ -642,6 +643,7 @@ struct GitHubPullRequestContext: Sendable {
 enum GitHubProjectDetailTab: String, CaseIterable, Identifiable, Sendable {
     case overview
     case code
+    case releases
     case pullRequests
     case actions
 
@@ -681,6 +683,23 @@ struct GitHubContentItem: Identifiable, Sendable, Hashable {
     let kind: Kind
     let size: Int
     let webURL: URL?
+    let downloadURL: URL?
+
+    init(
+        name: String,
+        path: String,
+        kind: Kind,
+        size: Int,
+        webURL: URL?,
+        downloadURL: URL? = nil
+    ) {
+        self.name = name
+        self.path = path
+        self.kind = kind
+        self.size = size
+        self.webURL = webURL
+        self.downloadURL = downloadURL
+    }
 
     var id: String { path }
 }
@@ -691,6 +710,101 @@ struct GitHubFileDocument: Sendable, Equatable {
     let text: String?
     let size: Int
     let webURL: URL?
+    let downloadURL: URL?
+    let localPreviewURL: URL?
+
+    init(
+        name: String,
+        path: String,
+        text: String?,
+        size: Int,
+        webURL: URL?,
+        downloadURL: URL? = nil,
+        localPreviewURL: URL? = nil
+    ) {
+        self.name = name
+        self.path = path
+        self.text = text
+        self.size = size
+        self.webURL = webURL
+        self.downloadURL = downloadURL
+        self.localPreviewURL = localPreviewURL
+    }
+}
+
+struct GitHubReleaseAsset: Identifiable, Sendable, Hashable, Codable {
+    let id: Int64
+    let name: String
+    let size: Int64
+    let downloadCount: Int
+    let contentType: String
+    let downloadURL: URL
+    let createdAt: Date
+
+    var fileExtension: String {
+        let lower = name.lowercased()
+        if lower.hasSuffix(".tar.gz") { return "tar.gz" }
+        if lower.hasSuffix(".tar.xz") { return "tar.xz" }
+        return (name as NSString).pathExtension.lowercased()
+    }
+}
+
+struct GitHubRelease: Identifiable, Sendable, Hashable {
+    let id: Int64
+    let tagName: String
+    let name: String
+    let body: String
+    let publishedAt: Date?
+    let webURL: URL
+    let isPrerelease: Bool
+    let assets: [GitHubReleaseAsset]
+}
+
+enum MarketplacePlatform: String, CaseIterable, Identifiable, Sendable, Codable {
+    case all
+    case macOS
+    case windows
+    case linux
+    case iOS
+    case android
+
+    var id: String { rawValue }
+
+    func supports(_ asset: GitHubReleaseAsset) -> Bool {
+        guard self != .all else { return true }
+        let name = asset.name.lowercased()
+        return switch self {
+        case .all: true
+        case .macOS:
+            ["dmg", "pkg", "app", "zip"].contains(asset.fileExtension)
+                && !name.contains("windows") && !name.contains("linux")
+        case .windows:
+            ["exe", "msi", "msix", "zip"].contains(asset.fileExtension)
+                && !name.contains("macos") && !name.contains("darwin")
+        case .linux:
+            ["appimage", "deb", "rpm", "tar.gz", "tar.xz"].contains(asset.fileExtension)
+                || name.contains("linux")
+        case .iOS: ["ipa"].contains(asset.fileExtension)
+        case .android: ["apk", "aab"].contains(asset.fileExtension)
+        }
+    }
+}
+
+struct MarketplaceApplication: Identifiable, Sendable, Hashable {
+    let repository: GitHubRepository
+    let latestRelease: GitHubRelease
+    let matchingAssets: [GitHubReleaseAsset]
+
+    var id: String { repository.id }
+}
+
+enum ReadmeAgentStyle: String, CaseIterable, Identifiable, Sendable {
+    case professional
+    case minimal
+    case openSource
+    case product
+
+    var id: String { rawValue }
 }
 
 enum GitHubOperationKind: Sendable, Equatable {

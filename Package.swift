@@ -12,13 +12,15 @@ let package = Package(
         .executable(name: "GitGatto", targets: ["GitGatto"])
     ],
     dependencies: [
-        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.4")
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.4"),
+        .package(url: "https://github.com/Alamofire/Alamofire", exact: "5.12.0")
     ],
     targets: [
         .executableTarget(
             name: "GitGatto",
             dependencies: [
-                .product(name: "Sparkle", package: "Sparkle")
+                .product(name: "Sparkle", package: "Sparkle"),
+                .product(name: "Alamofire", package: "Alamofire")
             ],
             resources: [
                 .process("Resources")

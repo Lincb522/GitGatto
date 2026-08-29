@@ -9,6 +9,9 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     exactVersion: 2.9.4
+  Alamofire:
+    url: https://github.com/Alamofire/Alamofire
+    exactVersion: 5.12.0
 fileGroups:
   - Assets
   - Config
@@ -31,8 +34,8 @@ settings:
     CLANG_ENABLE_MODULES: YES
     DEVELOPMENT_LANGUAGE: en
     LOCALIZATION_PREFERS_STRING_CATALOGS: NO
-    MARKETING_VERSION: 0.16.2
-    CURRENT_PROJECT_VERSION: 16002
+    MARKETING_VERSION: 0.17.0
+    CURRENT_PROJECT_VERSION: 17000
 targets:
   GitGatto:
     type: application
@@ -47,6 +50,8 @@ targets:
     dependencies:
       - package: Sparkle
         product: Sparkle
+      - package: Alamofire
+        product: Alamofire
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.gitgatto.client

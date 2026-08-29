@@ -27,7 +27,7 @@
       "hairline detail"
     ]
   },
-  "count": 117,
+  "count": 119,
   "icons": [
     {
       "sourceSymbol": "archivebox",
@@ -35,9 +35,10 @@
       "category": "files",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-archivebox.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/RepositorySidebar.swift:53",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1186",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:61",
         "Sources/GitGatto/Views/StashWorkspaceView.swift:404",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310"
+        "Sources/GitGatto/Views/WorkspaceView.swift:326"
       ]
     },
     {
@@ -65,8 +66,9 @@
         "Sources/GitGatto/Views/InAppBrowserSheet.swift:63",
         "Sources/GitGatto/Views/ReleaseHistoryView.swift:91",
         "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:62",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:24",
         "Sources/GitGatto/Views/UpdateCenterView.swift:167",
-        "Sources/GitGatto/Views/WorkspaceView.swift:602",
+        "Sources/GitGatto/Views/WorkspaceView.swift:621",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:88"
       ]
     },
@@ -77,7 +79,7 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:370",
-        "Sources/GitGatto/Views/WorkspaceView.swift:776"
+        "Sources/GitGatto/Views/WorkspaceView.swift:795"
       ]
     },
     {
@@ -86,7 +88,11 @@
       "category": "navigation",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-app.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/UpdateCenterView.swift:246"
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:261",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:28",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:39",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:246",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326"
       ]
     },
     {
@@ -144,7 +150,7 @@
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:288",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:443",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:61",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:152"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:157"
       ]
     },
     {
@@ -153,11 +159,11 @@
       "category": "navigation",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-2-circlepath.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
         "Sources/GitGatto/Views/UpdateActionButton.swift:140",
         "Sources/GitGatto/Views/UpdateCenterView.swift:246",
-        "Sources/GitGatto/Views/WorkspaceView.swift:389",
-        "Sources/GitGatto/Views/WorkspaceView.swift:744"
+        "Sources/GitGatto/Views/WorkspaceView.swift:408",
+        "Sources/GitGatto/Views/WorkspaceView.swift:763"
       ]
     },
     {
@@ -166,19 +172,21 @@
       "category": "navigation",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-branch.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
         "Sources/GitGatto/Views/AppSettingsView.swift:399",
         "Sources/GitGatto/Views/BranchesWorkspaceView.swift:174",
         "Sources/GitGatto/Views/BranchesWorkspaceView.swift:97",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:53",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:492",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:493",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:494",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:616",
-        "Sources/GitGatto/Views/RepositorySidebar.swift:77",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310",
-        "Sources/GitGatto/Views/WorkspaceView.swift:633",
-        "Sources/GitGatto/Views/WorkspaceView.swift:662",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:174",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:178",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:500",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:501",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:502",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:641",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:85",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326",
+        "Sources/GitGatto/Views/WorkspaceView.swift:652",
+        "Sources/GitGatto/Views/WorkspaceView.swift:681",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:121",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:205",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:365"
@@ -190,7 +198,7 @@
       "category": "navigation",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-merge.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
         "Sources/GitGatto/Views/HistoryWorkspaceView.swift:401"
       ]
     },
@@ -202,7 +210,7 @@
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:167",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:41",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1363"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1664"
       ]
     },
     {
@@ -230,7 +238,7 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:370",
-        "Sources/GitGatto/Views/WorkspaceView.swift:776"
+        "Sources/GitGatto/Views/WorkspaceView.swift:795"
       ]
     },
     {
@@ -269,9 +277,9 @@
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:209",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:375",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:84",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1164",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:517",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:622"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1269",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:536",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:647"
       ]
     },
     {
@@ -316,8 +324,8 @@
       "category": "people-and-web",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-building-2.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:283",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:286"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:291",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:294"
       ]
     },
     {
@@ -328,7 +336,7 @@
       "sourceRefs": [
         "Sources/GitGatto/Views/AppSettingsView.swift:399",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:234",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:816",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:844",
         "Sources/GitGatto/Views/HelpCenterView.swift:77"
       ]
     },
@@ -342,7 +350,7 @@
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:402",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:590",
         "Sources/GitGatto/Views/GlobalErrorSheet.swift:95",
-        "Sources/GitGatto/Views/WorkspaceView.swift:672"
+        "Sources/GitGatto/Views/WorkspaceView.swift:691"
       ]
     },
     {
@@ -351,7 +359,7 @@
       "category": "status",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-circle.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:460",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:265",
         "Sources/GitGatto/Views/RepositoryScannerView.swift:157"
@@ -384,7 +392,7 @@
       "category": "status",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-seal.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17"
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18"
       ]
     },
     {
@@ -420,7 +428,7 @@
       "category": "navigation",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-down.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:580"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:599"
       ]
     },
     {
@@ -429,7 +437,7 @@
       "category": "navigation",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-up.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:482"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:490"
       ]
     },
     {
@@ -439,7 +447,7 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-down.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/UpdateCenterView.swift:313",
-        "Sources/GitGatto/Views/WorkspaceView.swift:638"
+        "Sources/GitGatto/Views/WorkspaceView.swift:657"
       ]
     },
     {
@@ -448,8 +456,8 @@
       "category": "navigation",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-left.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:755",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:914",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:783",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:959",
         "Sources/GitGatto/Views/InAppBrowserSheet.swift:51"
       ]
     },
@@ -464,7 +472,7 @@
         "Sources/GitGatto/Views/AboutGitGattoView.swift:101",
         "Sources/GitGatto/Views/DiffInspectorView.swift:20",
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1137"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1242"
       ]
     },
     {
@@ -476,11 +484,12 @@
         "Sources/GitGatto/Views/AboutGitGattoView.swift:206",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:498",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:216",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1072",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1338",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1390",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:308",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1158",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1639",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1691",
         "Sources/GitGatto/Views/InAppBrowserSheet.swift:57",
-        "Sources/GitGatto/Views/WorkspaceView.swift:842"
+        "Sources/GitGatto/Views/WorkspaceView.swift:861"
       ]
     },
     {
@@ -516,7 +525,7 @@
       "category": "status",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-lefthalf-filled.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/WorkspaceView.swift:403"
+        "Sources/GitGatto/Views/WorkspaceView.swift:422"
       ]
     },
     {
@@ -525,11 +534,11 @@
       "category": "git-and-code",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-clock-arrow-circlepath.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
         "Sources/GitGatto/Views/AboutGitGattoView.swift:63",
         "Sources/GitGatto/Views/ReleaseHistoryView.swift:211",
-        "Sources/GitGatto/Views/RepositorySidebar.swift:61",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310"
+        "Sources/GitGatto/Views/RepositorySidebar.swift:69",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326"
       ]
     },
     {
@@ -538,8 +547,8 @@
       "category": "git-and-code",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-clock-badge-checkmark.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/RepositorySidebar.swift:69",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310"
+        "Sources/GitGatto/Views/RepositorySidebar.swift:77",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326"
       ]
     },
     {
@@ -578,7 +587,7 @@
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:511",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:604",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1189"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1340"
       ]
     },
     {
@@ -618,8 +627,9 @@
       "category": "files",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-richtext.png",
       "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:744"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:772"
       ]
     },
     {
@@ -631,8 +641,8 @@
         "Sources/GitGatto/Models/AppNavigationModel.swift:22",
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:185",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:521",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1088",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1123"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1186",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1228"
       ]
     },
     {
@@ -686,8 +696,8 @@
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:72",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:132",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:406",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1206",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:975",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1059",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1379",
         "Sources/GitGatto/Views/GlobalErrorSheet.swift:17",
         "Sources/GitGatto/Views/InAppBrowserSheet.swift:103",
         "Sources/GitGatto/Views/ReleaseHistoryView.swift:118",
@@ -696,7 +706,7 @@
         "Sources/GitGatto/Views/UpdateActionButton.swift:134",
         "Sources/GitGatto/Views/UpdateCenterView.swift:175",
         "Sources/GitGatto/Views/UpdateCenterView.swift:246",
-        "Sources/GitGatto/Views/WorkspaceView.swift:721",
+        "Sources/GitGatto/Views/WorkspaceView.swift:740",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:166",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:513"
       ]
@@ -737,8 +747,8 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:308",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:874",
-        "Sources/GitGatto/Views/WorkspaceView.swift:830"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:918",
+        "Sources/GitGatto/Views/WorkspaceView.swift:849"
       ]
     },
     {
@@ -758,8 +768,8 @@
       "sourceRefs": [
         "Sources/GitGatto/Views/RepositoryScannerView.swift:151",
         "Sources/GitGatto/Views/RepositoryScannerView.swift:75",
-        "Sources/GitGatto/Views/RepositorySidebar.swift:133",
-        "Sources/GitGatto/Views/WorkspaceView.swift:389"
+        "Sources/GitGatto/Views/RepositorySidebar.swift:146",
+        "Sources/GitGatto/Views/WorkspaceView.swift:408"
       ]
     },
     {
@@ -768,7 +778,7 @@
       "category": "files",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder-fill.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1088"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1186"
       ]
     },
     {
@@ -780,7 +790,7 @@
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:70",
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376",
         "Sources/GitGatto/Views/HelpCenterView.swift:77",
-        "Sources/GitGatto/Views/WorkspaceView.swift:412"
+        "Sources/GitGatto/Views/WorkspaceView.swift:431"
       ]
     },
     {
@@ -826,7 +836,7 @@
       "category": "status",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-info-circle.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/WorkspaceView.swift:422"
+        "Sources/GitGatto/Views/WorkspaceView.swift:441"
       ]
     },
     {
@@ -844,7 +854,7 @@
       "category": "people-and-web",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-link.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1088"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1186"
       ]
     },
     {
@@ -853,9 +863,9 @@
       "category": "people-and-web",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-location.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:280",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:281",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:283"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:288",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:289",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:291"
       ]
     },
     {
@@ -875,8 +885,10 @@
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:183",
         "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:66",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:119",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:370",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:48",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:124",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:378",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:988",
         "Sources/GitGatto/Views/RepositoryScannerView.swift:157",
         "Sources/GitGatto/Views/RepositoryScannerView.swift:167"
       ]
@@ -887,7 +899,8 @@
       "category": "actions-and-tools",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-minus.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:217"
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:217",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1406"
       ]
     },
     {
@@ -927,6 +940,15 @@
       ]
     },
     {
+      "sourceSymbol": "pause",
+      "assetID": "gatto-pause",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-pause.png",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/DownloadCenterView.swift"
+      ]
+    },
+    {
       "sourceSymbol": "pencil",
       "assetID": "gatto-pencil",
       "category": "actions-and-tools",
@@ -941,8 +963,8 @@
       "category": "people-and-web",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-2.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:280",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:281"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:288",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:289"
       ]
     },
     {
@@ -952,7 +974,7 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/AboutGitGattoView.swift:85",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:327"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:335"
       ]
     },
     {
@@ -961,7 +983,7 @@
       "category": "people-and-web",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-badge-questionmark.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:204"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:212"
       ]
     },
     {
@@ -970,9 +992,9 @@
       "category": "people-and-web",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-fill.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1320",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:251",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:91"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1621",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:259",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:96"
       ]
     },
     {
@@ -981,7 +1003,8 @@
       "category": "files",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-photo.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376"
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:376",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1186"
       ]
     },
     {
@@ -992,6 +1015,7 @@
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:167",
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:338",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1186",
         "Sources/GitGatto/Views/HelpCenterView.swift:77"
       ]
     },
@@ -1011,6 +1035,7 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-plus.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:217",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1414",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:78"
       ]
     },
@@ -1050,9 +1075,9 @@
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:300",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:274",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:700",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:494",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:498",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:572"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:502",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:506",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:591"
       ]
     },
     {
@@ -1061,9 +1086,9 @@
       "category": "status",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-record-circle.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:492",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:493",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:494"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:500",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:501",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:502"
       ]
     },
     {
@@ -1072,8 +1097,8 @@
       "category": "git-and-code",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-rectangle-split-2x1.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/RepositorySidebar.swift:85",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:93",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:188"
       ]
     },
@@ -1084,11 +1109,14 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-shippingbox.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/GitHubActionsCenterView.swift:260",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1088",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:280",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:281",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:437",
-        "Sources/GitGatto/Views/HelpCenterView.swift:77"
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:117",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1186",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:288",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:289",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:445",
+        "Sources/GitGatto/Views/HelpCenterView.swift:77",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:158",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:41"
       ]
     },
     {
@@ -1119,11 +1147,14 @@
         "Sources/GitGatto/Views/ChangesWorkspaceView.swift:411",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:396",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:450",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:48",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:247",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:199",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:859",
         "Sources/GitGatto/Views/GlobalErrorSheet.swift:107",
         "Sources/GitGatto/Views/HelpCenterView.swift:77",
-        "Sources/GitGatto/Views/RepositorySidebar.swift:108",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:116",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:109",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:265"
       ]
@@ -1145,7 +1176,7 @@
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:61",
         "Sources/GitGatto/Views/RepositorySidebar.swift:30",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310"
+        "Sources/GitGatto/Views/WorkspaceView.swift:326"
       ]
     },
     {
@@ -1155,8 +1186,8 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-square-stack-3d-up.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/HelpCenterView.swift:77",
-        "Sources/GitGatto/Views/RepositorySidebar.swift:45",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310"
+        "Sources/GitGatto/Views/RepositorySidebar.swift:53",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326"
       ]
     },
     {
@@ -1165,9 +1196,23 @@
       "category": "people-and-web",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-star.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1277",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:492",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:493"
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:174",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:300",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1578",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:500",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:501",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:517",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:629"
+      ]
+    },
+    {
+      "sourceSymbol": "star.fill",
+      "assetID": "gatto-star-fill",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-star-fill.png",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:517",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:629"
       ]
     },
     {
@@ -1176,10 +1221,10 @@
       "category": "git-and-code",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-stethoscope.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
         "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:24",
-        "Sources/GitGatto/Views/RepositorySidebar.swift:93",
-        "Sources/GitGatto/Views/WorkspaceView.swift:310"
+        "Sources/GitGatto/Views/RepositorySidebar.swift:101",
+        "Sources/GitGatto/Views/WorkspaceView.swift:326"
       ]
     },
     {
@@ -1190,7 +1235,7 @@
       "sourceRefs": [
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:287",
         "Sources/GitGatto/Views/CodexWorkspaceView.swift:511",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:994",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1078",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:521",
         "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:522"
       ]
@@ -1201,7 +1246,7 @@
       "category": "actions-and-tools",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-text-badge-plus.png",
       "sourceRefs": [
-        "Sources/GitGatto/Support/GitAgentProfile.swift:17"
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18"
       ]
     },
     {
@@ -1239,7 +1284,10 @@
       "category": "files",
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-tray-and-arrow-down.png",
       "sourceRefs": [
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:610"
+        "Sources/GitGatto/Views/DownloadCenterView.swift:38",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:78",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:635",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:114"
       ]
     },
     {
@@ -1258,9 +1306,10 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-xmark.png",
       "sourceRefs": [
         "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:418",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:25",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:91",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1170",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:603"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1275",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:622"
       ]
     },
     {
@@ -1270,8 +1319,10 @@
       "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-xmark-circle-fill.png",
       "sourceRefs": [
         "Sources/GitGatto/DesignSystem/Components.swift:194",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:56",
         "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:682",
-        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:132"
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:137",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:996"
       ]
     }
   ]

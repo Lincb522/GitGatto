@@ -13,7 +13,7 @@ struct GitAgentProfileTests {
         #expect(GitAgentProfile.core.contains("Git LFS"))
         #expect(GitAgentProfile.core.contains("submodules"))
         #expect(GitAgentProfile.core.contains("worktrees"))
-        #expect(GitAgentSkill.allCases.count == 8)
+        #expect(GitAgentSkill.allCases.count == 9)
     }
 
     @Test("Keeps remote writes behind explicit app controls")

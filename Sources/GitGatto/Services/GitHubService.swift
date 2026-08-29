@@ -14,6 +14,9 @@ protocol GitHubServing: Sendable {
     func markdown(at path: String, in repository: GitHubRepository) async throws -> GitHubReadmeDocument
     func contents(at path: String, in repository: GitHubRepository) async throws -> [GitHubContentItem]
     func file(_ item: GitHubContentItem, in repository: GitHubRepository) async throws -> GitHubFileDocument
+    func releases(for repository: GitHubRepository) async throws -> [GitHubRelease]
+    func isStarred(_ repository: GitHubRepository) async throws -> Bool
+    func setStarred(_ starred: Bool, repository: GitHubRepository) async throws
     func pullRequests(for repository: GitHubRepository) async throws -> [GitHubPullRequest]
     func pullRequestContext(
         for pullRequest: GitHubPullRequest,
@@ -68,6 +71,18 @@ protocol GitHubServing: Sendable {
 }
 
 extension GitHubServing {
+    func releases(for repository: GitHubRepository) async throws -> [GitHubRelease] {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func isStarred(_ repository: GitHubRepository) async throws -> Bool {
+        false
+    }
+
+    func setStarred(_ starred: Bool, repository: GitHubRepository) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
     func pullRequestReviewCenter(
         for pullRequest: GitHubPullRequest,
         in repository: GitHubRepository
@@ -312,13 +327,17 @@ actor GitHubService: GitHubServing {
         guard item.kind != .directory else {
             throw GitHubServiceError.invalidResponse
         }
-        guard item.size <= 1_500_000 else {
+        let previewKind = GitHubPreviewFileKind(fileName: item.name)
+        let maximumSize = previewKind.maximumFetchedSize
+        guard item.size <= maximumSize else {
             return GitHubFileDocument(
                 name: item.name,
                 path: item.path,
                 text: nil,
                 size: item.size,
-                webURL: item.webURL
+                webURL: item.webURL,
+                downloadURL: item.downloadURL,
+                localPreviewURL: nil
             )
         }
 
@@ -331,13 +350,46 @@ actor GitHubService: GitHubServing {
         ])
         let isBinary = response.prefix(8_192).contains(0)
         let text = isBinary ? nil : String(data: response, encoding: .utf8)
+        let localPreviewURL = try previewKind.cache(
+            response,
+            repositoryName: repository.fullName,
+            path: item.path
+        )
         return GitHubFileDocument(
             name: item.name,
             path: item.path,
             text: text,
             size: item.size,
-            webURL: item.webURL
+            webURL: item.webURL,
+            downloadURL: item.downloadURL,
+            localPreviewURL: localPreviewURL
         )
+    }
+
+    func releases(for repository: GitHubRepository) async throws -> [GitHubRelease] {
+        let response = try await api([
+            "--paginate", "--slurp",
+            "-X", "GET",
+            "repos/\(repository.fullName)/releases",
+            "-f", "per_page=50"
+        ])
+        return try GitHubAPIParser.releases(from: response)
+    }
+
+    func isStarred(_ repository: GitHubRepository) async throws -> Bool {
+        do {
+            _ = try await api(["-X", "GET", "user/starred/\(repository.fullName)"])
+            return true
+        } catch GitHubServiceError.resourceNotFound {
+            return false
+        }
+    }
+
+    func setStarred(_ starred: Bool, repository: GitHubRepository) async throws {
+        _ = try await api([
+            "-X", starred ? "PUT" : "DELETE",
+            "user/starred/\(repository.fullName)"
+        ])
     }
 
     private func embeddingPrivateReadmeAssets(
@@ -816,6 +868,19 @@ enum GitHubAPIParser {
             }
     }
 
+    static func releases(from data: Data) throws -> [GitHubRelease] {
+        let payloads: [ReleasePayload]
+        if let pages = try? decode([[ReleasePayload]].self, from: data) {
+            payloads = pages.flatMap { $0 }
+        } else {
+            payloads = try decode([ReleasePayload].self, from: data)
+        }
+        return payloads
+            .filter { !$0.draft }
+            .map(\.model)
+            .sorted { ($0.publishedAt ?? .distantPast) > ($1.publishedAt ?? .distantPast) }
+    }
+
     static func contentItem(from data: Data) throws -> GitHubContentItem {
         try decode(ContentItemPayload.self, from: data).model
     }
@@ -839,6 +904,18 @@ enum GitHubAPIParser {
 }
 
 enum GitHubFuzzySearch {
+    static func sorted(_ repositories: [GitHubRepository], query: String) -> [GitHubRepository] {
+        let needle = normalize(query)
+        guard !needle.isEmpty else { return repositories }
+        return repositories.sorted { lhs, rhs in
+            let left = min(score(candidate: lhs.fullName, query: needle), score(candidate: lhs.name, query: needle))
+            let right = min(score(candidate: rhs.fullName, query: needle), score(candidate: rhs.name, query: needle))
+            if left != right { return left < right }
+            if lhs.stars != rhs.stars { return lhs.stars > rhs.stars }
+            return lhs.fullName.localizedCaseInsensitiveCompare(rhs.fullName) == .orderedAscending
+        }
+    }
+
     static func sorted(
         _ developers: [GitHubDeveloperSummary],
         query: String
@@ -862,7 +939,7 @@ enum GitHubFuzzySearch {
         return 3 + editDistance(value, needle)
     }
 
-    private static func normalize(_ value: String) -> String {
+    static func normalize(_ value: String) -> String {
         value.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .filter { $0.isLetter || $0.isNumber }
     }
@@ -1392,10 +1469,12 @@ private struct ContentItemPayload: Decodable {
     let path: String
     let size: Int
     let htmlURL: URL?
+    let downloadURL: URL?
 
     enum CodingKeys: String, CodingKey {
         case type, name, path, size
         case htmlURL = "html_url"
+        case downloadURL = "download_url"
     }
 
     var model: GitHubContentItem {
@@ -1411,8 +1490,117 @@ private struct ContentItemPayload: Decodable {
             path: path,
             kind: kind,
             size: size,
-            webURL: htmlURL
+            webURL: htmlURL,
+            downloadURL: downloadURL
         )
+    }
+}
+
+private struct ReleasePayload: Decodable {
+    let id: Int64
+    let tagName: String
+    let name: String?
+    let body: String?
+    let publishedAt: Date?
+    let htmlURL: URL
+    let draft: Bool
+    let prerelease: Bool
+    let assets: [ReleaseAssetPayload]
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, body, draft, prerelease, assets
+        case tagName = "tag_name"
+        case publishedAt = "published_at"
+        case htmlURL = "html_url"
+    }
+
+    var model: GitHubRelease {
+        GitHubRelease(
+            id: id,
+            tagName: tagName,
+            name: name?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty ?? tagName,
+            body: body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            publishedAt: publishedAt,
+            webURL: htmlURL,
+            isPrerelease: prerelease,
+            assets: assets.map(\.model)
+        )
+    }
+}
+
+private struct ReleaseAssetPayload: Decodable {
+    let id: Int64
+    let name: String
+    let size: Int64
+    let downloadCount: Int
+    let contentType: String
+    let browserDownloadURL: URL
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, size
+        case downloadCount = "download_count"
+        case contentType = "content_type"
+        case browserDownloadURL = "browser_download_url"
+        case createdAt = "created_at"
+    }
+
+    var model: GitHubReleaseAsset {
+        GitHubReleaseAsset(
+            id: id,
+            name: name,
+            size: size,
+            downloadCount: downloadCount,
+            contentType: contentType,
+            downloadURL: browserDownloadURL,
+            createdAt: createdAt
+        )
+    }
+}
+
+private extension String {
+    var nonEmpty: String? { isEmpty ? nil : self }
+}
+
+private enum GitHubPreviewFileKind {
+    case none
+    case image(String)
+    case video(String)
+    case svg
+
+    init(fileName: String) {
+        let ext = (fileName as NSString).pathExtension.lowercased()
+        switch ext {
+        case "png", "jpg", "jpeg", "gif", "webp", "heic", "bmp", "tiff": self = .image(ext)
+        case "mov", "mp4", "m4v", "webm": self = .video(ext)
+        case "svg": self = .svg
+        default: self = .none
+        }
+    }
+
+    var maximumFetchedSize: Int {
+        switch self {
+        case .none: 1_500_000
+        case .image, .svg: 25_000_000
+        case .video: 100_000_000
+        }
+    }
+
+    func cache(_ data: Data, repositoryName: String, path: String) throws -> URL? {
+        let fileExtension: String
+        switch self {
+        case .none: return nil
+        case let .image(ext), let .video(ext): fileExtension = ext
+        case .svg: fileExtension = "svg"
+        }
+        let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("GitGatto/GitHubPreviews", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory
+            .appendingPathComponent(StableHash.hex("\(repositoryName):\(path)"))
+            .appendingPathExtension(fileExtension)
+        try data.write(to: url, options: .atomic)
+        return url
     }
 }
 

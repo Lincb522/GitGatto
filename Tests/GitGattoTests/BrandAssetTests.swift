@@ -18,7 +18,7 @@ struct BrandAssetTests {
             $0.pathExtension == "png" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
         }
 
-        #expect(iconURLs.count == 117)
+        #expect(iconURLs.count == 119)
         #expect(GattoIconAssets.assetName(for: "arrow.clockwise") == "gatto-arrow-clockwise")
         let icon = GattoIconAssets.image(for: "arrow.clockwise")
         #expect(!icon.representations.isEmpty)

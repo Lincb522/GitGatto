@@ -9,6 +9,7 @@ enum GitAgentSkill: String, CaseIterable, Identifiable, Sendable {
     case conflicts
     case history
     case githubChecks
+    case readme
 
     var id: String { rawValue }
 
@@ -24,6 +25,7 @@ enum GitAgentSkill: String, CaseIterable, Identifiable, Sendable {
         case .conflicts: "arrow.triangle.merge"
         case .history: "clock.arrow.circlepath"
         case .githubChecks: "checkmark.circle"
+        case .readme: "doc.richtext"
         }
     }
 }
@@ -54,6 +56,7 @@ enum GitAgentProfile {
     - Repository repair: diagnose hooks, signing, Git LFS, submodules, worktrees, sparse checkout, file permissions, lock files, detached HEAD, and damaged local state using non-destructive evidence first.
     - History: trace regressions and ownership with log, show, diff, blame, reflog, branch, and merge-base evidence; never rewrite history unless an explicit app control owns that action.
     - GitHub: review pull requests and diagnose issues or GitHub Actions checks through read-only evidence without publishing or mutating remote state.
+    - README: edit the primary project document from verified repository facts, preserve working links and assets, and apply the selected professional, minimal, open-source, or product structure without inventing claims.
 
     Local inspection tools include git status --porcelain=v2 --branch, git diff, git log, git show, git branch, git rev-parse, git merge-base, git reflog, git blame, git check-ignore, git submodule, git worktree, git lfs, rg, and focused file reads. When current GitHub evidence is required and gh is available, read-only gh repo, gh pr, gh issue, and gh run commands are allowed. Never inspect or expose tokens, credentials, cookies, signing keys, or secret values.
     """
@@ -74,6 +77,23 @@ enum GitAgentProfile {
     static let suppliedEvidence = """
     Review only the supplied repository evidence. Separate observed behavior from inference, prioritize concrete correctness risks, and use the staged diff as the complete boundary when drafting a commit message.
     """
+
+    static func readmePrompt(style: ReadmeAgentStyle) -> String {
+        let direction = switch style {
+        case .professional:
+            "Use a precise professional hierarchy with a compact overview, verified capabilities, setup, usage, and contribution paths."
+        case .minimal:
+            "Keep the document short and restrained. Preserve only the information needed to understand, install, and use the project."
+        case .openSource:
+            "Optimize for open-source contributors with clear setup, usage, development, contribution, license, and support sections."
+        case .product:
+            "Present the product clearly with a concise overview, real feature groups, installation, usage, screenshots already present in the repository, and support links."
+        }
+        return """
+        Improve the repository's primary README in place. \(direction)
+        Preserve every verified command, path, image reference, badge target, legal statement, and project fact. Inspect the repository before editing; remove repetition and empty promotional copy, but do not invent capabilities, metrics, compatibility, screenshots, links, or status claims. Keep the repository's established language unless the document already provides multiple languages. Modify only the primary README and verify that its relative links and image paths still resolve.
+        """
+    }
 
     static func repairRoute(for report: AppErrorReport) -> GitAgentRepairRoute {
         let evidence = [report.command, report.message]

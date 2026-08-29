@@ -1,12 +1,17 @@
+import AVKit
+import AppKit
 import SwiftUI
+import WebKit
 
 struct GitHubWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
+    @ObservedObject var downloads: AppDownloadManager
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
     @State private var inAppBrowserPage: InAppBrowserPage?
     @State private var isRepositoryHeaderCollapsed = false
+    @State private var githubFileQuery = ""
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -190,7 +195,10 @@ struct GitHubWorkspaceView: View {
                         .foregroundStyle(palette.subtleInk)
                 }
                 Spacer()
-                if model.isLoadingGitHub {
+                if model.isResolvingGitHubSearch {
+                    Image(gattoSymbol: "sparkles")
+                        .foregroundStyle(palette.primary)
+                } else if model.isLoadingGitHub {
                     ProgressView().controlSize(.small)
                 }
             }
@@ -341,7 +349,10 @@ struct GitHubWorkspaceView: View {
                             .foregroundStyle(palette.subtleInk)
                     }
                     Spacer()
-                    if model.isLoadingGitHub {
+                    if model.isResolvingGitHubSearch {
+                        Image(gattoSymbol: "sparkles")
+                            .foregroundStyle(palette.primary)
+                    } else if model.isLoadingGitHub {
                         ProgressView().controlSize(.small)
                     }
                 }
@@ -501,6 +512,17 @@ struct GitHubWorkspaceView: View {
             .foregroundStyle(palette.subtleInk)
 
             HStack(spacing: 8) {
+                Button {
+                    model.toggleSelectedGitHubRepositoryStar()
+                } label: {
+                    GattoLabel(
+                        L10n.text(model.isSelectedGitHubRepositoryStarred ? "github.action.unstar" : "github.action.star"),
+                        systemImage: model.isSelectedGitHubRepositoryStarred ? "star.fill" : "star"
+                    )
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(model.isUpdatingGitHubStar)
+
                 Button(L10n.text("github.action.clone")) {
                     model.chooseGitHubCloneDestination(fork: false)
                 }
@@ -607,6 +629,12 @@ struct GitHubWorkspaceView: View {
                 }
             } else {
                 ToolbarIconButton(
+                    systemName: model.isSelectedGitHubRepositoryStarred ? "star.fill" : "star",
+                    helpKey: model.isSelectedGitHubRepositoryStarred ? "github.action.unstar" : "github.action.star"
+                ) {
+                    model.toggleSelectedGitHubRepositoryStar()
+                }
+                ToolbarIconButton(
                     systemName: "tray.and.arrow.down",
                     helpKey: "github.action.clone"
                 ) {
@@ -646,6 +674,7 @@ struct GitHubWorkspaceView: View {
         HStack(spacing: 4) {
             projectTab(.overview, image: "doc.richtext", palette: palette)
             projectTab(.code, image: "chevron.left.forwardslash.chevron.right", palette: palette)
+            projectTab(.releases, image: "shippingbox", palette: palette, count: model.githubReleases.count)
             projectTab(.pullRequests, image: "arrow.triangle.pull", palette: palette, count: model.githubPullRequests.count)
             projectTab(.actions, image: "play.circle", palette: palette, count: model.githubActionRuns.count)
             Spacer()
@@ -691,6 +720,8 @@ struct GitHubWorkspaceView: View {
             readmeView(palette)
         case .code:
             codeBrowser(repository, palette: palette)
+        case .releases:
+            RepositoryReleasesView(model: model, downloads: downloads, openURL: openProjectWeb)
         case .pullRequests:
             pullRequestsView(palette)
         case .actions:
@@ -819,6 +850,22 @@ struct GitHubWorkspaceView: View {
                 .menuStyle(.borderlessButton)
                 .fixedSize()
                 .disabled(!model.canTranslateGitHubReadme)
+
+                if model.selectedGitHubLocalRepositoryURL != nil {
+                    Menu {
+                        ForEach(ReadmeAgentStyle.allCases) { style in
+                            Button(L10n.text("github.readme.style.\(style.rawValue)")) {
+                                model.beautifySelectedReadme(style: style)
+                            }
+                        }
+                    } label: {
+                        GattoLabel(L10n.text("github.readme.agent"), systemImage: "sparkles")
+                            .font(.system(size: 10.5, weight: .semibold))
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .disabled(!model.canBeautifySelectedReadme)
+                }
             }
         }
         .padding(.horizontal, 14)
@@ -856,7 +903,7 @@ struct GitHubWorkspaceView: View {
     }
 
     private func codeBrowser(_ repository: GitHubRepository, palette: AppPalette) -> some View {
-        HStack(spacing: 0) {
+        HSplitView {
             VStack(spacing: 0) {
                 directoryHeader(repository, palette: palette)
                 Rectangle().fill(palette.divider).frame(height: 1)
@@ -877,10 +924,12 @@ struct GitHubWorkspaceView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 2) {
-                            ForEach(model.githubContents) { item in
+                            ForEach(filteredGitHubContents) { item in
                                 GitHubContentRow(
                                     item: item,
-                                    selected: model.selectedGitHubContent?.id == item.id
+                                    selected: model.selectedGitHubContent?.id == item.id,
+                                    openWeb: { url in openProjectWeb(url) },
+                                    download: { item in downloadRepositoryFile(item, repository: repository) }
                                 ) {
                                     model.openGitHubContent(item)
                                 }
@@ -890,18 +939,17 @@ struct GitHubWorkspaceView: View {
                     }
                 }
             }
-            .frame(width: 230)
+            .frame(minWidth: 210, idealWidth: 260, maxWidth: 390)
             .background(palette.sidebar)
 
-            Rectangle().fill(palette.divider).frame(width: 1)
-
             GitHubCodeFileView(model: model, openInApp: openProjectWeb)
+                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func directoryHeader(_ repository: GitHubRepository, palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 7) {
                 if !model.githubDirectoryPath.isEmpty {
                     Button {
@@ -938,9 +986,48 @@ struct GitHubWorkspaceView: View {
                 .font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(palette.mutedInk)
             }
+
+            HStack(spacing: 7) {
+                Image(gattoSymbol: "magnifyingglass")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(palette.subtleInk)
+                TextField(L10n.text("github.code.filter"), text: $githubFileQuery)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 10.5))
+                if !githubFileQuery.isEmpty {
+                    Button { githubFileQuery = "" } label: {
+                        Image(gattoSymbol: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 27)
+            .background(palette.raisedSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
         .padding(.horizontal, 11)
-        .frame(height: 54)
+        .padding(.vertical, 8)
+        .frame(height: 86)
+    }
+
+    private var filteredGitHubContents: [GitHubContentItem] {
+        let query = githubFileQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return model.githubContents }
+        return model.githubContents.filter {
+            $0.name.localizedCaseInsensitiveContains(query)
+                || $0.path.localizedCaseInsensitiveContains(query)
+        }
+    }
+
+    private func downloadRepositoryFile(_ item: GitHubContentItem, repository: GitHubRepository) {
+        guard let url = item.downloadURL else { return }
+        downloads.start(
+            url: url,
+            fileName: item.name,
+            expectedBytes: Int64(item.size),
+            repositoryName: repository.fullName
+        )
     }
 
     private func pullRequestsView(_ palette: AppPalette) -> some View {
@@ -1024,7 +1111,7 @@ struct GitHubWorkspaceView: View {
     }
 }
 
-private struct ProjectEmptyState: View {
+struct ProjectEmptyState: View {
     let systemImage: String
     let titleKey: String
     @Environment(\.colorScheme) private var colorScheme
@@ -1046,6 +1133,8 @@ private struct ProjectEmptyState: View {
 private struct GitHubContentRow: View {
     let item: GitHubContentItem
     let selected: Bool
+    let openWeb: (URL) -> Void
+    let download: (GitHubContentItem) -> Void
     let action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     @State private var isHovering = false
@@ -1083,12 +1172,30 @@ private struct GitHubContentRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
+        .contextMenu {
+            Button(L10n.text("action.copy_path")) {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(item.path, forType: .string)
+            }
+            if let url = item.webURL {
+                Button(L10n.text("github.code.open_github")) { openWeb(url) }
+            }
+            if item.downloadURL != nil, item.kind != .directory {
+                Button(L10n.text("github.releases.download")) { download(item) }
+            }
+        }
     }
 
     private var iconName: String {
         switch item.kind {
         case .directory: "folder.fill"
-        case .file: "doc.text"
+        case .file:
+            switch (item.name as NSString).pathExtension.lowercased() {
+            case "png", "jpg", "jpeg", "gif", "webp", "heic", "svg": "photo"
+            case "mov", "mp4", "m4v", "webm": "play.circle"
+            case "zip", "gz", "xz", "dmg", "pkg": "archivebox"
+            default: "doc.text"
+            }
         case .symlink: "link"
         case .submodule: "shippingbox"
         }
@@ -1100,6 +1207,7 @@ private struct GitHubCodeFileView: View {
     let openInApp: (URL) -> Void
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @State private var svgMode: SVGPresentationMode = .preview
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
@@ -1181,22 +1289,90 @@ private struct GitHubCodeFileView: View {
 
     @ViewBuilder
     private func fileBody(_ document: GitHubFileDocument, palette: AppPalette) -> some View {
-        if let text = document.text {
-            CodeDocumentView(content: text, fileName: document.name)
-        } else {
-            VStack(spacing: 12) {
-                ProjectEmptyState(
-                    systemImage: "doc.badge.ellipsis",
-                    titleKey: "github.code.binary"
-                )
-                if let url = document.webURL {
-                    Button(L10n.text("github.code.open_github")) {
-                        openInApp(url)
+        switch GitHubMediaKind(fileName: document.name) {
+        case .image:
+            if let url = document.localPreviewURL ?? document.downloadURL {
+                GitHubImagePreview(url: url, fileName: document.name)
+            } else {
+                binaryFallback(document, palette: palette)
+            }
+        case .video:
+            if let url = document.localPreviewURL ?? document.downloadURL {
+                GitHubVideoPreview(url: url)
+            } else {
+                binaryFallback(document, palette: palette)
+            }
+        case .svg:
+            VStack(spacing: 0) {
+                HStack {
+                    Picker("", selection: $svgMode) {
+                        Text(L10n.text("github.code.preview")).tag(SVGPresentationMode.preview)
+                        Text(L10n.text("github.code.source")).tag(SVGPresentationMode.source)
                     }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundStyle(palette.primary)
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 180)
+                    Spacer()
                 }
+                .padding(.horizontal, 14)
+                .frame(height: 42)
+                .background(palette.surface)
+                Rectangle().fill(palette.divider).frame(height: 1)
+                if svgMode == .preview, let url = document.localPreviewURL ?? document.downloadURL {
+                    GitHubSVGPreview(url: url, colorScheme: colorScheme)
+                } else if let text = document.text {
+                    CodeDocumentView(content: text, fileName: document.name)
+                } else {
+                    binaryFallback(document, palette: palette)
+                }
+            }
+        case .text:
+            if let text = document.text {
+                CodeDocumentView(content: text, fileName: document.name)
+            } else {
+                binaryFallback(document, palette: palette)
+            }
+        case .binary:
+            binaryFallback(document, palette: palette)
+        }
+    }
+
+    private func binaryFallback(_ document: GitHubFileDocument, palette: AppPalette) -> some View {
+        VStack(spacing: 12) {
+            ProjectEmptyState(
+                systemImage: "doc.badge.ellipsis",
+                titleKey: "github.code.binary"
+            )
+            if let url = document.webURL {
+                Button(L10n.text("github.code.open_github")) {
+                    openInApp(url)
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(palette.primary)
+            }
+        }
+    }
+
+    private enum SVGPresentationMode: String, Hashable {
+        case preview
+        case source
+    }
+
+    private enum GitHubMediaKind {
+        case image
+        case video
+        case svg
+        case text
+        case binary
+
+        init(fileName: String) {
+            switch (fileName as NSString).pathExtension.lowercased() {
+            case "svg": self = .svg
+            case "png", "jpg", "jpeg", "gif", "webp", "heic", "bmp", "tiff": self = .image
+            case "mov", "mp4", "m4v", "webm": self = .video
+            case "dmg", "pkg", "zip", "gz", "xz", "7z", "pdf", "woff", "woff2", "ttf": self = .binary
+            default: self = .text
             }
         }
     }
@@ -1216,6 +1392,150 @@ private struct GitHubCodeFileView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+private struct GitHubImagePreview: View {
+    let url: URL
+    let fileName: String
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var scale: CGFloat = 1
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Button { scale = max(0.25, scale - 0.25) } label: {
+                    Image(gattoSymbol: "minus")
+                }
+                .buttonStyle(.plain)
+                Text("\(Int(scale * 100))%")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(palette.subtleInk)
+                    .frame(width: 46)
+                Button { scale = min(4, scale + 0.25) } label: {
+                    Image(gattoSymbol: "plus")
+                }
+                .buttonStyle(.plain)
+                Button(L10n.text("github.code.fit")) { scale = 1 }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(palette.primary)
+                Spacer()
+                Text(fileName)
+                    .font(.system(size: 9.5, design: .monospaced))
+                    .foregroundStyle(palette.subtleInk)
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 40)
+            .background(palette.surface)
+            Rectangle().fill(palette.divider).frame(height: 1)
+
+            ScrollView([.horizontal, .vertical]) {
+                imageContent(palette: palette)
+                .frame(minWidth: 360, minHeight: 320)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .background(CheckerboardBackground(colorScheme: colorScheme))
+        }
+    }
+
+    @ViewBuilder
+    private func imageContent(palette: AppPalette) -> some View {
+        if url.isFileURL, let image = NSImage(contentsOf: url) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+                .scaleEffect(scale)
+                .padding(28)
+        } else {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case let .success(image):
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .scaleEffect(scale)
+                        .padding(28)
+                case let .failure(error):
+                    Text(error.localizedDescription)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(palette.danger)
+                        .padding(24)
+                default:
+                    ProgressView().padding(60)
+                }
+            }
+        }
+    }
+}
+
+private struct CheckerboardBackground: View {
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        Canvas { context, size in
+            let cell: CGFloat = 14
+            let first = colorScheme == .dark ? Color.white.opacity(0.035) : Color.black.opacity(0.035)
+            let second = colorScheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.07)
+            var row = 0
+            var y: CGFloat = 0
+            while y < size.height {
+                var column = 0
+                var x: CGFloat = 0
+                while x < size.width {
+                    context.fill(
+                        Path(CGRect(x: x, y: y, width: cell, height: cell)),
+                        with: .color((row + column).isMultiple(of: 2) ? first : second)
+                    )
+                    x += cell
+                    column += 1
+                }
+                y += cell
+                row += 1
+            }
+        }
+    }
+}
+
+private struct GitHubVideoPreview: View {
+    let url: URL
+    @State private var player: AVPlayer
+
+    init(url: URL) {
+        self.url = url
+        _player = State(initialValue: AVPlayer(url: url))
+    }
+
+    var body: some View {
+        VideoPlayer(player: player)
+            .padding(18)
+            .onDisappear { player.pause() }
+    }
+}
+
+private struct GitHubSVGPreview: NSViewRepresentable {
+    let url: URL
+    let colorScheme: ColorScheme
+
+    func makeNSView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.defaultWebpagePreferences.allowsContentJavaScript = false
+        return WKWebView(frame: .zero, configuration: configuration)
+    }
+
+    func updateNSView(_ webView: WKWebView, context: Context) {
+        if url.isFileURL {
+            webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            return
+        }
+        let background = colorScheme == .dark ? "#111318" : "#f5f6f8"
+        let html = """
+        <!doctype html><meta name="viewport" content="width=device-width">
+        <style>html,body{height:100%;margin:0;background:\(background)}body{display:grid;place-items:center;padding:28px;box-sizing:border-box}img{max-width:100%;max-height:100%;object-fit:contain}</style>
+        <img src="\(url.absoluteString.replacingOccurrences(of: "\"", with: "&quot;"))">
+        """
+        webView.loadHTMLString(html, baseURL: url.deletingLastPathComponent())
     }
 }
 
@@ -1401,7 +1721,7 @@ private struct GitHubPullRequestRow: View {
     }
 }
 
-private enum GitHubNumberFormatter {
+enum GitHubNumberFormatter {
     static func string(_ value: Int) -> String {
         if value >= 1_000_000 {
             return String(format: "%.1fM", Double(value) / 1_000_000)
