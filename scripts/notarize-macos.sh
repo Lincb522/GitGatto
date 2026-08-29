@@ -64,18 +64,18 @@ submit_and_wait() {
         return 1
     fi
 
-    local status
+    local notary_status
     local submission_id
-    status="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status", ""))' "$result")"
+    notary_status="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status", ""))' "$result")"
     submission_id="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("id", ""))' "$result")"
 
-    if [[ "$status" != "Accepted" ]]; then
+    if [[ "$notary_status" != "Accepted" ]]; then
         if [[ -n "$submission_id" ]]; then
             xcrun notarytool log "$submission_id" \
                 "${NOTARYTOOL_CREDENTIALS[@]}" \
                 "$log" || true
         fi
-        print -u2 "Apple notarization status for ${artifact:t}: ${status:-unknown}"
+        print -u2 "Apple notarization status for ${artifact:t}: ${notary_status:-unknown}"
         return 1
     fi
 }

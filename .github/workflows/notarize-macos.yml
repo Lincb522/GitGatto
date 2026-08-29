@@ -28,10 +28,10 @@ jobs:
       RELEASE_TAG: ${{ inputs.release_tag }}
 
     steps:
-      - name: Check out release source
+      - name: Check out notarization workflow
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
 
       - name: Validate release inputs
         shell: zsh {0}
@@ -56,6 +56,17 @@ jobs:
           fi
 
           BUILD_NUMBER="$(python3 -c 'import sys; major, minor, patch = map(int, sys.argv[1].split(".")); print(major * 1_000_000 + minor * 1_000 + patch)' "$VERSION")"
+          git rev-parse --verify "$RELEASE_TAG^{commit}" >/dev/null
+          git merge-base --is-ancestor "$RELEASE_TAG" HEAD
+          git diff --quiet "$RELEASE_TAG"..HEAD -- \
+            Assets \
+            Config \
+            Package.resolved \
+            Package.swift \
+            Sources \
+            project.yml \
+            scripts/create-dmg.sh \
+            scripts/package-macos.sh
           print "VERSION=$VERSION" >> "$GITHUB_ENV"
           print "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
 
