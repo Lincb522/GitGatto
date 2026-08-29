@@ -362,6 +362,7 @@
 "help.github.detail.2" = "仓库内文档和代码链接直接在项目详情中导航；外部页面使用应用内浏览器。";
 "help.github.detail.3" = "“代码”按默认分支浏览目录和文本文件；二进制文件可转到应用内 GitHub 页面。";
 "help.github.detail.4" = "Pull Request 页面可查看说明与 Diff、让 Agent 起草回复，并在确认后发布。";
+"help.github.detail.5" = "README 可按四种模板重写；完成后直接显示本地渲染预览。“提交应用”只提交 README，并推送到当前分支。";
 
 "help.topic.agent.title" = "Agent";
 "help.topic.agent.summary" = "Agent 使用你配置的本机 CLI 理解当前仓库、处理任务并保留项目级对话记录。";
@@ -934,8 +935,15 @@
 "github.readme.style.minimal" = "简洁说明";
 "github.readme.style.openSource" = "开源项目";
 "github.readme.style.product" = "产品展示";
-"github.readme.agent.completed" = "README 已更新到本地仓库。";
+"github.readme.agent.rewriting" = "正在重写 README…";
+"github.readme.agent.local_preview" = "本地预览";
+"github.readme.agent.rewrite_again" = "重新选择模板";
+"github.readme.agent.apply" = "提交应用";
+"github.readme.agent.preview_ready" = "README 已重写，可以直接预览。";
+"github.readme.agent.applied" = "README 已提交并推送";
+"github.readme.commit_message" = "docs: improve README";
 "github.readme.agent.error" = "README 处理失败：%@";
+"github.readme.agent.apply_error" = "README 提交失败：%@";
 "downloads.title" = "下载管理";
 "downloads.empty" = "还没有下载任务";
 "downloads.error.unknown" = "下载失败。";

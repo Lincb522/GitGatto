@@ -58,6 +58,7 @@ protocol GitRepositoryServing: Sendable {
     func ignore(path: String, scope: GitIgnoreScope, in repositoryURL: URL) async throws
     func commit(message: String, in repositoryURL: URL) async throws
     func commitAndPush(message: String, in repositoryURL: URL) async throws
+    func stageCommitAndPush(paths: [String], message: String, in repositoryURL: URL) async throws
     func pull(in repositoryURL: URL) async throws
     func push(in repositoryURL: URL) async throws
     func repositoryOperationState(in repositoryURL: URL) async throws -> RepositoryOperationState?
@@ -93,6 +94,11 @@ extension GitRepositoryServing {
 
     func mediaItems(for commit: CommitRecord, in repositoryURL: URL) async throws -> [RepositoryMediaItem] {
         []
+    }
+
+    func stageCommitAndPush(paths: [String], message: String, in repositoryURL: URL) async throws {
+        try await stage(paths: paths, in: repositoryURL)
+        try await commitAndPush(message: message, in: repositoryURL)
     }
 
     func mediaPreview(
@@ -533,6 +539,28 @@ actor GitRepositoryService: GitRepositoryServing {
 
     func commitAndPush(message: String, in repositoryURL: URL) async throws {
         try await commit(message: message, in: repositoryURL)
+        do {
+            try await push(in: repositoryURL)
+        } catch let error as GitCommandError {
+            throw GitRepositoryServiceError.pushFailedAfterCommit(error.failureDetails)
+        } catch {
+            throw GitRepositoryServiceError.pushFailedAfterCommit(
+                GitFailureDetails(
+                    arguments: ["push"],
+                    exitCode: nil,
+                    message: error.localizedDescription
+                )
+            )
+        }
+    }
+
+    func stageCommitAndPush(paths: [String], message: String, in repositoryURL: URL) async throws {
+        guard !paths.isEmpty else { return }
+        try await stage(paths: paths, in: repositoryURL)
+        _ = try await runner.run(
+            at: repositoryURL,
+            arguments: ["commit", "-m", message, "--"] + paths
+        )
         do {
             try await push(in: repositoryURL)
         } catch let error as GitCommandError {

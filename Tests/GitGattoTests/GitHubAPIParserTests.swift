@@ -336,6 +336,41 @@ struct GitHubAPIParserTests {
         #expect(GitHubReadmeHTML.repositoryPath(for: "../assets/icon%20dark.png", readmePath: "docs/README.md") == "assets/icon dark.png")
     }
 
+    @Test("Embeds working-tree README images for an immediate local preview")
+    func embedsLocalReadmeImages() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoLocalReadme-\(UUID().uuidString)", isDirectory: true)
+        let assets = root.appendingPathComponent("assets", isDirectory: true)
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoOutside-\(UUID().uuidString).png")
+        try FileManager.default.createDirectory(at: assets, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+        try Data([0x01, 0x02, 0x03]).write(to: assets.appendingPathComponent("preview.png"))
+        try Data([0x04, 0x05, 0x06]).write(to: outside)
+        try FileManager.default.createSymbolicLink(
+            at: assets.appendingPathComponent("outside.png"),
+            withDestinationURL: outside
+        )
+
+        let html = """
+        <img src="../assets/preview.png">
+        <img src="../assets/outside.png">
+        <img src="../../outside.png">
+        """
+        let embedded = try GitHubReadmeHTML.embeddingLocalAssets(
+            in: html,
+            readmePath: "docs/README.md",
+            repositoryRootURL: root
+        )
+
+        #expect(embedded.contains("src=\"data:image/png;base64,AQID\""))
+        #expect(embedded.contains("src=\"../assets/outside.png\""))
+        #expect(embedded.contains("src=\"../../outside.png\""))
+    }
+
     @Test("Routes repository documentation and code links inside the project detail")
     func routesRepositoryLinks() throws {
         let repository = GitHubRepository(

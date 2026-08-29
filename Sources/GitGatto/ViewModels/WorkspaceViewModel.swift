@@ -105,7 +105,9 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var isUpdatingGitHubStar = false
     @Published private(set) var isResolvingGitHubSearch = false
     @Published private(set) var isBeautifyingReadme = false
+    @Published private(set) var isApplyingReadmeRewrite = false
     @Published private(set) var readmeAgentError: String?
+    @Published private(set) var readmeRewritePreview: GitHubReadmeDocument?
     @Published var githubProjectDetailTab: GitHubProjectDetailTab = .overview
     @Published private(set) var githubReadme: GitHubReadmeDocument?
     @Published private(set) var translatedGitHubReadme: GitHubReadmeDocument?
@@ -212,6 +214,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var githubReleaseTask: Task<Void, Never>?
     private var githubStarTask: Task<Void, Never>?
     private var readmeAgentTask: Task<Void, Never>?
+    private var readmeApplyTask: Task<Void, Never>?
     private var liveRefreshTask: Task<Void, Never>?
     private var repositorySnapshotTask: Task<RepositorySnapshot, Error>?
     private var repositorySupplementalTask: Task<RepositorySupplementalState, Error>?
@@ -229,6 +232,9 @@ final class WorkspaceViewModel: ObservableObject {
     private var githubSearchInput = ""
     private var resolvedGitHubSearchQuery = ""
     private var githubDeveloperRepositoriesPage = 0
+    private var readmeRewriteRepositoryURL: URL?
+    private var readmeRewriteRelativePath: String?
+    private var readmeRewriteCommitCreated = false
 
     init(
         service: any GitRepositoryServing = GitRepositoryService(),
@@ -406,7 +412,7 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     var displayedGitHubReadme: GitHubReadmeDocument? {
-        translatedGitHubReadme ?? githubReadme
+        readmeRewritePreview ?? translatedGitHubReadme ?? githubReadme
     }
 
     var availableGitHubReadmeTranslationTargets: [CodexTranslationTarget] {
@@ -414,11 +420,12 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     var canNavigateBackInGitHubReadme: Bool {
-        !githubReadmeHistory.isEmpty && !isLoadingGitHubReadme
+        readmeRewritePreview == nil && !githubReadmeHistory.isEmpty && !isLoadingGitHubReadme
     }
 
     var canTranslateGitHubReadme: Bool {
         githubReadme != nil
+            && readmeRewritePreview == nil
             && translationAIAvailability.state == .available
             && !isTranslatingGitHubReadme
             && !isPromptTranslating
@@ -436,6 +443,16 @@ final class WorkspaceViewModel: ObservableObject {
             && codexAvailability.state == .available
             && !isCodexRunning
             && !isBeautifyingReadme
+            && !isApplyingReadmeRewrite
+    }
+
+    var canApplyReadmeRewrite: Bool {
+        readmeRewritePreview != nil
+            && readmeRewriteRepositoryURL != nil
+            && readmeRewriteRelativePath != nil
+            && !isBeautifyingReadme
+            && !isApplyingReadmeRewrite
+            && activeOperation == nil
     }
 
     var canDraftPullRequestReply: Bool {
@@ -905,6 +922,28 @@ final class WorkspaceViewModel: ObservableObject {
                 assetBaseURL: rawURL,
                 assetRootURL: rawURL
             )
+            if ProcessInfo.processInfo.environment["GITGATTO_README_REWRITE_PREVIEW"] == "1" {
+                readmeRewritePreview = GitHubReadmeDocument(
+                    path: "README.md",
+                    html: """
+                    <h1>GitGatto</h1>
+                    <p>原生 macOS Git 客户端，把仓库管理、GitHub 协作与本机 Agent 放进同一个工作区。</p>
+                    <h2>功能</h2>
+                    <h3>本地仓库</h3>
+                    <ul><li>实时读取工作区、暂存区与上游状态</li><li>查看 Diff、图片和视频改动</li></ul>
+                    <h3>GitHub 与 Agent</h3>
+                    <ul><li>查看代码、Pull Request、Actions 和 Releases</li><li>按仓库证据重写 README</li></ul>
+                    <h2>使用</h2>
+                    <ol><li>下载最新 DMG</li><li>打开本地仓库或 GitHub 项目</li></ol>
+                    """,
+                    linkBaseURL: webURL,
+                    linkRootURL: webURL,
+                    assetBaseURL: rawURL,
+                    assetRootURL: rawURL
+                )
+                readmeRewriteRepositoryURL = rootURL
+                readmeRewriteRelativePath = "README.md"
+            }
 
             let pullRequest = GitHubPullRequest(
                 number: 184,
@@ -2498,6 +2537,11 @@ final class WorkspaceViewModel: ObservableObject {
         isSelectedGitHubRepositoryStarred = false
         isUpdatingGitHubStar = false
         readmeAgentError = nil
+        readmeRewritePreview = nil
+        readmeRewriteRepositoryURL = nil
+        readmeRewriteRelativePath = nil
+        readmeRewriteCommitCreated = false
+        isApplyingReadmeRewrite = false
         githubActionWorkflows = []
         githubActionRuns = []
         selectedGitHubActionWorkflow = nil
@@ -2544,6 +2588,7 @@ final class WorkspaceViewModel: ObservableObject {
         githubReleaseTask?.cancel()
         githubStarTask?.cancel()
         readmeAgentTask?.cancel()
+        readmeApplyTask?.cancel()
         guard let repository else {
             isLoadingPullRequests = false
             isLoadingPullRequestReview = false
@@ -2635,10 +2680,16 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func beautifySelectedReadme(style: ReadmeAgentStyle) {
-        guard canBeautifySelectedReadme, let repositoryURL = selectedGitHubLocalRepositoryURL else { return }
+        guard canBeautifySelectedReadme,
+              let repositoryURL = selectedGitHubLocalRepositoryURL,
+              let repository = selectedGitHubRepository else { return }
         readmeAgentTask?.cancel()
         isBeautifyingReadme = true
         readmeAgentError = nil
+        readmeRewritePreview = nil
+        readmeRewriteRepositoryURL = nil
+        readmeRewriteRelativePath = nil
+        readmeRewriteCommitCreated = false
         readmeAgentTask = Task {
             defer { isBeautifyingReadme = false }
             do {
@@ -2648,18 +2699,128 @@ final class WorkspaceViewModel: ObservableObject {
                     in: repositoryURL,
                     mode: .edit
                 )
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled,
+                      selectedGitHubRepository?.id == repository.id,
+                      selectedGitHubLocalRepositoryURL?.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                guard let localReadme = Self.primaryReadme(
+                    in: repositoryURL,
+                    preferredPath: githubReadme?.path
+                ) else {
+                    throw GitHubServiceError.resourceNotFound
+                }
+                let preview = try await githubService.renderLocalMarkdown(
+                    at: localReadme.url,
+                    relativePath: localReadme.relativePath,
+                    in: repository
+                )
+                guard !Task.isCancelled,
+                      selectedGitHubRepository?.id == repository.id,
+                      selectedGitHubLocalRepositoryURL?.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                readmeRewritePreview = preview
+                readmeRewriteRepositoryURL = repositoryURL
+                readmeRewriteRelativePath = localReadme.relativePath
+                translatedGitHubReadme = nil
+                githubReadmeTranslationTarget = nil
                 if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL {
                     await refresh()
-                    selectedSection = .changes
                 }
-                showNotice(.init(message: L10n.text("github.readme.agent.completed")))
+                showNotice(.init(message: L10n.text("github.readme.agent.preview_ready")))
             } catch is CancellationError {
                 return
             } catch {
                 readmeAgentError = L10n.format("github.readme.agent.error", error.localizedDescription)
             }
         }
+    }
+
+    func applyReadmeRewrite() {
+        guard canApplyReadmeRewrite,
+              let repositoryURL = readmeRewriteRepositoryURL,
+              let relativePath = readmeRewriteRelativePath,
+              let repository = selectedGitHubRepository else { return }
+        readmeApplyTask?.cancel()
+        isApplyingReadmeRewrite = true
+        activeOperation = .commitAndPush
+        readmeAgentError = nil
+        readmeApplyTask = Task {
+            defer {
+                isApplyingReadmeRewrite = false
+                if activeOperation == .commitAndPush {
+                    activeOperation = nil
+                }
+            }
+            do {
+                if readmeRewriteCommitCreated {
+                    try await service.push(in: repositoryURL)
+                } else {
+                    try await service.stageCommitAndPush(
+                        paths: [relativePath],
+                        message: L10n.text("github.readme.commit_message"),
+                        in: repositoryURL
+                    )
+                }
+                guard !Task.isCancelled,
+                      selectedGitHubRepository?.id == repository.id else { return }
+                readmeRewritePreview = nil
+                readmeRewriteRepositoryURL = nil
+                readmeRewriteRelativePath = nil
+                readmeRewriteCommitCreated = false
+                if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL {
+                    await refresh()
+                }
+                loadGitHubReadme(for: repository)
+                showNotice(.init(message: L10n.text("github.readme.agent.applied")))
+            } catch is CancellationError {
+                return
+            } catch {
+                if let repositoryError = error as? GitRepositoryServiceError,
+                   case .pushFailedAfterCommit = repositoryError {
+                    readmeRewriteCommitCreated = true
+                }
+                if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL {
+                    await refresh()
+                }
+                presentError(error, context: .git(.commitAndPush), repositoryURL: repositoryURL)
+                readmeAgentError = L10n.format(
+                    "github.readme.agent.apply_error",
+                    error.localizedDescription
+                )
+            }
+        }
+    }
+
+    private static func primaryReadme(
+        in repositoryURL: URL,
+        preferredPath: String?
+    ) -> (url: URL, relativePath: String)? {
+        let root = repositoryURL.standardizedFileURL.resolvingSymlinksInPath()
+        var candidates: [String] = []
+        if let preferredPath, !preferredPath.isEmpty {
+            candidates.append(preferredPath)
+        }
+        candidates += ["README.md", "README.markdown", "README"]
+        if let rootItems = try? FileManager.default.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) {
+            candidates += rootItems
+                .filter { $0.lastPathComponent.lowercased().hasPrefix("readme") }
+                .map(\.lastPathComponent)
+                .sorted()
+        }
+
+        var seen = Set<String>()
+        for relativePath in candidates where seen.insert(relativePath).inserted {
+            let url = root
+                .appendingPathComponent(relativePath)
+                .standardizedFileURL
+                .resolvingSymlinksInPath()
+            guard url.path.hasPrefix(root.path + "/"),
+                  FileManager.default.fileExists(atPath: url.path) else { continue }
+            return (url, relativePath)
+        }
+        return nil
     }
 
     func openPullRequestReview(_ pullRequest: GitHubPullRequest) {

@@ -12,6 +12,11 @@ protocol GitHubServing: Sendable {
     func dailyRecommendations() async throws -> [GitHubRepository]
     func readme(for repository: GitHubRepository) async throws -> GitHubReadmeDocument?
     func markdown(at path: String, in repository: GitHubRepository) async throws -> GitHubReadmeDocument
+    func renderLocalMarkdown(
+        at fileURL: URL,
+        relativePath: String,
+        in repository: GitHubRepository
+    ) async throws -> GitHubReadmeDocument
     func contents(at path: String, in repository: GitHubRepository) async throws -> [GitHubContentItem]
     func file(_ item: GitHubContentItem, in repository: GitHubRepository) async throws -> GitHubFileDocument
     func releases(for repository: GitHubRepository) async throws -> [GitHubRelease]
@@ -92,6 +97,14 @@ extension GitHubServing {
     }
 
     func setStarred(_ starred: Bool, repository: GitHubRepository) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func renderLocalMarkdown(
+        at fileURL: URL,
+        relativePath: String,
+        in repository: GitHubRepository
+    ) async throws -> GitHubReadmeDocument {
         throw GitHubServiceError.invalidResponse
     }
 
@@ -328,6 +341,52 @@ actor GitHubService: GitHubServing {
         return try await renderedMarkdown(endpoint: endpoint, repository: repository)
     }
 
+    func renderLocalMarkdown(
+        at fileURL: URL,
+        relativePath: String,
+        in repository: GitHubRepository
+    ) async throws -> GitHubReadmeDocument {
+        let markdown = try String(contentsOf: fileURL, encoding: .utf8)
+        let inputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGatto-Markdown-\(UUID().uuidString)")
+            .appendingPathExtension("json")
+        let payload = LocalMarkdownPayload(
+            text: markdown,
+            mode: "gfm",
+            context: repository.fullName
+        )
+        try JSONEncoder().encode(payload).write(to: inputURL, options: [.atomic])
+        defer { try? FileManager.default.removeItem(at: inputURL) }
+
+        let response = try await api([
+            "--method", "POST",
+            "markdown",
+            "--input", inputURL.path
+        ])
+        var html = String(decoding: response, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !html.isEmpty else { throw GitHubServiceError.invalidResponse }
+        var repositoryRootURL = fileURL.deletingLastPathComponent()
+        for _ in 0..<max(0, relativePath.split(separator: "/").count - 1) {
+            repositoryRootURL.deleteLastPathComponent()
+        }
+        html = try GitHubReadmeHTML.embeddingLocalAssets(
+            in: html,
+            readmePath: relativePath,
+            repositoryRootURL: repositoryRootURL
+        )
+
+        let htmlURL = repository.webURL
+            .appendingPathComponent("blob", isDirectory: true)
+            .appendingPathComponent(repository.defaultBranch, isDirectory: true)
+            .appendingPathComponent(relativePath)
+        return GitHubReadmeMetadata(
+            path: relativePath,
+            htmlURL: htmlURL,
+            downloadURL: nil
+        ).document(html: html)
+    }
+
     func contents(at path: String, in repository: GitHubRepository) async throws -> [GitHubContentItem] {
         let endpoint = GitHubPathEncoder.contentsEndpoint(repository: repository.fullName, path: path)
         let response = try await api([
@@ -419,7 +478,7 @@ actor GitHubService: GitHubServing {
         var totalSize = 0
         for reference in references {
             guard let path = GitHubReadmeHTML.repositoryPath(for: reference, readmePath: readmePath),
-                  let mimeType = Self.imageMIMEType(for: path) else { continue }
+                  let mimeType = GitHubReadmeHTML.imageMIMEType(for: path) else { continue }
             do {
                 let endpoint = GitHubPathEncoder.contentsEndpoint(repository: repository.fullName, path: path)
                 let metadataResponse = try await api([
@@ -478,20 +537,6 @@ actor GitHubService: GitHubServing {
             )
         }
         return metadata.document(html: html)
-    }
-
-    private static func imageMIMEType(for path: String) -> String? {
-        switch URL(fileURLWithPath: path).pathExtension.lowercased() {
-        case "png": "image/png"
-        case "jpg", "jpeg": "image/jpeg"
-        case "gif": "image/gif"
-        case "svg": "image/svg+xml"
-        case "webp": "image/webp"
-        case "bmp": "image/bmp"
-        case "ico": "image/x-icon"
-        case "avif": "image/avif"
-        default: nil
-        }
     }
 
     func pullRequests(for repository: GitHubRepository) async throws -> [GitHubPullRequest] {
@@ -1121,6 +1166,12 @@ private struct ReadmeMetadataPayload: Decodable {
     var model: GitHubReadmeMetadata {
         GitHubReadmeMetadata(path: path, htmlURL: htmlURL, downloadURL: downloadURL)
     }
+}
+
+private struct LocalMarkdownPayload: Encodable {
+    let text: String
+    let mode: String
+    let context: String
 }
 
 private struct RepositoryPayload: Decodable {

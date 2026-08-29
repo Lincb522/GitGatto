@@ -786,6 +786,12 @@ struct GitHubWorkspaceView: View {
                         .padding(.bottom, 8)
                 }
 
+                if let error = model.readmeAgentError {
+                    projectError(error, palette: palette)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
+                }
+
                 Rectangle().fill(palette.divider).frame(height: 1)
 
                 GitHubReadmeView(
@@ -835,7 +841,44 @@ struct GitHubWorkspaceView: View {
 
             Spacer(minLength: 10)
 
-            if model.isTranslatingGitHubReadme {
+            if model.isBeautifyingReadme {
+                ProgressView()
+                    .controlSize(.small)
+                Text(L10n.text("github.readme.agent.rewriting"))
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(palette.mutedInk)
+            } else if model.readmeRewritePreview != nil {
+                HStack(spacing: 5) {
+                    Image(gattoSymbol: "eye")
+                        .frame(width: 13, height: 13)
+                    Text(L10n.text("github.readme.agent.local_preview"))
+                }
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(palette.primary)
+                .padding(.horizontal, 8)
+                .frame(height: 24)
+                .background(palette.primarySoft)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+
+                readmeAgentMenu(titleKey: "github.readme.agent.rewrite_again")
+
+                Button {
+                    model.applyReadmeRewrite()
+                } label: {
+                    HStack(spacing: 6) {
+                        if model.isApplyingReadmeRewrite {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(gattoSymbol: "checkmark.circle")
+                                .frame(width: 14, height: 14)
+                        }
+                        Text(L10n.text("github.readme.agent.apply"))
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!model.canApplyReadmeRewrite)
+            } else if model.isTranslatingGitHubReadme {
                 ProgressView()
                     .controlSize(.small)
                 Text(githubReadmeTranslationStatus)
@@ -888,25 +931,29 @@ struct GitHubWorkspaceView: View {
                 .disabled(!model.canTranslateGitHubReadme)
 
                 if model.selectedGitHubLocalRepositoryURL != nil {
-                    Menu {
-                        ForEach(ReadmeAgentStyle.allCases) { style in
-                            Button(L10n.text("github.readme.style.\(style.rawValue)")) {
-                                model.beautifySelectedReadme(style: style)
-                            }
-                        }
-                    } label: {
-                        GattoLabel(L10n.text("github.readme.agent"), systemImage: "sparkles")
-                            .font(.system(size: 10.5, weight: .semibold))
-                    }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
-                    .disabled(!model.canBeautifySelectedReadme)
+                    readmeAgentMenu(titleKey: "github.readme.agent")
                 }
             }
         }
         .padding(.horizontal, 14)
         .frame(height: 40)
         .background(palette.surface)
+    }
+
+    private func readmeAgentMenu(titleKey: String) -> some View {
+        Menu {
+            ForEach(ReadmeAgentStyle.allCases) { style in
+                Button(L10n.text("github.readme.style.\(style.rawValue)")) {
+                    model.beautifySelectedReadme(style: style)
+                }
+            }
+        } label: {
+            GattoLabel(L10n.text(titleKey), systemImage: "sparkles")
+                .font(.system(size: 10.5, weight: .semibold))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .disabled(!model.canBeautifySelectedReadme)
     }
 
     private var githubReadmeTranslationStatus: String {

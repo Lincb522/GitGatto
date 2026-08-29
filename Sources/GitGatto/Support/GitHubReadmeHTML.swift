@@ -46,6 +46,52 @@ enum GitHubReadmeHTML {
         }
     }
 
+    static func embeddingLocalAssets(
+        in html: String,
+        readmePath: String,
+        repositoryRootURL: URL
+    ) throws -> String {
+        let references = Array(relativeAssetReferences(in: html).prefix(24))
+        guard !references.isEmpty else { return html }
+
+        let standardizedRoot = repositoryRootURL.standardizedFileURL.resolvingSymlinksInPath()
+        var replacements: [String: String] = [:]
+        var totalSize = 0
+        for reference in references {
+            guard let path = repositoryPath(for: reference, readmePath: readmePath),
+                  let mimeType = imageMIMEType(for: path) else { continue }
+            let assetURL = standardizedRoot
+                .appendingPathComponent(path)
+                .standardizedFileURL
+                .resolvingSymlinksInPath()
+            guard assetURL.path.hasPrefix(standardizedRoot.path + "/"),
+                  let attributes = try? FileManager.default.attributesOfItem(atPath: assetURL.path),
+                  let fileSize = attributes[.size] as? NSNumber,
+                  fileSize.intValue <= 4_000_000,
+                  totalSize + fileSize.intValue <= 16_000_000 else { continue }
+            let data = try Data(contentsOf: assetURL, options: [.mappedIfSafe])
+            guard data.count <= 4_000_000,
+                  totalSize + data.count <= 16_000_000 else { continue }
+            totalSize += data.count
+            replacements[reference] = "data:\(mimeType);base64,\(data.base64EncodedString())"
+        }
+        return replacingAssetReferences(in: html, replacements: replacements)
+    }
+
+    static func imageMIMEType(for path: String) -> String? {
+        switch URL(fileURLWithPath: path).pathExtension.lowercased() {
+        case "png": "image/png"
+        case "jpg", "jpeg": "image/jpeg"
+        case "gif": "image/gif"
+        case "svg": "image/svg+xml"
+        case "webp": "image/webp"
+        case "bmp": "image/bmp"
+        case "ico": "image/x-icon"
+        case "avif": "image/avif"
+        default: nil
+        }
+    }
+
     static func repositoryPath(for reference: String, readmePath: String) -> String? {
         guard isRelative(reference) else { return nil }
         let pathPart = String(

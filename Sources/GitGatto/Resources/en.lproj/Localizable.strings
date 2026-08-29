@@ -362,6 +362,7 @@
 "help.github.detail.2" = "Repository documentation and code links navigate inside project details; external pages use the in-app browser.";
 "help.github.detail.3" = "Code browses the default branch by folder and shows text files; binary files can open on GitHub inside the app.";
 "help.github.detail.4" = "Pull Requests shows descriptions and diffs, lets Agent draft a reply, and publishes only after confirmation.";
+"help.github.detail.5" = "Rewrite a README with one of four templates and review the rendered local result immediately. Commit & Apply commits only the README and pushes the current branch.";
 
 "help.topic.agent.title" = "Agent";
 "help.topic.agent.summary" = "Agent uses your configured local CLI to understand the current repository, perform tasks, and retain project-level conversations.";
@@ -934,8 +935,15 @@
 "github.readme.style.minimal" = "Minimal";
 "github.readme.style.openSource" = "Open Source";
 "github.readme.style.product" = "Product";
-"github.readme.agent.completed" = "README updated in the local repository.";
+"github.readme.agent.rewriting" = "Rewriting README…";
+"github.readme.agent.local_preview" = "Local preview";
+"github.readme.agent.rewrite_again" = "Choose another template";
+"github.readme.agent.apply" = "Commit & Apply";
+"github.readme.agent.preview_ready" = "README rewritten and ready to preview.";
+"github.readme.agent.applied" = "README committed and pushed";
+"github.readme.commit_message" = "docs: improve README";
 "github.readme.agent.error" = "README update failed: %@";
+"github.readme.agent.apply_error" = "Could not commit the README: %@";
 "downloads.title" = "Downloads";
 "downloads.empty" = "No downloads yet";
 "downloads.error.unknown" = "The download failed.";

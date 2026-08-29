@@ -350,6 +350,59 @@ struct GitRepositoryServiceTests {
         #expect(try runGitOutput(["status", "--porcelain"], at: repository).isEmpty)
     }
 
+    @Test("README apply commits only the rewritten document and preserves other staged work")
+    func appliesReadmeWithoutChangingExistingCommitBoundary() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoReadmeApplyTests-\(UUID().uuidString)", isDirectory: true)
+        let repository = root.appendingPathComponent("working", isDirectory: true)
+        let remote = root.appendingPathComponent("remote.git", isDirectory: true)
+        try FileManager.default.createDirectory(at: repository, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try runGit(["init", "--bare", remote.path], at: root)
+        try runGit(["init", "-b", "main"], at: repository)
+        try runGit(["config", "user.name", "GitGatto Test"], at: repository)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: repository)
+        try "# Before\n".write(
+            to: repository.appendingPathComponent("README.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "before\n".write(
+            to: repository.appendingPathComponent("work.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try runGit(["add", "README.md", "work.txt"], at: repository)
+        try runGit(["commit", "-m", "Initial commit"], at: repository)
+        try runGit(["remote", "add", "origin", remote.path], at: repository)
+        try await GitRepositoryService().push(in: repository)
+
+        try "# After\n".write(
+            to: repository.appendingPathComponent("README.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "staged work\n".write(
+            to: repository.appendingPathComponent("work.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try runGit(["add", "work.txt"], at: repository)
+
+        try await GitRepositoryService().stageCommitAndPush(
+            paths: ["README.md"],
+            message: "docs: improve README",
+            in: repository
+        )
+
+        #expect(try runGitOutput(["show", "--pretty=", "--name-only", "HEAD"], at: repository) == "README.md")
+        #expect(try runGitOutput(["diff", "--cached", "--name-only"], at: repository) == "work.txt")
+        #expect(try runGitOutput(["show", "HEAD:README.md"], at: remote) == "# After")
+        #expect(try runGitOutput(["rev-parse", "HEAD"], at: repository)
+            == runGitOutput(["rev-parse", "refs/heads/main"], at: remote))
+    }
+
     @Test("Reports a push failure without losing the created commit")
     func preservesCommitWhenPushFails() async throws {
         let repository = FileManager.default.temporaryDirectory

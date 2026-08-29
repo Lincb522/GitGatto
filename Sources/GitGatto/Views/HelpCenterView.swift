@@ -140,7 +140,8 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
                     "help.github.detail.1",
                     "help.github.detail.2",
                     "help.github.detail.3",
-                    "help.github.detail.4"
+                    "help.github.detail.4",
+                    "help.github.detail.5"
                 ])
             ]
         case .agent:
