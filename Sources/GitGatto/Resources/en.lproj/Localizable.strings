@@ -180,6 +180,8 @@
 "github.repository.no_description" = "No project description";
 "github.repository.empty" = "Select a GitHub project";
 "github.repository.visibility.private" = "Private project";
+"github.repository.language.primary" = "PRIMARY";
+"github.repository.language.primary.accessibility" = "Primary language: %@";
 "github.repository.header.collapse" = "Collapse project summary";
 "github.repository.header.expand" = "Expand project summary";
 "github.action.search" = "Search";

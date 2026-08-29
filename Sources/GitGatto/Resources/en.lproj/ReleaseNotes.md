@@ -1,16 +1,9 @@
 ## Added
 
-- App marketplace details and release content can now be translated with Agent and reused without retranslating.
-- Working changes, commit history, and file history now preview images, video, and SVG content directly.
-- Repository, developer, and marketplace searches can load additional results.
+- GitHub project details now use a compact primary-language stack badge with the matching language icon and GitHub language color.
 
 ## Improved
 
-- Replaced every interface icon with Zappicon vector assets for clearer light, dark, and compact rendering.
-- Added visible loading states across repository, GitHub, Agent, download, update, and detail views.
-- Improved compact rendering for GitHub language icons.
-- Pull, commit, and push progress now appears on the corresponding buttons without duplicate sync animations.
-
-## Fixed
-
-- Project Agent runs can now continue for up to 15 minutes, preventing builds and tests from being stopped at 150 seconds while retaining manual cancellation.
+- Reworked the project README hierarchy and layout with clearer workflows, capability boundaries, stack identifiers, usage guidance, and open-source acknowledgements.
+- Deepened all four README rewrite templates so Agent verifies manifests, lockfiles, imports, existing media, layout, technology versions, links, and images before presenting the preview.
+- Language stack badges now select their foreground from the background luminance for clearer text on light language colors.

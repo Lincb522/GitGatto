@@ -62,6 +62,36 @@ struct GitAgentProfileTests {
         #expect(prompt.contains("Do not change global Git configuration"))
     }
 
+    @Test("README templates require evidence-backed layout and stack identifiers", arguments: ReadmeAgentStyle.allCases)
+    func buildsDeepReadmeRewritePrompt(style: ReadmeAgentStyle) {
+        let prompt = GitAgentProfile.readmePrompt(style: style)
+
+        #expect(prompt.contains("GitHub-Flavored Markdown"))
+        #expect(prompt.contains("technology-stack identifiers"))
+        #expect(prompt.contains("manifests, lockfiles, imports"))
+        #expect(prompt.contains("Do not generate, redraw, rename, or relocate assets"))
+        #expect(prompt.contains("Do not present contributor-only project generators"))
+        #expect(prompt.contains("narrow-layout readability"))
+    }
+
+    @Test("README templates preserve distinct document structures")
+    func keepsReadmeTemplateStructuresDistinct() {
+        let professional = GitAgentProfile.readmePrompt(style: .professional)
+        let minimal = GitAgentProfile.readmePrompt(style: .minimal)
+        let openSource = GitAgentProfile.readmePrompt(style: .openSource)
+        let product = GitAgentProfile.readmePrompt(style: .product)
+
+        #expect(professional.contains("two-column capability matrix"))
+        #expect(professional.contains("compact section navigator"))
+        #expect(minimal.contains("smallest complete project page"))
+        #expect(minimal.contains("Avoid feature-card grids"))
+        #expect(openSource.contains("for both users and contributors"))
+        #expect(openSource.contains("only the test commands contributors are required to run"))
+        #expect(product.contains("outcome-based capability grid"))
+        #expect(product.contains("omit testimonials"))
+        #expect(Set([professional, minimal, openSource, product]).count == ReadmeAgentStyle.allCases.count)
+    }
+
     @Test("Localizes every built-in Git Agent skill", arguments: ["en", "zh-Hans"])
     func localizesSkills(language: String) {
         let bundle = L10n.bundle(preferredLanguages: [language])

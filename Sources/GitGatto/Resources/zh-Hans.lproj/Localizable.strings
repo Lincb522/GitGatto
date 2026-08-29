@@ -180,6 +180,8 @@
 "github.repository.no_description" = "没有项目说明";
 "github.repository.empty" = "选择一个 GitHub 项目";
 "github.repository.visibility.private" = "私有项目";
+"github.repository.language.primary" = "主要语言";
+"github.repository.language.primary.accessibility" = "主要语言：%@";
 "github.repository.header.collapse" = "收起项目摘要";
 "github.repository.header.expand" = "展开项目摘要";
 "github.action.search" = "搜索";

@@ -541,7 +541,7 @@ struct GitHubWorkspaceView: View {
                 GattoLabel(GitHubNumberFormatter.string(repository.forks), systemImage: "arrow.triangle.branch")
                 GattoLabel(GitHubNumberFormatter.string(repository.openIssues), systemImage: "record.circle")
                 if let language = repository.language {
-                    GitHubLanguageLabel(language: language)
+                    GitHubLanguageStackBadge(language: language)
                 }
                 GattoLabel(repository.defaultBranch, systemImage: "point.topleft.down.to.point.bottomright.curvepath")
             }

@@ -96,6 +96,16 @@ struct GitHubLanguageStyle: Equatable, Sendable {
         return GitHubLanguageStyle(colorHex: "#6E7781")
     }
 
+    var prefersDarkForeground: Bool {
+        let hex = colorHex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard hex.count == 6, let value = Int(hex, radix: 16) else { return false }
+        let red = Double((value >> 16) & 0xFF) / 255
+        let green = Double((value >> 8) & 0xFF) / 255
+        let blue = Double(value & 0xFF) / 255
+        let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+        return luminance > 0.62
+    }
+
     private static let knownStyles: [String: GitHubLanguageStyle] = [
         "assembly": .init(colorHex: "#6E4C13"),
         "astro": .init(colorHex: "#FF5A03"),
@@ -235,5 +245,48 @@ struct GitHubLanguageLabel: View {
             return Color.secondary
         }
         return Color(hex: style.colorHex) ?? Color.secondary
+    }
+}
+
+struct GitHubLanguageStackBadge: View {
+    let language: String
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let style = GitHubLanguageStyle.resolved(language)
+        let stackColor = style.flatMap { Color(hex: $0.colorHex) } ?? Color.secondary
+        let detailInk = style?.prefersDarkForeground == true ? Color.black.opacity(0.82) : Color.white
+
+        HStack(spacing: 0) {
+            HStack(spacing: 4) {
+                GitHubLanguageIcon(language: language, size: 13)
+                Text(language.uppercased())
+                    .lineLimit(1)
+            }
+            .padding(.leading, 4)
+            .padding(.trailing, 6)
+            .frame(height: 20)
+            .foregroundStyle(Color.white)
+            .background(colorScheme == .dark ? Color(white: 0.22) : Color(white: 0.29))
+
+            Text(L10n.text("github.repository.language.primary"))
+                .lineLimit(1)
+                .padding(.horizontal, 6)
+                .frame(height: 20)
+                .foregroundStyle(detailInk)
+                .background(stackColor)
+        }
+        .font(.system(size: 9.5, weight: .bold))
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .strokeBorder(Color.black.opacity(colorScheme == .dark ? 0.24 : 0.10), lineWidth: 0.5)
+        }
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            L10n.format("github.repository.language.primary.accessibility", language)
+        )
     }
 }

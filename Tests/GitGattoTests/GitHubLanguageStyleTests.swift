@@ -16,6 +16,14 @@ struct GitHubLanguageStyleTests {
         #expect(GitHubLanguageStyle.resolved("Unknown Fixture Language")?.colorHex == "#6E7781")
     }
 
+    @Test("Chooses readable badge text for light and dark language colors")
+    func choosesBadgeForeground() {
+        #expect(GitHubLanguageStyle.resolved("JavaScript")?.prefersDarkForeground == true)
+        #expect(GitHubLanguageStyle.resolved("Shell")?.prefersDarkForeground == true)
+        #expect(GitHubLanguageStyle.resolved("Swift")?.prefersDarkForeground == false)
+        #expect(GitHubLanguageStyle.resolved("Python")?.prefersDarkForeground == false)
+    }
+
     @Test("Omits marks when GitHub has no language")
     func omitsMissingLanguage() {
         #expect(GitHubLanguageStyle.resolved(nil) == nil)
