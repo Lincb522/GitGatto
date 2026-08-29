@@ -70,6 +70,32 @@ struct GitHubReleaseServiceTests {
         #expect(releases[1].body.contains("GitHub release notes"))
     }
 
+    @Test("Keeps user-visible changes and removes development details")
+    func filtersReleaseNotes() {
+        let source = """
+        ## 新增
+
+        - 增加版本日志。
+
+        ## 构建与打包
+
+        - 调整 universal build pipeline。
+
+        ## 修复
+
+        - 修复检查更新状态。
+        - 更新 DMG 打包脚本。
+        """
+
+        let filtered = ReleaseNotesContentFilter.userFacing(source)
+
+        #expect(filtered.contains("增加版本日志"))
+        #expect(filtered.contains("修复检查更新状态"))
+        #expect(!filtered.contains("构建与打包"))
+        #expect(!filtered.contains("build pipeline"))
+        #expect(!filtered.contains("打包脚本"))
+    }
+
     @Test("Bundles release notes in both supported languages")
     func bundledReleaseNotes() throws {
         for languages in [["en"], ["zh-Hans"]] {

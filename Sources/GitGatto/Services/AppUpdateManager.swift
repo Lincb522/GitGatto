@@ -153,7 +153,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
                 id: "bundled-\(version)",
                 version: version,
                 title: L10n.format("update.release_notes.current", version),
-                body: body,
+                body: ReleaseNotesContentFilter.userFacing(body),
                 publishedAt: nil,
                 webURL: AppLinks.releases,
                 isPrerelease: false

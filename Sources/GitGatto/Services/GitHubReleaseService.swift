@@ -15,6 +15,50 @@ enum AppReleaseNotesSource: Equatable, Sendable {
     case github
 }
 
+enum ReleaseNotesContentFilter {
+    private static let excludedSections = [
+        "开发", "构建", "打包", "编译",
+        "development", "build", "packaging", "compilation"
+    ]
+    private static let excludedLines = [
+        "开发过程", "构建过程", "打包过程", "编译过程",
+        "构建产物", "编译产物", "打包脚本", "编译脚本",
+        "development process", "build process", "packaging process",
+        "compilation process", "build pipeline", "release pipeline"
+    ]
+
+    static func userFacing(_ source: String) -> String {
+        var output: [String] = []
+        var excludesSection = false
+
+        for rawLine in source.components(separatedBy: .newlines) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("#") {
+                let heading = line
+                    .drop(while: { $0 == "#" || $0 == " " })
+                    .lowercased()
+                excludesSection = excludedSections.contains { heading.contains($0) }
+                if !excludesSection { output.append(line) }
+                continue
+            }
+            if excludesSection { continue }
+
+            let normalized = line.lowercased()
+            if excludedLines.contains(where: normalized.contains) { continue }
+            output.append(line)
+        }
+
+        while output.first?.isEmpty == true { output.removeFirst() }
+        while output.last?.isEmpty == true { output.removeLast() }
+
+        var compacted: [String] = []
+        for line in output where !line.isEmpty || compacted.last?.isEmpty != true {
+            compacted.append(line)
+        }
+        return compacted.joined(separator: "\n")
+    }
+}
+
 enum GitHubReleaseServiceError: LocalizedError, Sendable {
     case invalidResponse
     case httpStatus(Int)
@@ -133,7 +177,7 @@ private struct GitHubReleasePayload: Decodable {
             id: "github-\(id)",
             version: version,
             title: title,
-            body: body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            body: ReleaseNotesContentFilter.userFacing(body ?? ""),
             publishedAt: publishedAt,
             webURL: htmlURL,
             isPrerelease: prerelease
