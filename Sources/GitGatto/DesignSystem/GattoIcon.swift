@@ -66,10 +66,21 @@ enum GattoIconAssets {
 
 enum PixelAlignedImageRenderer {
     static func render(_ source: NSImage, pointSize: CGFloat) -> NSImage {
+        render(pointSize: pointSize, sourceForScale: { _ in source }) ?? NSImage(
+            size: NSSize(width: pointSize, height: pointSize)
+        )
+    }
+
+    static func render(
+        pointSize: CGFloat,
+        sourceForScale: (Int) -> NSImage?
+    ) -> NSImage? {
         let logicalSize = NSSize(width: pointSize, height: pointSize)
         let output = NSImage(size: logicalSize)
+        var renderedRepresentation = false
         for scale in [1, 2, 3] {
-            guard let representation = NSBitmapImageRep(
+            guard let source = sourceForScale(scale),
+                  let representation = NSBitmapImageRep(
                 bitmapDataPlanes: nil,
                 pixelsWide: max(1, Int((pointSize * CGFloat(scale)).rounded())),
                 pixelsHigh: max(1, Int((pointSize * CGFloat(scale)).rounded())),
@@ -92,9 +103,10 @@ enum PixelAlignedImageRenderer {
             context.flushGraphics()
             NSGraphicsContext.restoreGraphicsState()
             output.addRepresentation(representation)
+            renderedRepresentation = true
         }
         output.size = logicalSize
-        return output
+        return renderedRepresentation ? output : nil
     }
 }
 

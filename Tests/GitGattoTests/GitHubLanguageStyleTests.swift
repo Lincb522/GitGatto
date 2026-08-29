@@ -1,3 +1,4 @@
+import AppKit
 import Testing
 @testable import GitGatto
 
@@ -42,6 +43,44 @@ struct GitHubLanguageStyleTests {
         #expect(GitHubLanguageIconAssets.resourceName(for: "MoonBit") == "443-moonbit")
         #expect(GitHubLanguageIconAssets.image(for: "Swift") != nil)
         #expect(GitHubLanguageIconAssets.image(for: "Unknown Fixture Language") == nil)
+    }
+
+    @Test("Selects the nearest raster source for each backing scale")
+    func selectsRasterSourceSizes() {
+        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 13, scale: 1) == 16)
+        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 13, scale: 2) == 48)
+        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 24, scale: 1) == 24)
+        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 24, scale: 2) == 48)
+        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 24, scale: 3) == 128)
+        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 58, scale: 2) == 128)
+    }
+
+    @Test("Bundles every optimized raster size")
+    func bundlesOptimizedRasterSizes() throws {
+        for pixelSize in [16, 24, 48, 128] {
+            let resourceName = "691-swift-\(pixelSize)"
+            let url = try #require(
+                AppResourceBundle.current.url(forResource: resourceName, withExtension: "png")
+                    ?? AppResourceBundle.current.url(
+                        forResource: resourceName,
+                        withExtension: "png",
+                        subdirectory: "LanguageIcons"
+                    )
+            )
+            let image = try #require(NSImage(contentsOf: url))
+            let representation = try #require(image.representations.first)
+            #expect(representation.pixelsWide == pixelSize)
+            #expect(representation.pixelsHigh == pixelSize)
+        }
+    }
+
+    @Test("Uses the catalog placeholder when no language logo matches")
+    @MainActor
+    func loadsPlaceholder() throws {
+        let image = try #require(GitHubLanguageIconAssets.placeholder(pointSize: 24))
+        #expect(image.size.width == 24)
+        #expect(Set(image.representations.map(\.pixelsWide)) == [24, 48, 72])
+        #expect(Set(image.representations.map(\.pixelsHigh)) == [24, 48, 72])
     }
 
     @Test("Builds exact backing-scale thumbnails for small language logos")

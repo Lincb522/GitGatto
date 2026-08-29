@@ -34,8 +34,8 @@ settings:
     CLANG_ENABLE_MODULES: YES
     DEVELOPMENT_LANGUAGE: en
     LOCALIZATION_PREFERS_STRING_CATALOGS: NO
-    MARKETING_VERSION: 0.18.3
-    CURRENT_PROJECT_VERSION: 18003
+    MARKETING_VERSION: 0.18.4
+    CURRENT_PROJECT_VERSION: 18004
 targets:
   GitGatto:
     type: application
@@ -46,6 +46,11 @@ targets:
           - Resources
           - .DS_Store
       - path: Sources/GitGatto/Resources
+        excludes:
+          - LanguageIcons
+        buildPhase: resources
+      - path: Sources/GitGatto/Resources/LanguageIcons
+        type: folder
         buildPhase: resources
     dependencies:
       - package: Sparkle

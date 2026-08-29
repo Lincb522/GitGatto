@@ -10,7 +10,7 @@ enum GitHubLanguageIconAssets {
 
     private struct Item: Decodable {
         let name: String
-        let file: String
+        let resourceName: String
     }
 
     private static let manifest: Manifest? = {
@@ -26,15 +26,15 @@ enum GitHubLanguageIconAssets {
     private static let resourceNames: [String: String] = {
         guard let manifest else { return [:] }
         return Dictionary(uniqueKeysWithValues: manifest.items.map { item in
-            let resourceName = URL(fileURLWithPath: item.file)
-                .deletingPathExtension()
-                .lastPathComponent
-            return (item.name.lowercased(), resourceName)
+            (item.name.lowercased(), item.resourceName)
         })
     }()
 
     @MainActor private static var imageCache: [String: NSImage] = [:]
     @MainActor private static var thumbnailCache: [String: NSImage] = [:]
+    @MainActor private static var placeholderCache: [Int: NSImage] = [:]
+
+    private static let availablePixelSizes = [16, 24, 48, 128]
 
     static var count: Int { manifest?.totalLanguages ?? 0 }
 
@@ -48,29 +48,64 @@ enum GitHubLanguageIconAssets {
     @MainActor
     static func image(for language: String?) -> NSImage? {
         guard let resourceName = resourceName(for: language) else { return nil }
-        if let cached = imageCache[resourceName] { return cached }
+        return sourceImage(resourceName: resourceName, pixelSize: 128)
+    }
+
+    static func sourcePixelSize(pointSize: CGFloat, scale: Int) -> Int {
+        let requiredPixels = Int(ceil(max(12, pointSize) * CGFloat(max(1, scale))))
+        return availablePixelSizes.first(where: { $0 >= requiredPixels })
+            ?? availablePixelSizes[availablePixelSizes.count - 1]
+    }
+
+    @MainActor
+    private static func sourceImage(resourceName: String, pixelSize: Int) -> NSImage? {
+        let sizedResourceName = "\(resourceName)-\(pixelSize)"
+        if let cached = imageCache[sizedResourceName] { return cached }
         let bundle = AppResourceBundle.current
-        guard let url = bundle.url(forResource: resourceName, withExtension: "png")
+        guard let url = bundle.url(forResource: sizedResourceName, withExtension: "png")
                 ?? bundle.url(
-                    forResource: resourceName,
+                    forResource: sizedResourceName,
                     withExtension: "png",
                     subdirectory: "LanguageIcons"
                 ),
               let image = NSImage(contentsOf: url) else { return nil }
-        imageCache[resourceName] = image
+        imageCache[sizedResourceName] = image
         return image
     }
 
     @MainActor
     static func thumbnail(for language: String?, pointSize: CGFloat) -> NSImage? {
-        guard let resourceName = resourceName(for: language),
-              let source = image(for: language) else { return nil }
+        guard let resourceName = resourceName(for: language) else { return nil }
         let resolvedSize = max(12, pointSize)
         let key = "\(resourceName):\(Int((resolvedSize * 100).rounded()))"
         if let cached = thumbnailCache[key] { return cached }
-        let rendered = PixelAlignedImageRenderer.render(source, pointSize: resolvedSize)
+        guard let rendered = PixelAlignedImageRenderer.render(pointSize: resolvedSize, sourceForScale: { scale in
+            sourceImage(
+                resourceName: resourceName,
+                pixelSize: sourcePixelSize(pointSize: resolvedSize, scale: scale)
+            )
+        }) else { return nil }
         rendered.isTemplate = false
         thumbnailCache[key] = rendered
+        return rendered
+    }
+
+    @MainActor
+    static func placeholder(pointSize: CGFloat) -> NSImage? {
+        let resolvedSize = max(12, pointSize)
+        let key = Int((resolvedSize * 100).rounded())
+        if let cached = placeholderCache[key] { return cached }
+        let bundle = AppResourceBundle.current
+        guard let url = bundle.url(forResource: "placeholder", withExtension: "svg")
+                ?? bundle.url(
+                    forResource: "placeholder",
+                    withExtension: "svg",
+                    subdirectory: "LanguageIcons"
+                ),
+              let source = NSImage(contentsOf: url) else { return nil }
+        let rendered = PixelAlignedImageRenderer.render(source, pointSize: resolvedSize)
+        rendered.isTemplate = false
+        placeholderCache[key] = rendered
         return rendered
     }
 }
@@ -172,32 +207,24 @@ struct GitHubLanguageIcon: View {
                     .interpolation(.high)
                     .antialiased(true)
                     .scaledToFit()
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                            .strokeBorder(palette.divider.opacity(0.68), lineWidth: size < 36 ? 0.75 : 1)
-                    }
-            } else if let style = GitHubLanguageStyle.resolved(language) {
+            } else if let image = GitHubLanguageIconAssets.placeholder(pointSize: size) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .antialiased(true)
+                    .scaledToFit()
+            } else {
+                let style = GitHubLanguageStyle.resolved(language)
                 RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                    .fill(style.requiresLightBackdrop ? Color(white: 0.96) : palette.raisedSurface)
+                    .fill(style?.requiresLightBackdrop == true ? Color(white: 0.96) : palette.raisedSurface)
                     .overlay {
                         GattoIcon(
                             symbol: "chevron.left.forwardslash.chevron.right",
                             size: size * 0.45
                         )
-                            .foregroundStyle(Color(hex: style.colorHex) ?? palette.subtleInk)
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                            .stroke(palette.divider, lineWidth: 1)
-                    }
-            } else {
-                RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                    .fill(palette.raisedSurface)
-                    .overlay {
-                        GattoIcon(symbol: "shippingbox.fill", size: size * 0.48)
-                            .foregroundStyle(palette.subtleInk)
+                            .foregroundStyle(
+                                style.flatMap { Color(hex: $0.colorHex) } ?? palette.subtleInk
+                            )
                     }
                     .overlay {
                         RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)

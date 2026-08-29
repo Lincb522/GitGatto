@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Code placeholder icon</title>
+  <rect x="3" y="3" width="58" height="58" rx="16" fill="#D7DEE5" stroke="#A6B7C9" stroke-width="1.5"/>
+  <path d="M25 21L17 32l8 11M39 21l8 11-8 11M35.5 18.5l-7 27" fill="none" stroke="#3F6B8F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
