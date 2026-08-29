@@ -81,15 +81,28 @@ struct GitAgentProfileTests {
         let openSource = GitAgentProfile.readmePrompt(style: .openSource)
         let product = GitAgentProfile.readmePrompt(style: .product)
 
-        #expect(professional.contains("two-column capability matrix"))
-        #expect(professional.contains("compact section navigator"))
+        #expect(professional.contains("Three to five concise capability groups"))
+        #expect(professional.contains("distinctive subsystem"))
         #expect(minimal.contains("smallest complete project page"))
-        #expect(minimal.contains("Avoid feature-card grids"))
-        #expect(openSource.contains("for both users and contributors"))
-        #expect(openSource.contains("only the test commands contributors are required to run"))
-        #expect(product.contains("outcome-based capability grid"))
-        #expect(product.contains("omit testimonials"))
+        #expect(minimal.contains("Avoid walkthroughs, feature-card grids"))
+        #expect(openSource.contains("for users first and contributors second"))
+        #expect(openSource.contains("only the commands contributors must run"))
+        #expect(product.contains("based on user outcomes"))
+        #expect(product.contains("Omit unnecessary walkthroughs"))
         #expect(Set([professional, minimal, openSource, product]).count == ReadmeAgentStyle.allCases.count)
+    }
+
+    @Test("README templates remove repeated and obvious explanation", arguments: ReadmeAgentStyle.allCases)
+    func keepsReadmeCopyConcise(style: ReadmeAgentStyle) {
+        let prompt = GitAgentProfile.readmePrompt(style: style)
+
+        #expect(prompt.contains("Preserve concrete implemented capabilities"))
+        #expect(prompt.contains("it does not mean minimizing section count"))
+        #expect(prompt.contains("State each fact once"))
+        #expect(prompt.contains("Do not explain obvious controls"))
+        #expect(prompt.contains("Do not create a section only because"))
+        #expect(prompt.contains("keep every unique verified capability"))
+        #expect(prompt.contains("exact current slogan"))
     }
 
     @Test("Localizes every built-in Git Agent skill", arguments: ["en", "zh-Hans"])

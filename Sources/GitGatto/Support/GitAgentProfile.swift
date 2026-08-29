@@ -82,43 +82,40 @@ enum GitAgentProfile {
         let structure = switch style {
         case .professional:
             """
-            Create a precise, editorial project page with this hierarchy when evidence supports it:
-            1. A centered identity block using an existing logo or wordmark, a plain one-sentence definition, release/runtime/license badges, and direct download, changelog, and contribution links.
-            2. The strongest existing product screenshot with a short factual caption.
-            3. A compact section navigator, followed by a numbered end-to-end workflow laid out in a GitHub-compatible table with no more than three columns per row.
-            4. A two-column capability matrix grouped by actual user task rather than source module names.
-            5. Focused sections for the project's distinguishing workflow, integrations, and operating boundaries.
-            6. A technology-stack section containing verified visual badges and a compact semantic breakdown of interface, runtime, data, networking, or tooling layers that actually exist.
-            7. Installation, first use, requirements, local-data or permission behavior, document links, contribution, acknowledgements, and license.
-            Keep body paragraphs left aligned. Center only the identity, primary actions, screenshot captions, and badge rows.
+            Create a precise editorial project page:
+            1. A centered identity block using an existing logo or wordmark, the verified official product slogan or one factual sentence, a restrained badge row, and the primary links users need.
+            2. The strongest existing product screenshot when it adds information.
+            3. Three to five concise capability groups organized by user task.
+            4. A focused section for a distinctive subsystem when its operating context, inputs, side effects, or recovery behavior would otherwise be lost.
+            5. Installation and prerequisites, followed by verified technology badges.
+            6. Data and permission boundaries, canonical document links, contribution, acknowledgements, and license.
+            Keep body content left aligned. Add a navigator, workflow, matrix, or caption only when it conveys unique information more clearly than direct prose or bullets.
             """
         case .minimal:
             """
-            Produce the smallest complete project page without making it visually bare:
+            Produce the smallest complete project page:
             1. Identity, one-sentence definition, one restrained status-badge row, and one representative visual when present.
-            2. A short list of essential capabilities and a single compact usage path.
-            3. A verified technology badge strip. Add a technology table only when badges alone would hide an important runtime or integration boundary.
-            4. Installation, first use, requirements, support, acknowledgements, and license.
-            Use ordinary Markdown headings and lists for most content. Avoid feature-card grids, repeated navigation, secondary architecture, build, release, and maintenance details; link to an existing owning document only when users need it.
+            2. A short list of essential capabilities.
+            3. Installation, prerequisites, a verified technology badge strip, support, acknowledgements, and license.
+            Use ordinary Markdown headings and lists. Avoid walkthroughs, feature-card grids, repeated navigation, architecture summaries, and maintenance detail; link to the owning document when users need it.
             """
         case .openSource:
             """
-            Build an open-source project page for both users and contributors:
-            1. Identity, purpose, release/runtime/license badges, primary screenshot, and current capabilities.
-            2. Installation, use, configuration, and a verified technology-stack badge group with exact versions only when a manifest or lockfile proves them.
-            3. Architecture or repository map only when it prevents contributor mistakes; keep product usage ahead of contributor internals.
-            4. Contribution contract, only the test commands contributors are required to run, support, security reporting, changelog, acknowledgements, third-party notices, and license.
-            Use existing contributor, architecture, security, changelog, and third-party documents as canonical links instead of duplicating them. Give dependencies credit from manifests and notice files, not from memory.
+            Build an open-source project page for users first and contributors second:
+            1. Identity, purpose, restrained release/runtime/license badges, one useful screenshot, and concise current capabilities.
+            2. Installation, required configuration, and verified technology badges.
+            3. Contribution entry point and only the commands contributors must run.
+            4. Canonical links for support, security, changelog, third-party notices, and license.
+            Include architecture or a repository map only when omission would cause a contributor mistake. Link to existing owning documents instead of summarizing them. Credit dependencies from manifests and notice files, not from memory.
             """
         case .product:
             """
             Lead with the product in use while keeping the page factual:
-            1. Centered identity, plain one-sentence definition, platform/release/license badges, direct primary actions, and the strongest existing screenshot or demo.
-            2. A short numbered end-to-end workflow and a two-column outcome-based capability grid.
-            3. Dedicated sections for the product's distinctive workflow, integrations, supported content or platforms, and local-data or permission boundaries.
-            4. A concise technology-stack badge strip after the product capabilities, using verified technology names and versions rather than internal target names.
-            5. Installation, requirements, support, acknowledgements, and license.
-            Do not turn the README into a landing page: omit testimonials, superlatives, invented performance claims, decorative metrics, slogans, and repeated calls to action.
+            1. Centered identity, one factual sentence, restrained platform/release/license badges, primary links, and the strongest existing screenshot or demo.
+            2. Concise capability groups based on user outcomes.
+            3. Installation, requirements, verified technology badges, and only the integration or data boundaries users must know.
+            4. Support, acknowledgements, and license.
+            Omit unnecessary walkthroughs, testimonials, superlatives, decorative metrics, repeated calls to action, and explanations of visible interface controls. A verified slogan from the project's official website may appear once in the identity block.
             """
         }
         return """
@@ -141,13 +138,18 @@ enum GitAgentProfile {
         - Reuse existing repository logos, screenshots, light/dark variants, and diagrams. A light/dark identity may use a picture element. Do not generate, redraw, rename, or relocate assets. Every visual must have useful alternative text.
         - Add technology-stack identifiers as visual badges when the repository provides enough evidence. Use stable shields.io badge URLs or the repository's existing badge source, recognizable labels, restrained stack-specific colors, and official logos only when supported. Never invent CI, coverage, download, compatibility, or version badges.
         - Pin a version in a badge only when current configuration or a lockfile proves it. Distinguish language, UI/runtime framework, content or data layer, networking, version control, and delivery tooling only when those layers materially describe the project. Do not present contributor-only project generators, build utilities, or test tools as product technology.
-        - Keep user actions, prerequisites, side effects, and recovery information that materially affect successful use. Move specialist detail behind links to existing owning documents instead of copying it.
+        - Preserve concrete implemented capabilities and the non-obvious runtime behavior needed to understand them, including execution scope, evidence source, prerequisites, persistence, side effects, permission boundaries, and recovery. Move specialist implementation detail behind links to existing owning documents instead of copying it.
+        - Concision means removing repetition and explanation that adds no decision-relevant information; it does not mean minimizing section count or collapsing distinct capabilities into broad labels.
+        - State each fact once. Do not repeat a capability in the identity sentence, screenshot caption, workflow, feature list, and later prose.
+        - Do not explain obvious controls, standard Git behavior, visible labels, or routine setup steps. Prefer short direct bullets; use prose for a non-obvious capability, prerequisite, execution scope, side effect, boundary, or recovery action.
+        - Do not create a section only because the template names it. Include it only when its content changes a user's or contributor's decision or action.
+        - Avoid canned headings such as "Feature Overview", "Core Capabilities", "From Change to Collaboration", or "Why Choose This Project". Name sections with the project's direct domain terms.
         - Preserve correct legal meaning, working commands, relative links, image targets, badge targets, anchors, and the repository's established documentation language. Remove broken or unverifiable material rather than guessing a replacement.
-        - Use direct project language. Avoid slogans, generic quality claims, filler introductions, repeated summaries, decorative metadata, and prose about being intelligent, seamless, powerful, simple, or developer-friendly.
+        - Use direct project language. The exact current slogan from the repository-configured official website or its canonical local copy may appear once; do not invent or embellish it. Avoid generic quality claims, filler introductions, repeated summaries, decorative metadata, and prose about being intelligent, seamless, powerful, simple, or developer-friendly.
         - Credit the open-source projects that the repository actually depends on, using verified project names and links. Do not invent endorsements or omit the repository's existing third-party notice.
         - Modify only the primary README. Do not stage, commit, push, change source code, generate assets, or update other documentation.
 
-        After editing, reread the final file. Verify heading order, narrow-layout readability, every local link and image path against the working tree, every stated version against its source, and every external badge URL for correct escaping. Remove any heading, badge, card, caption, or sentence whose absence would not reduce understanding or safe use. Return a short plain-text summary of the sections changed; the README itself is the deliverable.
+        After editing, reread the final file. Verify heading order, narrow-layout readability, every local link and image path against the working tree, every stated version against its source, and every external badge URL for correct escaping. Remove repeated or purely explanatory material, but keep every unique verified capability and every fact needed for successful use, material boundaries, or contribution correctness. Return a short plain-text summary of the sections changed; the README itself is the deliverable.
         """
     }
 

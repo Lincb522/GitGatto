@@ -261,7 +261,7 @@
 "menu.file.no_recent" = "No Recent Repositories";
 
 "about.title" = "About GitGatto";
-"about.product" = "A native Git management tool powered by an Agent, bringing change review, repository management, and team collaboration into one connected workflow.";
+"about.product" = "A native-built Git management tool, driven by Agent.";
 "about.version" = "Version";
 "about.build" = "Build";
 "about.legal" = "Agreements & Notices";

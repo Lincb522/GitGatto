@@ -431,7 +431,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             fullName: "ZIJIU522/GitGatto",
             name: "GitGatto",
             owner: "ZIJIU522",
-            description: "原生构建、由 Agent 驱动的 Git 管理工具。",
+            description: L10n.text("about.product"),
             webURL: repositoryURL,
             stars: 268,
             forks: 24,

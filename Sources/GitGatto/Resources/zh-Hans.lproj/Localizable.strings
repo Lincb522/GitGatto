@@ -261,7 +261,7 @@
 "menu.file.no_recent" = "没有最近使用的仓库";
 
 "about.title" = "关于 GitGatto";
-"about.product" = "原生构建、由 Agent 驱动的 Git 管理工具，让改动审阅、仓库管理与团队协作自然衔接。";
+"about.product" = "原生构建，由 Agent 驱动的 Git 管理工具。";
 "about.version" = "版本";
 "about.build" = "构建";
 "about.legal" = "协议与声明";

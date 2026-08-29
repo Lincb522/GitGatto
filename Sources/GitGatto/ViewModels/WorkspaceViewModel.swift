@@ -875,7 +875,7 @@ final class WorkspaceViewModel: ObservableObject {
         githubAccountRepositories = [
             previewRepository(
                 name: "GitGatto",
-                description: "原生开发、Agent 驱动的 Git 管理工具",
+                description: L10n.text("about.product"),
                 language: "Swift",
                 stars: 268,
                 forks: 24
@@ -912,7 +912,7 @@ final class WorkspaceViewModel: ObservableObject {
                 path: "README.md",
                 html: """
                 <h1>GitGatto</h1>
-                <p>原生开发、Agent 驱动的 Git 管理工具。</p>
+                <p>\(L10n.text("about.product"))</p>
                 <h2>项目管理</h2>
                 <p>在一个工作区内查看改动、提交历史、分支、项目文档与代码。</p>
                 <ul><li>实时暂存状态</li><li>GitHub 项目与 Pull Request</li><li>多 CLI Agent 工作流</li></ul>
