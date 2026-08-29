@@ -22,4 +22,19 @@ enum GitHubSearchQueryResolver {
         if value.contains("/") || scope == .developers { return value }
         return "\(value) in:name"
     }
+
+    static func marketplaceQueries(for input: String) -> [String] {
+        let value = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return [] }
+        if value.range(
+            of: #"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"#,
+            options: .regularExpression
+        ) != nil {
+            return ["repo:\(value)"]
+        }
+        if value.range(of: #"^[A-Za-z0-9_.-]+$"#, options: .regularExpression) != nil {
+            return ["\(value) in:name,description,readme", "user:\(value)"]
+        }
+        return [directQuery(value, scope: .projects)]
+    }
 }

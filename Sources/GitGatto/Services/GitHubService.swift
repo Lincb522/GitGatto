@@ -75,6 +75,13 @@ protocol GitHubServing: Sendable {
     func cancel() async
 }
 
+protocol MarketplaceGitHubServing: Sendable {
+    func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository]
+    func marketplaceRelease(for repository: GitHubRepository) async throws -> GitHubRelease?
+    func releases(for repository: GitHubRepository) async throws -> [GitHubRelease]
+    func readme(for repository: GitHubRepository) async throws -> GitHubReadmeDocument?
+}
+
 extension GitHubServing {
     func searchRepositories(query: String) async throws -> [GitHubRepository] {
         try await searchRepositories(query: query, page: 1)
@@ -207,8 +214,9 @@ enum GitHubServiceError: LocalizedError, Sendable {
     }
 }
 
-actor GitHubService: GitHubServing {
+actor GitHubService: GitHubServing, MarketplaceGitHubServing {
     private var currentInvocations: [UUID: GitHubCommandInvocation] = [:]
+    private var marketplaceReleaseCache: [String: MarketplaceReleaseCacheEntry] = [:]
 
     func probe() async -> GitHubAvailability {
         guard let executableURL = GitHubExecutableLocator.find() else {
@@ -448,6 +456,26 @@ actor GitHubService: GitHubServing {
             "-f", "per_page=50"
         ])
         return try GitHubAPIParser.releases(from: response)
+    }
+
+    func marketplaceRelease(for repository: GitHubRepository) async throws -> GitHubRelease? {
+        let key = repository.fullName.lowercased()
+        if let cached = marketplaceReleaseCache[key], cached.expiresAt > Date() {
+            return cached.release
+        }
+        let response = try await api([
+            "-X", "GET",
+            "repos/\(repository.fullName)/releases",
+            "-f", "per_page=10",
+            "-f", "page=1"
+        ])
+        let release = try GitHubAPIParser.releases(from: response)
+            .first(where: { !$0.assets.isEmpty })
+        marketplaceReleaseCache[key] = MarketplaceReleaseCacheEntry(
+            release: release,
+            expiresAt: Date().addingTimeInterval(600)
+        )
+        return release
     }
 
     func isStarred(_ repository: GitHubRepository) async throws -> Bool {
@@ -1674,6 +1702,11 @@ private struct GitHubCommandOutput: Sendable {
     let standardOutput: Data
     let standardError: Data
     let exitCode: Int32
+}
+
+private struct MarketplaceReleaseCacheEntry: Sendable {
+    let release: GitHubRelease?
+    let expiresAt: Date
 }
 
 private final class GitHubCommandInvocation: @unchecked Sendable {

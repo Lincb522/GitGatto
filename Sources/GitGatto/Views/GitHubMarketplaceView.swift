@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct GitHubMarketplaceView: View {
@@ -5,6 +6,7 @@ struct GitHubMarketplaceView: View {
     @ObservedObject var downloads: AppDownloadManager
     @Environment(\.colorScheme) private var colorScheme
     @State private var inAppBrowserPage: InAppBrowserPage?
+    @State private var selectedDetailTab = MarketplaceDetailTab.overview
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -20,6 +22,14 @@ struct GitHubMarketplaceView: View {
         }
         .background(palette.background)
         .onAppear { model.loadIfNeeded() }
+        .onChange(of: model.selectedApplication?.id) { _, _ in
+            selectedDetailTab = .overview
+        }
+        .onChange(of: selectedDetailTab) { _, tab in
+            if tab == .releases {
+                model.loadReleasesIfNeeded()
+            }
+        }
         .sheet(item: $inAppBrowserPage) { page in
             InAppBrowserSheet(url: page.url, persistent: page.persistent)
         }
@@ -167,121 +177,35 @@ struct GitHubMarketplaceView: View {
     @ViewBuilder
     private func detailPane(_ palette: AppPalette) -> some View {
         if let application = model.selectedApplication {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack(alignment: .top, spacing: 15) {
-                        GitHubLanguageIcon(
-                            language: application.repository.language,
-                            isPrivate: false,
-                            size: 58
-                        )
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(application.repository.name)
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundStyle(palette.ink)
-                            Text(application.repository.fullName)
-                                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
-                                .foregroundStyle(palette.subtleInk)
-                            if let description = model.displayedDescription(for: application), !description.isEmpty {
-                                Text(description)
-                                    .font(.system(size: 12.5))
-                                    .foregroundStyle(palette.mutedInk)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                        Spacer(minLength: 8)
-                        VStack(alignment: .trailing, spacing: 7) {
-                            GattoLabel(
-                                GitHubNumberFormatter.string(application.repository.stars),
-                                systemImage: "star"
-                            )
-                            GattoLabel(
-                                GitHubNumberFormatter.string(application.repository.forks),
-                                systemImage: "arrow.triangle.branch"
-                            )
-                        }
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(palette.subtleInk)
-                    }
-
-                    HStack {
-                        translationMenu(palette)
-                        Spacer()
-                    }
-
-                    Picker(L10n.text("marketplace.release"), selection: Binding(
-                        get: { model.selectedReleaseID ?? model.releases.first?.id ?? 0 },
-                        set: { model.selectRelease($0) }
-                    )) {
-                        ForEach(model.releases) { release in
-                            Text("\(release.name) · \(release.tagName)").tag(release.id)
+            VStack(spacing: 0) {
+                applicationHeader(application, palette: palette)
+                Rectangle().fill(palette.divider).frame(height: 1)
+                HStack(spacing: 12) {
+                    Picker("", selection: $selectedDetailTab) {
+                        ForEach(MarketplaceDetailTab.allCases) { tab in
+                            Text(L10n.text("marketplace.detail.\(tab.rawValue)"))
+                                .tag(tab)
                         }
                     }
                     .labelsHidden()
-                    .frame(maxWidth: 360, alignment: .leading)
-
-                    if let release = selectedRelease(for: application) {
-                        let assets = release.assets.filter { model.platform.supports($0) }
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(L10n.text("github.releases.assets"))
-                                .font(.system(size: 13, weight: .semibold))
-                            ForEach(assets) { asset in
-                                ReleaseAssetRow(
-                                    asset: asset,
-                                    repositoryName: application.repository.fullName,
-                                    downloads: downloads
-                                )
-                            }
-                            if assets.isEmpty {
-                                Text(L10n.text("github.releases.assets.empty"))
-                                    .font(.system(size: 11.5))
-                                    .foregroundStyle(palette.mutedInk)
-                            }
-                        }
-
-                        let displayedNotes = model.displayedReleaseNotes(for: release)
-                        if !displayedNotes.isEmpty {
-                            VStack(alignment: .leading, spacing: 9) {
-                                Text(L10n.text("github.releases.notes"))
-                                    .font(.system(size: 13, weight: .semibold))
-                                ReleaseNotesMarkdownView(text: displayedNotes) { url in
-                                    inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
-                                }
-                            }
-                        }
-                    }
-
-                    if model.isAgentInstalling {
-                        HStack(spacing: 8) {
-                            ProgressView().controlSize(.small)
-                            Text(L10n.text("marketplace.agent.installing"))
-                                .font(.system(size: 11.5, weight: .medium))
-                                .foregroundStyle(palette.mutedInk)
-                        }
-                    } else if let result = model.agentInstallResult {
-                        Text(result)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(palette.ink)
-                            .textSelection(.enabled)
-                            .padding(12)
-                            .background(palette.raisedSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    }
-
-                    if let error = model.error {
-                        Text(error)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(palette.danger)
-                            .textSelection(.enabled)
-                    }
-                    if let error = model.translationError {
-                        Text(error)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(palette.danger)
-                            .textSelection(.enabled)
+                    .pickerStyle(.segmented)
+                    .frame(width: 240)
+                    Spacer()
+                    if selectedDetailTab == .releases {
+                        translationMenu(palette)
                     }
                 }
-                .padding(24)
+                .padding(.horizontal, 20)
+                .frame(height: 50)
+                .background(palette.surface)
+                Rectangle().fill(palette.divider).frame(height: 1)
+
+                switch selectedDetailTab {
+                case .overview:
+                    overviewPane(application, palette: palette)
+                case .releases:
+                    releasesPane(application, palette: palette)
+                }
             }
         } else if model.isLoading {
             GattoLoadingState(text: L10n.text("marketplace.loading"))
@@ -294,6 +218,183 @@ struct GitHubMarketplaceView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             ProjectEmptyState(systemImage: "arrow.down.app", titleKey: "marketplace.select")
+        }
+    }
+
+    private func applicationHeader(
+        _ application: MarketplaceApplication,
+        palette: AppPalette
+    ) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            MarketplaceLogoView(
+                url: model.selectedLogoURL,
+                language: application.repository.language,
+                size: 72
+            )
+            VStack(alignment: .leading, spacing: 7) {
+                Text(application.repository.name)
+                    .font(.system(size: 23, weight: .bold))
+                    .foregroundStyle(palette.ink)
+                Text(application.repository.fullName)
+                    .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(palette.subtleInk)
+                if let description = model.displayedDescription(for: application), !description.isEmpty {
+                    Text(description)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(palette.mutedInk)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack(spacing: 8) {
+                    if let language = application.repository.language {
+                        GitHubLanguageStackBadge(language: language)
+                    }
+                    Text(application.latestRelease.tagName)
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(palette.primary)
+                        .padding(.horizontal, 7)
+                        .frame(height: 20)
+                        .background(palette.primarySoft)
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                }
+            }
+            Spacer(minLength: 12)
+            VStack(alignment: .trailing, spacing: 8) {
+                GattoLabel(
+                    GitHubNumberFormatter.string(application.repository.stars),
+                    systemImage: "star"
+                )
+                GattoLabel(
+                    GitHubNumberFormatter.string(application.repository.forks),
+                    systemImage: "arrow.triangle.branch"
+                )
+                Text(application.repository.updatedAt.formatted(date: .abbreviated, time: .omitted))
+                    .font(.system(size: 9.5, weight: .medium))
+            }
+            .font(.system(size: 10.5, weight: .semibold))
+            .foregroundStyle(palette.subtleInk)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(palette.surface)
+    }
+
+    @ViewBuilder
+    private func overviewPane(
+        _ application: MarketplaceApplication,
+        palette: AppPalette
+    ) -> some View {
+        if let document = model.selectedReadme {
+            GitHubReadmeView(
+                document: document,
+                colorScheme: colorScheme,
+                onScrollAwayFromTop: {},
+                onOpenLink: { url in
+                    inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
+                }
+            )
+            .id("marketplace-readme-\(application.id)")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if model.isLoadingReadme {
+            GattoLoadingState(text: L10n.text("marketplace.detail.loading"))
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L10n.text("marketplace.detail.overview"))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                Text(model.displayedDescription(for: application) ?? L10n.text("marketplace.detail.unavailable"))
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(palette.mutedInk)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    private func releasesPane(
+        _ application: MarketplaceApplication,
+        palette: AppPalette
+    ) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 10) {
+                    Picker(L10n.text("marketplace.release"), selection: Binding(
+                        get: { model.selectedReleaseID ?? model.releases.first?.id ?? 0 },
+                        set: { model.selectRelease($0) }
+                    )) {
+                        ForEach(model.releases) { release in
+                            Text("\(release.name) · \(release.tagName)").tag(release.id)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 420, alignment: .leading)
+                    if model.isLoadingReleases {
+                        ProgressView().controlSize(.small)
+                    }
+                }
+
+                if let release = selectedRelease(for: application) {
+                    let assets = release.assets.filter { model.platform.supports($0) }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(L10n.text("github.releases.assets"))
+                            .font(.system(size: 13, weight: .semibold))
+                        ForEach(assets) { asset in
+                            ReleaseAssetRow(
+                                asset: asset,
+                                repositoryName: application.repository.fullName,
+                                downloads: downloads
+                            )
+                        }
+                        if assets.isEmpty {
+                            Text(L10n.text("github.releases.assets.empty"))
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(palette.mutedInk)
+                        }
+                    }
+
+                    let displayedNotes = model.displayedReleaseNotes(for: release)
+                    if !displayedNotes.isEmpty {
+                        VStack(alignment: .leading, spacing: 9) {
+                            Text(L10n.text("github.releases.notes"))
+                                .font(.system(size: 13, weight: .semibold))
+                            ReleaseNotesMarkdownView(text: displayedNotes) { url in
+                                inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
+                            }
+                        }
+                    }
+                }
+
+                if model.isAgentInstalling {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text(L10n.text("marketplace.agent.installing"))
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(palette.mutedInk)
+                    }
+                } else if let result = model.agentInstallResult {
+                    Text(result)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(palette.ink)
+                        .textSelection(.enabled)
+                        .padding(12)
+                        .background(palette.raisedSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+
+                if let error = model.detailError ?? model.error {
+                    Text(error)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(palette.danger)
+                        .textSelection(.enabled)
+                }
+                if let error = model.translationError {
+                    Text(error)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(palette.danger)
+                        .textSelection(.enabled)
+                }
+            }
+            .padding(24)
         }
     }
 
@@ -335,6 +436,80 @@ struct GitHubMarketplaceView: View {
         }
         .buttonStyle(SecondaryButtonStyle())
         .disabled(model.isTranslating)
+    }
+}
+
+private enum MarketplaceDetailTab: String, CaseIterable, Identifiable {
+    case overview
+    case releases
+
+    var id: String { rawValue }
+}
+
+private struct MarketplaceLogoView: View {
+    let url: URL?
+    let language: String?
+    let size: CGFloat
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var image: NSImage?
+    @State private var isLoading = false
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        Group {
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .antialiased(true)
+                    .scaledToFit()
+                    .transition(.opacity)
+            } else if isLoading {
+                ProgressView().controlSize(.small)
+            } else {
+                fallback
+            }
+        }
+        .padding(7)
+        .frame(width: size, height: size)
+        .background(palette.raisedSurface)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                .strokeBorder(palette.divider, lineWidth: 1)
+        }
+        .task(id: url) {
+            await loadImage()
+        }
+    }
+
+    private var fallback: some View {
+        GitHubLanguageIcon(language: language, size: size - 14)
+    }
+
+    private func loadImage() async {
+        image = nil
+        guard let url else {
+            isLoading = false
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard !Task.isCancelled,
+                  data.count <= 8 * 1_024 * 1_024,
+                  (response as? HTTPURLResponse).map({ 200..<300 ~= $0.statusCode }) ?? true,
+                  let loaded = NSImage(data: data) else { return }
+            withAnimation(.easeOut(duration: 0.18)) {
+                image = loaded
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            return
+        }
     }
 }
 

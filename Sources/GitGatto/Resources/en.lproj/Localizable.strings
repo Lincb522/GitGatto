@@ -985,6 +985,11 @@
 "marketplace.select" = "Select an app to view its releases";
 "marketplace.loading" = "Finding releases…";
 "marketplace.release" = "Release";
+"marketplace.detail.overview" = "Overview";
+"marketplace.detail.releases" = "Versions & Downloads";
+"marketplace.detail.loading" = "Loading app details…";
+"marketplace.detail.unavailable" = "No detailed description is available.";
+"marketplace.error.search.empty_response" = "GitHub returned no searchable repository response.";
 "marketplace.agent.installing" = "Agent is handling the installation…";
 "marketplace.error.search" = "App search failed: %@";
 "marketplace.error.releases" = "Could not load releases: %@";

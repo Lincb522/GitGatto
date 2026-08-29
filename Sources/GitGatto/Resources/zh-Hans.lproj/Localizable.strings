@@ -985,6 +985,11 @@
 "marketplace.select" = "选择一个应用查看发行版";
 "marketplace.loading" = "正在检索发行版…";
 "marketplace.release" = "发行版";
+"marketplace.detail.overview" = "详细介绍";
+"marketplace.detail.releases" = "版本与下载";
+"marketplace.detail.loading" = "正在加载应用详情…";
+"marketplace.detail.unavailable" = "该应用暂未提供详细介绍。";
+"marketplace.error.search.empty_response" = "GitHub 未返回可用的仓库搜索结果。";
 "marketplace.agent.installing" = "Agent 正在处理安装…";
 "marketplace.error.search" = "应用检索失败：%@";
 "marketplace.error.releases" = "发行版读取失败：%@";

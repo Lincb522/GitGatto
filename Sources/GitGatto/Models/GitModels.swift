@@ -796,6 +796,9 @@ struct MarketplaceApplication: Identifiable, Sendable, Hashable {
     let matchingAssets: [GitHubReleaseAsset]
 
     var id: String { repository.id }
+    var ownerAvatarURL: URL? {
+        URL(string: "https://github.com/\(repository.owner).png?size=160")
+    }
 }
 
 enum ReadmeAgentStyle: String, CaseIterable, Identifiable, Sendable {

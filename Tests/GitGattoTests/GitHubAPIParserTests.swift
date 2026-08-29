@@ -265,6 +265,17 @@ struct GitHubAPIParserTests {
         #expect(!GitHubSearchQueryResolver.requiresAgent("raycast"))
         #expect(GitHubSearchQueryResolver.requiresAgent("找一个轻量的 macOS 截图工具"))
         #expect(GitHubSearchQueryResolver.directQuery("raycast", scope: .projects) == "raycast in:name")
+        #expect(
+            GitHubSearchQueryResolver.marketplaceQueries(for: "GitGatto") == [
+                "GitGatto in:name,description,readme",
+                "user:GitGatto"
+            ]
+        )
+        #expect(
+            GitHubSearchQueryResolver.marketplaceQueries(for: "Lincb522/GitGatto") == [
+                "repo:Lincb522/GitGatto"
+            ]
+        )
     }
 
     @Test("Filters release assets by platform")
@@ -334,6 +345,26 @@ struct GitHubAPIParserTests {
         #expect(normalized.contains("src=\"https://raw.githubusercontent.com/octocat/Hello-World/main/shared/banner.svg\""))
         #expect(normalized.contains("src=\"https://images.example.com/external.png\""))
         #expect(GitHubReadmeHTML.repositoryPath(for: "../assets/icon%20dark.png", readmePath: "docs/README.md") == "assets/icon dark.png")
+    }
+
+    @Test("Chooses the first non-badge README image as the app logo")
+    func choosesReadmeLogo() throws {
+        let root = try #require(URL(string: "https://raw.githubusercontent.com/Lincb522/GitGatto/main/"))
+        let document = GitHubReadmeDocument(
+            path: "README.md",
+            html: """
+            <p><img src="Assets/AppIcon.svg" alt="App logo"></p>
+            <p><img src="https://img.shields.io/badge/build-passing.svg" alt="Build"></p>
+            """,
+            linkBaseURL: try #require(URL(string: "https://github.com/Lincb522/GitGatto/blob/main/")),
+            linkRootURL: try #require(URL(string: "https://github.com/Lincb522/GitGatto/blob/main/")),
+            assetBaseURL: root,
+            assetRootURL: root
+        )
+        #expect(
+            GitHubReadmeHTML.primaryImageURL(in: document)?.absoluteString
+                == "https://raw.githubusercontent.com/Lincb522/GitGatto/main/Assets/AppIcon.svg"
+        )
     }
 
     @Test("Embeds working-tree README images for an immediate local preview")

@@ -112,6 +112,7 @@
 		6956B17133BB5ED85FA4F161 /* gatto-legal-disclaimer.svg in Resources */ = {isa = PBXBuildFile; fileRef = E378182A79694527464D093A /* gatto-legal-disclaimer.svg */; };
 		6AD522664574BD8B72251E2C /* DiffInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C36425B7CE38FE0E469E2CE3 /* DiffInspectorView.swift */; };
 		6BFA5B0FFA01F2C0C4D5128D /* GitHubReadmeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D8B04491F14B9B237B5FBF /* GitHubReadmeView.swift */; };
+		6CBEDB0602FDBDA075297B40 /* GitHubMarketplaceViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AECB4A8CF7E094D8F28F51C4 /* GitHubMarketplaceViewModelTests.swift */; };
 		6DACE03BC76B123D0E399C64 /* gatto-location.svg in Resources */ = {isa = PBXBuildFile; fileRef = 2FB52B2ABEB7FA082A87F801 /* gatto-location.svg */; };
 		6F8B869A3B85B7CBEDA850A7 /* gatto-media-fit.svg in Resources */ = {isa = PBXBuildFile; fileRef = 268F1AEE4AABC2392D17145D /* gatto-media-fit.svg */; };
 		7175069C20CC2059D1C4303D /* GitHubAPIParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1189141191D0F65182423FB2 /* GitHubAPIParserTests.swift */; };
@@ -458,6 +459,7 @@
 		A9D2244E754BA69D8FCD788A /* gatto-tray-and-arrow-down.svg */ = {isa = PBXFileReference; path = "gatto-tray-and-arrow-down.svg"; sourceTree = "<group>"; };
 		AD696D0E43A383C3D89EFCF8 /* gatto-history-file.svg */ = {isa = PBXFileReference; path = "gatto-history-file.svg"; sourceTree = "<group>"; };
 		AE7DF7DA906E28195A5A3E37 /* gatto-building-2.svg */ = {isa = PBXFileReference; path = "gatto-building-2.svg"; sourceTree = "<group>"; };
+		AECB4A8CF7E094D8F28F51C4 /* GitHubMarketplaceViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubMarketplaceViewModelTests.swift; sourceTree = "<group>"; };
 		AF13E0640C851260B0DA412D /* gatto-person-2.svg */ = {isa = PBXFileReference; path = "gatto-person-2.svg"; sourceTree = "<group>"; };
 		AFCE7BCE0883B44C90A5FE3D /* gatto-terminal.svg */ = {isa = PBXFileReference; path = "gatto-terminal.svg"; sourceTree = "<group>"; };
 		B03F6C818FEC868DFE082BC7 /* RepositoryInsightModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryInsightModels.swift; sourceTree = "<group>"; };
@@ -898,6 +900,7 @@
 				3DA956B7150EC0AE8947E96A /* GitFileHistoryServiceTests.swift */,
 				1189141191D0F65182423FB2 /* GitHubAPIParserTests.swift */,
 				3052E29C8B4766CBBF7578E5 /* GitHubLanguageStyleTests.swift */,
+				AECB4A8CF7E094D8F28F51C4 /* GitHubMarketplaceViewModelTests.swift */,
 				372E6E5DA981FB5242C60F27 /* GitHubReadmeScrollTests.swift */,
 				B6EA29373B2BB404D23EC90F /* GitHubReleaseServiceTests.swift */,
 				CA3D850F531F9ED8D3124D4B /* GitParsersTests.swift */,
@@ -1249,6 +1252,7 @@
 				E50C5F6ED3AEF91EB0FC87A3 /* GitFileHistoryServiceTests.swift in Sources */,
 				7175069C20CC2059D1C4303D /* GitHubAPIParserTests.swift in Sources */,
 				1842D89E955A82F97DB045F4 /* GitHubLanguageStyleTests.swift in Sources */,
+				6CBEDB0602FDBDA075297B40 /* GitHubMarketplaceViewModelTests.swift in Sources */,
 				4A2C1B75C10F0DB6203EE2CE /* GitHubReadmeScrollTests.swift in Sources */,
 				2C9697A7813DDA25E3590F26 /* GitHubReleaseServiceTests.swift in Sources */,
 				5839893346E13680EC8D4DEB /* GitParsersTests.swift in Sources */,

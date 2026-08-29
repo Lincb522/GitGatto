@@ -9,6 +9,11 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published var selectedApplication: MarketplaceApplication?
     @Published private(set) var releases: [GitHubRelease] = []
     @Published var selectedReleaseID: Int64?
+    @Published private(set) var selectedReadme: GitHubReadmeDocument?
+    @Published private(set) var selectedLogoURL: URL?
+    @Published private(set) var isLoadingReadme = false
+    @Published private(set) var isLoadingReleases = false
+    @Published private(set) var detailError: String?
     @Published private(set) var isLoading = false
     @Published private(set) var isLoadingMore = false
     @Published private(set) var canLoadMore = false
@@ -21,7 +26,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published private(set) var agentInstallResult: String?
     @Published private(set) var isAgentInstalling = false
 
-    private let github: any GitHubServing
+    private let github: any MarketplaceGitHubServing
     private let searchAI: any CodexServing
     private let installerAI: any CodexServing
     private let translationAI: any CodexServing
@@ -29,16 +34,19 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     private var searchTask: Task<Void, Never>?
     private var loadMoreTask: Task<Void, Never>?
     private var detailTask: Task<Void, Never>?
+    private var readmeTask: Task<Void, Never>?
     private var installTask: Task<Void, Never>?
     private var translationTask: Task<Void, Never>?
     private var translationCacheTask: Task<Void, Never>?
+    private var activeSearchID: UUID?
     private var hasLoaded = false
     private var searchPage = 0
     private var searchInput = ""
-    private var resolvedSearchQuery = ""
+    private var resolvedSearchQueries: [String] = []
+    private var loadedReleaseApplicationID: String?
 
     init(
-        github: any GitHubServing = GitHubService(),
+        github: any MarketplaceGitHubServing = GitHubService(),
         searchAI: any CodexServing = CodexService(lane: .search),
         installerAI: any CodexServing = CodexService(lane: .installer),
         translationAI: any CodexServing = CodexService(lane: .translation),
@@ -74,6 +82,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         searchTask?.cancel()
         loadMoreTask?.cancel()
         detailTask?.cancel()
+        readmeTask?.cancel()
         translationTask?.cancel()
         translationCacheTask?.cancel()
         isLoading = true
@@ -89,16 +98,27 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         selectedApplication = nil
         releases = []
         selectedReleaseID = nil
+        selectedReadme = nil
+        selectedLogoURL = nil
+        isLoadingReadme = false
+        isLoadingReleases = false
+        detailError = nil
         searchPage = 0
         searchInput = ""
-        resolvedSearchQuery = ""
+        resolvedSearchQueries = []
 
         let github = self.github
         let platform = self.platform
+        let searchID = UUID()
+        activeSearchID = searchID
         searchTask = Task {
             defer {
-                isLoading = false
-                isUsingAgent = false
+                if activeSearchID == searchID {
+                    isLoading = false
+                    isUsingAgent = false
+                    searchTask = nil
+                    activeSearchID = nil
+                }
             }
             do {
                 let shouldUseAgent = !defaultQuery && GitHubSearchQueryResolver.requiresAgent(request)
@@ -111,24 +131,29 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 } else {
                     resolved = GitHubSearchQueryResolver.directQuery(request, scope: .projects)
                 }
-                let qualifiedQuery = "\(resolved) archived:false stars:>=5"
-                let repositories = try await github.searchRepositories(query: qualifiedQuery, page: 1)
-                let candidates = GitHubFuzzySearch.sorted(repositories, query: request)
-                let found = await Self.marketplaceApplications(
-                    from: candidates,
-                    platform: platform,
+                let queries = shouldUseAgent || defaultQuery
+                    ? [resolved]
+                    : GitHubSearchQueryResolver.marketplaceQueries(for: request)
+                let batch = try await Self.searchRepositories(
+                    queries: queries,
+                    page: 1,
                     github: github
                 )
-                guard !Task.isCancelled else { return }
+                let candidates = GitHubFuzzySearch.sorted(batch.repositories, query: request)
+                guard !Task.isCancelled, activeSearchID == searchID else { return }
                 searchInput = request
-                resolvedSearchQuery = qualifiedQuery
+                resolvedSearchQueries = queries
                 searchPage = 1
-                canLoadMore = repositories.count == 30
-                applications = found
-                select(found.first)
+                canLoadMore = batch.hasMore
+                await loadMarketplaceApplications(
+                    from: candidates,
+                    platform: platform,
+                    replacingCurrentResults: true
+                )
             } catch is CancellationError {
                 return
             } catch {
+                guard activeSearchID == searchID else { return }
                 self.error = L10n.format("marketplace.error.search", error.localizedDescription)
             }
         }
@@ -138,10 +163,10 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         guard canLoadMore,
               !isLoading,
               !isLoadingMore,
-              !resolvedSearchQuery.isEmpty else { return }
+              !resolvedSearchQueries.isEmpty else { return }
         let nextPage = searchPage + 1
         let request = searchInput
-        let resolved = resolvedSearchQuery
+        let queries = resolvedSearchQueries
         let platform = platform
         let github = github
         loadMoreTask?.cancel()
@@ -152,18 +177,20 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 loadMoreTask = nil
             }
             do {
-                let repositories = try await github.searchRepositories(query: resolved, page: nextPage)
-                let candidates = GitHubFuzzySearch.sorted(repositories, query: request)
-                let found = await Self.marketplaceApplications(
-                    from: candidates,
-                    platform: platform,
+                let batch = try await Self.searchRepositories(
+                    queries: queries,
+                    page: nextPage,
                     github: github
                 )
+                let candidates = GitHubFuzzySearch.sorted(batch.repositories, query: request)
                 guard !Task.isCancelled, self.platform == platform else { return }
-                var known = Set(applications.map(\.id))
-                applications.append(contentsOf: found.filter { known.insert($0.id).inserted })
                 searchPage = nextPage
-                canLoadMore = repositories.count == 30
+                canLoadMore = batch.hasMore
+                await loadMarketplaceApplications(
+                    from: candidates,
+                    platform: platform,
+                    replacingCurrentResults: false
+                )
             } catch is CancellationError {
                 return
             } catch {
@@ -174,6 +201,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
 
     func select(_ application: MarketplaceApplication?) {
         detailTask?.cancel()
+        readmeTask?.cancel()
         translationTask?.cancel()
         translationCacheTask?.cancel()
         isTranslating = false
@@ -183,14 +211,58 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         translations = [:]
         activeTranslationTarget = nil
         translationError = nil
+        selectedReadme = nil
+        selectedLogoURL = application?.ownerAvatarURL
+        isLoadingReadme = application != nil
+        isLoadingReleases = false
+        loadedReleaseApplicationID = nil
+        detailError = nil
         guard let application else { return }
         restoreTranslations(for: application, release: application.latestRelease)
         let github = self.github
+        readmeTask = Task {
+            defer {
+                if selectedApplication?.id == application.id {
+                    isLoadingReadme = false
+                    readmeTask = nil
+                }
+            }
+            do {
+                let document = try await github.readme(for: application.repository)
+                guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
+                selectedReadme = document
+                selectedLogoURL = document.flatMap { GitHubReadmeHTML.primaryImageURL(in: $0) }
+                    ?? application.ownerAvatarURL
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedApplication?.id == application.id else { return }
+                selectedReadme = nil
+                selectedLogoURL = application.ownerAvatarURL
+            }
+        }
+    }
+
+    func loadReleasesIfNeeded() {
+        guard let application = selectedApplication,
+              loadedReleaseApplicationID != application.id,
+              !isLoadingReleases else { return }
+        detailTask?.cancel()
+        isLoadingReleases = true
+        detailError = nil
+        let github = self.github
         detailTask = Task {
+            defer {
+                if selectedApplication?.id == application.id {
+                    isLoadingReleases = false
+                    detailTask = nil
+                }
+            }
             do {
                 let loaded = try await github.releases(for: application.repository)
                 guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
                 releases = loaded
+                loadedReleaseApplicationID = application.id
                 if let release = loaded.first(where: { $0.id == selectedReleaseID }) ?? loaded.first {
                     selectedReleaseID = release.id
                     restoreTranslations(for: application, release: release)
@@ -199,7 +271,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 return
             } catch {
                 guard selectedApplication?.id == application.id else { return }
-                self.error = L10n.format("marketplace.error.releases", error.localizedDescription)
+                detailError = L10n.format("marketplace.error.releases", error.localizedDescription)
             }
         }
     }
@@ -363,33 +435,108 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         }
     }
 
-    private static func marketplaceApplications(
-        from repositories: [GitHubRepository],
-        platform: MarketplacePlatform,
-        github: any GitHubServing
-    ) async -> [MarketplaceApplication] {
-        await withTaskGroup(of: MarketplaceApplication?.self) { group in
-            var iterator = repositories.makeIterator()
-            for _ in 0..<min(6, repositories.count) {
-                guard let repository = iterator.next() else { break }
+    private struct RepositorySearchBatch: Sendable {
+        let repositories: [GitHubRepository]
+        let hasMore: Bool
+    }
+
+    private struct RepositoryQueryResult: Sendable {
+        let index: Int
+        let repositories: [GitHubRepository]?
+        let errorDescription: String?
+    }
+
+    private static func searchRepositories(
+        queries: [String],
+        page: Int,
+        github: any MarketplaceGitHubServing
+    ) async throws -> RepositorySearchBatch {
+        let results = await withTaskGroup(of: RepositoryQueryResult.self) { group in
+            for (index, query) in queries.enumerated() {
                 group.addTask {
-                    await marketplaceApplication(from: repository, platform: platform, github: github)
-                }
-            }
-            var values: [MarketplaceApplication] = []
-            while let value = await group.next() {
-                if let value { values.append(value) }
-                if let repository = iterator.next() {
-                    group.addTask {
-                        await marketplaceApplication(from: repository, platform: platform, github: github)
+                    do {
+                        return RepositoryQueryResult(
+                            index: index,
+                            repositories: try await github.searchRepositories(query: query, page: page),
+                            errorDescription: nil
+                        )
+                    } catch {
+                        return RepositoryQueryResult(
+                            index: index,
+                            repositories: nil,
+                            errorDescription: error.localizedDescription
+                        )
                     }
                 }
             }
-            return values.sorted {
-                if $0.repository.stars != $1.repository.stars {
-                    return $0.repository.stars > $1.repository.stars
+            var values: [RepositoryQueryResult] = []
+            for await value in group { values.append(value) }
+            return values.sorted { $0.index < $1.index }
+        }
+        let successful = results.compactMap(\.repositories)
+        guard !successful.isEmpty else {
+            throw GitHubServiceError.commandFailed(
+                results.compactMap(\.errorDescription).first
+                    ?? L10n.text("marketplace.error.search.empty_response")
+            )
+        }
+        var known = Set<String>()
+        let repositories = successful
+            .flatMap { $0 }
+            .filter { known.insert($0.id).inserted }
+        return RepositorySearchBatch(
+            repositories: repositories,
+            hasMore: successful.contains(where: { $0.count == 30 })
+        )
+    }
+
+    private func loadMarketplaceApplications(
+        from repositories: [GitHubRepository],
+        platform: MarketplacePlatform,
+        replacingCurrentResults: Bool
+    ) async {
+        let github = self.github
+        let existing = replacingCurrentResults ? [] : applications
+        await withTaskGroup(of: (Int, MarketplaceApplication?).self) { group in
+            var iterator = repositories.makeIterator()
+            var nextIndex = 0
+            for _ in 0..<min(6, repositories.count) {
+                guard let repository = iterator.next() else { break }
+                let index = nextIndex
+                nextIndex += 1
+                group.addTask {
+                    (
+                        index,
+                        await Self.marketplaceApplication(from: repository, platform: platform, github: github)
+                    )
                 }
-                return $0.repository.fullName < $1.repository.fullName
+            }
+            var pageValues: [Int: MarketplaceApplication] = [:]
+            while let (index, value) = await group.next() {
+                guard !Task.isCancelled, self.platform == platform else {
+                    group.cancelAll()
+                    return
+                }
+                if let value { pageValues[index] = value }
+                var known = Set(existing.map(\.id))
+                let orderedPage = pageValues
+                    .sorted { $0.key < $1.key }
+                    .map(\.value)
+                    .filter { known.insert($0.id).inserted }
+                applications = existing + orderedPage
+                if selectedApplication == nil, let first = applications.first {
+                    select(first)
+                }
+                if let repository = iterator.next() {
+                    let index = nextIndex
+                    nextIndex += 1
+                    group.addTask {
+                        (
+                            index,
+                            await Self.marketplaceApplication(from: repository, platform: platform, github: github)
+                        )
+                    }
+                }
             }
         }
     }
@@ -397,10 +544,9 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     private static func marketplaceApplication(
         from repository: GitHubRepository,
         platform: MarketplacePlatform,
-        github: any GitHubServing
+        github: any MarketplaceGitHubServing
     ) async -> MarketplaceApplication? {
-        guard let releases = try? await github.releases(for: repository),
-              let latest = releases.first(where: { !$0.assets.isEmpty }) else { return nil }
+        guard let latest = try? await github.marketplaceRelease(for: repository) else { return nil }
         let assets = latest.assets.filter { platform.supports($0) }
         guard platform == .all ? !latest.assets.isEmpty : !assets.isEmpty else { return nil }
         return MarketplaceApplication(
@@ -423,19 +569,21 @@ final class GitHubMarketplaceViewModel: ObservableObject {
 
 #if DEBUG
     private func loadPreviewFixture() {
-        guard let repositoryURL = URL(string: "https://github.com/ZIJIU522/GitGatto"),
-              let diskImageURL = URL(string: "https://github.com/ZIJIU522/GitGatto/releases/download/v0.16.2/GitGatto-0.16.2-universal.dmg"),
-              let archiveURL = URL(string: "https://github.com/ZIJIU522/GitGatto/releases/download/v0.16.2/GitGatto-0.16.2-macos.zip"),
-              let releaseURL = URL(string: "https://github.com/ZIJIU522/GitGatto/releases/tag/v0.16.2") else { return }
+        guard let repositoryURL = URL(string: "https://github.com/Lincb522/GitGatto"),
+              let repositoryRootURL = URL(string: "https://github.com/Lincb522/GitGatto/blob/main/"),
+              let assetRootURL = URL(string: "https://raw.githubusercontent.com/Lincb522/GitGatto/main/"),
+              let appIconURL = URL(string: "https://raw.githubusercontent.com/Lincb522/GitGatto/main/Assets/GitGatto-AppIcon.svg"),
+              let diskImageURL = URL(string: "https://github.com/Lincb522/GitGatto/releases/download/v0.18.4/GitGatto-0.18.4.dmg"),
+              let releaseURL = URL(string: "https://github.com/Lincb522/GitGatto/releases/tag/v0.18.4") else { return }
         let repository = GitHubRepository(
-            fullName: "ZIJIU522/GitGatto",
+            fullName: "Lincb522/GitGatto",
             name: "GitGatto",
-            owner: "ZIJIU522",
+            owner: "Lincb522",
             description: L10n.text("about.product"),
             webURL: repositoryURL,
-            stars: 268,
-            forks: 24,
-            openIssues: 8,
+            stars: 1,
+            forks: 0,
+            openIssues: 0,
             language: "Swift",
             updatedAt: Date(),
             isPrivate: false,
@@ -444,28 +592,19 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         let assets = [
             GitHubReleaseAsset(
                 id: 1,
-                name: "GitGatto-0.16.2-universal.dmg",
+                name: "GitGatto-0.18.4.dmg",
                 size: 28_420_096,
                 downloadCount: 1_842,
                 contentType: "application/x-apple-diskimage",
                 downloadURL: diskImageURL,
                 createdAt: Date().addingTimeInterval(-86_400)
-            ),
-            GitHubReleaseAsset(
-                id: 2,
-                name: "GitGatto-0.16.2-macos.zip",
-                size: 27_160_576,
-                downloadCount: 936,
-                contentType: "application/zip",
-                downloadURL: archiveURL,
-                createdAt: Date().addingTimeInterval(-86_400)
             )
         ]
         let release = GitHubRelease(
-            id: 16_002,
-            tagName: "v0.16.2",
-            name: "GitGatto 0.16.2",
-            body: "## 本次更新\n\n- 项目代码目录支持图片、视频与 SVG 预览。\n- 新增发行版下载与下载管理。\n- 新增应用仓库与平台筛选。\n- Agent 支持自然语言检索与 README 美化。",
+            id: 18_004,
+            tagName: "v0.18.4",
+            name: "GitGatto 0.18.4",
+            body: "## 本次更新\n\n- 全量语言图标资源已更新。\n- 提升小尺寸图标的清晰度。",
             publishedAt: Date().addingTimeInterval(-86_400),
             webURL: releaseURL,
             isPrerelease: false,
@@ -479,6 +618,27 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         applications = [application]
         selectedApplication = application
         releases = [release]
+        selectedLogoURL = appIconURL
+        selectedReadme = GitHubReadmeDocument(
+            path: "README.md",
+            html: """
+            <h1>GitGatto</h1>
+            <p>原生构建、由 Agent 驱动的 Git 管理工具，让改动审阅、仓库管理与团队协作自然衔接。</p>
+            <h2>核心能力</h2>
+            <ul>
+              <li>查看工作区改动、提交历史、分支与仓库文件。</li>
+              <li>Agent 始终在当前仓库工作，可起草提交、处理错误并执行 Git 操作。</li>
+              <li>搜索 GitHub 项目与应用发行版，直接下载并管理安装包。</li>
+            </ul>
+            <h2>技术栈</h2>
+            <p>Swift 6 · SwiftUI · AppKit · WebKit · GitHub CLI</p>
+            """,
+            linkBaseURL: repositoryRootURL,
+            linkRootURL: repositoryRootURL,
+            assetBaseURL: assetRootURL,
+            assetRootURL: assetRootURL
+        )
+        isLoadingReadme = false
     }
 #endif
 }

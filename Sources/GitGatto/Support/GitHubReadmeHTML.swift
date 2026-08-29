@@ -20,6 +20,34 @@ enum GitHubReadmeHTML {
         }
     }
 
+    static func primaryImageURL(in document: GitHubReadmeDocument) -> URL? {
+        let html = normalized(
+            document.html,
+            linkBaseURL: document.linkBaseURL,
+            linkRootURL: document.linkRootURL,
+            assetBaseURL: document.assetBaseURL,
+            assetRootURL: document.assetRootURL
+        )
+        guard let expression = try? NSRegularExpression(
+            pattern: #"(?is)<img\b[^>]*\bsrc\s*=\s*[\"']([^\"']+)[\"'][^>]*>"#
+        ) else { return nil }
+        let range = NSRange(html.startIndex..<html.endIndex, in: html)
+        for match in expression.matches(in: html, range: range).prefix(24) {
+            guard let sourceRange = Range(match.range(at: 1), in: html) else { continue }
+            let source = String(html[sourceRange])
+            let lowercased = source.lowercased()
+            guard !lowercased.hasPrefix("data:"),
+                  !lowercased.contains("img.shields.io"),
+                  !lowercased.contains("badge"),
+                  !lowercased.contains("coverage"),
+                  !lowercased.contains("status.svg"),
+                  let url = URL(string: source),
+                  ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { continue }
+            return url
+        }
+        return nil
+    }
+
     static func relativeAssetReferences(in html: String) -> [String] {
         var references: [String] = []
         _ = rewriteAttributes(in: html) { name, value in
