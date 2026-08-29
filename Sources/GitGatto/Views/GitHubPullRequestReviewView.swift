@@ -19,7 +19,7 @@ struct GitHubPullRequestReviewView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
 
             if model.isLoadingPullRequestReview, model.pullRequestReviewCenter == nil {
-                reviewLoading(palette)
+                reviewLoading()
             } else if let center = model.pullRequestReviewCenter {
                 tabContent(center, palette: palette)
             } else if let error = model.pullRequestReviewError {
@@ -38,7 +38,7 @@ struct GitHubPullRequestReviewView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: theme == .console ? 4 : 9, style: .continuous)
                     .fill(pullRequest.isDraft ? palette.warningSoft : palette.successSoft)
-                Image(gattoSymbol: "arrow.triangle.pull")
+                Image(gattoSymbol: "git.pull.request")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(pullRequest.isDraft ? palette.warning : palette.success)
             }
@@ -164,7 +164,7 @@ struct GitHubPullRequestReviewView: View {
                             author: pullRequest.author,
                             metadata: L10n.text("github.review.opened_pull_request"),
                             content: body,
-                            systemImage: "arrow.triangle.pull",
+                            systemImage: "git.pull.request",
                             tint: palette.success,
                             theme: theme
                         )
@@ -391,14 +391,8 @@ struct GitHubPullRequestReviewView: View {
         }
     }
 
-    private func reviewLoading(_ palette: AppPalette) -> some View {
-        VStack(spacing: 10) {
-            ProgressView().controlSize(.small)
-            Text(L10n.text("github.review.loading"))
-                .font(font(size: 11.5, weight: .medium))
-                .foregroundStyle(palette.mutedInk)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    private func reviewLoading() -> some View {
+        GattoLoadingState(text: L10n.text("github.review.loading"))
     }
 
     private func errorView(_ message: String, palette: AppPalette) -> some View {

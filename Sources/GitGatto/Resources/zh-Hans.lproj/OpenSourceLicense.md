@@ -12,4 +12,4 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 ## 第三方组件
 
-GitGatto 使用 Sparkle 2 处理应用更新，并使用 Devicon SVG 资源显示编程语言图标；二者均依据 MIT License 提供。完整归属信息见项目根目录 `THIRD_PARTY_NOTICES.md`。
+GitGatto 使用 Sparkle 2、Devicon 编程语言资源和 Zappicon 界面图标。归属信息与许可条款见项目根目录 `THIRD_PARTY_NOTICES.md`。

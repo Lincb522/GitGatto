@@ -1,7 +1,5 @@
-import AVKit
 import AppKit
 import SwiftUI
-import WebKit
 
 struct GitHubWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
@@ -207,7 +205,9 @@ struct GitHubWorkspaceView: View {
 
             Rectangle().fill(palette.divider).frame(height: 1)
 
-            if model.githubDeveloperResults.isEmpty && !model.isLoadingGitHub {
+            if model.githubDeveloperResults.isEmpty && model.isLoadingGitHub {
+                GattoLoadingState(text: L10n.text("loading.generic"))
+            } else if model.githubDeveloperResults.isEmpty {
                 VStack(spacing: 8) {
                     Image(gattoSymbol: "person.crop.circle.badge.questionmark")
                         .font(.system(size: 20))
@@ -236,6 +236,12 @@ struct GitHubWorkspaceView: View {
                                 model.selectGitHubDeveloper(developer)
                             }
                         }
+                        if model.canLoadMoreGitHubSearch {
+                            loadMoreButton(isLoading: model.isLoadingMoreGitHubSearch) {
+                                model.loadMoreGitHubSearch()
+                            }
+                            .padding(.vertical, 7)
+                        }
                     }
                     .padding(8)
                 }
@@ -247,8 +253,7 @@ struct GitHubWorkspaceView: View {
     @ViewBuilder
     private func developerDetail(_ palette: AppPalette) -> some View {
         if model.isLoadingGitHubDeveloper, model.githubDeveloperProfile == nil {
-            ProgressView(L10n.text("github.developer.loading"))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            GattoLoadingState(text: L10n.text("github.developer.loading"))
         } else if let profile = model.githubDeveloperProfile {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -316,6 +321,12 @@ struct GitHubWorkspaceView: View {
                                 model.openDeveloperRepository(repository)
                             }
                         }
+                        if model.canLoadMoreGitHubDeveloperRepositories {
+                            loadMoreButton(isLoading: model.isLoadingMoreGitHubDeveloperRepositories) {
+                                model.loadMoreGitHubDeveloperRepositories()
+                            }
+                            .padding(.vertical, 8)
+                        }
                     }
                     .padding(.top, 10)
 
@@ -376,7 +387,9 @@ struct GitHubWorkspaceView: View {
 
             Rectangle().fill(palette.divider).frame(height: 1)
 
-            if model.displayedGitHubRepositories.isEmpty && !model.isLoadingGitHub {
+            if model.displayedGitHubRepositories.isEmpty && model.isLoadingGitHub {
+                GattoLoadingState(text: L10n.text("loading.generic"))
+            } else if model.displayedGitHubRepositories.isEmpty {
                 VStack(spacing: 8) {
                     Image(gattoSymbol: "magnifyingglass")
                         .font(.system(size: 18))
@@ -396,6 +409,12 @@ struct GitHubWorkspaceView: View {
                             ) {
                                 model.selectGitHubRepository(repository)
                             }
+                        }
+                        if model.hasGitHubSearched, model.canLoadMoreGitHubSearch {
+                            loadMoreButton(isLoading: model.isLoadingMoreGitHubSearch) {
+                                model.loadMoreGitHubSearch()
+                            }
+                            .padding(.vertical, 7)
                         }
                     }
                     .padding(8)
@@ -421,6 +440,24 @@ struct GitHubWorkspaceView: View {
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+
+    private func loadMoreButton(isLoading: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                if isLoading {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(gattoSymbol: "chevron.down.circle")
+                }
+                Text(L10n.text(isLoading ? "github.search.loading_more" : "github.search.load_more"))
+            }
+            .font(.system(size: 11.5, weight: .semibold))
+            .frame(maxWidth: .infinity)
+            .frame(height: 34)
+        }
+        .buttonStyle(SecondaryButtonStyle())
+        .disabled(isLoading)
     }
 
     @ViewBuilder
@@ -673,9 +710,9 @@ struct GitHubWorkspaceView: View {
     private func projectTabBar(_ palette: AppPalette) -> some View {
         HStack(spacing: 4) {
             projectTab(.overview, image: "doc.richtext", palette: palette)
-            projectTab(.code, image: "chevron.left.forwardslash.chevron.right", palette: palette)
+            projectTab(.code, image: "code.source", palette: palette)
             projectTab(.releases, image: "shippingbox", palette: palette, count: model.githubReleases.count)
-            projectTab(.pullRequests, image: "arrow.triangle.pull", palette: palette, count: model.githubPullRequests.count)
+            projectTab(.pullRequests, image: "git.pull.request", palette: palette, count: model.githubPullRequests.count)
             projectTab(.actions, image: "play.circle", palette: palette, count: model.githubActionRuns.count)
             Spacer()
         }
@@ -732,8 +769,7 @@ struct GitHubWorkspaceView: View {
     @ViewBuilder
     private func readmeView(_ palette: AppPalette) -> some View {
         if model.isLoadingGitHubReadme {
-            ProgressView(L10n.text("github.readme.loading"))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            GattoLoadingState(text: L10n.text("github.readme.loading"))
         } else if let document = model.displayedGitHubReadme {
             VStack(spacing: 0) {
                 readmeToolbar(document, palette: palette)
@@ -844,7 +880,7 @@ struct GitHubWorkspaceView: View {
                         model.translateGitHubReadme(to: .english)
                     }
                 } label: {
-                    GattoLabel(L10n.text("codex.action.translate"), systemImage: "character.book.closed")
+                    GattoLabel(L10n.text("codex.action.translate"), systemImage: "ai.translation")
                         .font(.system(size: 10.5, weight: .semibold))
                 }
                 .menuStyle(.borderlessButton)
@@ -909,9 +945,7 @@ struct GitHubWorkspaceView: View {
                 Rectangle().fill(palette.divider).frame(height: 1)
 
                 if model.isLoadingGitHubContents {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    GattoLoadingState(text: L10n.text("loading.generic"))
                 } else if let error = model.githubContentsError, model.selectedGitHubContent == nil {
                     projectError(error, palette: palette)
                         .padding(12)
@@ -1034,9 +1068,8 @@ struct GitHubWorkspaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 if model.isLoadingPullRequests {
-                    ProgressView(L10n.text("github.pull_requests.loading"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 34)
+                    GattoLoadingState(text: L10n.text("github.pull_requests.loading"))
+                        .frame(minHeight: 240)
                 } else if let error = model.githubPullRequestsError {
                     projectError(error, palette: palette)
                 } else if model.githubPullRequests.isEmpty {
@@ -1188,16 +1221,17 @@ private struct GitHubContentRow: View {
 
     private var iconName: String {
         switch item.kind {
-        case .directory: "folder.fill"
+        case .directory: return "folder.fill"
         case .file:
-            switch (item.name as NSString).pathExtension.lowercased() {
-            case "png", "jpg", "jpeg", "gif", "webp", "heic", "svg": "photo"
-            case "mov", "mp4", "m4v", "webm": "play.circle"
-            case "zip", "gz", "xz", "dmg", "pkg": "archivebox"
-            default: "doc.text"
+            if let mediaKind = RepositoryMediaKind(fileName: item.name) {
+                return mediaKind == .video ? "play.circle" : "photo"
             }
-        case .symlink: "link"
-        case .submodule: "shippingbox"
+            switch (item.name as NSString).pathExtension.lowercased() {
+            case "zip", "gz", "xz", "dmg", "pkg": return "archivebox"
+            default: return "doc.text"
+            }
+        case .symlink: return "link"
+        case .submodule: return "shippingbox"
         }
     }
 }
@@ -1207,7 +1241,6 @@ private struct GitHubCodeFileView: View {
     let openInApp: (URL) -> Void
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
-    @State private var svgMode: SVGPresentationMode = .preview
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
@@ -1220,8 +1253,7 @@ private struct GitHubCodeFileView: View {
             }
 
             if model.isLoadingGitHubFile {
-                ProgressView(L10n.text("github.code.loading"))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                GattoLoadingState(text: L10n.text("github.code.loading"))
             } else if let error = model.githubContentsError, model.selectedGitHubContent != nil {
                 errorView(error, palette: palette)
             } else if let document = model.githubFileDocument {
@@ -1289,42 +1321,16 @@ private struct GitHubCodeFileView: View {
 
     @ViewBuilder
     private func fileBody(_ document: GitHubFileDocument, palette: AppPalette) -> some View {
-        switch GitHubMediaKind(fileName: document.name) {
-        case .image:
+        switch GitHubFilePresentationKind(fileName: document.name) {
+        case .media:
             if let url = document.localPreviewURL ?? document.downloadURL {
-                GitHubImagePreview(url: url, fileName: document.name)
+                RepositoryMediaPreview(
+                    url: url,
+                    fileName: document.name,
+                    svgSource: document.text
+                )
             } else {
                 binaryFallback(document, palette: palette)
-            }
-        case .video:
-            if let url = document.localPreviewURL ?? document.downloadURL {
-                GitHubVideoPreview(url: url)
-            } else {
-                binaryFallback(document, palette: palette)
-            }
-        case .svg:
-            VStack(spacing: 0) {
-                HStack {
-                    Picker("", selection: $svgMode) {
-                        Text(L10n.text("github.code.preview")).tag(SVGPresentationMode.preview)
-                        Text(L10n.text("github.code.source")).tag(SVGPresentationMode.source)
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: 180)
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .frame(height: 42)
-                .background(palette.surface)
-                Rectangle().fill(palette.divider).frame(height: 1)
-                if svgMode == .preview, let url = document.localPreviewURL ?? document.downloadURL {
-                    GitHubSVGPreview(url: url, colorScheme: colorScheme)
-                } else if let text = document.text {
-                    CodeDocumentView(content: text, fileName: document.name)
-                } else {
-                    binaryFallback(document, palette: palette)
-                }
             }
         case .text:
             if let text = document.text {
@@ -1354,23 +1360,17 @@ private struct GitHubCodeFileView: View {
         }
     }
 
-    private enum SVGPresentationMode: String, Hashable {
-        case preview
-        case source
-    }
-
-    private enum GitHubMediaKind {
-        case image
-        case video
-        case svg
+    private enum GitHubFilePresentationKind {
+        case media
         case text
         case binary
 
         init(fileName: String) {
+            if RepositoryMediaKind(fileName: fileName) != nil {
+                self = .media
+                return
+            }
             switch (fileName as NSString).pathExtension.lowercased() {
-            case "svg": self = .svg
-            case "png", "jpg", "jpeg", "gif", "webp", "heic", "bmp", "tiff": self = .image
-            case "mov", "mp4", "m4v", "webm": self = .video
             case "dmg", "pkg", "zip", "gz", "xz", "7z", "pdf", "woff", "woff2", "ttf": self = .binary
             default: self = .text
             }
@@ -1392,150 +1392,6 @@ private struct GitHubCodeFileView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-}
-
-private struct GitHubImagePreview: View {
-    let url: URL
-    let fileName: String
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var scale: CGFloat = 1
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Button { scale = max(0.25, scale - 0.25) } label: {
-                    Image(gattoSymbol: "minus")
-                }
-                .buttonStyle(.plain)
-                Text("\(Int(scale * 100))%")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(palette.subtleInk)
-                    .frame(width: 46)
-                Button { scale = min(4, scale + 0.25) } label: {
-                    Image(gattoSymbol: "plus")
-                }
-                .buttonStyle(.plain)
-                Button(L10n.text("github.code.fit")) { scale = 1 }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(palette.primary)
-                Spacer()
-                Text(fileName)
-                    .font(.system(size: 9.5, design: .monospaced))
-                    .foregroundStyle(palette.subtleInk)
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 40)
-            .background(palette.surface)
-            Rectangle().fill(palette.divider).frame(height: 1)
-
-            ScrollView([.horizontal, .vertical]) {
-                imageContent(palette: palette)
-                .frame(minWidth: 360, minHeight: 320)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .background(CheckerboardBackground(colorScheme: colorScheme))
-        }
-    }
-
-    @ViewBuilder
-    private func imageContent(palette: AppPalette) -> some View {
-        if url.isFileURL, let image = NSImage(contentsOf: url) {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFit()
-                .scaleEffect(scale)
-                .padding(28)
-        } else {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case let .success(image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .scaleEffect(scale)
-                        .padding(28)
-                case let .failure(error):
-                    Text(error.localizedDescription)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(palette.danger)
-                        .padding(24)
-                default:
-                    ProgressView().padding(60)
-                }
-            }
-        }
-    }
-}
-
-private struct CheckerboardBackground: View {
-    let colorScheme: ColorScheme
-
-    var body: some View {
-        Canvas { context, size in
-            let cell: CGFloat = 14
-            let first = colorScheme == .dark ? Color.white.opacity(0.035) : Color.black.opacity(0.035)
-            let second = colorScheme == .dark ? Color.white.opacity(0.07) : Color.black.opacity(0.07)
-            var row = 0
-            var y: CGFloat = 0
-            while y < size.height {
-                var column = 0
-                var x: CGFloat = 0
-                while x < size.width {
-                    context.fill(
-                        Path(CGRect(x: x, y: y, width: cell, height: cell)),
-                        with: .color((row + column).isMultiple(of: 2) ? first : second)
-                    )
-                    x += cell
-                    column += 1
-                }
-                y += cell
-                row += 1
-            }
-        }
-    }
-}
-
-private struct GitHubVideoPreview: View {
-    let url: URL
-    @State private var player: AVPlayer
-
-    init(url: URL) {
-        self.url = url
-        _player = State(initialValue: AVPlayer(url: url))
-    }
-
-    var body: some View {
-        VideoPlayer(player: player)
-            .padding(18)
-            .onDisappear { player.pause() }
-    }
-}
-
-private struct GitHubSVGPreview: NSViewRepresentable {
-    let url: URL
-    let colorScheme: ColorScheme
-
-    func makeNSView(context: Context) -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        configuration.defaultWebpagePreferences.allowsContentJavaScript = false
-        return WKWebView(frame: .zero, configuration: configuration)
-    }
-
-    func updateNSView(_ webView: WKWebView, context: Context) {
-        if url.isFileURL {
-            webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
-            return
-        }
-        let background = colorScheme == .dark ? "#111318" : "#f5f6f8"
-        let html = """
-        <!doctype html><meta name="viewport" content="width=device-width">
-        <style>html,body{height:100%;margin:0;background:\(background)}body{display:grid;place-items:center;padding:28px;box-sizing:border-box}img{max-width:100%;max-height:100%;object-fit:contain}</style>
-        <img src="\(url.absoluteString.replacingOccurrences(of: "\"", with: "&quot;"))">
-        """
-        webView.loadHTMLString(html, baseURL: url.deletingLastPathComponent())
     }
 }
 
@@ -1680,7 +1536,7 @@ private struct GitHubPullRequestRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(alignment: .top, spacing: 10) {
-                Image(gattoSymbol: "arrow.triangle.pull")
+                Image(gattoSymbol: "git.pull.request")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(palette.success)
                     .frame(width: 24, height: 24)

@@ -231,7 +231,7 @@ struct CodexWorkspaceView: View {
                             }
                         }
                     } label: {
-                        GattoLabel(L10n.text("codex.action.translate"), systemImage: "character.book.closed")
+                        GattoLabel(L10n.text("codex.action.translate"), systemImage: "ai.translation")
                             .font(.system(size: 11.5, weight: .semibold))
                     }
                     .menuStyle(.borderlessButton)

@@ -3,9 +3,11 @@ import SwiftUI
 struct DiffInspectorView: View {
     let change: WorkingTreeChange?
     let document: DiffDocument?
+    let previewURL: URL?
 
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @State private var presentation: Presentation = .preview
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
@@ -17,7 +19,7 @@ struct DiffInspectorView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                             .fill(palette.primarySoft)
-                        Image(gattoSymbol: "chevron.left.forwardslash.chevron.right")
+                        Image(gattoSymbol: changeIcon(for: change.path))
                             .font(.system(size: 12.5, weight: .semibold))
                             .foregroundStyle(palette.primary)
                     }
@@ -34,6 +36,15 @@ struct DiffInspectorView: View {
                             .truncationMode(.middle)
                     }
                     Spacer()
+                    if previewURL != nil {
+                        Picker("", selection: $presentation) {
+                            Text(L10n.text("media.preview")).tag(Presentation.preview)
+                            Text(L10n.text("media.changes")).tag(Presentation.changes)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 150)
+                    }
                     if let document {
                         HStack(spacing: 8) {
                             Text("+\(document.lines.filter { $0.kind.isAddition }.count)")
@@ -71,19 +82,38 @@ struct DiffInspectorView: View {
                     titleKey: "diff.empty.title",
                     bodyKey: "diff.empty.body"
                 )
+            } else if presentation == .preview,
+                      let previewURL,
+                      let change {
+                RepositoryMediaPreview(
+                    url: previewURL,
+                    fileName: change.path
+                )
             } else if let document {
                 DiffCodeView(document: document)
             } else {
-                VStack {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(palette.primary)
-                }
+                GattoLoadingState(text: L10n.text("loading.generic"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(palette.background)
             }
         }
         .background(palette.background)
+        .onChange(of: change?.id) { _, _ in
+            presentation = .preview
+        }
+    }
+
+    private enum Presentation: Hashable {
+        case preview
+        case changes
+    }
+
+    private func changeIcon(for path: String) -> String {
+        switch RepositoryMediaKind(fileName: path) {
+        case .image, .svg: "photo"
+        case .video: "play.circle"
+        case nil: "chevron.left.forwardslash.chevron.right"
+        }
     }
 }
 

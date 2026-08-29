@@ -265,6 +265,134 @@ struct ConsoleBreathingLight: View {
     }
 }
 
+struct GattoLoadingGlyph: View {
+    var size: CGFloat = 20
+
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        let theme = AppVisualTheme.resolved(themeRaw)
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { context in
+            let phase = reduceMotion
+                ? 0.14
+                : context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 0.92) / 0.92
+
+            switch theme {
+            case .standard:
+                orbitGlyph(phase: phase, track: palette.primarySoft.opacity(0.84))
+            case .softGlass:
+                orbitGlyph(phase: phase, track: Color.white.opacity(colorScheme == .dark ? 0.14 : 0.70))
+                    .padding(size * 0.10)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay {
+                        Circle().stroke(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.74), lineWidth: 1)
+                    }
+            case .console:
+                consoleGlyph(phase: phase)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+
+    private func orbitGlyph(phase: Double, track: Color) -> some View {
+        let lineWidth = max(1.8, size * 0.105)
+        return ZStack {
+            Circle()
+                .stroke(track, lineWidth: lineWidth)
+            Circle()
+                .trim(from: 0.04, to: 0.34)
+                .stroke(.tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(phase * 360))
+            Circle()
+                .fill(.tint)
+                .frame(width: lineWidth * 1.35, height: lineWidth * 1.35)
+                .offset(y: -(size - lineWidth) * 0.5)
+                .rotationEffect(.degrees(phase * 360))
+        }
+        .padding(lineWidth * 0.72)
+    }
+
+    private func consoleGlyph(phase: Double) -> some View {
+        HStack(alignment: .center, spacing: size * 0.09) {
+            ForEach(0..<3, id: \.self) { index in
+                let wave = (sin((phase * .pi * 2) - Double(index) * 0.9) + 1) * 0.5
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(.tint)
+                    .frame(width: size * 0.18, height: size * (0.30 + wave * 0.48))
+                    .opacity(reduceMotion ? 0.82 : 0.42 + wave * 0.58)
+            }
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+struct GattoLoadingState: View {
+    var text: String? = nil
+    var size: CGFloat = 28
+
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        let theme = AppVisualTheme.resolved(themeRaw)
+        VStack(spacing: 11) {
+            GattoLoadingGlyph(size: size)
+            if let text, !text.isEmpty {
+                Text(text)
+                    .font(.system(size: 11.5, weight: .medium, design: theme == .console ? .monospaced : .default))
+                    .foregroundStyle(theme == .console ? palette.accent : palette.mutedInk)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(text ?? L10n.text("loading.generic"))
+    }
+}
+
+struct GattoProgressViewStyle: ProgressViewStyle {
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.controlSize) private var controlSize
+
+    @ViewBuilder
+    func makeBody(configuration: Configuration) -> some View {
+        let palette = AppPalette(colorScheme)
+        let theme = AppVisualTheme.resolved(themeRaw)
+        if let fraction = configuration.fractionCompleted {
+            VStack(alignment: .leading, spacing: 6) {
+                configuration.label
+                    .font(.system(size: 10.5, weight: .medium, design: theme == .console ? .monospaced : .default))
+                    .foregroundStyle(palette.mutedInk)
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(palette.divider)
+                        Capsule()
+                            .fill(.tint)
+                            .frame(width: proxy.size.width * min(1, max(0, fraction)))
+                    }
+                }
+                .frame(height: theme == .console ? 3 : 4)
+            }
+        } else {
+            HStack(spacing: controlSize == .small || controlSize == .mini ? 6 : 9) {
+                GattoLoadingGlyph(size: controlSize == .small || controlSize == .mini ? 15 : 20)
+                configuration.label
+                    .font(.system(size: 11.5, weight: .medium, design: theme == .console ? .monospaced : .default))
+                    .foregroundStyle(theme == .console ? palette.accent : palette.mutedInk)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(L10n.text("loading.generic"))
+        }
+    }
+}
+
 struct SectionLabel: View {
     let titleKey: String
     var count: Int?
@@ -318,40 +446,6 @@ struct OperationToast: View {
     }
 }
 
-struct RepositoryOperationBanner: View {
-    let operation: OperationKind
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var titleKey: String {
-        switch operation {
-        case .pull: "sync.progress.pull"
-        case .push: "sync.progress.push"
-        case .commitAndPush: "sync.progress.commit_push"
-        default: "sync.progress.working"
-        }
-    }
-
-    private var direction: SyncActivityGlyph.Direction {
-        operation == .pull ? .down : .up
-    }
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        HStack(spacing: 10) {
-            SyncActivityGlyph(direction: direction, size: 14)
-            Text(L10n.text(titleKey))
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(palette.ink)
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 14)
-        .frame(height: 40)
-        .appGlassPanel(cornerRadius: 12)
-        .accessibilityLabel(L10n.text(titleKey))
-    }
-}
-
 struct SyncActivityGlyph: View {
     enum Direction {
         case up
@@ -370,9 +464,7 @@ struct SyncActivityGlyph: View {
         Image(gattoSymbol: direction == .up ? "arrow.up" : "arrow.down")
             .font(.system(size: size, weight: .bold))
             .foregroundStyle(palette.primary)
-            .frame(width: size + 10, height: size + 10)
-            .background(palette.primarySoft)
-            .clipShape(Circle())
+            .frame(width: size + 4, height: size + 4)
             .offset(y: reduceMotion ? 0 : (isMoving ? movement : -movement))
             .opacity(reduceMotion ? 1 : (isMoving ? 1 : 0.62))
             .onAppear {

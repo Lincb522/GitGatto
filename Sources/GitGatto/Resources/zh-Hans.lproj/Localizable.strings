@@ -526,6 +526,7 @@
 "error.recovery.pull" = "处理本地改动、分支分歧或远端连接问题，然后重新拉取。";
 "error.recovery.git" = "根据完整 Git 输出修复当前仓库状态，然后重试该操作。";
 "error.recovery.agent" = "检查所选项目与 Agent CLI 状态，根据完整输出修复后重试。";
+"error.recovery.agent_timeout" = "Agent 已达到 15 分钟上限并停止。确认 CLI 仍可用后重试；长任务可在运行期间随时取消。";
 
 "settings.open" = "设置";
 "settings.title" = "设置";
@@ -980,3 +981,17 @@
 "marketplace.error.agent_install" = "Agent 安装失败：%@";
 "codex.skill.readme" = "README";
 "codex.prompt.readme" = "检查当前仓库的 README，基于真实项目内容给出可执行的结构和内容改进建议。";
+"github.search.load_more" = "加载更多";
+"github.search.loading_more" = "正在加载…";
+"loading.generic" = "正在加载…";
+"marketplace.translation.original" = "原文";
+"marketplace.error.translation" = "翻译失败：%@";
+"media.preview" = "预览";
+"media.source" = "代码";
+"media.fit" = "适应窗口";
+"media.quicklook" = "快速预览";
+"media.unavailable" = "无法预览此文件";
+"media.open_default" = "使用默认应用打开";
+"media.changes" = "改动";
+"media.preparing_video" = "正在准备视频…";
+"media.play" = "播放视频";

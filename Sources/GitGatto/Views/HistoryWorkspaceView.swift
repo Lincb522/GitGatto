@@ -16,9 +16,8 @@ struct HistoryWorkspaceView: View {
                         .frame(width: min(480, max(350, proxy.size.width * 0.44)))
                     Rectangle().fill(palette.divider).frame(width: 1)
                     CommitInspector(
-                        node: selectedNode,
-                        commit: model.selectedCommit,
-                        document: model.commitDiffDocument
+                        model: model,
+                        node: selectedNode
                     )
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
@@ -27,9 +26,8 @@ struct HistoryWorkspaceView: View {
                         .frame(width: min(470, max(350, proxy.size.width * 0.44)))
                         .appGlassPanel(cornerRadius: 14, elevated: false)
                     CommitInspector(
-                        node: selectedNode,
-                        commit: model.selectedCommit,
-                        document: model.commitDiffDocument
+                        model: model,
+                        node: selectedNode
                     )
                         .appGlassPanel(cornerRadius: 14, elevated: false)
                 }
@@ -40,9 +38,8 @@ struct HistoryWorkspaceView: View {
                         .frame(width: min(480, max(350, proxy.size.width * 0.43)))
                         .appConsolePanel()
                     CommitInspector(
-                        node: selectedNode,
-                        commit: model.selectedCommit,
-                        document: model.commitDiffDocument
+                        model: model,
+                        node: selectedNode
                     )
                         .appConsolePanel()
                 }
@@ -283,11 +280,14 @@ private struct CommitGraphRow: View {
 }
 
 private struct CommitInspector: View {
+    @ObservedObject var model: WorkspaceViewModel
     let node: CommitGraphNode?
-    let commit: CommitRecord?
-    let document: DiffDocument?
 
     @Environment(\.colorScheme) private var colorScheme
+    @State private var presentation: Presentation = .preview
+
+    private var commit: CommitRecord? { model.selectedCommit }
+    private var document: DiffDocument? { model.commitDiffDocument }
 
     private var diffStats: (files: Int, additions: Int, deletions: Int) {
         guard let document else { return (0, 0, 0) }
@@ -324,12 +324,59 @@ private struct CommitInspector: View {
                 .fill(palette.divider)
                 .frame(height: 1)
 
+            if !model.commitMediaItems.isEmpty {
+                HStack(spacing: 10) {
+                    Picker("", selection: $presentation) {
+                        Text(L10n.text("media.preview")).tag(Presentation.preview)
+                        Text(L10n.text("media.changes")).tag(Presentation.changes)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 150)
+
+                    if presentation == .preview {
+                        Menu {
+                            ForEach(model.commitMediaItems) { item in
+                                Button(item.path) {
+                                    model.selectCommitMediaItem(item)
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 7) {
+                                GattoIcon(
+                                    symbol: model.selectedCommitMediaItem?.kind == .video
+                                        ? "play.circle"
+                                        : "photo",
+                                    size: 14
+                                )
+                                Text(model.selectedCommitMediaItem?.path ?? "")
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                GattoIcon(symbol: "chevron.down", size: 10)
+                            }
+                            .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                        }
+                        .menuStyle(.borderlessButton)
+                        .frame(maxWidth: 360, alignment: .leading)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 42)
+                .background(palette.surface)
+                Rectangle().fill(palette.divider).frame(height: 1)
+            }
+
             if commit == nil {
                 InspectorEmptyState(
                     image: "clock.arrow.circlepath",
                     titleKey: "history.detail.empty.title",
                     bodyKey: "history.detail.empty.body"
                 )
+            } else if presentation == .preview,
+                      let item = model.selectedCommitMediaItem,
+                      let previewURL = model.commitMediaPreviewURL {
+                RepositoryMediaPreview(url: previewURL, fileName: item.path)
             } else if let document {
                 DiffCodeView(document: document)
             } else {
@@ -350,6 +397,14 @@ private struct CommitInspector: View {
             }
         }
         .background(palette.background)
+        .onChange(of: commit?.id) { _, _ in
+            presentation = .preview
+        }
+    }
+
+    private enum Presentation: Hashable {
+        case preview
+        case changes
     }
 
     private func wideHeader(commit: CommitRecord, palette: AppPalette) -> some View {

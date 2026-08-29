@@ -74,7 +74,7 @@ struct RepositorySidebar: View {
                 }
                 SidebarNavigationButton(
                     titleKey: "nav.timeMachine",
-                    systemImage: "clock.badge.checkmark",
+                    systemImage: "history.file",
                     count: model.repositoryFiles.isEmpty ? nil : model.repositoryFiles.count,
                     isSelected: model.selectedSection == .timeMachine
                 ) {
@@ -360,9 +360,9 @@ private struct AppearanceControl: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 2) {
-            appearanceButton(.system, image: "circle.lefthalf.filled")
-            appearanceButton(.light, image: "sun.max")
-            appearanceButton(.dark, image: "moon")
+            appearanceButton(.system, systemImage: "circle.lefthalf.filled")
+            appearanceButton(.light, systemImage: "sun.max")
+            appearanceButton(.dark, systemImage: "moon")
         }
         .padding(3)
         .background(palette.raisedSurface)
@@ -374,13 +374,13 @@ private struct AppearanceControl: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func appearanceButton(_ appearance: AppAppearance, image: String) -> some View {
+    private func appearanceButton(_ appearance: AppAppearance, systemImage: String) -> some View {
         let palette = AppPalette(colorScheme)
         let isSelected = selection == appearance.rawValue
         return Button {
             selection = appearance.rawValue
         } label: {
-            Image(gattoSymbol: image)
+            Image(gattoSymbol: systemImage)
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
                 .frame(maxWidth: .infinity)

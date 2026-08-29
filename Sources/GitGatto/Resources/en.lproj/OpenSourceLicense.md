@@ -12,4 +12,4 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 ## Third-party software
 
-GitGatto uses Sparkle 2 for application updates and Devicon SVG assets for programming-language icons. Both are available under the MIT License. See `THIRD_PARTY_NOTICES.md` in the repository for full attribution.
+GitGatto uses Sparkle 2, Devicon programming-language assets, and Zappicon interface icons. See `THIRD_PARTY_NOTICES.md` in the repository for attribution and license terms.

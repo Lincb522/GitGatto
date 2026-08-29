@@ -5,8 +5,8 @@ import Testing
 
 @Suite("Brand assets")
 struct BrandAssetTests {
-    @Test("Loads the complete generated UI icon set")
-    func generatedUIIconsLoad() throws {
+    @Test("Loads the complete Zappicon UI icon set")
+    func zappiconUIIconsLoad() throws {
         let resourceURL = try #require(AppResourceBundle.current.resourceURL)
         let enumerator = try #require(
             FileManager.default.enumerator(
@@ -15,11 +15,22 @@ struct BrandAssetTests {
             )
         )
         let iconURLs = enumerator.compactMap { $0 as? URL }.filter {
-            $0.pathExtension == "png" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
+            $0.pathExtension == "svg" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
         }
 
-        #expect(iconURLs.count == 119)
+        #expect(iconURLs.count == 126)
         #expect(GattoIconAssets.assetName(for: "arrow.clockwise") == "gatto-arrow-clockwise")
+        #expect(GattoIconAssets.assetName(for: "sun.max") == "gatto-sun-max")
+        #expect(GattoIconAssets.assetName(for: "moon") == "gatto-moon")
+        let source = try #require(
+            AppResourceBundle.current.url(
+                forResource: "gatto-arrow-clockwise",
+                withExtension: "svg",
+                subdirectory: "UIIcons"
+            ) ?? AppResourceBundle.current.url(forResource: "gatto-arrow-clockwise", withExtension: "svg")
+        )
+        let sourceImage = try #require(NSImage(contentsOf: source))
+        #expect(sourceImage.representations.contains { String(describing: type(of: $0)).contains("SVG") })
         let icon = GattoIconAssets.image(for: "arrow.clockwise")
         #expect(!icon.representations.isEmpty)
         #expect(icon.isTemplate)

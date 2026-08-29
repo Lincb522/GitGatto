@@ -122,20 +122,24 @@ struct ReleaseHistoryView: View {
                     .padding(12)
             }
 
-            ScrollView {
-                LazyVStack(spacing: theme == .console ? 2 : 4) {
-                    ForEach(manager.releaseNotes) { release in
-                        ReleaseHistoryRow(
-                            release: release,
-                            isCurrent: release.version == manager.currentVersion,
-                            isSelected: selectedRelease?.id == release.id,
-                            theme: theme
-                        ) {
-                            selectedReleaseID = release.id
+            if manager.releaseNotes.isEmpty, manager.isLoadingReleaseNotes {
+                GattoLoadingState(text: L10n.text("loading.generic"))
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: theme == .console ? 2 : 4) {
+                        ForEach(manager.releaseNotes) { release in
+                            ReleaseHistoryRow(
+                                release: release,
+                                isCurrent: release.version == manager.currentVersion,
+                                isSelected: selectedRelease?.id == release.id,
+                                theme: theme
+                            ) {
+                                selectedReleaseID = release.id
+                            }
                         }
                     }
+                    .padding(theme == .console ? 6 : 8)
                 }
-                .padding(theme == .console ? 6 : 8)
             }
         }
         .background(palette.sidebar.opacity(theme == .softGlass ? 0.18 : 1))
@@ -205,6 +209,9 @@ struct ReleaseHistoryView: View {
                 }
             }
             .background(palette.surface.opacity(theme == .softGlass ? 0.18 : 1))
+        } else if manager.isLoadingReleaseNotes {
+            GattoLoadingState(text: L10n.text("loading.generic"))
+                .background(palette.surface.opacity(theme == .softGlass ? 0.18 : 1))
         } else {
             ContentUnavailableView(
                 L10n.text("release_history.empty"),

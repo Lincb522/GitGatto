@@ -280,14 +280,7 @@ private struct StashInspector: View {
                 Rectangle().fill(palette.divider).frame(height: 1)
 
                 if model.isLoadingStashDiff {
-                    VStack(alignment: .leading, spacing: 11) {
-                        RoundedRectangle(cornerRadius: 4).fill(palette.raisedSurface).frame(width: 360, height: 12)
-                        RoundedRectangle(cornerRadius: 4).fill(palette.raisedSurface).frame(width: 280, height: 10)
-                        RoundedRectangle(cornerRadius: 4).fill(palette.raisedSurface).frame(width: 320, height: 10)
-                        Spacer()
-                    }
-                        .padding(18)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    GattoLoadingState(text: L10n.text("loading.generic"))
                         .background(palette.background)
                 } else if let document = model.stashDiffDocument {
                     DiffCodeView(document: document)

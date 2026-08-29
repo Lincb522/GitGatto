@@ -27,14 +27,22 @@ struct ChangesWorkspaceView: View {
                     ChangeNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                     Rectangle().fill(palette.divider).frame(width: 1)
-                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument)
+                    DiffInspectorView(
+                        change: model.selectedChange,
+                        document: model.diffDocument,
+                        previewURL: model.selectedChangePreviewURL
+                    )
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                 HStack(spacing: 10) {
                     ChangeNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                         .appGlassPanel(cornerRadius: 14, elevated: false)
-                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument)
+                    DiffInspectorView(
+                        change: model.selectedChange,
+                        document: model.diffDocument,
+                        previewURL: model.selectedChangePreviewURL
+                    )
                         .appGlassPanel(cornerRadius: 14, elevated: false)
                 }
                 .padding(10)
@@ -43,7 +51,11 @@ struct ChangesWorkspaceView: View {
                     ChangeNavigator(model: model)
                         .frame(width: min(390, max(315, proxy.size.width * 0.35)))
                         .appConsolePanel()
-                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument)
+                    DiffInspectorView(
+                        change: model.selectedChange,
+                        document: model.diffDocument,
+                        previewURL: model.selectedChangePreviewURL
+                    )
                         .appConsolePanel()
                 }
                 .padding(8)
@@ -443,7 +455,7 @@ private struct CommitComposer: View {
             .buttonStyle(PrimaryButtonStyle())
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(!canCommit)
-            .opacity(canCommit ? 1 : 0.45)
+            .opacity(canCommit || model.activeOperation == .commit ? 1 : 0.45)
         }
         .padding(14)
         .background(palette.surface)

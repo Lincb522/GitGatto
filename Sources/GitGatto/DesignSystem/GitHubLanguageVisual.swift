@@ -34,6 +34,7 @@ enum GitHubLanguageIconAssets {
     }()
 
     @MainActor private static var imageCache: [String: NSImage] = [:]
+    @MainActor private static var thumbnailCache: [String: NSImage] = [:]
 
     static var count: Int { manifest?.totalLanguages ?? 0 }
 
@@ -58,6 +59,19 @@ enum GitHubLanguageIconAssets {
               let image = NSImage(contentsOf: url) else { return nil }
         imageCache[resourceName] = image
         return image
+    }
+
+    @MainActor
+    static func thumbnail(for language: String?, pointSize: CGFloat) -> NSImage? {
+        guard let resourceName = resourceName(for: language),
+              let source = image(for: language) else { return nil }
+        let resolvedSize = max(12, pointSize)
+        let key = "\(resourceName):\(Int((resolvedSize * 100).rounded()))"
+        if let cached = thumbnailCache[key] { return cached }
+        let rendered = PixelAlignedImageRenderer.render(source, pointSize: resolvedSize)
+        rendered.isTemplate = false
+        thumbnailCache[key] = rendered
+        return rendered
     }
 }
 
@@ -142,7 +156,7 @@ struct GitHubLanguageIcon: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         ZStack(alignment: .bottomTrailing) {
-            if let image = GitHubLanguageIconAssets.image(for: language) {
+            if let image = GitHubLanguageIconAssets.thumbnail(for: language, pointSize: size) {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
@@ -152,7 +166,7 @@ struct GitHubLanguageIcon: View {
                     .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                            .stroke(palette.divider.opacity(0.72), lineWidth: 1)
+                            .strokeBorder(palette.divider.opacity(0.68), lineWidth: size < 36 ? 0.75 : 1)
                     }
             } else if let style = GitHubLanguageStyle.resolved(language) {
                 RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)

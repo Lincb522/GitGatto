@@ -95,4 +95,16 @@ struct GlobalErrorHandlerTests {
         #expect(report.systemCode == NSFileReadNoPermissionError)
         #expect(report.message == "Permission denied")
     }
+
+    @Test("Reports the extended Agent timeout with actionable recovery")
+    func reportsAgentTimeout() {
+        let report = GlobalErrorHandler.report(
+            for: CodexServiceError.timedOut,
+            context: .agent,
+            repositoryURL: URL(fileURLWithPath: "/tmp/example", isDirectory: true)
+        )
+
+        #expect(report.code == "GG-AGENT-RUN-6")
+        #expect(report.recoverySuggestion == L10n.text("error.recovery.agent_timeout"))
+    }
 }

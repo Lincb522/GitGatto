@@ -1,0 +1,1771 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/inventory-icons.py",
+  "source": "SwiftUI systemName/systemImage references and icon properties",
+  "iconPack": "Zappicon",
+  "iconPackURL": "https://www.figma.com/design/wNyuKVd4m7cMkMPeWwlTKa/Zappicon",
+  "iconPackCreator": "Zappicon",
+  "style": {
+    "variant": "Regular and Filled",
+    "canvas": "Zappicon SVG component bounds",
+    "rendering": "template tint with point-size 1x/2x/3x raster representations"
+  },
+  "count": 126,
+  "icons": [
+    {
+      "sourceSymbol": "ai.translation",
+      "assetID": "gatto-ai-translation",
+      "zappiconName": "language-bubble-tag",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7034:274378",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-ai-translation.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:399",
+        "Sources/GitGatto/Views/AppSettingsView.swift:405",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:234",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:326",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:883",
+        "Sources/GitGatto/Views/HelpCenterView.swift:77",
+        "Sources/GitGatto/Views/HelpCenterView.swift:84"
+      ]
+    },
+    {
+      "sourceSymbol": "archivebox",
+      "assetID": "gatto-archivebox",
+      "zappiconName": "archive-box",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259272",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-archivebox.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1222",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:61",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:397",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327"
+      ]
+    },
+    {
+      "sourceSymbol": "archivebox.fill",
+      "assetID": "gatto-archivebox-fill",
+      "zappiconName": "archive-box",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7208:259274",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-archivebox-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:208",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:349",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:57"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.clockwise",
+      "assetID": "gatto-arrow-clockwise",
+      "zappiconName": "arrows-rotate",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258517",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-clockwise.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:587",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:82",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:221",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:71",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:74",
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:63",
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:91",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:60",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:25",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:167",
+        "Sources/GitGatto/Views/WorkspaceView.swift:619",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:88"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.down",
+      "assetID": "gatto-arrow-down",
+      "zappiconName": "arrow-down",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:256971",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:464",
+        "Sources/GitGatto/Views/WorkspaceView.swift:764"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.down.app",
+      "assetID": "gatto-arrow-down-app",
+      "zappiconName": "download-rectangle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258646",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-app.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:296",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:31",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:39",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:249",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.down.circle",
+      "assetID": "gatto-arrow-down-circle",
+      "zappiconName": "arrow-down-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257127",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/UpdateCenterView.swift:249"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.down.circle.fill",
+      "assetID": "gatto-arrow-down-circle-fill",
+      "zappiconName": "arrow-down-circle",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7219:257129",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-circle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/UpdateCenterView.swift:249"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.down.to.line",
+      "assetID": "gatto-arrow-down-to-line",
+      "zappiconName": "download-bracket",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258724",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-to-line.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:390",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:119"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.left.arrow.right",
+      "assetID": "gatto-arrow-left-arrow-right",
+      "zappiconName": "arrows-left-right",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258190",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-left-arrow-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:562"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.left.arrow.right.square",
+      "assetID": "gatto-arrow-left-arrow-right-square",
+      "zappiconName": "arrows-width",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258203",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-left-arrow-right-square.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/DiffInspectorView.swift:320"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.right",
+      "assetID": "gatto-arrow-right",
+      "zappiconName": "arrow-right",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:256958",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:286",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:441",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:61",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:155"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.triangle.2.circlepath",
+      "assetID": "gatto-arrow-triangle-2-circlepath",
+      "zappiconName": "arrows-rotate",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258517",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-2-circlepath.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:140",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:249",
+        "Sources/GitGatto/Views/WorkspaceView.swift:409"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.triangle.branch",
+      "assetID": "gatto-arrow-triangle-branch",
+      "zappiconName": "diagram-tree",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7102:257899",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-branch.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
+        "Sources/GitGatto/Views/AppSettingsView.swift:399",
+        "Sources/GitGatto/Views/BranchesWorkspaceView.swift:174",
+        "Sources/GitGatto/Views/BranchesWorkspaceView.swift:97",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:53",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:196",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:200",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:540",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:541",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:542",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:681",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:85",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327",
+        "Sources/GitGatto/Views/WorkspaceView.swift:650",
+        "Sources/GitGatto/Views/WorkspaceView.swift:679",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:121",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:205",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:365"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.triangle.merge",
+      "assetID": "gatto-arrow-triangle-merge",
+      "zappiconName": "diagram-nested",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7102:257873",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-merge.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:456"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.turn.up.left",
+      "assetID": "gatto-arrow-turn-up-left",
+      "zappiconName": "arrow-undo",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258595",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-turn-up-left.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:516"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.turn.up.right",
+      "assetID": "gatto-arrow-turn-up-right",
+      "zappiconName": "arrow-redo",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258608",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-turn-up-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:516"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.up",
+      "assetID": "gatto-arrow-up",
+      "zappiconName": "arrow-up",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:256984",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:464",
+        "Sources/GitGatto/Views/WorkspaceView.swift:764"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.up.arrow.down",
+      "assetID": "gatto-arrow-up-arrow-down",
+      "zappiconName": "arrows-up-down",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258268",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-arrow-down.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HelpCenterView.swift:77"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.up.circle",
+      "assetID": "gatto-arrow-up-circle",
+      "zappiconName": "arrow-up-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257140",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:577"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.up.forward.app",
+      "assetID": "gatto-arrow-up-forward-app",
+      "zappiconName": "upload-rectangle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258659",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-forward-app.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:333"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.up.right",
+      "assetID": "gatto-arrow-up-right",
+      "zappiconName": "arrow-up-right",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257010",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:197",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:375",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:84",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1304",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:576",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:687"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.up.right.square",
+      "assetID": "gatto-arrow-up-right-square",
+      "zappiconName": "arrow-up-right-square",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257244",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-right-square.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:183"
+      ]
+    },
+    {
+      "sourceSymbol": "arrow.uturn.backward",
+      "assetID": "gatto-arrow-uturn-backward",
+      "zappiconName": "arrow-rotate-left",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258491",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-uturn-backward.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:267"
+      ]
+    },
+    {
+      "sourceSymbol": "bubble.left",
+      "assetID": "gatto-bubble-left",
+      "zappiconName": "message",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7031:312398",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-bubble-left.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:177"
+      ]
+    },
+    {
+      "sourceSymbol": "bubble.left.and.bubble.right",
+      "assetID": "gatto-bubble-left-and-bubble-right",
+      "zappiconName": "messages",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7031:312867",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-bubble-left-and-bubble-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:694"
+      ]
+    },
+    {
+      "sourceSymbol": "building.2",
+      "assetID": "gatto-building-2",
+      "zappiconName": "buildings",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7144:258414",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-building-2.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:296",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:299"
+      ]
+    },
+    {
+      "sourceSymbol": "checkmark",
+      "assetID": "gatto-checkmark",
+      "zappiconName": "check",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:256940",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:758",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:400",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:584",
+        "Sources/GitGatto/Views/GlobalErrorSheet.swift:95",
+        "Sources/GitGatto/Views/WorkspaceView.swift:689"
+      ]
+    },
+    {
+      "sourceSymbol": "checkmark.circle",
+      "assetID": "gatto-checkmark-circle",
+      "zappiconName": "check-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257092",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:472",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:265",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:157"
+      ]
+    },
+    {
+      "sourceSymbol": "checkmark.circle.fill",
+      "assetID": "gatto-checkmark-circle-fill",
+      "zappiconName": "check-circle",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7220:257094",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-circle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:435",
+        "Sources/GitGatto/Views/AppSettingsView.swift:1288",
+        "Sources/GitGatto/Views/AppSettingsView.swift:343",
+        "Sources/GitGatto/Views/AppSettingsView.swift:545",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:548",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:562",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:312",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:189",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:515",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:676",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:219",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:263",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:128"
+      ]
+    },
+    {
+      "sourceSymbol": "checkmark.seal",
+      "assetID": "gatto-checkmark-seal",
+      "zappiconName": "badge-check",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "5063:342905",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-seal.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18"
+      ]
+    },
+    {
+      "sourceSymbol": "checkmark.seal.fill",
+      "assetID": "gatto-checkmark-seal-fill",
+      "zappiconName": "badge-check",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "5063:342909",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-seal-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/UpdateCenterView.swift:249"
+      ]
+    },
+    {
+      "sourceSymbol": "checkmark.shield",
+      "assetID": "gatto-checkmark-shield",
+      "zappiconName": "shield-check",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7117:257799",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-shield.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:694"
+      ]
+    },
+    {
+      "sourceSymbol": "checkmark.square.fill",
+      "assetID": "gatto-checkmark-square-fill",
+      "zappiconName": "check-square",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7220:257016",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-square-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:269"
+      ]
+    },
+    {
+      "sourceSymbol": "chevron.compact.down",
+      "assetID": "gatto-chevron-compact-down",
+      "zappiconName": "caret-down",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257840",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-down.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:639"
+      ]
+    },
+    {
+      "sourceSymbol": "chevron.compact.up",
+      "assetID": "gatto-chevron-compact-up",
+      "zappiconName": "caret-up",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257852",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-up.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:530"
+      ]
+    },
+    {
+      "sourceSymbol": "chevron.down",
+      "assetID": "gatto-chevron-down",
+      "zappiconName": "angle-down",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257280",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-down.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:355",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:316",
+        "Sources/GitGatto/Views/WorkspaceView.swift:655"
+      ]
+    },
+    {
+      "sourceSymbol": "chevron.down.circle",
+      "assetID": "gatto-chevron-down-circle",
+      "zappiconName": "angle-down-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257424",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-down-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:147",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:451"
+      ]
+    },
+    {
+      "sourceSymbol": "chevron.left",
+      "assetID": "gatto-chevron-left",
+      "zappiconName": "angle-left",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257258",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-left.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:822",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:996",
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:51"
+      ]
+    },
+    {
+      "sourceSymbol": "chevron.left.forwardslash.chevron.right",
+      "assetID": "gatto-chevron-left-forwardslash-chevron-right",
+      "zappiconName": "code-simple",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:103",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-left-forwardslash-chevron-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:175",
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:101",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:377",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1277"
+      ]
+    },
+    {
+      "sourceSymbol": "chevron.right",
+      "assetID": "gatto-chevron-right",
+      "zappiconName": "angle-right",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:257269",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:206",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:498",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:214",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:376",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1194",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1514",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1566",
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:57",
+        "Sources/GitGatto/Views/WorkspaceView.swift:830"
+      ]
+    },
+    {
+      "sourceSymbol": "circle.dashed",
+      "assetID": "gatto-circle-dashed",
+      "zappiconName": "file-half-dashed",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259670",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-dashed.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:516"
+      ]
+    },
+    {
+      "sourceSymbol": "circle.dotted",
+      "assetID": "gatto-circle-dotted",
+      "zappiconName": "time-backward-pending",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7057:291348",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-dotted.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:1288"
+      ]
+    },
+    {
+      "sourceSymbol": "circle.fill",
+      "assetID": "gatto-circle-fill",
+      "zappiconName": "record-audio",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7068:274706",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:383"
+      ]
+    },
+    {
+      "sourceSymbol": "circle.lefthalf.filled",
+      "assetID": "gatto-circle-lefthalf-filled",
+      "zappiconName": "contrast",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7232:260868",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-circle-lefthalf-filled.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositorySidebar.swift:363",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:364",
+        "Sources/GitGatto/Views/WorkspaceView.swift:423"
+      ]
+    },
+    {
+      "sourceSymbol": "clock.arrow.circlepath",
+      "assetID": "gatto-clock-arrow-circlepath",
+      "zappiconName": "time-history",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7057:288239",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-clock-arrow-circlepath.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:63",
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:218",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:69",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327"
+      ]
+    },
+    {
+      "sourceSymbol": "clock.badge.checkmark",
+      "assetID": "gatto-clock-badge-checkmark",
+      "zappiconName": "stopwatch-check-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7057:290161",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-clock-badge-checkmark.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorkspaceView.swift:327"
+      ]
+    },
+    {
+      "sourceSymbol": "code.source",
+      "assetID": "gatto-code-source",
+      "zappiconName": "code",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:142",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-code-source.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:713"
+      ]
+    },
+    {
+      "sourceSymbol": "command",
+      "assetID": "gatto-command",
+      "zappiconName": "command",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7216:256979",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-command.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HelpCenterView.swift:77"
+      ]
+    },
+    {
+      "sourceSymbol": "curlybraces.square",
+      "assetID": "gatto-curlybraces-square",
+      "zappiconName": "code-square",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:155",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-curlybraces-square.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodeSurface.swift:161",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:340"
+      ]
+    },
+    {
+      "sourceSymbol": "doc",
+      "assetID": "gatto-doc",
+      "zappiconName": "file",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259366",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:377"
+      ]
+    },
+    {
+      "sourceSymbol": "doc.badge.ellipsis",
+      "assetID": "gatto-doc-badge-ellipsis",
+      "zappiconName": "file-list",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259392",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-ellipsis.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:511",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:598",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1349"
+      ]
+    },
+    {
+      "sourceSymbol": "doc.badge.gearshape",
+      "assetID": "gatto-doc-badge-gearshape",
+      "zappiconName": "file-gear",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:260114",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-gearshape.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:372",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:521",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:522"
+      ]
+    },
+    {
+      "sourceSymbol": "doc.badge.minus",
+      "assetID": "gatto-doc-badge-minus",
+      "zappiconName": "file-simple-minus",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259723",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-minus.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:296"
+      ]
+    },
+    {
+      "sourceSymbol": "doc.on.doc",
+      "assetID": "gatto-doc-on-doc",
+      "zappiconName": "copy-check",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259301",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-on-doc.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:306",
+        "Sources/GitGatto/Views/GlobalErrorSheet.swift:95",
+        "Sources/GitGatto/Views/LegalDocumentsView.swift:68"
+      ]
+    },
+    {
+      "sourceSymbol": "doc.richtext",
+      "assetID": "gatto-doc-richtext",
+      "zappiconName": "document-list",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7047:338921",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-richtext.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:377",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:811"
+      ]
+    },
+    {
+      "sourceSymbol": "doc.text",
+      "assetID": "gatto-doc-text",
+      "zappiconName": "file-text",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259379",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-text.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:22",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:183",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:515",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1222",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1263"
+      ]
+    },
+    {
+      "sourceSymbol": "doc.text.magnifyingglass",
+      "assetID": "gatto-doc-text-magnifyingglass",
+      "zappiconName": "file-search",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:260127",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-doc-text-magnifyingglass.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:694"
+      ]
+    },
+    {
+      "sourceSymbol": "dot.radiowaves.left.and.right",
+      "assetID": "gatto-dot-radiowaves-left-and-right",
+      "zappiconName": "tower-broadcast",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7039:276457",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-dot-radiowaves-left-and-right.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:905"
+      ]
+    },
+    {
+      "sourceSymbol": "exclamationmark",
+      "assetID": "gatto-exclamationmark",
+      "zappiconName": "exclamation",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257184",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-exclamationmark.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:125"
+      ]
+    },
+    {
+      "sourceSymbol": "exclamationmark.triangle.fill",
+      "assetID": "gatto-exclamationmark-triangle-fill",
+      "zappiconName": "exclamation-triangle",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7220:257485",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-exclamationmark-triangle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:905",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:144",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:265",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:312",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:294",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:344",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:66",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:132",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:400",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1095",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1382",
+        "Sources/GitGatto/Views/GlobalErrorSheet.swift:17",
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:103",
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:118",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:219",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:263",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:134",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:175",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:249",
+        "Sources/GitGatto/Views/WorkspaceView.swift:734",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:166",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:513"
+      ]
+    },
+    {
+      "sourceSymbol": "externaldrive.fill",
+      "assetID": "gatto-externaldrive-fill",
+      "zappiconName": "hard-drive",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7172:275693",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-externaldrive-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:856"
+      ]
+    },
+    {
+      "sourceSymbol": "eye",
+      "assetID": "gatto-eye",
+      "zappiconName": "eye",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7117:257562",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-eye.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:481",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:189"
+      ]
+    },
+    {
+      "sourceSymbol": "eye.slash",
+      "assetID": "gatto-eye-slash",
+      "zappiconName": "eye-slash",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7117:257575",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-eye-slash.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:276",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:584"
+      ]
+    },
+    {
+      "sourceSymbol": "folder",
+      "assetID": "gatto-folder",
+      "zappiconName": "folder",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:260649",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:320",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:955",
+        "Sources/GitGatto/Views/WorkspaceView.swift:818"
+      ]
+    },
+    {
+      "sourceSymbol": "folder.badge.minus",
+      "assetID": "gatto-folder-badge-minus",
+      "zappiconName": "folder-minus",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:260844",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder-badge-minus.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:287"
+      ]
+    },
+    {
+      "sourceSymbol": "folder.badge.plus",
+      "assetID": "gatto-folder-badge-plus",
+      "zappiconName": "folder-plus",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:260831",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder-badge-plus.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:151",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:75",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:146",
+        "Sources/GitGatto/Views/WorkspaceView.swift:409"
+      ]
+    },
+    {
+      "sourceSymbol": "folder.fill",
+      "assetID": "gatto-folder-fill",
+      "zappiconName": "folder-open",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7208:260715",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-folder-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1222"
+      ]
+    },
+    {
+      "sourceSymbol": "gearshape",
+      "assetID": "gatto-gearshape",
+      "zappiconName": "gear",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:693",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-gearshape.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:70",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:377",
+        "Sources/GitGatto/Views/HelpCenterView.swift:77",
+        "Sources/GitGatto/Views/WorkspaceView.swift:432"
+      ]
+    },
+    {
+      "sourceSymbol": "git.pull.request",
+      "assetID": "gatto-git-pull-request",
+      "zappiconName": "diagram-subtask",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7102:257834",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-git-pull-request.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:167",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:41",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1539",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:715"
+      ]
+    },
+    {
+      "sourceSymbol": "globe",
+      "assetID": "gatto-globe",
+      "zappiconName": "globe",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7039:276627",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-globe.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:94"
+      ]
+    },
+    {
+      "sourceSymbol": "hammer",
+      "assetID": "gatto-hammer",
+      "zappiconName": "wrench",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:641",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-hammer.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:326"
+      ]
+    },
+    {
+      "sourceSymbol": "history.file",
+      "assetID": "gatto-history-file",
+      "zappiconName": "file-pulse",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259474",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-history-file.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:194",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:77"
+      ]
+    },
+    {
+      "sourceSymbol": "house.fill",
+      "assetID": "gatto-house-fill",
+      "zappiconName": "house",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7144:257460",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-house-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:205",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:365"
+      ]
+    },
+    {
+      "sourceSymbol": "info.circle",
+      "assetID": "gatto-info-circle",
+      "zappiconName": "info-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257351",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-info-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorkspaceView.swift:442"
+      ]
+    },
+    {
+      "sourceSymbol": "internaldrive",
+      "assetID": "gatto-internaldrive",
+      "zappiconName": "hard-drive-internal",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7172:275717",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-internaldrive.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:88"
+      ]
+    },
+    {
+      "sourceSymbol": "legal.disclaimer",
+      "assetID": "gatto-legal-disclaimer",
+      "zappiconName": "exclamation-diamond",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257496",
+      "category": "legal",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-legal-disclaimer.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:22",
+        "Sources/GitGatto/Models/AppNavigationModel.swift:27"
+      ]
+    },
+    {
+      "sourceSymbol": "legal.open.source",
+      "assetID": "gatto-legal-open-source",
+      "zappiconName": "copyright",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257222",
+      "category": "legal",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-legal-open-source.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:22",
+        "Sources/GitGatto/Models/AppNavigationModel.swift:25"
+      ]
+    },
+    {
+      "sourceSymbol": "legal.privacy",
+      "assetID": "gatto-legal-privacy",
+      "zappiconName": "shield-lock",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7117:258033",
+      "category": "legal",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-legal-privacy.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:22",
+        "Sources/GitGatto/Models/AppNavigationModel.swift:26"
+      ]
+    },
+    {
+      "sourceSymbol": "link",
+      "assetID": "gatto-link",
+      "zappiconName": "link",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7039:276561",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-link.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1222"
+      ]
+    },
+    {
+      "sourceSymbol": "location",
+      "assetID": "gatto-location",
+      "zappiconName": "location-pin-simple",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7123:265988",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-location.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:293",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:294",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:296"
+      ]
+    },
+    {
+      "sourceSymbol": "lock.fill",
+      "assetID": "gatto-lock-fill",
+      "zappiconName": "lock",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7117:257055",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-lock-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:203"
+      ]
+    },
+    {
+      "sourceSymbol": "magnifyingglass",
+      "assetID": "gatto-magnifyingglass",
+      "zappiconName": "search",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7216:258594",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-magnifyingglass.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:183",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:66",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:51",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1025",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:122",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:394",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:157",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:167"
+      ]
+    },
+    {
+      "sourceSymbol": "media.fit",
+      "assetID": "gatto-media-fit",
+      "zappiconName": "crop",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7232:261271",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-media-fit.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:76"
+      ]
+    },
+    {
+      "sourceSymbol": "minus",
+      "assetID": "gatto-minus",
+      "zappiconName": "minus",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:256977",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-minus.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:229",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:68"
+      ]
+    },
+    {
+      "sourceSymbol": "minus.circle",
+      "assetID": "gatto-minus-circle",
+      "zappiconName": "minus-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257131",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-minus-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:253"
+      ]
+    },
+    {
+      "sourceSymbol": "minus.circle.fill",
+      "assetID": "gatto-minus-circle-fill",
+      "zappiconName": "minus-circle",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7220:257133",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-minus-circle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:676"
+      ]
+    },
+    {
+      "sourceSymbol": "moon",
+      "assetID": "gatto-moon",
+      "zappiconName": "moon",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:838",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-moon.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositorySidebar.swift:363",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:364",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:365"
+      ]
+    },
+    {
+      "sourceSymbol": "paintpalette",
+      "assetID": "gatto-paintpalette",
+      "zappiconName": "palette",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7232:260791",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-paintpalette.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:399"
+      ]
+    },
+    {
+      "sourceSymbol": "paperplane.fill",
+      "assetID": "gatto-paperplane-fill",
+      "zappiconName": "send",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7034:276100",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-paperplane-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:334"
+      ]
+    },
+    {
+      "sourceSymbol": "pause",
+      "assetID": "gatto-pause",
+      "zappiconName": "pause",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7068:274770",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-pause.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/DownloadCenterView.swift"
+      ]
+    },
+    {
+      "sourceSymbol": "pencil",
+      "assetID": "gatto-pencil",
+      "zappiconName": "pencil",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7232:260557",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-pencil.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:481"
+      ]
+    },
+    {
+      "sourceSymbol": "person.2",
+      "assetID": "gatto-person-2",
+      "zappiconName": "users",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7130:276791",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-2.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:293",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:294"
+      ]
+    },
+    {
+      "sourceSymbol": "person.crop.circle",
+      "assetID": "gatto-person-crop-circle",
+      "zappiconName": "user-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7130:276530",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:85",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:346"
+      ]
+    },
+    {
+      "sourceSymbol": "person.crop.circle.badge.questionmark",
+      "assetID": "gatto-person-crop-circle-badge-questionmark",
+      "zappiconName": "user-question-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7130:277000",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-badge-questionmark.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:212"
+      ]
+    },
+    {
+      "sourceSymbol": "person.crop.circle.fill",
+      "assetID": "gatto-person-crop-circle-fill",
+      "zappiconName": "user-circle",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7130:276532",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1496",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:264",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:94"
+      ]
+    },
+    {
+      "sourceSymbol": "photo",
+      "assetID": "gatto-photo",
+      "zappiconName": "image",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7068:275380",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-photo.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:377",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1222",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:346"
+      ]
+    },
+    {
+      "sourceSymbol": "play.circle",
+      "assetID": "gatto-play-circle",
+      "zappiconName": "play-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7068:274834",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-play-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:377",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:155",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:326",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1222",
+        "Sources/GitGatto/Views/HelpCenterView.swift:77",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:346",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:178"
+      ]
+    },
+    {
+      "sourceSymbol": "play.circle.fill",
+      "assetID": "gatto-play-circle-fill",
+      "zappiconName": "play-circle",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7068:274836",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-play-circle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:47",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:310"
+      ]
+    },
+    {
+      "sourceSymbol": "plus",
+      "assetID": "gatto-plus",
+      "zappiconName": "plus",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:256964",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-plus.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:229",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:76",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:78"
+      ]
+    },
+    {
+      "sourceSymbol": "plus.circle",
+      "assetID": "gatto-plus-circle",
+      "zappiconName": "plus-circle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257118",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-plus-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:253"
+      ]
+    },
+    {
+      "sourceSymbol": "point.3.connected.trianglepath.dotted",
+      "assetID": "gatto-point-3-connected-trianglepath-dotted",
+      "zappiconName": "chart-network",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7102:257559",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-point-3-connected-trianglepath-dotted.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:63"
+      ]
+    },
+    {
+      "sourceSymbol": "point.3.filled.connected.trianglepath.dotted",
+      "assetID": "gatto-point-3-filled-connected-trianglepath-dotted",
+      "zappiconName": "chart-network",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7102:257559",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-point-3-filled-connected-trianglepath-dotted.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:456"
+      ]
+    },
+    {
+      "sourceSymbol": "point.topleft.down.to.point.bottomright.curvepath",
+      "assetID": "gatto-point-topleft-down-to-point-bottomright-curvepath",
+      "zappiconName": "shuffle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7068:275197",
+      "category": "navigation",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-point-topleft-down-to-point-bottomright-curvepath.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:312",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:274",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:694",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:542",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:546",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:631"
+      ]
+    },
+    {
+      "sourceSymbol": "record.circle",
+      "assetID": "gatto-record-circle",
+      "zappiconName": "record-audio",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7068:274704",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-record-circle.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:540",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:541",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:542"
+      ]
+    },
+    {
+      "sourceSymbol": "rectangle.split.2x1",
+      "assetID": "gatto-rectangle-split-2x1",
+      "zappiconName": "layout-1",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:289",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-rectangle-split-2x1.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositorySidebar.swift:93",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:188"
+      ]
+    },
+    {
+      "sourceSymbol": "shippingbox",
+      "assetID": "gatto-shippingbox",
+      "zappiconName": "package",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "5063:338854",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-shippingbox.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:248",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:122",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1222",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:293",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:294",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:485",
+        "Sources/GitGatto/Views/HelpCenterView.swift:77",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:158",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:42"
+      ]
+    },
+    {
+      "sourceSymbol": "shippingbox.fill",
+      "assetID": "gatto-shippingbox-fill",
+      "zappiconName": "package",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "5063:338858",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-shippingbox-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:189"
+      ]
+    },
+    {
+      "sourceSymbol": "slider.horizontal.3",
+      "assetID": "gatto-slider-horizontal-3",
+      "zappiconName": "sliders-simple",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:667",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-slider-horizontal-3.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:399"
+      ]
+    },
+    {
+      "sourceSymbol": "sparkles",
+      "assetID": "gatto-sparkles",
+      "zappiconName": "sparkles-ai",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7216:257289",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-sparkles.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:399",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:423",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:396",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:450",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:51",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:247",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:197",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:364",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:898",
+        "Sources/GitGatto/Views/GlobalErrorSheet.swift:107",
+        "Sources/GitGatto/Views/HelpCenterView.swift:77",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:116",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:109",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:265"
+      ]
+    },
+    {
+      "sourceSymbol": "square",
+      "assetID": "gatto-square",
+      "zappiconName": "check-square",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:257014",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-square.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:269"
+      ]
+    },
+    {
+      "sourceSymbol": "square.grid.2x2",
+      "assetID": "gatto-square-grid-2x2",
+      "zappiconName": "grid-category",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7222:257321",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-square-grid-2x2.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:61",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:30",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327"
+      ]
+    },
+    {
+      "sourceSymbol": "square.stack.3d.up",
+      "assetID": "gatto-square-stack-3d-up",
+      "zappiconName": "layer-group",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7232:260907",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-square-stack-3d-up.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HelpCenterView.swift:77",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:53",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327"
+      ]
+    },
+    {
+      "sourceSymbol": "star",
+      "assetID": "gatto-star",
+      "zappiconName": "star",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7023:257058",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-star.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:196",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:368",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1453",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:540",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:541",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:557",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:669"
+      ]
+    },
+    {
+      "sourceSymbol": "star.fill",
+      "assetID": "gatto-star-fill",
+      "zappiconName": "star",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7023:257060",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-star-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:557",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:669"
+      ]
+    },
+    {
+      "sourceSymbol": "stethoscope",
+      "assetID": "gatto-stethoscope",
+      "zappiconName": "stethoscope",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7216:257457",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-stethoscope.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:22",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:101",
+        "Sources/GitGatto/Views/WorkspaceView.swift:327"
+      ]
+    },
+    {
+      "sourceSymbol": "sun.max",
+      "assetID": "gatto-sun-max",
+      "zappiconName": "sun",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:812",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-sun-max.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositorySidebar.swift:363",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:364",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:365"
+      ]
+    },
+    {
+      "sourceSymbol": "terminal",
+      "assetID": "gatto-terminal",
+      "zappiconName": "code-square",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:155",
+      "category": "git-and-code",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-terminal.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:287",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:511",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1114",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:521",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:522"
+      ]
+    },
+    {
+      "sourceSymbol": "text.badge.plus",
+      "assetID": "gatto-text-badge-plus",
+      "zappiconName": "file-simple-plus",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7208:259710",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-text-badge-plus.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:18"
+      ]
+    },
+    {
+      "sourceSymbol": "text.bubble",
+      "assetID": "gatto-text-bubble",
+      "zappiconName": "message-t-text",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7031:312436",
+      "category": "people-and-web",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-text-bubble.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:177"
+      ]
+    },
+    {
+      "sourceSymbol": "text.cursor",
+      "assetID": "gatto-text-cursor",
+      "zappiconName": "cursor",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7216:257004",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-text-cursor.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:75"
+      ]
+    },
+    {
+      "sourceSymbol": "trash",
+      "assetID": "gatto-trash",
+      "zappiconName": "trash",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7232:261317",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-trash.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:77",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:404",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:233"
+      ]
+    },
+    {
+      "sourceSymbol": "tray.and.arrow.down",
+      "assetID": "gatto-tray-and-arrow-down",
+      "zappiconName": "download-rectangle",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7219:258646",
+      "category": "files",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-tray-and-arrow-down.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/DownloadCenterView.swift:38",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:81",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:675",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:114"
+      ]
+    },
+    {
+      "sourceSymbol": "wrench.and.screwdriver",
+      "assetID": "gatto-wrench-and-screwdriver",
+      "zappiconName": "wrench",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7322:641",
+      "category": "actions-and-tools",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-wrench-and-screwdriver.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HelpCenterView.swift:77"
+      ]
+    },
+    {
+      "sourceSymbol": "xmark",
+      "assetID": "gatto-xmark",
+      "zappiconName": "xmark",
+      "zappiconStyle": "Regular",
+      "figmaNodeID": "7220:256951",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-xmark.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:416",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:25",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:91",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1310",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:662"
+      ]
+    },
+    {
+      "sourceSymbol": "xmark.circle.fill",
+      "assetID": "gatto-xmark-circle-fill",
+      "zappiconName": "xmark-circle",
+      "zappiconStyle": "Filled",
+      "figmaNodeID": "7220:257107",
+      "category": "status",
+      "assetPath": "Sources/GitGatto/Resources/UIIcons/gatto-xmark-circle-fill.svg",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:194",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:59",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:676",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1033",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:135"
+      ]
+    }
+  ]
+}

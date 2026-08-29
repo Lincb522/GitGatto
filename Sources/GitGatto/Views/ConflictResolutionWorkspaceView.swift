@@ -161,9 +161,7 @@ struct ConflictResolutionWorkspaceView: View {
     @ViewBuilder
     private func conflictEditor(compact: Bool, palette: AppPalette) -> some View {
         if model.isLoadingConflictDocument {
-            ProgressView(L10n.text("conflict.loading"))
-                .controlSize(.small)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            GattoLoadingState(text: L10n.text("conflict.loading"))
         } else if let document = model.conflictDocument {
             VStack(spacing: 0) {
                 resolutionToolbar(document: document, palette: palette)

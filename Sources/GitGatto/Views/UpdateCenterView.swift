@@ -177,7 +177,10 @@ struct UpdateCenterView: View {
                     .foregroundStyle(palette.warning)
             }
 
-            if manager.releaseNotes.isEmpty, !manager.isLoadingReleaseNotes {
+            if manager.releaseNotes.isEmpty, manager.isLoadingReleaseNotes {
+                GattoLoadingState(text: L10n.text("loading.generic"))
+                    .frame(height: 150)
+            } else if manager.releaseNotes.isEmpty {
                 Text(L10n.text("update.release_notes.empty"))
                     .font(.system(size: 12))
                     .foregroundStyle(palette.mutedInk)

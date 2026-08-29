@@ -1,22 +1,30 @@
 # GitGatto
 
-GitGatto 是一款原生开发、由 Agent 驱动的 macOS Git 管理工具。它把本地仓库、GitHub 项目、改动审阅、提交同步、项目文档与本机 AI CLI 放在同一套可追踪的工作流中。
+GitGatto 是一款由 Agent 驱动的原生 macOS Git 管理工具，将本地仓库、GitHub、项目文档和本机 AI CLI 连接到同一套可追踪工作流中。
 
 ![GitGatto 工作区](docs/media/workspace.png)
 
-## 已实现能力
+## 核心能力
+
+### 仓库与 Git
 
 - **本地 Git**：真实读取工作区和暂存区，查看 Diff、历史和分支，执行暂存、提交、Pull、Push 与分支切换。
 - **项目管理**：手动扫描指定目录或设备，后台返回当前用户可读写的仓库，再由用户选择添加；项目按活跃度和修改时间分区。
-- **GitHub**：复用本机 GitHub CLI 登录，读取账号项目，搜索仓库与开发者，查看 README、目录、代码和 Pull Request，并支持 Fork 或克隆。
-- **项目文档**：在应用内渲染 GitHub Markdown、图片、链接和代码；仓库内链接原位导航，外部链接使用应用内浏览器。
-- **Agent**：分别配置项目 Agent 与翻译执行器，支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义 CLI；两条执行通道互不阻塞。
 - **提交起草**：从当前项目的真实暂存 Diff 起草简洁或完整提交信息，可直接提交并推送或重新起草。
 - **错误诊断**：完整展示 Git 输出、应用错误代码、退出代码、仓库和脱敏后的诊断信息。
+
+### GitHub 与项目文档
+
+- **GitHub**：复用本机 GitHub CLI 登录，读取账号项目，搜索仓库与开发者，查看 README、目录、代码和 Pull Request，并支持 Fork 或克隆。
+- **项目文档**：在应用内渲染 GitHub Markdown、图片、链接和代码；仓库内链接原位导航，外部链接使用应用内浏览器。
 - **应用内更新**：更新中心直接读取 GitHub Releases 的版本与更新日志；GitHub Appcast 负责下载和安装发布包，发布页在应用内打开。
+
+### Agent 与界面
+
+- **Agent**：分别配置项目 Agent 与翻译执行器，支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义 CLI；两条执行通道互不阻塞。
 - **本地化与外观**：简体中文和英文、浅色和深色外观、默认专业主题、轻毛玻璃主题与可配置强调色。
 
-## 环境
+## 环境要求
 
 - macOS 14 或更高版本
 - Xcode 26 或 Swift 6.1 工具链
@@ -24,37 +32,47 @@ GitGatto 是一款原生开发、由 Agent 驱动的 macOS Git 管理工具。�
 - GitHub 功能需要 [GitHub CLI](https://cli.github.com/)；GitGatto 复用其现有登录，不读取令牌
 - Agent 功能需要至少一个已安装并完成登录的受支持 CLI
 
-## 开发
+## 设置
 
-使用 Xcode：
+进入仓库根目录并解析 Swift Package 依赖。以下命令使用当前工作副本路径；从其他位置克隆时替换第一行：
+
+```bash
+cd /Users/linchengbo/Documents/GitGatto
+swift package resolve
+```
+
+## 使用
+
+使用 Xcode 打开项目：
 
 ```bash
 open GitGatto.xcodeproj
 ```
 
-`GitGatto` scheme 包含应用与测试目标。工程由 `project.yml` 生成；修改工程结构后重新生成：
+使用 Swift Package Manager 启动应用：
 
 ```bash
-./scripts/generate-xcodeproj.sh
-```
-
-使用 Swift Package Manager：
-
-```bash
-cd /Users/linchengbo/Documents/GitGatto
 swift run GitGatto
 ```
 
-直接打开仓库：
+启动时直接打开指定仓库：
 
 ```bash
 swift run GitGatto --repository /path/to/repository
 ```
 
-运行测试：
+## 开发与验证
+
+`GitGatto` scheme 包含应用与测试目标。运行测试：
 
 ```bash
 swift test
+```
+
+工程由 `project.yml` 生成。修改工程结构后重新生成：
+
+```bash
+./scripts/generate-xcodeproj.sh
 ```
 
 生成稳定路径的 macOS 应用包：
@@ -66,7 +84,9 @@ open dist/GitGatto.app
 
 脚本始终替换 `dist/GitGatto.app`，不会按版本创建输出目录。发布包与更新源配置见 [发布与更新](docs/RELEASING.md)。
 
-## 项目结构
+界面图标资产位于 `Sources/GitGatto/Resources/UIIcons`。运行 `/usr/bin/python3 scripts/inventory-icons.py` 更新 Zappicon 语义清单，运行 `/usr/bin/python3 scripts/validate-zappicon-icons.py` 校验 SVG 资源。
+
+### 项目结构
 
 ```text
 Assets/                    品牌矢量源与应用图标
@@ -83,19 +103,21 @@ docs/                      架构、贡献、文档与发布规则
 project.yml                XcodeGen 工程源配置
 ```
 
-界面图标资产位于 `Sources/GitGatto/Resources/UIIcons`。运行 `./scripts/inventory-icons.py` 更新语义清单，运行 `./scripts/validate-generated-icons.py` 校验完整性和透明通道。
+## 贡献
 
-## 文档
+贡献流程、修改约束和提交前检查见 [贡献指南](CONTRIBUTING.md)。
+
+## 项目文档
 
 - [产品约束](PRODUCT.md)
 - [设计系统](DESIGN.md)
 - [架构](docs/ARCHITECTURE.md)
-- [贡献指南](CONTRIBUTING.md)
 - [文档规则](docs/DOCUMENTATION.md)
-- [发布与更新](docs/RELEASING.md)
 - [更新日志](CHANGELOG.md)
-- [安全策略](SECURITY.md)
-- [第三方许可](THIRD_PARTY_NOTICES.md)
+
+## 支持
+
+使用问题和一般反馈可通过 GitGatto 开源仓库的 Issue 提交。安全漏洞请按 [安全策略](SECURITY.md) 使用仓库的私密安全报告渠道，不要在公开 Issue 中附带令牌、私钥、私有仓库内容或可直接利用的敏感数据。
 
 ## 数据与凭据
 

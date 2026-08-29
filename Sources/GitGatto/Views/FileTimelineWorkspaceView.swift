@@ -108,9 +108,7 @@ struct FileTimelineWorkspaceView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
 
             if model.isLoadingRepositoryFiles, model.repositoryFiles.isEmpty {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                GattoLoadingState(text: L10n.text("loading.generic"))
             } else if model.filteredRepositoryFiles.isEmpty {
                 timelineEmpty("doc", key: "file_timeline.files.empty", palette: palette)
             } else {
@@ -153,9 +151,7 @@ struct FileTimelineWorkspaceView: View {
             if model.selectedRepositoryFile == nil {
                 timelineEmpty("clock", key: "file_timeline.select_file", palette: palette)
             } else if model.isLoadingFileTimeline, model.fileRevisions.isEmpty {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                GattoLoadingState(text: L10n.text("loading.generic"))
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
@@ -189,15 +185,13 @@ struct FileTimelineWorkspaceView: View {
                 fileHeader(file, palette: palette)
                 Rectangle().fill(palette.divider).frame(height: 1)
                 if model.isLoadingFileTimeline, model.fileVersionDocument == nil {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    GattoLoadingState(text: L10n.text("loading.generic"))
                 } else {
                     detailContent(palette)
                 }
             }
         } else {
-            timelineEmpty("clock.arrow.circlepath", key: "file_timeline.select_file", palette: palette)
+            timelineEmpty("history.file", key: "file_timeline.select_file", palette: palette)
         }
     }
 
@@ -283,7 +277,14 @@ struct FileTimelineWorkspaceView: View {
         switch model.fileTimelineDetailMode {
         case .content:
             if let document = model.fileVersionDocument {
-                if document.isBinary {
+                if let previewURL = document.previewURL,
+                   RepositoryMediaKind(fileName: document.path) != nil {
+                    RepositoryMediaPreview(
+                        url: previewURL,
+                        fileName: document.path,
+                        svgSource: document.content
+                    )
+                } else if document.isBinary {
                     timelineEmpty("doc.badge.ellipsis", key: "file_timeline.binary", palette: palette)
                 } else {
                     CodeDocumentView(
@@ -374,13 +375,15 @@ private struct FileTimelineFileRow: View {
     }
 
     static func icon(for extensionName: String) -> String {
+        if let kind = RepositoryMediaKind(fileName: "file.\(extensionName)") {
+            return kind == .video ? "play.circle" : "photo"
+        }
         switch extensionName {
         case "swift", "m", "mm", "c", "h", "cpp", "rs", "go", "py", "js", "ts", "tsx", "jsx":
-            "chevron.left.forwardslash.chevron.right"
-        case "md", "txt", "rst": "doc.richtext"
-        case "png", "jpg", "jpeg", "gif", "webp", "svg": "photo"
-        case "json", "yml", "yaml", "toml", "plist": "gearshape"
-        default: "doc"
+            return "chevron.left.forwardslash.chevron.right"
+        case "md", "txt", "rst": return "doc.richtext"
+        case "json", "yml", "yaml", "toml", "plist": return "gearshape"
+        default: return "doc"
         }
     }
 }

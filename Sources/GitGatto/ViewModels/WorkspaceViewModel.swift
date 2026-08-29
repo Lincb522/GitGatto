@@ -15,6 +15,10 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var commitGraph: CommitGraph = .empty
     @Published private(set) var diffDocument: DiffDocument?
     @Published private(set) var commitDiffDocument: DiffDocument?
+    @Published private(set) var selectedChangePreviewURL: URL?
+    @Published private(set) var commitMediaItems: [RepositoryMediaItem] = []
+    @Published private(set) var selectedCommitMediaItem: RepositoryMediaItem?
+    @Published private(set) var commitMediaPreviewURL: URL?
     @Published private(set) var recentRepositories: [URL] = []
     @Published private(set) var localRepositories: [URL] = []
     @Published private(set) var repositoryRecordsByPath: [String: LocalRepositoryRecord] = [:]
@@ -138,7 +142,11 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var githubActionsError: String?
     @Published private(set) var hasGitHubSearched = false
     @Published private(set) var isLoadingGitHub = false
+    @Published private(set) var isLoadingMoreGitHubSearch = false
+    @Published private(set) var canLoadMoreGitHubSearch = false
     @Published private(set) var isLoadingGitHubDeveloper = false
+    @Published private(set) var isLoadingMoreGitHubDeveloperRepositories = false
+    @Published private(set) var canLoadMoreGitHubDeveloperRepositories = false
     @Published private(set) var isLoadingPullRequests = false
     @Published private(set) var isLoadingGitHubReadme = false
     @Published private(set) var isLoadingGitHubContents = false
@@ -170,6 +178,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var hasStarted = false
     private var diffTask: Task<Void, Never>?
     private var commitDiffTask: Task<Void, Never>?
+    private var commitMediaTask: Task<Void, Never>?
     private var conflictDocumentTask: Task<Void, Never>?
     private var stashDiffTask: Task<Void, Never>?
     private var worktreeRefreshTask: Task<Void, Never>?
@@ -186,6 +195,8 @@ final class WorkspaceViewModel: ObservableObject {
     private var codexConversationPersistenceTask: Task<Void, Never>?
     private var githubTask: Task<Void, Never>?
     private var githubDeveloperTask: Task<Void, Never>?
+    private var githubLoadMoreTask: Task<Void, Never>?
+    private var githubDeveloperLoadMoreTask: Task<Void, Never>?
     private var githubProbeTask: Task<Void, Never>?
     private var pullRequestTask: Task<Void, Never>?
     private var pullRequestDraftTask: Task<Void, Never>?
@@ -214,6 +225,10 @@ final class WorkspaceViewModel: ObservableObject {
     private let localRepositoriesKey = "managedLocalRepositories"
     private let legacyLocalRepositoriesKey = "localRepositories"
     private let legacyExcludedRepositoriesKey = "excludedRepositories"
+    private var githubSearchPage = 0
+    private var githubSearchInput = ""
+    private var resolvedGitHubSearchQuery = ""
+    private var githubDeveloperRepositoriesPage = 0
 
     init(
         service: any GitRepositoryServing = GitRepositoryService(),
@@ -627,6 +642,7 @@ final class WorkspaceViewModel: ObservableObject {
             }
             """,
             isBinary: false,
+            previewURL: nil,
             diff: DiffDocument(
                 path: timelineFile.path,
                 lines: [
@@ -1141,6 +1157,10 @@ final class WorkspaceViewModel: ObservableObject {
                 break
             }
         }
+
+        if ProcessInfo.processInfo.environment["GITGATTO_LOADING_PREVIEW"] == "1" {
+            diffDocument = nil
+        }
     }
 
     private func loadErrorPreviewFixture() {
@@ -1370,13 +1390,18 @@ final class WorkspaceViewModel: ObservableObject {
         selectedChange = change
         diffTask?.cancel()
         diffDocument = nil
+        selectedChangePreviewURL = nil
 
         guard let change, let repositoryURL = snapshot?.rootURL else { return }
         diffTask = Task {
             do {
-                let document = try await service.diff(for: change, in: repositoryURL)
+                async let document = service.diff(for: change, in: repositoryURL)
+                async let previewURL = service.mediaPreview(for: change, in: repositoryURL)
+                let loadedDocument = try await document
+                let loadedPreviewURL = try? await previewURL
                 guard !Task.isCancelled, selectedChange?.id == change.id else { return }
-                diffDocument = document
+                diffDocument = loadedDocument
+                selectedChangePreviewURL = loadedPreviewURL
             } catch {
                 guard !Task.isCancelled else { return }
                 presentError(error, context: .diffLoad, repositoryURL: repositoryURL)
@@ -1387,14 +1412,55 @@ final class WorkspaceViewModel: ObservableObject {
     func selectCommit(_ commit: CommitRecord?) {
         selectedCommit = commit
         commitDiffTask?.cancel()
+        commitMediaTask?.cancel()
         commitDiffDocument = nil
+        commitMediaItems = []
+        selectedCommitMediaItem = nil
+        commitMediaPreviewURL = nil
 
         guard let commit, let repositoryURL = snapshot?.rootURL else { return }
         commitDiffTask = Task {
             do {
-                let document = try await service.diff(for: commit, in: repositoryURL)
+                async let document = service.diff(for: commit, in: repositoryURL)
+                async let mediaItems = service.mediaItems(for: commit, in: repositoryURL)
+                let loadedDocument = try await document
+                let loadedMediaItems = try await mediaItems
                 guard !Task.isCancelled, selectedCommit?.id == commit.id else { return }
-                commitDiffDocument = document
+                commitDiffDocument = loadedDocument
+                commitMediaItems = loadedMediaItems
+                if let first = loadedMediaItems.first {
+                    selectedCommitMediaItem = first
+                    commitMediaPreviewURL = try? await service.mediaPreview(
+                        for: first,
+                        at: commit,
+                        in: repositoryURL
+                    )
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                presentError(error, context: .diffLoad, repositoryURL: repositoryURL)
+            }
+        }
+    }
+
+    func selectCommitMediaItem(_ item: RepositoryMediaItem) {
+        guard item != selectedCommitMediaItem,
+              let commit = selectedCommit,
+              let repositoryURL = snapshot?.rootURL else { return }
+        selectedCommitMediaItem = item
+        commitMediaPreviewURL = nil
+        commitMediaTask?.cancel()
+        commitMediaTask = Task {
+            do {
+                let previewURL = try await service.mediaPreview(
+                    for: item,
+                    at: commit,
+                    in: repositoryURL
+                )
+                guard !Task.isCancelled,
+                      selectedCommit?.id == commit.id,
+                      selectedCommitMediaItem?.id == item.id else { return }
+                commitMediaPreviewURL = previewURL
             } catch {
                 guard !Task.isCancelled else { return }
                 presentError(error, context: .diffLoad, repositoryURL: repositoryURL)
@@ -2136,6 +2202,7 @@ final class WorkspaceViewModel: ObservableObject {
         let query = githubQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard githubAvailability.state == .available, !isLoadingGitHub else { return }
         if query.isEmpty {
+            resetGitHubSearchPagination()
             hasGitHubSearched = false
             githubSearchResults = []
             githubDeveloperResults = []
@@ -2162,7 +2229,10 @@ final class WorkspaceViewModel: ObservableObject {
         }
 
         githubTask?.cancel()
+        githubLoadMoreTask?.cancel()
         githubDeveloperTask?.cancel()
+        githubDeveloperLoadMoreTask?.cancel()
+        resetGitHubSearchPagination()
         isLoadingGitHubDeveloper = false
         githubTask = Task {
             isLoadingGitHub = true
@@ -2182,19 +2252,24 @@ final class WorkspaceViewModel: ObservableObject {
                     resolvedQuery = GitHubSearchQueryResolver.directQuery(query, scope: githubSearchScope)
                 }
                 isResolvingGitHubSearch = false
+                githubSearchInput = query
+                resolvedGitHubSearchQuery = resolvedQuery
+                githubSearchPage = 1
                 switch githubSearchScope {
                 case .projects:
-                    let repositories = try await githubService.searchRepositories(query: resolvedQuery)
+                    let repositories = try await githubService.searchRepositories(query: resolvedQuery, page: 1)
                     guard !Task.isCancelled else { return }
                     let sorted = GitHubFuzzySearch.sorted(repositories, query: query)
                     githubSearchResults = sorted
+                    canLoadMoreGitHubSearch = repositories.count == 30
                     githubDeveloperResults = []
                     selectGitHubRepository(sorted.first)
                 case .developers:
-                    let developers = try await githubService.searchDevelopers(query: resolvedQuery)
+                    let developers = try await githubService.searchDevelopers(query: resolvedQuery, page: 1)
                     guard !Task.isCancelled else { return }
                     let sorted = GitHubFuzzySearch.sorted(developers, query: query)
                     githubDeveloperResults = sorted
+                    canLoadMoreGitHubSearch = developers.count == 30
                     githubSearchResults = []
                     selectGitHubDeveloper(sorted.first)
                 }
@@ -2212,10 +2287,63 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    func loadMoreGitHubSearch() {
+        guard hasGitHubSearched,
+              canLoadMoreGitHubSearch,
+              !isLoadingGitHub,
+              !isLoadingMoreGitHubSearch,
+              !resolvedGitHubSearchQuery.isEmpty else { return }
+
+        let nextPage = githubSearchPage + 1
+        let scope = githubSearchScope
+        let resolvedQuery = resolvedGitHubSearchQuery
+        let input = githubSearchInput
+        githubLoadMoreTask?.cancel()
+        githubLoadMoreTask = Task {
+            isLoadingMoreGitHubSearch = true
+            defer {
+                isLoadingMoreGitHubSearch = false
+                githubLoadMoreTask = nil
+            }
+            do {
+                switch scope {
+                case .projects:
+                    let page = try await githubService.searchRepositories(query: resolvedQuery, page: nextPage)
+                    guard !Task.isCancelled, githubSearchScope == scope else { return }
+                    githubSearchResults = GitHubFuzzySearch.sorted(
+                        Self.appendingUnique(githubSearchResults, page),
+                        query: input
+                    )
+                    canLoadMoreGitHubSearch = page.count == 30
+                case .developers:
+                    let page = try await githubService.searchDevelopers(query: resolvedQuery, page: nextPage)
+                    guard !Task.isCancelled, githubSearchScope == scope else { return }
+                    githubDeveloperResults = GitHubFuzzySearch.sorted(
+                        Self.appendingUnique(githubDeveloperResults, page),
+                        query: input
+                    )
+                    canLoadMoreGitHubSearch = page.count == 30
+                }
+                githubSearchPage = nextPage
+            } catch is CancellationError {
+                return
+            } catch {
+                if scope == .developers {
+                    githubDeveloperError = L10n.format("github.error.developer", error.localizedDescription)
+                } else {
+                    githubError = L10n.format("github.error.search", error.localizedDescription)
+                }
+            }
+        }
+    }
+
     func selectGitHubSearchScope(_ scope: GitHubSearchScope) {
         guard githubSearchScope != scope else { return }
         githubTask?.cancel()
+        githubLoadMoreTask?.cancel()
         githubDeveloperTask?.cancel()
+        githubDeveloperLoadMoreTask?.cancel()
+        resetGitHubSearchPagination()
         isLoadingGitHub = false
         isLoadingGitHubDeveloper = false
         githubSearchScope = scope
@@ -2235,9 +2363,13 @@ final class WorkspaceViewModel: ObservableObject {
 
     func selectGitHubDeveloper(_ developer: GitHubDeveloperSummary?) {
         githubDeveloperTask?.cancel()
+        githubDeveloperLoadMoreTask?.cancel()
         selectedGitHubDeveloper = developer
         githubDeveloperProfile = nil
         githubDeveloperRepositories = []
+        githubDeveloperRepositoriesPage = 0
+        canLoadMoreGitHubDeveloperRepositories = false
+        isLoadingMoreGitHubDeveloperRepositories = false
         githubDeveloperError = nil
         guard let developer else {
             isLoadingGitHubDeveloper = false
@@ -2256,9 +2388,11 @@ final class WorkspaceViewModel: ObservableObject {
                 let profile = try await githubService.developerProfile(login: developer.login)
                 guard !Task.isCancelled, selectedGitHubDeveloper?.id == developer.id else { return }
                 githubDeveloperProfile = profile
-                let repositories = try await githubService.repositories(forDeveloper: developer.login)
+                let repositories = try await githubService.repositories(forDeveloper: developer.login, page: 1)
                 guard !Task.isCancelled, selectedGitHubDeveloper?.id == developer.id else { return }
                 githubDeveloperRepositories = repositories
+                githubDeveloperRepositoriesPage = 1
+                canLoadMoreGitHubDeveloperRepositories = repositories.count == 30
             } catch is CancellationError {
                 return
             } catch {
@@ -2268,8 +2402,55 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    func loadMoreGitHubDeveloperRepositories() {
+        guard let developer = selectedGitHubDeveloper,
+              canLoadMoreGitHubDeveloperRepositories,
+              !isLoadingGitHubDeveloper,
+              !isLoadingMoreGitHubDeveloperRepositories else { return }
+
+        let nextPage = githubDeveloperRepositoriesPage + 1
+        githubDeveloperLoadMoreTask?.cancel()
+        githubDeveloperLoadMoreTask = Task {
+            isLoadingMoreGitHubDeveloperRepositories = true
+            defer {
+                isLoadingMoreGitHubDeveloperRepositories = false
+                githubDeveloperLoadMoreTask = nil
+            }
+            do {
+                let page = try await githubService.repositories(forDeveloper: developer.login, page: nextPage)
+                guard !Task.isCancelled, selectedGitHubDeveloper?.id == developer.id else { return }
+                githubDeveloperRepositories = Self.appendingUnique(githubDeveloperRepositories, page)
+                githubDeveloperRepositoriesPage = nextPage
+                canLoadMoreGitHubDeveloperRepositories = page.count == 30
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedGitHubDeveloper?.id == developer.id else { return }
+                githubDeveloperError = L10n.format("github.error.developer", error.localizedDescription)
+            }
+        }
+    }
+
+    private func resetGitHubSearchPagination() {
+        githubSearchPage = 0
+        githubSearchInput = ""
+        resolvedGitHubSearchQuery = ""
+        canLoadMoreGitHubSearch = false
+        isLoadingMoreGitHubSearch = false
+    }
+
+    private static func appendingUnique<Element: Identifiable>(
+        _ existing: [Element],
+        _ additional: [Element]
+    ) -> [Element] where Element.ID: Hashable {
+        var known = Set(existing.map(\.id))
+        return existing + additional.filter { known.insert($0.id).inserted }
+    }
+
     func openDeveloperRepository(_ repository: GitHubRepository) {
         githubDeveloperTask?.cancel()
+        githubDeveloperLoadMoreTask?.cancel()
+        resetGitHubSearchPagination()
         isLoadingGitHubDeveloper = false
         githubSearchScope = .projects
         hasGitHubSearched = true
@@ -2279,6 +2460,9 @@ final class WorkspaceViewModel: ObservableObject {
 
     func showGitHubRecommendations() {
         githubDeveloperTask?.cancel()
+        githubLoadMoreTask?.cancel()
+        githubDeveloperLoadMoreTask?.cancel()
+        resetGitHubSearchPagination()
         isLoadingGitHubDeveloper = false
         githubSearchScope = .projects
         githubQuery = ""
@@ -2290,6 +2474,9 @@ final class WorkspaceViewModel: ObservableObject {
 
     func showGitHubAccountRepositories() {
         githubDeveloperTask?.cancel()
+        githubLoadMoreTask?.cancel()
+        githubDeveloperLoadMoreTask?.cancel()
+        resetGitHubSearchPagination()
         isLoadingGitHubDeveloper = false
         githubSearchScope = .projects
         githubQuery = ""
@@ -4025,6 +4212,7 @@ final class WorkspaceViewModel: ObservableObject {
         cancelAllWorktreeAgents()
         diffTask?.cancel()
         commitDiffTask?.cancel()
+        commitMediaTask?.cancel()
         conflictDocumentTask?.cancel()
         stashDiffTask?.cancel()
         worktreeRefreshTask?.cancel()
@@ -4033,6 +4221,10 @@ final class WorkspaceViewModel: ObservableObject {
         diagnosticsTask?.cancel()
         diffDocument = nil
         commitDiffDocument = nil
+        selectedChangePreviewURL = nil
+        commitMediaItems = []
+        selectedCommitMediaItem = nil
+        commitMediaPreviewURL = nil
         codexMessages = []
         codexCommitDraft = nil
         codexActivity = nil

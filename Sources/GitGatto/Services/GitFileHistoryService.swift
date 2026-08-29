@@ -59,6 +59,7 @@ actor GitFileHistoryService: GitFileHistoryServing {
         let data: Data
         let displayPath: String
         let diffResult: GitCommandResult
+        let previewURL: URL?
 
         if let revision {
             displayPath = revision.path
@@ -67,6 +68,15 @@ actor GitFileHistoryService: GitFileHistoryServing {
                 arguments: ["show", "\(revision.hash):\(revision.path)"]
             )
             data = content.output
+            if RepositoryMediaKind(fileName: displayPath) != nil {
+                previewURL = try RepositoryMediaCache.store(
+                    data,
+                    key: "file-history:\(revision.hash):\(displayPath)",
+                    path: displayPath
+                )
+            } else {
+                previewURL = nil
+            }
             diffResult = try await runner.run(
                 at: repositoryURL,
                 arguments: [
@@ -76,7 +86,9 @@ actor GitFileHistoryService: GitFileHistoryServing {
             )
         } else {
             displayPath = path
-            data = try Data(contentsOf: validatedFileURL(path: path, in: repositoryURL))
+            let fileURL = try validatedFileURL(path: path, in: repositoryURL)
+            data = try Data(contentsOf: fileURL)
+            previewURL = RepositoryMediaKind(fileName: displayPath) == nil ? nil : fileURL
             diffResult = try await runner.run(
                 at: repositoryURL,
                 arguments: ["diff", "HEAD", "--no-color", "--no-ext-diff", "--unified=4", "--", path],
@@ -89,6 +101,7 @@ actor GitFileHistoryService: GitFileHistoryServing {
             path: displayPath,
             content: content,
             isBinary: content == nil,
+            previewURL: previewURL,
             diff: GitParsers.diff(from: diffResult.text, path: displayPath)
         )
     }

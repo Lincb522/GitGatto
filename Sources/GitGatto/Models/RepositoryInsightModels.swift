@@ -28,6 +28,7 @@ struct FileVersionDocument: Sendable {
     let path: String
     let content: String?
     let isBinary: Bool
+    let previewURL: URL?
     let diff: DiffDocument
 }
 

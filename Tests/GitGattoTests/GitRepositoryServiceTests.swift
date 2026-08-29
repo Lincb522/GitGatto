@@ -662,6 +662,39 @@ struct GitRepositoryServiceTests {
         }
     }
 
+    @Test("Previews staged media and media changed by a commit")
+    func loadsMediaAcrossChangesAndHistory() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoMediaTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+
+        let imageData = Data([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02])
+        let imageURL = root.appendingPathComponent("preview.png")
+        try imageData.write(to: imageURL)
+        try runGit(["add", "preview.png"], at: root)
+
+        let service = GitRepositoryService()
+        let stagedChange = WorkingTreeChange(
+            path: "preview.png",
+            originalPath: nil,
+            indexStatus: .added,
+            workTreeStatus: .unmodified
+        )
+        let stagedPreview = try #require(try await service.mediaPreview(for: stagedChange, in: root))
+        #expect(try Data(contentsOf: stagedPreview) == imageData)
+
+        try runGit(["commit", "-m", "Add preview"], at: root)
+        let commit = try #require(try await service.loadRepository(at: root).commits.first)
+        let media = try await service.mediaItems(for: commit, in: root)
+        #expect(media.map(\.path) == ["preview.png"])
+        let historicalPreview = try #require(try await service.mediaPreview(for: media[0], at: commit, in: root))
+        #expect(try Data(contentsOf: historicalPreview) == imageData)
+    }
+
     private func makeConflictRepository(checkingOut branch: String) throws -> URL {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GitGattoConflictTests-\(UUID().uuidString)", isDirectory: true)

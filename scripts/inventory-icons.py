@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 import json
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "Sources" / "GitGatto"
-OUTPUT = ROOT / "docs" / "icon-system" / "imagegen-icon-manifest.json"
+OUTPUT = ROOT / "docs" / "icon-system" / "zappicon-icon-manifest.json"
+SYMBOL_MAP = ROOT / "docs" / "icon-system" / "zappicon-symbol-map.json"
 
 STRING = re.compile(r'"([a-z0-9]+(?:\.[a-z0-9]+)*|[a-z]+)"')
 ICON_MEMBER = re.compile(r'\b(?:var|func)\s+(?:icon|systemImage|symbol|statusSymbol|iconName)\b')
@@ -24,9 +25,22 @@ NON_ICONS = {
     "toml", "ts", "tsx", "txt", "webp", "yaml", "yml", "dmg", "gz",
     "heic", "m4v", "mov", "mp4", "pkg", "webm", "xz", "zip"
 }
+PRODUCT_ICONS = {
+    "ai.translation",
+    "code.source",
+    "git.pull.request",
+    "history.file",
+    "legal.disclaimer",
+    "legal.open.source",
+    "legal.privacy",
+}
 
 
 def category(symbol: str) -> str:
+    if symbol.startswith("legal."):
+        return "legal"
+    if symbol in {"ai.translation", "code.source", "git.pull.request", "history.file"}:
+        return "git-and-code"
     if symbol.startswith(("arrow", "chevron", "point.")):
         return "navigation"
     if symbol.startswith(("checkmark", "exclamationmark", "xmark", "info", "circle", "record", "lock")):
@@ -47,6 +61,7 @@ def extract() -> dict[str, set[str]]:
         relative = path.relative_to(ROOT).as_posix()
         for index, line in enumerate(lines):
             candidates: set[str] = set()
+            candidates.update(symbol for symbol in PRODUCT_ICONS if f'"{symbol}"' in line)
             if (
                 "systemName:" in line
                 or "systemImage:" in line
@@ -67,7 +82,9 @@ def extract() -> dict[str, set[str]]:
                         break
                 candidates.update(STRING.findall("\n".join(block_lines)))
             for value in candidates:
-                if value in NON_ICONS or value.startswith(LOCALIZATION_PREFIXES):
+                if value in NON_ICONS or (
+                    value not in PRODUCT_ICONS and value.startswith(LOCALIZATION_PREFIXES)
+                ):
                     continue
                 if value.endswith((".title", ".body")):
                     continue
@@ -78,38 +95,48 @@ def extract() -> dict[str, set[str]]:
 def main() -> None:
     symbols = extract()
     symbols.setdefault("pause", set()).add("Sources/GitGatto/Views/DownloadCenterView.swift")
+    zappicon_mappings = json.loads(SYMBOL_MAP.read_text(encoding="utf-8"))
+    missing = sorted(set(symbols) - set(zappicon_mappings))
+    obsolete = sorted(set(zappicon_mappings) - set(symbols))
+    if missing or obsolete:
+        details = []
+        if missing:
+            details.append("Missing Zappicon mappings: " + ", ".join(missing))
+        if obsolete:
+            details.append("Unused Zappicon mappings: " + ", ".join(obsolete))
+        raise SystemExit("\n".join(details))
+
     entries = []
     for source_symbol in sorted(symbols):
         asset_id = "gatto-" + source_symbol.replace(".", "-")
         entries.append({
             "sourceSymbol": source_symbol,
             "assetID": asset_id,
+            "zappiconName": zappicon_mappings[source_symbol]["component"],
+            "zappiconStyle": zappicon_mappings[source_symbol]["style"],
+            "figmaNodeID": zappicon_mappings[source_symbol]["node_id"],
             "category": category(source_symbol),
-            "assetPath": f"Sources/GitGatto/Resources/UIIcons/{asset_id}.png",
+            "assetPath": f"Sources/GitGatto/Resources/UIIcons/{asset_id}.svg",
             "sourceRefs": sorted(symbols[source_symbol]),
         })
     payload = {
         "schemaVersion": 1,
         "generator": "scripts/inventory-icons.py",
         "source": "SwiftUI systemName/systemImage references and icon properties",
-        "imageGenerator": "built-in imagegen",
+        "iconPack": "Zappicon",
+        "iconPackURL": "https://www.figma.com/design/wNyuKVd4m7cMkMPeWwlTKa/Zappicon",
+        "iconPackCreator": "Zappicon",
         "style": {
-            "canvas": "256x256 transparent PNG master",
-            "delivery": ["24x24@1x", "48x48@2x", "72x72@3x"],
-            "stroke": "dark single-color contour, rounded caps and joins, consistent optical weight",
-            "shape": "friendly geometric, softly asymmetric, compact silhouette, 24 px readable",
-            "accent": "none in template master; application tint supplies theme and state color",
-            "avoid": [
-                "SF Symbols geometry", "Apple-native proportions", "background tile", "gradient",
-                "shadow", "3D", "text", "letters", "watermark", "blur", "hairline detail"
-            ]
+            "variant": "Regular and Filled",
+            "canvas": "Zappicon SVG component bounds",
+            "rendering": "template tint with point-size 1x/2x/3x raster representations"
         },
         "count": len(entries),
         "icons": entries
     }
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"{len(entries)} icons -> {OUTPUT}")
+    print(f"{len(entries)} Zappicon mappings -> {OUTPUT}")
 
 
 if __name__ == "__main__":

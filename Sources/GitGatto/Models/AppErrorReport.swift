@@ -171,7 +171,7 @@ enum GlobalErrorHandler {
             code: "GG-\(context.codeComponent)-\(numericCode(nsError.code))",
             title: title,
             message: redact(nsError.localizedDescription),
-            recoverySuggestion: context.recoverySuggestion,
+            recoverySuggestion: recoverySuggestion(for: error, context: context),
             operation: operation,
             repositoryPath: repositoryPath,
             command: nil,
@@ -208,6 +208,20 @@ enum GlobalErrorHandler {
 
     private static func numericCode(_ code: Int) -> String {
         code < 0 ? "N\(abs(code))" : String(code)
+    }
+
+    private static func recoverySuggestion(
+        for error: any Error,
+        context: AppErrorContext
+    ) -> String {
+        guard case .agent = context,
+              let serviceError = error as? CodexServiceError else {
+            return context.recoverySuggestion
+        }
+        if case .timedOut = serviceError {
+            return L10n.text("error.recovery.agent_timeout")
+        }
+        return context.recoverySuggestion
     }
 
     private static func redact(_ value: String) -> String {

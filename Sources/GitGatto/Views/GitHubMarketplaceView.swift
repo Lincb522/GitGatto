@@ -4,7 +4,6 @@ struct GitHubMarketplaceView: View {
     @ObservedObject var model: GitHubMarketplaceViewModel
     @ObservedObject var downloads: AppDownloadManager
     @Environment(\.colorScheme) private var colorScheme
-    @State private var selectedReleaseID: Int64?
     @State private var inAppBrowserPage: InAppBrowserPage?
 
     var body: some View {
@@ -116,7 +115,9 @@ struct GitHubMarketplaceView: View {
             .frame(height: 43)
             Rectangle().fill(palette.divider).frame(height: 1)
 
-            if model.applications.isEmpty && !model.isLoading {
+            if model.applications.isEmpty && model.isLoading {
+                GattoLoadingState(text: L10n.text("marketplace.loading"))
+            } else if model.applications.isEmpty {
                 VStack(spacing: 9) {
                     Image(gattoSymbol: "shippingbox")
                         .font(.system(size: 22))
@@ -134,9 +135,26 @@ struct GitHubMarketplaceView: View {
                                 application: application,
                                 selected: model.selectedApplication?.id == application.id
                             ) {
-                                selectedReleaseID = application.latestRelease.id
                                 model.select(application)
                             }
+                        }
+                        if model.canLoadMore {
+                            Button { model.loadMore() } label: {
+                                HStack(spacing: 7) {
+                                    if model.isLoadingMore {
+                                        ProgressView().controlSize(.small)
+                                    } else {
+                                        Image(gattoSymbol: "chevron.down.circle")
+                                    }
+                                    Text(L10n.text(model.isLoadingMore ? "github.search.loading_more" : "github.search.load_more"))
+                                }
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 34)
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                            .disabled(model.isLoadingMore)
+                            .padding(.vertical, 7)
                         }
                     }
                     .padding(8)
@@ -164,7 +182,7 @@ struct GitHubMarketplaceView: View {
                             Text(application.repository.fullName)
                                 .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                                 .foregroundStyle(palette.subtleInk)
-                            if let description = application.repository.description, !description.isEmpty {
+                            if let description = model.displayedDescription(for: application), !description.isEmpty {
                                 Text(description)
                                     .font(.system(size: 12.5))
                                     .foregroundStyle(palette.mutedInk)
@@ -186,9 +204,14 @@ struct GitHubMarketplaceView: View {
                         .foregroundStyle(palette.subtleInk)
                     }
 
+                    HStack {
+                        translationMenu(palette)
+                        Spacer()
+                    }
+
                     Picker(L10n.text("marketplace.release"), selection: Binding(
-                        get: { selectedReleaseID ?? model.releases.first?.id ?? 0 },
-                        set: { selectedReleaseID = $0 }
+                        get: { model.selectedReleaseID ?? model.releases.first?.id ?? 0 },
+                        set: { model.selectRelease($0) }
                     )) {
                         ForEach(model.releases) { release in
                             Text("\(release.name) · \(release.tagName)").tag(release.id)
@@ -216,11 +239,12 @@ struct GitHubMarketplaceView: View {
                             }
                         }
 
-                        if !release.body.isEmpty {
+                        let displayedNotes = model.displayedReleaseNotes(for: release)
+                        if !displayedNotes.isEmpty {
                             VStack(alignment: .leading, spacing: 9) {
                                 Text(L10n.text("github.releases.notes"))
                                     .font(.system(size: 13, weight: .semibold))
-                                ReleaseNotesMarkdownView(text: release.body) { url in
+                                ReleaseNotesMarkdownView(text: displayedNotes) { url in
                                     inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
                                 }
                             }
@@ -250,12 +274,17 @@ struct GitHubMarketplaceView: View {
                             .foregroundStyle(palette.danger)
                             .textSelection(.enabled)
                     }
+                    if let error = model.translationError {
+                        Text(error)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(palette.danger)
+                            .textSelection(.enabled)
+                    }
                 }
                 .padding(24)
             }
         } else if model.isLoading {
-            ProgressView(L10n.text("marketplace.loading"))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            GattoLoadingState(text: L10n.text("marketplace.loading"))
         } else if let error = model.error {
             Text(error)
                 .font(.system(size: 11.5))
@@ -269,10 +298,43 @@ struct GitHubMarketplaceView: View {
     }
 
     private func selectedRelease(for application: MarketplaceApplication) -> GitHubRelease? {
-        if let selectedReleaseID, let release = model.releases.first(where: { $0.id == selectedReleaseID }) {
-            return release
+        model.selectedRelease ?? application.latestRelease
+    }
+
+    private func translationMenu(_ palette: AppPalette) -> some View {
+        Menu {
+            Button(L10n.text("marketplace.translation.original")) { model.showOriginal() }
+            if !model.availableTranslationTargets.isEmpty {
+                Divider()
+                ForEach(model.availableTranslationTargets) { target in
+                    Button(L10n.text("codex.translate.short.\(target.rawValue)")) {
+                        model.showTranslation(target)
+                    }
+                }
+            }
+            Divider()
+            ForEach(CodexTranslationTarget.allCases) { target in
+                Button(L10n.text("codex.translate.\(target.rawValue)")) {
+                    model.translateSelected(to: target)
+                }
+            }
+        } label: {
+            HStack(spacing: 7) {
+                if model.isTranslating {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(gattoSymbol: "ai.translation")
+                }
+                Text(
+                    model.activeTranslationTarget.map {
+                        L10n.text("codex.translate.short.\($0.rawValue)")
+                    } ?? L10n.text("codex.action.translate")
+                )
+            }
+            .foregroundStyle(model.activeTranslationTarget == nil ? palette.ink : palette.primary)
         }
-        return model.releases.first ?? application.latestRelease
+        .buttonStyle(SecondaryButtonStyle())
+        .disabled(model.isTranslating)
     }
 }
 

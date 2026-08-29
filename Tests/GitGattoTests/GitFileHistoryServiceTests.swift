@@ -59,6 +59,26 @@ struct GitFileHistoryServiceTests {
         #expect(try runGitOutput(["status", "--porcelain", "--", "Sources/Current.swift"], at: root) == "M Sources/Current.swift")
     }
 
+    @Test("Loads current and historical media previews")
+    func loadsMediaPreviews() async throws {
+        let root = try makeRepository(prefix: "GitGattoFileMediaHistoryTests")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fileURL = root.appendingPathComponent("Assets/demo.mkv")
+        try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let first = Data([0x1a, 0x45, 0xdf, 0xa3, 0x01])
+        try first.write(to: fileURL)
+        try runGit(["add", "Assets/demo.mkv"], at: root)
+        try runGit(["commit", "-m", "Add video"], at: root)
+
+        let service = GitFileHistoryService()
+        let current = try await service.document(for: "Assets/demo.mkv", revision: nil, in: root)
+        #expect(current.previewURL == fileURL)
+        let revision = try #require(try await service.history(for: "Assets/demo.mkv", in: root).first)
+        let historical = try await service.document(for: "Assets/demo.mkv", revision: revision, in: root)
+        let historicalURL = try #require(historical.previewURL)
+        #expect(try Data(contentsOf: historicalURL) == first)
+    }
+
     private func makeRepository(prefix: String) throws -> URL {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(prefix)-\(UUID().uuidString)", isDirectory: true)

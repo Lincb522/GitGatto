@@ -15,13 +15,7 @@ struct GitHubActionsCenterView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
 
             if model.isLoadingGitHubActions, model.githubActionRuns.isEmpty {
-                VStack(spacing: 10) {
-                    ProgressView().controlSize(.small)
-                    Text(L10n.text("github.actions.loading"))
-                        .font(font(size: 11.5, weight: .medium))
-                        .foregroundStyle(palette.mutedInk)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                GattoLoadingState(text: L10n.text("github.actions.loading"))
             } else if model.githubActionRuns.isEmpty {
                 emptyState(palette)
             } else {
@@ -149,13 +143,7 @@ struct GitHubActionsCenterView: View {
                 Rectangle().fill(palette.divider).frame(height: 1)
 
                 if model.isLoadingGitHubActionDetail, model.githubActionRunDetail == nil {
-                    VStack(spacing: 10) {
-                        ProgressView().controlSize(.small)
-                        Text(L10n.text("github.actions.detail.loading"))
-                            .font(font(size: 11.5, weight: .medium))
-                            .foregroundStyle(palette.mutedInk)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    GattoLoadingState(text: L10n.text("github.actions.detail.loading"))
                 } else if let detail = model.githubActionRunDetail {
                     detailContent(detail, palette: palette)
                 } else if let error = model.githubActionsError {

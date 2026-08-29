@@ -81,7 +81,7 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
         case .sync: "arrow.up.arrow.down"
         case .github: "shippingbox"
         case .agent: "sparkles"
-        case .translation: "character.book.closed"
+        case .translation: "ai.translation"
         case .cliSettings: "gearshape"
         case .shortcuts: "command"
         case .troubleshooting: "wrench.and.screwdriver"

@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-GitGatto includes the following open-source software.
+GitGatto includes the following third-party software and visual assets.
 
 ## Sparkle 2.9.4
 
@@ -27,3 +27,13 @@ Sparkle is distributed under the MIT License:
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+## Zappicon
+
+Project: https://zappicon.com/
+
+Figma: https://www.figma.com/design/wNyuKVd4m7cMkMPeWwlTKa/Zappicon
+
+License: https://zappicon.com/license
+
+GitGatto uses Zappicon Regular and Filled SVG interface icons under the Zappicon license.

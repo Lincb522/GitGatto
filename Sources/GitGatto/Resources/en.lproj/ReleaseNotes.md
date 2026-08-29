@@ -1,13 +1,16 @@
 ## Added
 
-- Added a complete repository browser with source, image, video, and SVG previews, including SVG source inspection.
-- Added GitHub Releases, managed downloads, macOS app installation, and a platform-filtered app marketplace.
-- Added repository starring, local repository add/remove actions, and Agent-powered README editing with built-in layouts.
-- Search now supports repositories, developers, fuzzy matching, and natural-language queries.
-- Integrated 833 GitHub language image assets across repository lists and details.
-- Expanded Agent workflows for repository diagnostics, error repair, automatic staging, commits, and pushes.
+- App marketplace details and release content can now be translated with Agent and reused without retranslating.
+- Working changes, commit history, and file history now preview images, video, and SVG content directly.
+- Repository, developer, and marketplace searches can load additional results.
 
 ## Improved
 
-- Repository switching and Git status refreshes now present core content first and finish secondary loading in the background.
-- Refined code, diff, conflict, file-action, and project-detail interactions.
+- Replaced every interface icon with Zappicon vector assets for clearer light, dark, and compact rendering.
+- Added visible loading states across repository, GitHub, Agent, download, update, and detail views.
+- Improved compact rendering for GitHub language icons.
+- Pull, commit, and push progress now appears on the corresponding buttons without duplicate sync animations.
+
+## Fixed
+
+- Project Agent runs can now continue for up to 15 minutes, preventing builds and tests from being stopped at 150 seconds while retaining manual cancellation.

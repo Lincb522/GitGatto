@@ -402,7 +402,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .general: "slider.horizontal.3"
         case .git: "arrow.triangle.branch"
         case .agent: "sparkles"
-        case .translation: "character.book.closed"
+        case .translation: "ai.translation"
         }
     }
 }

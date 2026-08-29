@@ -104,12 +104,7 @@ struct WorkspaceView: View {
                     consoleLayout(palette: palette)
                 }
 
-                if let operation = model.activeOperation, operation.isRemoteSync {
-                    RepositoryOperationBanner(operation: operation)
-                        .padding(.top, 16)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .zIndex(4)
-                } else if let notice = model.notice {
+                if let notice = model.notice {
                     OperationToast(notice: notice)
                         .padding(.top, 16)
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -160,6 +155,8 @@ struct WorkspaceView: View {
             GitHubWorkspaceView(model: model, downloads: downloads)
         } else if model.selectedSection == .marketplace {
             GitHubMarketplaceView(model: marketplaceModel, downloads: downloads)
+        } else if model.snapshot == nil, model.isRefreshing {
+            GattoLoadingState(text: L10n.text("loading.generic"))
         } else if model.snapshot == nil {
             WelcomeView(model: model)
         } else {
@@ -488,7 +485,6 @@ private struct RepositoryTopBar: View {
                     BranchQuickSwitcher(model: model, snapshot: snapshot)
                     RepositorySyncStatusView(
                         state: snapshot.syncState,
-                        isMonitoring: model.isLiveRefreshing || model.isCodexRunning,
                         error: model.liveSyncError
                     )
                 }
@@ -530,7 +526,6 @@ private struct RepositoryTopBar: View {
 
                         RepositorySyncStatusView(
                             state: snapshot.syncState,
-                            isMonitoring: model.isLiveRefreshing || model.isCodexRunning,
                             error: model.liveSyncError
                         )
                     }
@@ -579,7 +574,6 @@ private struct RepositoryTopBar: View {
                         BranchQuickSwitcher(model: model, snapshot: snapshot)
                         RepositorySyncStatusView(
                             state: snapshot.syncState,
-                            isMonitoring: model.isLiveRefreshing || model.isCodexRunning,
                             error: model.liveSyncError
                         )
                     }
@@ -610,7 +604,7 @@ private struct RepositoryTopBar: View {
                 RemoteSyncButton(
                     titleKey: "action.push",
                     direction: .up,
-                    isActive: model.activeOperation == .push,
+                    isActive: model.activeOperation == .push || model.activeOperation == .commitAndPush,
                     isDisabled: model.activeOperation != nil
                 ) {
                     Task { await model.push() }
@@ -624,7 +618,7 @@ private struct RepositoryTopBar: View {
                 ToolbarIconButton(
                     systemName: "arrow.clockwise",
                     helpKey: "action.refresh",
-                    isActive: model.isRefreshing || model.isLiveRefreshing || model.isCodexRunning,
+                    isActive: model.isRefreshing,
                     isDisabled: model.isRefreshing
                 ) {
                     Task { await model.refresh() }
@@ -715,7 +709,6 @@ private struct BranchQuickSwitcher: View {
 
 private struct RepositorySyncStatusView: View {
     let state: RepositorySyncState
-    let isMonitoring: Bool
     let error: String?
 
     @Environment(\.colorScheme) private var colorScheme
@@ -738,11 +731,7 @@ private struct RepositorySyncStatusView: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 6) {
-            if isMonitoring {
-                LiveSyncGlyph()
-            } else {
-                Image(gattoSymbol: error == nil ? presentation.icon : "exclamationmark.triangle.fill")
-            }
+            Image(gattoSymbol: error == nil ? presentation.icon : "exclamationmark.triangle.fill")
             Text(presentation.text)
         }
             .font(.system(size: 10.5, weight: .semibold))
@@ -755,31 +744,7 @@ private struct RepositorySyncStatusView: View {
             .overlay {
                 Capsule().stroke(palette.divider, lineWidth: state == .synced ? 0 : 1)
             }
-            .help(error ?? L10n.text(isMonitoring ? "sync.status.monitoring" : "sync.status.live"))
-    }
-}
-
-private struct LiveSyncGlyph: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var rotation = 0.0
-
-    var body: some View {
-        Image(gattoSymbol: "arrow.triangle.2.circlepath")
-            .font(.system(size: 9.5, weight: .bold))
-            .rotationEffect(.degrees(rotation))
-            .onAppear { updateAnimation() }
-            .onChange(of: reduceMotion) { _, _ in updateAnimation() }
-    }
-
-    private func updateAnimation() {
-        guard !reduceMotion else {
-            rotation = 0
-            return
-        }
-        rotation = 0
-        withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) {
-            rotation = 360
-        }
+            .help(error ?? L10n.text("sync.status.live"))
     }
 }
 

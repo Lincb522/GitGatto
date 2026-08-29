@@ -22,9 +22,9 @@ enum LegalDocumentKind: String, CaseIterable, Identifiable, Sendable {
     var icon: String {
         switch self {
         case .userAgreement: "doc.text"
-        case .openSourceLicense: "chevron.left.forwardslash.chevron.right"
-        case .privacyPolicy: "hand.raised"
-        case .disclaimer: "exclamationmark.shield"
+        case .openSourceLicense: "legal.open.source"
+        case .privacyPolicy: "legal.privacy"
+        case .disclaimer: "legal.disclaimer"
         }
     }
 

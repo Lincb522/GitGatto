@@ -526,6 +526,7 @@
 "error.recovery.pull" = "Resolve local changes, branch divergence, or the remote connection, then pull again.";
 "error.recovery.git" = "Resolve the current repository state using the complete Git output, then retry the operation.";
 "error.recovery.agent" = "Check the selected project and Agent CLI status, resolve the complete output, then try again.";
+"error.recovery.agent_timeout" = "The Agent reached the 15-minute limit and stopped. Confirm the CLI is available, then retry; long tasks can be cancelled while running.";
 
 "settings.open" = "Settings";
 "settings.title" = "Settings";
@@ -980,3 +981,17 @@
 "marketplace.error.agent_install" = "Agent installation failed: %@";
 "codex.skill.readme" = "README";
 "codex.prompt.readme" = "Review this repository's README and recommend concrete structural and content improvements based only on verified project evidence.";
+"github.search.load_more" = "Load More";
+"github.search.loading_more" = "Loading…";
+"loading.generic" = "Loading…";
+"marketplace.translation.original" = "Original";
+"marketplace.error.translation" = "Translation failed: %@";
+"media.preview" = "Preview";
+"media.source" = "Source";
+"media.fit" = "Fit";
+"media.quicklook" = "Quick Look";
+"media.unavailable" = "Preview unavailable";
+"media.open_default" = "Open with Default App";
+"media.changes" = "Changes";
+"media.preparing_video" = "Preparing video…";
+"media.play" = "Play video";

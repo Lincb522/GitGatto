@@ -81,8 +81,7 @@ struct RepositoryReleasesView: View {
     @ViewBuilder
     private func releaseDetail(_ release: GitHubRelease?, palette: AppPalette) -> some View {
         if model.isLoadingGitHubReleases, release == nil {
-            ProgressView(L10n.text("github.releases.loading"))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            GattoLoadingState(text: L10n.text("github.releases.loading"))
         } else if let error = model.githubReleasesError, release == nil {
             Text(error)
                 .font(.system(size: 11.5))

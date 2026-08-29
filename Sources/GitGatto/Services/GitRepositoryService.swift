@@ -36,6 +36,13 @@ protocol GitRepositoryServing: Sendable {
     func fetchRemoteTracking(in repositoryURL: URL) async throws
     func diff(for change: WorkingTreeChange, in repositoryURL: URL) async throws -> DiffDocument
     func diff(for commit: CommitRecord, in repositoryURL: URL) async throws -> DiffDocument
+    func mediaPreview(for change: WorkingTreeChange, in repositoryURL: URL) async throws -> URL?
+    func mediaItems(for commit: CommitRecord, in repositoryURL: URL) async throws -> [RepositoryMediaItem]
+    func mediaPreview(
+        for item: RepositoryMediaItem,
+        at commit: CommitRecord,
+        in repositoryURL: URL
+    ) async throws -> URL?
     func stagedDiff(in repositoryURL: URL) async throws -> String
     func prepareCommitDraft(in repositoryURL: URL) async throws -> CommitDraftEvidence
     func stashes(in repositoryURL: URL) async throws -> [StashRecord]
@@ -78,6 +85,22 @@ extension GitRepositoryServing {
         changes: [WorkingTreeChange]
     ) async throws -> RepositoryOperationState? {
         try await repositoryOperationState(in: repositoryURL)
+    }
+
+    func mediaPreview(for change: WorkingTreeChange, in repositoryURL: URL) async throws -> URL? {
+        nil
+    }
+
+    func mediaItems(for commit: CommitRecord, in repositoryURL: URL) async throws -> [RepositoryMediaItem] {
+        []
+    }
+
+    func mediaPreview(
+        for item: RepositoryMediaItem,
+        at commit: CommitRecord,
+        in repositoryURL: URL
+    ) async throws -> URL? {
+        nil
     }
 
     func prepareCommitDraft(in repositoryURL: URL) async throws -> CommitDraftEvidence {
@@ -280,6 +303,62 @@ actor GitRepositoryService: GitRepositoryServing {
             arguments: ["show", "--format=", "--no-color", "--unified=4", commit.hash]
         )
         return GitParsers.diff(from: result.text, path: commit.shortHash)
+    }
+
+    func mediaPreview(for change: WorkingTreeChange, in repositoryURL: URL) async throws -> URL? {
+        guard RepositoryMediaKind(fileName: change.path) != nil else { return nil }
+        let workingURL = try validatedFileURL(path: change.path, in: repositoryURL)
+        if !change.isStaged, FileManager.default.fileExists(atPath: workingURL.path) {
+            return workingURL
+        }
+
+        let revision = change.isStaged && change.indexStatus != .deleted ? ":" : "HEAD:"
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["show", "\(revision)\(change.path)"]
+        )
+        return try RepositoryMediaCache.store(
+            result.output,
+            key: "change:\(revision):\(change.path)",
+            path: change.path
+        )
+    }
+
+    func mediaItems(for commit: CommitRecord, in repositoryURL: URL) async throws -> [RepositoryMediaItem] {
+        async let changedResult = runner.run(
+            at: repositoryURL,
+            arguments: [
+                "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", "-z", commit.hash
+            ]
+        )
+        async let treeResult = runner.run(
+            at: repositoryURL,
+            arguments: ["ls-tree", "-r", "--name-only", "-z", commit.hash]
+        )
+        let changed = try await changedResult
+        let tree = try await treeResult
+        let existingPaths = Set(tree.output.split(separator: 0).map { String(decoding: $0, as: UTF8.self) })
+        return changed.output
+            .split(separator: 0)
+            .map { RepositoryMediaItem(path: String(decoding: $0, as: UTF8.self)) }
+            .filter { $0.kind != nil && existingPaths.contains($0.path) }
+    }
+
+    func mediaPreview(
+        for item: RepositoryMediaItem,
+        at commit: CommitRecord,
+        in repositoryURL: URL
+    ) async throws -> URL? {
+        guard item.kind != nil else { return nil }
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["show", "\(commit.hash):\(item.path)"]
+        )
+        return try RepositoryMediaCache.store(
+            result.output,
+            key: "commit:\(commit.hash):\(item.path)",
+            path: item.path
+        )
     }
 
     func stagedDiff(in repositoryURL: URL) async throws -> String {

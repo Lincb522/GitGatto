@@ -35,4 +35,13 @@ struct GitHubLanguageStyleTests {
         #expect(GitHubLanguageIconAssets.image(for: "Swift") != nil)
         #expect(GitHubLanguageIconAssets.image(for: "Unknown Fixture Language") == nil)
     }
+
+    @Test("Builds exact backing-scale thumbnails for small language logos")
+    @MainActor
+    func buildsSmallLanguageThumbnails() throws {
+        let image = try #require(GitHubLanguageIconAssets.thumbnail(for: "Swift", pointSize: 24))
+        #expect(image.size.width == 24)
+        #expect(Set(image.representations.map(\.pixelsWide)) == [24, 48, 72])
+        #expect(Set(image.representations.map(\.pixelsHigh)) == [24, 48, 72])
+    }
 }

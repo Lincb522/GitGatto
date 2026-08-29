@@ -5,10 +5,10 @@ protocol GitHubServing: Sendable {
     func beginLogin() async throws
     func currentAccount() async throws -> GitHubAccount
     func accountRepositories() async throws -> [GitHubRepository]
-    func searchRepositories(query: String) async throws -> [GitHubRepository]
-    func searchDevelopers(query: String) async throws -> [GitHubDeveloperSummary]
+    func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository]
+    func searchDevelopers(query: String, page: Int) async throws -> [GitHubDeveloperSummary]
     func developerProfile(login: String) async throws -> GitHubDeveloperProfile
-    func repositories(forDeveloper login: String) async throws -> [GitHubRepository]
+    func repositories(forDeveloper login: String, page: Int) async throws -> [GitHubRepository]
     func dailyRecommendations() async throws -> [GitHubRepository]
     func readme(for repository: GitHubRepository) async throws -> GitHubReadmeDocument?
     func markdown(at path: String, in repository: GitHubRepository) async throws -> GitHubReadmeDocument
@@ -71,6 +71,18 @@ protocol GitHubServing: Sendable {
 }
 
 extension GitHubServing {
+    func searchRepositories(query: String) async throws -> [GitHubRepository] {
+        try await searchRepositories(query: query, page: 1)
+    }
+
+    func searchDevelopers(query: String) async throws -> [GitHubDeveloperSummary] {
+        try await searchDevelopers(query: query, page: 1)
+    }
+
+    func repositories(forDeveloper login: String) async throws -> [GitHubRepository] {
+        try await repositories(forDeveloper: login, page: 1)
+    }
+
     func releases(for repository: GitHubRepository) async throws -> [GitHubRelease] {
         throw GitHubServiceError.invalidResponse
     }
@@ -240,24 +252,26 @@ actor GitHubService: GitHubServing {
         return try GitHubAPIParser.accountRepositories(from: response)
     }
 
-    func searchRepositories(query: String) async throws -> [GitHubRepository] {
+    func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository] {
         let response = try await api([
             "-X", "GET",
             "search/repositories",
             "-f", "q=\(query) archived:false",
             "-f", "sort=stars",
             "-f", "order=desc",
-            "-f", "per_page=30"
+            "-f", "per_page=30",
+            "-f", "page=\(max(1, page))"
         ])
         return try GitHubAPIParser.repositories(from: response)
     }
 
-    func searchDevelopers(query: String) async throws -> [GitHubDeveloperSummary] {
+    func searchDevelopers(query: String, page: Int) async throws -> [GitHubDeveloperSummary] {
         let response = try await api([
             "-X", "GET",
             "search/users",
             "-f", "q=\(query)",
-            "-f", "per_page=40"
+            "-f", "per_page=30",
+            "-f", "page=\(max(1, page))"
         ])
         let developers = try GitHubAPIParser.developers(from: response)
         return GitHubFuzzySearch.sorted(developers, query: query)
@@ -268,13 +282,14 @@ actor GitHubService: GitHubServing {
         return try GitHubAPIParser.developerProfile(from: response)
     }
 
-    func repositories(forDeveloper login: String) async throws -> [GitHubRepository] {
+    func repositories(forDeveloper login: String, page: Int) async throws -> [GitHubRepository] {
         let response = try await api([
             "-X", "GET",
             "users/\(login)/repos",
             "-f", "type=owner",
             "-f", "sort=updated",
-            "-f", "per_page=30"
+            "-f", "per_page=30",
+            "-f", "page=\(max(1, page))"
         ])
         return try GitHubAPIParser.repositoryList(from: response)
     }
@@ -1570,11 +1585,11 @@ private enum GitHubPreviewFileKind {
 
     init(fileName: String) {
         let ext = (fileName as NSString).pathExtension.lowercased()
-        switch ext {
-        case "png", "jpg", "jpeg", "gif", "webp", "heic", "bmp", "tiff": self = .image(ext)
-        case "mov", "mp4", "m4v", "webm": self = .video(ext)
-        case "svg": self = .svg
-        default: self = .none
+        switch RepositoryMediaKind(fileName: fileName) {
+        case .image: self = .image(ext)
+        case .video: self = .video(ext)
+        case .svg: self = .svg
+        case nil: self = .none
         }
     }
 
@@ -1582,7 +1597,7 @@ private enum GitHubPreviewFileKind {
         switch self {
         case .none: 1_500_000
         case .image, .svg: 25_000_000
-        case .video: 100_000_000
+        case .video: 250_000_000
         }
     }
 

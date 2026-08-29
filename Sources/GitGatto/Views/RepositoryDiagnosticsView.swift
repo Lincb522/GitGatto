@@ -16,9 +16,7 @@ struct RepositoryDiagnosticsView: View {
             if let diagnostics = model.repositoryDiagnostics {
                 diagnosticsContent(diagnostics, palette: palette)
             } else if model.activeDiagnosticOperation == .refresh {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                GattoLoadingState(text: L10n.text("loading.generic"))
             } else {
                 VStack(spacing: 9) {
                     Image(gattoSymbol: "stethoscope")
