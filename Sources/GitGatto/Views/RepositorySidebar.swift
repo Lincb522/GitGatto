@@ -4,27 +4,49 @@ import SwiftUI
 struct RepositorySidebar: View {
     @ObservedObject var model: WorkspaceViewModel
     @Binding var appearanceRaw: String
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @Binding var isCollapsed: Bool
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+    @AppStorage("sidebar.projects.expanded") private var projectsExpanded = true
+    @AppStorage("sidebar.repository.expanded") private var repositoryToolsExpanded = true
+    @AppStorage("sidebar.agent.expanded") private var agentExpanded = true
+    @AppStorage("sidebar.local.expanded") private var localRepositoriesExpanded = true
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        let isStandard = AppVisualTheme.resolved(themeRaw) == .standard
-        VStack(spacing: 0) {
-            if isStandard {
+        let theme = AppVisualTheme.resolved(themeRaw)
+        let isStandard = theme == .standard
+        Group {
+            if theme == .folio {
+                folioSidebar(palette: palette)
+            } else if isCollapsed {
+                collapsedSidebar(palette: palette, isStandard: isStandard)
+            } else {
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: 24)
-                    AppBrandLockup(iconSize: 40, wordmarkWidth: 108, spacing: 9)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .frame(height: 48)
+            HStack(spacing: 8) {
+                if isStandard {
+                    AppBrandLockup(iconSize: 38, wordmarkWidth: 100, spacing: 8)
+                } else {
+                    Text(L10n.text("sidebar.navigation"))
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(palette.mutedInk)
                 }
-                .frame(height: 72)
+                Spacer(minLength: 4)
+                sidebarCollapseButton(palette: palette, collapsed: false)
             }
+            .padding(.top, isStandard ? 24 : 8)
+            .padding(.horizontal, isStandard ? 16 : 12)
+            .frame(height: isStandard ? 72 : 48)
 
             VStack(spacing: 4) {
+                sidebarSectionHeader(
+                    titleKey: "sidebar.section.projects",
+                    isExpanded: $projectsExpanded,
+                    palette: palette
+                )
+                if projectsExpanded {
                 SidebarNavigationButton(
                     titleKey: "nav.github",
                     systemImage: "square.grid.2x2",
@@ -41,12 +63,14 @@ struct RepositorySidebar: View {
                 ) {
                     model.selectedSection = .marketplace
                 }
+                }
 
-                Rectangle()
-                    .fill(palette.divider)
-                    .frame(height: 1)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                sidebarSectionHeader(
+                    titleKey: "sidebar.section.repository",
+                    isExpanded: $repositoryToolsExpanded,
+                    palette: palette
+                )
+                if repositoryToolsExpanded {
 
                 SidebarNavigationButton(
                     titleKey: "nav.changes",
@@ -104,12 +128,14 @@ struct RepositorySidebar: View {
                 ) {
                     model.selectedSection = .diagnostics
                 }
+                }
 
-                Rectangle()
-                    .fill(palette.divider)
-                    .frame(height: 1)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                sidebarSectionHeader(
+                    titleKey: "nav.codex",
+                    isExpanded: $agentExpanded,
+                    palette: palette
+                )
+                if agentExpanded {
 
                 SidebarNavigationButton(
                     titleKey: "nav.codex",
@@ -118,15 +144,27 @@ struct RepositorySidebar: View {
                 ) {
                     model.selectedSection = .codex
                 }
+                }
             }
             .padding(.horizontal, isStandard ? 10 : 12)
             .padding(.top, isStandard ? 6 : 14)
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 7) {
-                    Text(L10n.text("sidebar.repositories"))
-                        .font(.system(size: 10.5, weight: .semibold))
+                    Button {
+                        localRepositoriesExpanded.toggle()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(gattoSymbol: localRepositoriesExpanded ? "chevron.down" : "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .frame(width: 12)
+                            Text(L10n.text("sidebar.repositories"))
+                                .font(.system(size: 10.5, weight: .semibold))
+                        }
                         .foregroundStyle(palette.subtleInk)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                     if !model.localRepositories.isEmpty {
                         CountBadge(count: model.localRepositories.count, emphasized: false)
                     }
@@ -161,6 +199,7 @@ struct RepositorySidebar: View {
                 }
                 .padding(.horizontal, 10)
 
+                if localRepositoriesExpanded {
                 if model.localRepositories.isEmpty {
                     Text(L10n.text("repository.scan.empty"))
                         .font(.system(size: 10.5))
@@ -208,6 +247,7 @@ struct RepositorySidebar: View {
                         }
                     }
                 }
+                }
             }
             .padding(.horizontal, isStandard ? 10 : 12)
             .padding(.top, isStandard ? 24 : 16)
@@ -234,8 +274,213 @@ struct RepositorySidebar: View {
             }
             .padding(.horizontal, isStandard ? 12 : 14)
             .padding(.bottom, isStandard ? 13 : 14)
+                }
+            }
         }
         .background(palette.sidebar)
+        .animation(.easeInOut(duration: 0.18), value: isCollapsed)
+    }
+
+    private func folioSidebar(palette: AppPalette) -> some View {
+        VStack(spacing: 12) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 5) {
+                    ForEach(collapsedSections) { section in
+                        FolioRailNavigationButton(
+                            section: section,
+                            isSelected: model.selectedSection == section,
+                            count: count(for: section)
+                        ) {
+                            model.selectedSection = section
+                        }
+                    }
+                }
+                .padding(.top, 54)
+                .padding(.bottom, 8)
+            }
+            .frame(maxHeight: .infinity)
+            .folioSurface(.rail, cornerRadius: 22)
+
+            VStack(spacing: 5) {
+                Menu {
+                    ForEach(model.localRepositories, id: \.standardizedFileURL.path) { url in
+                        Button(url.lastPathComponent) {
+                            Task { await model.openRepository(url) }
+                        }
+                    }
+                    if !model.localRepositories.isEmpty { Divider() }
+                    Button(L10n.text("action.open_repository")) { model.chooseRepository() }
+                    Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
+                } label: {
+                    Color.clear
+                        .frame(width: 38, height: 38)
+                        .contentShape(Circle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .overlay {
+                    Image(gattoSymbol: "folder.badge.plus")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                        .allowsHitTesting(false)
+                }
+                .fixedSize()
+                .help(L10n.text("sidebar.repositories"))
+
+                Button { openSettings() } label: {
+                    Image(gattoSymbol: "gearshape")
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 38, height: 38)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(palette.ink)
+                .help(L10n.text("settings.title"))
+
+                Button { openWindow(id: "about") } label: {
+                    Image(gattoSymbol: "info.circle")
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 38, height: 38)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(palette.ink)
+                .help(L10n.text("about.title"))
+            }
+            .padding(.vertical, 7)
+            .frame(width: 58)
+            .folioSurface(.rail, cornerRadius: 22)
+        }
+    }
+
+    private func sidebarSectionHeader(
+        titleKey: String,
+        isExpanded: Binding<Bool>,
+        palette: AppPalette
+    ) -> some View {
+        Button {
+            isExpanded.wrappedValue.toggle()
+        } label: {
+            HStack(spacing: 7) {
+                Image(gattoSymbol: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .frame(width: 12)
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 10.5, weight: .semibold))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(palette.subtleInk)
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func collapsedSidebar(palette: AppPalette, isStandard: Bool) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 5) {
+                AppBrandIcon(size: 26)
+                sidebarCollapseButton(palette: palette, collapsed: true)
+            }
+            .padding(.top, isStandard ? 24 : 7)
+            .frame(height: isStandard ? 70 : 46)
+
+            Rectangle()
+                .fill(palette.divider)
+                .frame(height: 1)
+                .padding(.horizontal, 8)
+
+            ScrollView {
+                VStack(spacing: 5) {
+                    ForEach(collapsedSections) { section in
+                        CollapsedSidebarNavigationButton(
+                            section: section,
+                            isSelected: model.selectedSection == section,
+                            count: count(for: section)
+                        ) {
+                            model.selectedSection = section
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            Menu {
+                ForEach(model.localRepositories, id: \.standardizedFileURL.path) { url in
+                    Button(url.lastPathComponent) {
+                        Task { await model.openRepository(url) }
+                    }
+                }
+                if !model.localRepositories.isEmpty {
+                    Divider()
+                }
+                Button(L10n.text("action.open_repository")) { model.chooseRepository() }
+                Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
+            } label: {
+                Color.clear
+                    .frame(width: 34, height: 34)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .overlay {
+                sidebarUtilityIcon("folder.badge.plus", palette: palette)
+                    .allowsHitTesting(false)
+            }
+            .fixedSize()
+            .help(L10n.text("sidebar.repositories"))
+
+            Button { openSettings() } label: {
+                sidebarUtilityIcon("gearshape", palette: palette)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text("settings.title"))
+
+            Button { openWindow(id: "about") } label: {
+                sidebarUtilityIcon("info.circle", palette: palette)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text("about.title"))
+        }
+        .padding(.horizontal, 8)
+        .padding(.bottom, 12)
+    }
+
+    private var collapsedSections: [WorkspaceSection] {
+        [.github, .marketplace, .changes, .stash, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex]
+    }
+
+    private func count(for section: WorkspaceSection) -> Int? {
+        switch section {
+        case .github: model.githubAccountRepositories.count
+        case .marketplace: nil
+        case .changes: model.snapshot?.changes.count
+        case .stash: model.stashes.count
+        case .history: model.commitGraph.nodes.count
+        case .timeMachine: model.repositoryFiles.count
+        case .branches: model.snapshot?.branches.count
+        case .worktrees: model.worktrees.count
+        case .diagnostics: model.repositoryDiagnostics?.attentionCount
+        case .codex: nil
+        }
+    }
+
+    private func sidebarCollapseButton(palette: AppPalette, collapsed: Bool) -> some View {
+        Button {
+            isCollapsed.toggle()
+        } label: {
+            Image(gattoSymbol: collapsed ? "chevron.right" : "chevron.left")
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(palette.mutedInk)
+                .frame(width: 28, height: 28)
+                .background(palette.raisedSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(palette.divider, lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
+        .help(L10n.text(collapsed ? "sidebar.expand" : "sidebar.collapse"))
     }
 
     private func sidebarUtilityIcon(_ systemName: String, palette: AppPalette) -> some View {
@@ -255,6 +500,106 @@ struct RepositorySidebar: View {
                         lineWidth: 1
                     )
             }
+    }
+}
+
+private struct FolioRailNavigationButton: View {
+    let section: WorkspaceSection
+    let isSelected: Bool
+    let count: Int?
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                Image(gattoSymbol: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(isSelected ? palette.sidebar : palette.ink)
+                    .frame(width: 38, height: 38)
+                    .background(isSelected ? palette.ink : Color.clear)
+                    .clipShape(Circle())
+
+                if let count, count > 0 {
+                    Circle()
+                        .fill(palette.warning)
+                        .frame(width: 6, height: 6)
+                        .overlay { Circle().stroke(palette.sidebar, lineWidth: 1) }
+                        .offset(x: -2, y: 2)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .help(L10n.text("nav.\(section.rawValue)"))
+        .accessibilityLabel(L10n.text("nav.\(section.rawValue)"))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var icon: String {
+        switch section {
+        case .github: "square.grid.2x2"
+        case .marketplace: "arrow.down.app"
+        case .changes: "square.stack.3d.up"
+        case .stash: "archivebox"
+        case .history: "clock.arrow.circlepath"
+        case .timeMachine: "history.file"
+        case .branches: "arrow.triangle.branch"
+        case .worktrees: "rectangle.split.2x1"
+        case .diagnostics: "stethoscope"
+        case .codex: "sparkles"
+        }
+    }
+}
+
+private struct CollapsedSidebarNavigationButton: View {
+    let section: WorkspaceSection
+    let isSelected: Bool
+    let count: Int?
+    let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                Image(gattoSymbol: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
+                    .frame(width: 38, height: 36)
+                    .background(isSelected ? palette.primarySoft : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+                if let count, count > 0 {
+                    Circle()
+                        .fill(palette.primary)
+                        .frame(width: 6, height: 6)
+                        .overlay { Circle().stroke(palette.sidebar, lineWidth: 1) }
+                        .offset(x: -3, y: 3)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(L10n.text("nav.\(section.rawValue)"))
+        .accessibilityLabel(L10n.text("nav.\(section.rawValue)"))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var icon: String {
+        switch section {
+        case .github: "square.grid.2x2"
+        case .marketplace: "arrow.down.app"
+        case .changes: "square.stack.3d.up"
+        case .stash: "archivebox"
+        case .history: "clock.arrow.circlepath"
+        case .timeMachine: "history.file"
+        case .branches: "arrow.triangle.branch"
+        case .worktrees: "rectangle.split.2x1"
+        case .diagnostics: "stethoscope"
+        case .codex: "sparkles"
+        }
     }
 }
 

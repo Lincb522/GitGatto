@@ -3,7 +3,7 @@ import SwiftUI
 struct HistoryWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     var body: some View {
@@ -30,6 +30,24 @@ struct HistoryWorkspaceView: View {
                         node: selectedNode
                     )
                         .appGlassPanel(cornerRadius: 14, elevated: false)
+                }
+                .padding(10)
+            } else if AppVisualTheme.resolved(themeRaw) == .emerald {
+                HStack(spacing: 10) {
+                    CommitNavigator(model: model)
+                        .frame(width: min(470, max(350, proxy.size.width * 0.44)))
+                        .emeraldSurface(.elevated, cornerRadius: 16)
+                    CommitInspector(model: model, node: selectedNode)
+                        .emeraldSurface(.panel, cornerRadius: 16)
+                }
+                .padding(10)
+            } else if AppVisualTheme.resolved(themeRaw) == .folio {
+                HStack(spacing: 10) {
+                    CommitNavigator(model: model)
+                        .frame(width: min(470, max(350, proxy.size.width * 0.44)))
+                        .folioSurface(.elevated, cornerRadius: 16)
+                    CommitInspector(model: model, node: selectedNode)
+                        .folioSurface(.panel, cornerRadius: 16)
                 }
                 .padding(10)
             } else {

@@ -7,18 +7,49 @@ struct GitGattoApp: App {
     @StateObject private var model = WorkspaceViewModel()
     @StateObject private var appNavigation = AppNavigationModel()
     @StateObject private var updateManager = AppUpdateManager()
+    @State private var showsLaunchAnimation: Bool
+    @State private var isWorkspaceReady = false
+
+    init() {
+        let preferences = AppPreferencesStore.load()
+        let holdsForPreview = ProcessInfo.processInfo.environment["GITGATTO_LAUNCH_PREVIEW"] == "1"
+        _showsLaunchAnimation = State(initialValue: preferences.launchAnimationEnabled || holdsForPreview)
+    }
 
     var body: some Scene {
         WindowGroup {
             AppThemeRoot {
+                ZStack {
+                    LaunchWorkspaceLayer(isLaunching: showsLaunchAnimation) {
 #if DEBUG
-                workspace.overlay { DebugPreviewLauncher(model: model) }
+                        workspace.overlay { DebugPreviewLauncher(model: model) }
 #else
-                workspace
+                        workspace
 #endif
+                    }
+                    if showsLaunchAnimation {
+                        GitGattoLaunchOverlay(
+                            isContentReady: $isWorkspaceReady,
+                            holdsForPreview: ProcessInfo.processInfo.environment["GITGATTO_LAUNCH_PREVIEW"] == "1"
+                        ) {
+                            showsLaunchAnimation = false
+                        }
+                        .transition(.opacity)
+                        .zIndex(10)
+                    }
+                }
+                .background {
+                    MainWindowCloseBehaviorBridge(
+                        behavior: model.appPreferences.windowCloseBehavior,
+                        remember: { behavior in
+                            model.rememberWindowCloseBehavior(behavior)
+                        }
+                    )
+                    .frame(width: 0, height: 0)
+                }
             }
         }
-        .defaultSize(width: 1280, height: 780)
+        .defaultSize(width: 1416, height: 878)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .commands {
@@ -68,19 +99,209 @@ struct GitGattoApp: App {
         .windowStyle(.hiddenTitleBar)
 
         Settings {
-            AppThemeRoot(resetsContentOnStyleChange: false) { AppSettingsView(model: model) }
+            AppThemeRoot(resetsContentOnStyleChange: false) {
+                AppSettingsView(model: model, updateManager: updateManager)
+            }
         }
         .defaultSize(width: 900, height: 700)
         .windowStyle(.hiddenTitleBar)
     }
 
     private var workspace: some View {
-            WorkspaceView(model: model)
+            WorkspaceView(
+                model: model,
+                onInitialContentReady: { isWorkspaceReady = true },
+                canCaptureSnapshot: !showsLaunchAnimation
+                    || ProcessInfo.processInfo.environment["GITGATTO_LAUNCH_PREVIEW"] == "1"
+            )
                 .frame(minWidth: 960, minHeight: 620)
                 .task {
                     await model.start()
                     updateManager.startIfConfigured()
                 }
+    }
+}
+
+private struct MainWindowCloseBehaviorBridge: NSViewRepresentable {
+    let behavior: WindowCloseBehavior
+    let remember: (WindowCloseBehavior) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(behavior: behavior, remember: remember)
+    }
+
+    func makeNSView(context: Context) -> WindowProbeView {
+        let view = WindowProbeView()
+        view.onWindowChange = { [weak coordinator = context.coordinator] window in
+            coordinator?.install(on: window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: WindowProbeView, context: Context) {
+        context.coordinator.behavior = behavior
+        context.coordinator.remember = remember
+        context.coordinator.install(on: nsView.window)
+    }
+
+    static func dismantleNSView(_ nsView: WindowProbeView, coordinator: Coordinator) {
+        nsView.onWindowChange = nil
+        coordinator.uninstall()
+    }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        var behavior: WindowCloseBehavior
+        var remember: (WindowCloseBehavior) -> Void
+
+        private weak var window: NSWindow?
+        private var delegateProxy: MainWindowCloseDelegateProxy?
+
+        init(
+            behavior: WindowCloseBehavior,
+            remember: @escaping (WindowCloseBehavior) -> Void
+        ) {
+            self.behavior = behavior
+            self.remember = remember
+        }
+
+        func install(on window: NSWindow?) {
+            guard let window, self.window !== window else { return }
+            uninstall()
+
+            let proxy = MainWindowCloseDelegateProxy(
+                forwardedDelegate: window.delegate,
+                behavior: { [weak self] in self?.behavior ?? .ask },
+                remember: { [weak self] behavior in self?.remember(behavior) }
+            )
+            self.window = window
+            delegateProxy = proxy
+            window.delegate = proxy
+        }
+
+        func uninstall() {
+            guard let window, let delegateProxy else { return }
+            if window.delegate === delegateProxy {
+                window.delegate = delegateProxy.forwardedDelegate
+            }
+            self.window = nil
+            self.delegateProxy = nil
+        }
+    }
+}
+
+private final class WindowProbeView: NSView {
+    var onWindowChange: ((NSWindow?) -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        onWindowChange?(window)
+    }
+}
+
+@MainActor
+private final class MainWindowCloseDelegateProxy: NSObject, NSWindowDelegate {
+    nonisolated(unsafe) let forwardedDelegate: (any NSWindowDelegate)?
+
+    private let behavior: () -> WindowCloseBehavior
+    private let remember: (WindowCloseBehavior) -> Void
+    private var isShowingPrompt = false
+
+    init(
+        forwardedDelegate: (any NSWindowDelegate)?,
+        behavior: @escaping () -> WindowCloseBehavior,
+        remember: @escaping (WindowCloseBehavior) -> Void
+    ) {
+        self.forwardedDelegate = forwardedDelegate
+        self.behavior = behavior
+        self.remember = remember
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        if WindowCloseRuntime.isTerminating {
+            return forwardedDelegate?.windowShouldClose?(sender) ?? true
+        }
+
+        switch behavior() {
+        case .ask:
+            presentClosePrompt(for: sender)
+        case .minimize:
+            sender.miniaturize(nil)
+        case .quit:
+            WindowCloseRuntime.quit()
+        }
+        return false
+    }
+
+    override func responds(to selector: Selector!) -> Bool {
+        super.responds(to: selector) || forwardedDelegate?.responds(to: selector) == true
+    }
+
+    override func forwardingTarget(for selector: Selector!) -> Any? {
+        if forwardedDelegate?.responds(to: selector) == true {
+            return forwardedDelegate
+        }
+        return super.forwardingTarget(for: selector)
+    }
+
+    private func presentClosePrompt(for window: NSWindow) {
+        guard !isShowingPrompt else { return }
+        isShowingPrompt = true
+
+        let rememberChoice = NSButton(
+            checkboxWithTitle: L10n.text("window.close.remember"),
+            target: nil,
+            action: nil
+        )
+        rememberChoice.frame = NSRect(x: 0, y: 0, width: 260, height: 22)
+
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = L10n.text("window.close.title")
+        alert.informativeText = L10n.text("window.close.message")
+        alert.addButton(withTitle: L10n.text("window.close.minimize"))
+        alert.addButton(withTitle: L10n.text("window.close.quit"))
+        alert.accessoryView = rememberChoice
+        alert.beginSheetModal(for: window) { [weak self, weak window] response in
+            guard let self else { return }
+            self.isShowingPrompt = false
+
+            let choice: WindowCloseBehavior = response == .alertFirstButtonReturn ? .minimize : .quit
+            if rememberChoice.state == .on {
+                self.remember(choice)
+            }
+
+            switch choice {
+            case .ask:
+                break
+            case .minimize:
+                window?.miniaturize(nil)
+            case .quit:
+                WindowCloseRuntime.quit()
+            }
+        }
+    }
+}
+
+private struct LaunchWorkspaceLayer<Content: View>: View {
+    let isLaunching: Bool
+    let content: Content
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(isLaunching: Bool, @ViewBuilder content: () -> Content) {
+        self.isLaunching = isLaunching
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .blur(radius: isLaunching && !reduceMotion ? 12 : 0)
+            .opacity(isLaunching ? 0.82 : 1)
+            .animation(
+                reduceMotion ? .easeOut(duration: 0.20) : .easeOut(duration: 0.36),
+                value: isLaunching
+            )
     }
 }
 

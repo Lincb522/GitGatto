@@ -2,11 +2,26 @@ import SwiftUI
 
 struct WorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
+    let onInitialContentReady: () -> Void
+    let canCaptureSnapshot: Bool
     @StateObject private var marketplaceModel = GitHubMarketplaceViewModel()
     @StateObject private var downloads = AppDownloadManager()
+    @State private var didReportInitialContentReady = false
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+    @AppStorage("workspace.sidebar.collapsed") private var isSidebarCollapsed = false
+    @AppStorage("workspace.sidebar.width") private var sidebarWidth = 232.0
     @Environment(\.colorScheme) private var colorScheme
+
+    init(
+        model: WorkspaceViewModel,
+        onInitialContentReady: @escaping () -> Void = {},
+        canCaptureSnapshot: Bool = true
+    ) {
+        self.model = model
+        self.onInitialContentReady = onInitialContentReady
+        self.canCaptureSnapshot = canCaptureSnapshot
+    }
 
     private var appearance: AppAppearance {
         AppAppearance(rawValue: appearanceRaw) ?? .system
@@ -14,6 +29,16 @@ struct WorkspaceView: View {
 
     private var theme: AppVisualTheme {
         AppVisualTheme.resolved(themeRaw)
+    }
+
+    private var activeSidebarWidth: Binding<Double> {
+        Binding(
+            get: { isSidebarCollapsed ? 64 : sidebarWidth },
+            set: { width in
+                guard !isSidebarCollapsed else { return }
+                sidebarWidth = width
+            }
+        )
     }
 
     private var activeErrorBinding: Binding<AppErrorReport?> {
@@ -28,8 +53,9 @@ struct WorkspaceView: View {
     }
 
     private var isSnapshotReady: Bool {
+        guard model.hasCompletedStartup else { return false }
         if model.selectedSection == .marketplace {
-            return !marketplaceModel.isLoading
+            return marketplaceModel.hasCompletedInitialLoad && !marketplaceModel.isLoading
         }
         if model.selectedSection == .github {
             return model.githubAvailability.state != .checking
@@ -39,7 +65,7 @@ struct WorkspaceView: View {
                 && !model.isLoadingGitHubContents
                 && !model.isLoadingGitHubFile
         }
-        guard model.snapshot != nil else { return false }
+        guard model.snapshot != nil else { return !model.isRefreshing }
         return switch model.selectedSection {
         case .github, .marketplace:
             true
@@ -57,20 +83,45 @@ struct WorkspaceView: View {
         }
     }
 
+    private var isStartupPreloadReady: Bool {
+        guard isSnapshotReady,
+              marketplaceModel.hasCompletedInitialLoad,
+              model.hasCompletedProjectPreload,
+              model.hasCompletedRepositorySurfacePreload else { return false }
+        guard model.selectedGitHubRepository != nil else { return true }
+        return !model.isLoadingGitHub
+            && !model.isLoadingPullRequests
+            && !model.isLoadingGitHubReadme
+            && !model.isLoadingGitHubContents
+            && !model.isLoadingGitHubFile
+    }
+
+    private var startupLanguages: [String?] {
+        Array(model.githubAccountRepositories.prefix(6).map(\.language))
+            + Array(model.githubRecommendations.prefix(3).map(\.language))
+            + Array(marketplaceModel.applications.prefix(6).map(\.repository.language))
+    }
+
     var body: some View {
         let palette = AppPalette(colorScheme)
         GeometryReader { proxy in
             let compactSidebar = proxy.size.width < 1120
-            let sidebarWidth: CGFloat = compactSidebar ? 214 : 238
             ZStack(alignment: .top) {
                 switch theme {
                 case .standard:
-                    HStack(spacing: 0) {
-                        RepositorySidebar(model: model, appearanceRaw: $appearanceRaw)
-                            .frame(width: proxy.size.width < 1120 ? 208 : 232)
-
-                        Rectangle().fill(palette.divider).frame(width: 1)
-
+                    HorizontalResizableSplitView(
+                        primaryWidth: activeSidebarWidth,
+                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : 190,
+                        maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
+                        minimumSecondaryWidth: 720,
+                        separatorWidth: 7
+                    ) {
+                        RepositorySidebar(
+                            model: model,
+                            appearanceRaw: $appearanceRaw,
+                            isCollapsed: $isSidebarCollapsed
+                        )
+                    } secondary: {
                         VStack(spacing: 0) {
                             if model.selectedSection != .github && model.selectedSection != .marketplace {
                                 RepositoryTopBar(model: model)
@@ -83,23 +134,87 @@ struct WorkspaceView: View {
                 case .softGlass:
                     VStack(spacing: AppThemeLayout.panelSpacing) {
                         HStack(spacing: AppThemeLayout.panelSpacing) {
-                            WorkspaceBrandBar(compact: compactSidebar)
-                                .frame(width: sidebarWidth)
+                            WorkspaceBrandBar(compact: compactSidebar, collapsed: isSidebarCollapsed)
+                                .frame(width: activeSidebarWidth.wrappedValue)
 
                             RepositoryTopBar(model: model)
                         }
 
-                        HStack(spacing: AppThemeLayout.panelSpacing) {
-                            RepositorySidebar(model: model, appearanceRaw: $appearanceRaw)
-                                .frame(width: sidebarWidth)
+                        HorizontalResizableSplitView(
+                            primaryWidth: activeSidebarWidth,
+                            minimumPrimaryWidth: isSidebarCollapsed ? 64 : 190,
+                            maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
+                            minimumSecondaryWidth: 720,
+                            separatorWidth: AppThemeLayout.panelSpacing
+                        ) {
+                            RepositorySidebar(
+                                model: model,
+                                appearanceRaw: $appearanceRaw,
+                                isCollapsed: $isSidebarCollapsed
+                            )
                                 .appGlassPanel()
-
+                        } secondary: {
                             workspaceDetail
                                 .background(palette.surface.opacity(0.18))
                                 .appGlassPanel()
                         }
                     }
                     .padding(AppThemeLayout.workspaceInset)
+                case .emerald:
+                    HStack(spacing: 12) {
+                        VStack(spacing: 0) {
+                            WorkspaceBrandBar(compact: compactSidebar, collapsed: isSidebarCollapsed)
+                                .frame(height: 72)
+                            RepositorySidebar(
+                                model: model,
+                                appearanceRaw: $appearanceRaw,
+                                isCollapsed: $isSidebarCollapsed
+                            )
+                        }
+                        .frame(width: activeSidebarWidth.wrappedValue)
+                        .environment(\.colorScheme, .dark)
+                        .background(AppPalette(.dark, theme: .emerald).sidebar)
+
+                        VStack(spacing: 12) {
+                            RepositoryTopBar(model: model)
+                                .emeraldSurface(.elevated, cornerRadius: 16)
+
+                            workspaceDetail
+                                .background(palette.surface)
+                                .emeraldSurface(.panel, cornerRadius: 16)
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.trailing, 12)
+                    }
+                case .folio:
+                    HStack(spacing: 12) {
+                        RepositorySidebar(
+                            model: model,
+                            appearanceRaw: $appearanceRaw,
+                            isCollapsed: $isSidebarCollapsed
+                        )
+                        .frame(width: 58)
+                        .environment(\.colorScheme, .dark)
+
+                        VStack(spacing: 12) {
+                            HStack(spacing: 0) {
+                                WorkspaceBrandBar(compact: compactSidebar, collapsed: false)
+                                    .frame(width: 190)
+
+                                Rectangle()
+                                    .fill(palette.divider)
+                                    .frame(width: 1, height: 34)
+
+                                RepositoryTopBar(model: model)
+                            }
+                            .folioSurface(.elevated, cornerRadius: 16)
+
+                            workspaceDetail
+                                .background(palette.surface)
+                                .folioSurface(.panel, cornerRadius: 16)
+                        }
+                    }
+                    .padding(14)
                 case .console:
                     consoleLayout(palette: palette)
                 }
@@ -117,6 +232,21 @@ struct WorkspaceView: View {
         .preferredColorScheme(appearance.colorScheme)
         .animation(.easeOut(duration: 0.2), value: model.notice?.id)
         .animation(.easeOut(duration: 0.2), value: model.activeOperation)
+        .task {
+            marketplaceModel.loadIfNeeded()
+        }
+        .task(id: marketplaceModel.selectedLogoURL) {
+            guard let url = marketplaceModel.selectedLogoURL else { return }
+            _ = try? await RemoteImageDataCache.shared.data(for: url)
+        }
+        .onChange(of: startupLanguages, initial: true) { _, languages in
+            GitHubLanguageIconAssets.prewarm(languages: languages)
+        }
+        .onChange(of: isStartupPreloadReady, initial: true) { _, isReady in
+            guard isReady, !didReportInitialContentReady else { return }
+            didReportInitialContentReady = true
+            onInitialContentReady()
+        }
         .sheet(item: activeErrorBinding) { report in
             GlobalErrorSheet(
                 report: report,
@@ -135,7 +265,8 @@ struct WorkspaceView: View {
 #if DEBUG
         .background(
             DebugSnapshotCapture(
-                isReady: isSnapshotReady
+                isReady: canCaptureSnapshot
+                    && isSnapshotReady
                     && ProcessInfo.processInfo.environment["GITGATTO_SETTINGS_PREVIEW"] != "1"
                     && ProcessInfo.processInfo.environment["GITGATTO_ABOUT_PREVIEW"] != "1"
                     && ProcessInfo.processInfo.environment["GITGATTO_UPDATE_PREVIEW"] != "1"
@@ -196,7 +327,7 @@ struct WorkspaceView: View {
                 Rectangle().fill(palette.divider).frame(width: 1)
                 RepositoryTopBar(model: model)
             }
-            .frame(height: AppThemeLayout.topBarHeight)
+            .frame(height: 72)
 
             Rectangle().fill(palette.divider).frame(height: 1)
 
@@ -218,22 +349,28 @@ struct WorkspaceView: View {
 
 private struct WorkspaceBrandBar: View {
     let compact: Bool
+    let collapsed: Bool
 
     var body: some View {
-        HStack(spacing: 0) {
-            AppBrandLockup(
-                iconSize: compact ? 34 : 38,
-                wordmarkWidth: compact ? 82 : 96,
-                spacing: 7
-            )
-            .padding(
-                .leading,
-                AppThemeLayout.titlebarBrandLeading - AppThemeLayout.workspaceInset
-            )
-            Spacer(minLength: 8)
+        Group {
+            if collapsed {
+                AppBrandIcon(size: 30)
+                    .frame(maxWidth: .infinity)
+            } else {
+                HStack(spacing: 0) {
+                    AppBrandLockup(
+                        iconSize: compact ? 34 : 38,
+                        wordmarkWidth: compact ? 82 : 96,
+                        spacing: 7
+                    )
+                    .padding(.leading, AppThemeLayout.titlebarBrandLeading)
+                    Spacer(minLength: 8)
+                }
+            }
         }
         .padding(.trailing, 12)
-        .frame(height: AppThemeLayout.topBarHeight)
+        .padding(.top, 18)
+        .frame(height: 72)
     }
 }
 
@@ -254,6 +391,7 @@ private struct ConsoleBrandBar: View {
                 .accessibilityLabel(L10n.text(isBusy ? "console.status.running" : "console.status.ready"))
         }
         .padding(.trailing, 8)
+        .padding(.top, 18)
         .frame(maxHeight: .infinity)
         .background(palette.sidebar)
     }
@@ -457,12 +595,14 @@ private struct ConsoleRepositoryDock: View {
 private struct RepositoryTopBar: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     var body: some View {
         let palette = AppPalette(colorScheme)
-        if AppVisualTheme.resolved(themeRaw) == .standard {
+        if AppVisualTheme.resolved(themeRaw) == .standard
+            || AppVisualTheme.resolved(themeRaw) == .emerald
+            || AppVisualTheme.resolved(themeRaw) == .folio {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(model.repositoryName ?? L10n.text("app.name"))

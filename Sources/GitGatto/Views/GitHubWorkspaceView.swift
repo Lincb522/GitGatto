@@ -6,7 +6,8 @@ struct GitHubWorkspaceView: View {
     @ObservedObject var downloads: AppDownloadManager
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+    @AppStorage("workspace.github.list.width") private var repositoryListWidth = 330.0
     @State private var inAppBrowserPage: InAppBrowserPage?
     @State private var isRepositoryHeaderCollapsed = false
     @State private var githubFileQuery = ""
@@ -14,44 +15,10 @@ struct GitHubWorkspaceView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            searchHeader(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-
-            if model.githubAvailability.state == .unavailable {
-                unavailableState(palette)
-            } else {
-                GeometryReader { proxy in
-                    if AppVisualTheme.resolved(themeRaw) == .standard {
-                        HStack(spacing: 0) {
-                            listPane(palette)
-                                .frame(width: proxy.size.width < 900 ? 270 : 330)
-                            Rectangle().fill(palette.divider).frame(width: 1)
-                            detailPane(palette)
-                        }
-                    } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
-                        HStack(spacing: 10) {
-                            listPane(palette)
-                                .frame(width: proxy.size.width < 900 ? 270 : 330)
-                                .appGlassPanel(cornerRadius: 14, elevated: false)
-                            detailPane(palette)
-                                .appGlassPanel(cornerRadius: 14, elevated: false)
-                        }
-                        .padding(10)
-                    } else {
-                        HStack(spacing: 8) {
-                            listPane(palette)
-                                .frame(width: proxy.size.width < 900 ? 280 : 340)
-                                .appConsolePanel()
-                            detailPane(palette)
-                                .appConsolePanel()
-                        }
-                        .padding(8)
-                    }
-                }
-            }
+        let theme = AppVisualTheme.resolved(themeRaw)
+        Group {
+            conventionalWorkspace(palette, theme: theme)
         }
-        .background(AppVisualTheme.resolved(themeRaw) == .softGlass ? Color.clear : palette.background)
         .sheet(item: $model.selectedGitHubPullRequest) { pullRequest in
             GitHubPullRequestReviewView(model: model, pullRequest: pullRequest)
                 .frame(minWidth: 900, minHeight: 680)
@@ -60,6 +27,95 @@ struct GitHubWorkspaceView: View {
             InAppBrowserSheet(url: page.url, persistent: page.persistent)
                 .frame(minWidth: 820, minHeight: 640)
         }
+    }
+
+    private func conventionalWorkspace(_ palette: AppPalette, theme: AppVisualTheme) -> some View {
+        VStack(spacing: 0) {
+            searchHeader(palette)
+                .emeraldSurface(.elevated, cornerRadius: 16)
+            Rectangle().fill(palette.divider).frame(height: 1)
+
+            if model.githubAvailability.state == .unavailable {
+                unavailableState(palette)
+            } else {
+                Group {
+                    if theme == .standard {
+                        HorizontalResizableSplitView(
+                            primaryWidth: $repositoryListWidth,
+                            minimumPrimaryWidth: 240,
+                            maximumPrimaryWidth: 480,
+                            minimumSecondaryWidth: 520,
+                            separatorWidth: 7
+                        ) {
+                            listPane(palette)
+                        } secondary: {
+                            detailPane(palette)
+                        }
+                    } else if theme == .softGlass {
+                        HorizontalResizableSplitView(
+                            primaryWidth: $repositoryListWidth,
+                            minimumPrimaryWidth: 240,
+                            maximumPrimaryWidth: 480,
+                            minimumSecondaryWidth: 520,
+                            separatorWidth: 10
+                        ) {
+                            listPane(palette)
+                                .appGlassPanel(cornerRadius: 14, elevated: false)
+                        } secondary: {
+                            detailPane(palette)
+                                .appGlassPanel(cornerRadius: 14, elevated: false)
+                        }
+                        .padding(10)
+                    } else if theme == .emerald {
+                        HorizontalResizableSplitView(
+                            primaryWidth: $repositoryListWidth,
+                            minimumPrimaryWidth: 240,
+                            maximumPrimaryWidth: 480,
+                            minimumSecondaryWidth: 520,
+                            separatorWidth: 10
+                        ) {
+                            listPane(palette)
+                                .emeraldSurface(.elevated, cornerRadius: 16)
+                        } secondary: {
+                            detailPane(palette)
+                                .emeraldSurface(.panel, cornerRadius: 16)
+                        }
+                        .padding(10)
+                    } else if theme == .folio {
+                        HorizontalResizableSplitView(
+                            primaryWidth: $repositoryListWidth,
+                            minimumPrimaryWidth: 250,
+                            maximumPrimaryWidth: 460,
+                            minimumSecondaryWidth: 520,
+                            separatorWidth: 10
+                        ) {
+                            listPane(palette)
+                                .folioSurface(.elevated, cornerRadius: 16)
+                        } secondary: {
+                            detailPane(palette)
+                                .folioSurface(.panel, cornerRadius: 16)
+                        }
+                        .padding(10)
+                    } else {
+                        HorizontalResizableSplitView(
+                            primaryWidth: $repositoryListWidth,
+                            minimumPrimaryWidth: 250,
+                            maximumPrimaryWidth: 500,
+                            minimumSecondaryWidth: 520,
+                            separatorWidth: 8
+                        ) {
+                            listPane(palette)
+                                .appConsolePanel()
+                        } secondary: {
+                            detailPane(palette)
+                                .appConsolePanel()
+                        }
+                        .padding(8)
+                    }
+                }
+            }
+        }
+        .background(theme == .softGlass ? Color.clear : palette.background)
     }
 
     @ViewBuilder
@@ -259,7 +315,7 @@ struct GitHubWorkspaceView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: 18) {
-                        AsyncImage(url: profile.avatarURL) { image in
+                        CachedRemoteImage(url: profile.avatarURL) { image in
                             image.resizable().scaledToFill()
                         } placeholder: {
                             Image(gattoSymbol: "person.crop.circle.fill")
@@ -1391,7 +1447,7 @@ private struct GitHubCodeFileView: View {
     @ObservedObject var model: WorkspaceViewModel
     let openInApp: (URL) -> Void
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
@@ -1647,7 +1703,7 @@ private struct GitHubDeveloperRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                AsyncImage(url: developer.avatarURL) { image in
+                CachedRemoteImage(url: developer.avatarURL) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
                     Image(gattoSymbol: "person.crop.circle.fill")

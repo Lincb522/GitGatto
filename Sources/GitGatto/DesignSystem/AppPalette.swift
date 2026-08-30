@@ -115,6 +115,90 @@ struct AppPalette {
             dangerSoft = OKLCHColor(0.950, 0.040, 25).color
             warning = OKLCHColor(0.560, 0.150, 80).color
             warningSoft = OKLCHColor(0.955, 0.045, 86).color
+        } else if theme == .emerald, scheme == .dark {
+            background = OKLCHColor(0.115, 0.006, 155).color
+            sidebar = OKLCHColor(0.135, 0.038, 155).color
+            surface = OKLCHColor(0.155, 0.010, 155).color
+            raisedSurface = OKLCHColor(0.195, 0.014, 155).color
+            ink = OKLCHColor(0.955, 0.018, 150).color
+            mutedInk = OKLCHColor(0.735, 0.026, 150).color
+            subtleInk = OKLCHColor(0.565, 0.024, 150).color
+            divider = OKLCHColor(0.290, 0.025, 155).color
+            primary = selectedPrimary
+            primarySoft = accentChoice == .custom
+                ? selectedPrimary.opacity(0.22)
+                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
+            accent = OKLCHColor(0.780, 0.205, 145).color
+            accentSoft = OKLCHColor(0.245, 0.080, 145).color
+            success = OKLCHColor(0.770, 0.180, 145).color
+            successSoft = OKLCHColor(0.230, 0.065, 145).color
+            danger = OKLCHColor(0.735, 0.175, 25).color
+            dangerSoft = OKLCHColor(0.230, 0.060, 25).color
+            warning = OKLCHColor(0.825, 0.150, 90).color
+            warningSoft = OKLCHColor(0.235, 0.055, 90).color
+        } else if theme == .emerald {
+            background = OKLCHColor(1.000, 0.000, 0).color
+            sidebar = OKLCHColor(1.000, 0.000, 0).color
+            surface = OKLCHColor(1.000, 0.000, 0).color
+            raisedSurface = OKLCHColor(1.000, 0.000, 0).color
+            ink = OKLCHColor(0.185, 0.025, 155).color
+            mutedInk = OKLCHColor(0.440, 0.028, 155).color
+            subtleInk = OKLCHColor(0.610, 0.024, 155).color
+            divider = OKLCHColor(0.865, 0.026, 150).color
+            primary = selectedPrimary
+            primarySoft = accentChoice == .custom
+                ? selectedPrimary.opacity(0.13)
+                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
+            accent = OKLCHColor(0.600, 0.190, 145).color
+            accentSoft = OKLCHColor(0.925, 0.060, 145).color
+            success = OKLCHColor(0.505, 0.160, 145).color
+            successSoft = OKLCHColor(0.925, 0.050, 145).color
+            danger = OKLCHColor(0.540, 0.185, 25).color
+            dangerSoft = OKLCHColor(0.945, 0.040, 25).color
+            warning = OKLCHColor(0.590, 0.155, 88).color
+            warningSoft = OKLCHColor(0.950, 0.045, 88).color
+        } else if theme == .folio, scheme == .dark {
+            background = OKLCHColor(0.115, 0.006, 255).color
+            sidebar = OKLCHColor(0.205, 0.008, 255).color
+            surface = OKLCHColor(0.155, 0.007, 255).color
+            raisedSurface = OKLCHColor(0.195, 0.010, 255).color
+            ink = OKLCHColor(0.955, 0.006, 255).color
+            mutedInk = OKLCHColor(0.735, 0.012, 255).color
+            subtleInk = OKLCHColor(0.570, 0.012, 255).color
+            divider = OKLCHColor(0.305, 0.012, 255).color
+            primary = selectedPrimary
+            primarySoft = accentChoice == .custom
+                ? selectedPrimary.opacity(0.22)
+                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
+            accent = OKLCHColor(0.735, 0.095, 260).color
+            accentSoft = OKLCHColor(0.285, 0.045, 260).color
+            success = OKLCHColor(0.745, 0.120, 151).color
+            successSoft = OKLCHColor(0.255, 0.040, 151).color
+            danger = OKLCHColor(0.730, 0.155, 25).color
+            dangerSoft = OKLCHColor(0.255, 0.045, 25).color
+            warning = OKLCHColor(0.825, 0.115, 88).color
+            warningSoft = OKLCHColor(0.275, 0.040, 88).color
+        } else if theme == .folio {
+            background = OKLCHColor(0.925, 0.006, 80).color
+            sidebar = OKLCHColor(0.950, 0.004, 80).color
+            surface = OKLCHColor(0.955, 0.005, 80).color
+            raisedSurface = OKLCHColor(0.985, 0.003, 80).color
+            ink = OKLCHColor(0.180, 0.008, 255).color
+            mutedInk = OKLCHColor(0.455, 0.010, 255).color
+            subtleInk = OKLCHColor(0.625, 0.010, 255).color
+            divider = OKLCHColor(0.835, 0.008, 80).color
+            primary = selectedPrimary
+            primarySoft = accentChoice == .custom
+                ? selectedPrimary.opacity(0.14)
+                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
+            accent = OKLCHColor(0.665, 0.105, 260).color
+            accentSoft = OKLCHColor(0.875, 0.055, 260).color
+            success = OKLCHColor(0.500, 0.115, 151).color
+            successSoft = OKLCHColor(0.925, 0.030, 151).color
+            danger = OKLCHColor(0.540, 0.165, 25).color
+            dangerSoft = OKLCHColor(0.935, 0.035, 25).color
+            warning = OKLCHColor(0.610, 0.105, 88).color
+            warningSoft = OKLCHColor(0.915, 0.055, 88).color
         } else if theme == .console, scheme == .dark {
             background = OKLCHColor(0.090, 0.018, 150).color
             sidebar = OKLCHColor(0.115, 0.022, 150).color
@@ -243,15 +327,38 @@ struct AppPalette {
 }
 
 enum AppThemeLayout {
-    static var workspaceInset: CGFloat { AppStyleDefaults.theme == .softGlass ? 12 : 0 }
-    static var panelSpacing: CGFloat { AppStyleDefaults.theme == .softGlass ? 12 : 0 }
-    static var panelCornerRadius: CGFloat { AppStyleDefaults.theme == .softGlass ? 18 : 0 }
-    static let titlebarBrandLeading: CGFloat = 76
+    static var workspaceInset: CGFloat {
+        switch AppStyleDefaults.theme {
+        case .softGlass: 12
+        case .emerald: 12
+        case .folio: 14
+        case .standard, .console: 0
+        }
+    }
+    static var panelSpacing: CGFloat {
+        switch AppStyleDefaults.theme {
+        case .softGlass: 12
+        case .emerald: 12
+        case .folio: 12
+        case .standard, .console: 0
+        }
+    }
+    static var panelCornerRadius: CGFloat {
+        switch AppStyleDefaults.theme {
+        case .softGlass: 18
+        case .emerald: 16
+        case .folio: 16
+        case .standard, .console: 0
+        }
+    }
+    static let titlebarBrandLeading: CGFloat = 16
     static var controlCornerRadius: CGFloat {
         switch AppStyleDefaults.theme {
         case .standard: 8
         case .softGlass: 10
         case .console: 4
+        case .emerald: 10
+        case .folio: 12
         }
     }
     static let topBarHeight: CGFloat = 62
@@ -259,7 +366,7 @@ enum AppThemeLayout {
 
 struct AppThemeRoot<Content: View>: View {
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @AppStorage(AppStyleDefaults.accentKey) private var accentRaw = AppAccentChoice.coral.rawValue
     @AppStorage(AppStyleDefaults.customAccentKey) private var customAccentHex = "#4F7DFF"
     @Environment(\.colorScheme) private var systemColorScheme
@@ -409,7 +516,7 @@ private struct AppGlassPanelModifier: ViewModifier {
     let cornerRadius: CGFloat
     let elevated: Bool
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     func body(content: Content) -> some View {
@@ -458,11 +565,142 @@ extension View {
     func appConsolePanel() -> some View {
         modifier(AppConsolePanelModifier())
     }
+
+    func emeraldSurface(
+        _ style: EmeraldSurfaceStyle = .panel,
+        cornerRadius: CGFloat = 16
+    ) -> some View {
+        modifier(EmeraldSurfaceModifier(style: style, cornerRadius: cornerRadius))
+    }
+
+    func folioSurface(
+        _ style: FolioSurfaceStyle = .panel,
+        cornerRadius: CGFloat = 16
+    ) -> some View {
+        modifier(FolioSurfaceModifier(style: style, cornerRadius: cornerRadius))
+    }
+}
+
+enum FolioSurfaceStyle: Sendable {
+    case panel
+    case elevated
+    case accent
+    case rail
+}
+
+private struct FolioSurfaceModifier: ViewModifier {
+    let style: FolioSurfaceStyle
+    let cornerRadius: CGFloat
+
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if AppVisualTheme.resolved(themeRaw) == .folio {
+            let palette = AppPalette(colorScheme)
+            content
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .background {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(fill(palette))
+                        .shadow(
+                            color: style == .elevated
+                                ? Color.black.opacity(colorScheme == .dark ? 0.20 : 0.10)
+                                : .clear,
+                            radius: 7,
+                            y: 3
+                        )
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(borderColor(palette), lineWidth: 1)
+                }
+        } else {
+            content
+        }
+    }
+
+    private func fill(_ palette: AppPalette) -> Color {
+        switch style {
+        case .panel: palette.surface
+        case .elevated: palette.raisedSurface
+        case .accent: palette.accentSoft
+        case .rail: palette.sidebar
+        }
+    }
+
+    private func borderColor(_ palette: AppPalette) -> Color {
+        style == .rail ? Color.white.opacity(0.08) : palette.divider.opacity(0.86)
+    }
+}
+
+enum EmeraldSurfaceStyle: Sendable {
+    case panel
+    case elevated
+    case inset
+    case dark
+}
+
+private struct EmeraldSurfaceModifier: ViewModifier {
+    let style: EmeraldSurfaceStyle
+    let cornerRadius: CGFloat
+
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if AppVisualTheme.resolved(themeRaw) == .emerald {
+            let palette = AppPalette(colorScheme)
+            content
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .background {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(fill(palette))
+                        .shadow(
+                            color: shadowColor,
+                            radius: style == .elevated ? 8 : 6,
+                            x: 0,
+                            y: style == .elevated ? 4 : 2
+                        )
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(borderColor(palette), lineWidth: 1)
+                }
+        } else {
+            content
+        }
+    }
+
+    private func fill(_ palette: AppPalette) -> Color {
+        switch style {
+        case .panel: palette.surface
+        case .elevated: palette.raisedSurface
+        case .inset: palette.background.opacity(colorScheme == .dark ? 0.72 : 0.58)
+        case .dark: OKLCHColor(0.135, 0.038, 155).color
+        }
+    }
+
+    private var shadowColor: Color {
+        switch style {
+        case .inset: .clear
+        case .dark: Color.black.opacity(colorScheme == .dark ? 0.34 : 0.22)
+        case .panel, .elevated: Color.black.opacity(colorScheme == .dark ? 0.20 : 0.11)
+        }
+    }
+
+    private func borderColor(_ palette: AppPalette) -> Color {
+        style == .dark
+            ? Color.white.opacity(0.08)
+            : palette.divider.opacity(colorScheme == .dark ? 0.70 : 0.82)
+    }
 }
 
 private struct AppConsolePanelModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     func body(content: Content) -> some View {

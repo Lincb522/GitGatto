@@ -1,14 +1,141 @@
+import AppKit
 import SwiftUI
+
+struct HorizontalResizableSplitView<Primary: View, Secondary: View>: View {
+    @Binding var primaryWidth: Double
+    let minimumPrimaryWidth: Double
+    let maximumPrimaryWidth: Double
+    let minimumSecondaryWidth: Double
+    let separatorWidth: Double
+    @ViewBuilder let primary: Primary
+    @ViewBuilder let secondary: Secondary
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var dragStartWidth: Double?
+
+    init(
+        primaryWidth: Binding<Double>,
+        minimumPrimaryWidth: Double,
+        maximumPrimaryWidth: Double,
+        minimumSecondaryWidth: Double,
+        separatorWidth: Double = 9,
+        @ViewBuilder primary: () -> Primary,
+        @ViewBuilder secondary: () -> Secondary
+    ) {
+        _primaryWidth = primaryWidth
+        self.minimumPrimaryWidth = minimumPrimaryWidth
+        self.maximumPrimaryWidth = maximumPrimaryWidth
+        self.minimumSecondaryWidth = minimumSecondaryWidth
+        self.separatorWidth = separatorWidth
+        self.primary = primary()
+        self.secondary = secondary()
+    }
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        GeometryReader { proxy in
+            let availableMaximum = max(
+                minimumPrimaryWidth,
+                min(maximumPrimaryWidth, proxy.size.width - minimumSecondaryWidth - separatorWidth)
+            )
+            let resolvedWidth = min(max(primaryWidth, minimumPrimaryWidth), availableMaximum)
+
+            HStack(spacing: 0) {
+                primary
+                    .frame(width: resolvedWidth)
+
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: separatorWidth)
+                    .overlay {
+                        Rectangle()
+                            .fill(palette.divider)
+                            .frame(width: 1)
+                    }
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let start = dragStartWidth ?? resolvedWidth
+                                if dragStartWidth == nil {
+                                    dragStartWidth = resolvedWidth
+                                }
+                                primaryWidth = min(
+                                    max(start + value.translation.width, minimumPrimaryWidth),
+                                    availableMaximum
+                                )
+                            }
+                            .onEnded { _ in dragStartWidth = nil }
+                    )
+                    .onHover { isHovering in
+                        (isHovering ? NSCursor.resizeLeftRight : NSCursor.arrow).set()
+                    }
+                    .accessibilityElement()
+                    .accessibilityLabel(L10n.text("layout.resize_handle"))
+                    .accessibilityAdjustableAction { direction in
+                        let delta = direction == .increment ? 24.0 : -24.0
+                        primaryWidth = min(
+                            max(resolvedWidth + delta, minimumPrimaryWidth),
+                            availableMaximum
+                        )
+                    }
+
+                secondary
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+}
+
+@MainActor
+struct CachedRemoteImage<Content: View, Placeholder: View>: View {
+    let url: URL?
+    let content: (Image) -> Content
+    let placeholder: () -> Placeholder
+
+    @State private var image: NSImage?
+
+    init(
+        url: URL?,
+        @ViewBuilder content: @escaping (Image) -> Content,
+        @ViewBuilder placeholder: @escaping () -> Placeholder
+    ) {
+        self.url = url
+        self.content = content
+        self.placeholder = placeholder
+    }
+
+    var body: some View {
+        Group {
+            if let image {
+                content(Image(nsImage: image))
+                    .transition(.opacity)
+            } else {
+                placeholder()
+            }
+        }
+        .task(id: url) {
+            image = nil
+            guard let url,
+                  let data = try? await RemoteImageDataCache.shared.data(for: url),
+                  !Task.isCancelled,
+                  let loaded = NSImage(data: data) else { return }
+            withAnimation(.easeOut(duration: 0.18)) {
+                image = loaded
+            }
+        }
+    }
+}
 
 struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
         let palette = AppPalette(colorScheme)
         switch AppVisualTheme.resolved(themeRaw) {
-        case .standard:
+        case .standard, .emerald, .folio:
             configuration.label
                 .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(Color.white)
@@ -56,13 +183,13 @@ struct PrimaryButtonStyle: ButtonStyle {
 
 struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
         let palette = AppPalette(colorScheme)
         switch AppVisualTheme.resolved(themeRaw) {
-        case .standard:
+        case .standard, .emerald, .folio:
             configuration.label
                 .font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(palette.ink)
@@ -174,7 +301,7 @@ struct SearchField: View {
     let placeholderKey: String
 
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -202,7 +329,7 @@ struct SearchField: View {
         .frame(height: theme == .softGlass ? 34 : 30)
         .background {
             switch theme {
-            case .standard:
+            case .standard, .emerald, .folio:
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(palette.raisedSurface)
             case .softGlass:
@@ -268,7 +395,7 @@ struct ConsoleBreathingLight: View {
 struct GattoLoadingGlyph: View {
     var size: CGFloat = 20
 
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var startedAt = Date.now
@@ -541,7 +668,7 @@ struct GattoLoadingState: View {
     var text: String? = nil
     var size: CGFloat = 52
 
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -564,7 +691,7 @@ struct GattoLoadingState: View {
 }
 
 struct GattoProgressViewStyle: ProgressViewStyle {
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.controlSize) private var controlSize
 

@@ -3,7 +3,7 @@ import SwiftUI
 struct ChangesWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     var body: some View {
@@ -15,6 +15,14 @@ struct ChangesWorkspaceView: View {
                 } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
                         .appGlassPanel(cornerRadius: 14, elevated: false)
+                        .padding(10)
+                } else if AppVisualTheme.resolved(themeRaw) == .emerald {
+                    ConflictResolutionWorkspaceView(model: model, state: operationState)
+                        .emeraldSurface(.panel, cornerRadius: 16)
+                        .padding(10)
+                } else if AppVisualTheme.resolved(themeRaw) == .folio {
+                    ConflictResolutionWorkspaceView(model: model, state: operationState)
+                        .folioSurface(.panel, cornerRadius: 16)
                         .padding(10)
                 } else {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
@@ -46,6 +54,32 @@ struct ChangesWorkspaceView: View {
                         .appGlassPanel(cornerRadius: 14, elevated: false)
                 }
                 .padding(10)
+            } else if AppVisualTheme.resolved(themeRaw) == .emerald {
+                HStack(spacing: 10) {
+                    ChangeNavigator(model: model)
+                        .frame(width: min(380, max(310, proxy.size.width * 0.36)))
+                        .emeraldSurface(.elevated, cornerRadius: 16)
+                    DiffInspectorView(
+                        change: model.selectedChange,
+                        document: model.diffDocument,
+                        previewURL: model.selectedChangePreviewURL
+                    )
+                    .emeraldSurface(.panel, cornerRadius: 16)
+                }
+                .padding(10)
+            } else if AppVisualTheme.resolved(themeRaw) == .folio {
+                HStack(spacing: 10) {
+                    ChangeNavigator(model: model)
+                        .frame(width: min(380, max(310, proxy.size.width * 0.36)))
+                        .folioSurface(.elevated, cornerRadius: 16)
+                    DiffInspectorView(
+                        change: model.selectedChange,
+                        document: model.diffDocument,
+                        previewURL: model.selectedChangePreviewURL
+                    )
+                    .folioSurface(.panel, cornerRadius: 16)
+                }
+                .padding(10)
             } else {
                 HStack(spacing: 8) {
                     ChangeNavigator(model: model)
@@ -68,6 +102,7 @@ struct ChangesWorkspaceView: View {
 private struct ChangeNavigator: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     private var staged: [WorkingTreeChange] {
         model.filteredChanges.filter(\.isStaged)

@@ -27,6 +27,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published private(set) var error: String?
     @Published private(set) var agentInstallResult: String?
     @Published private(set) var isAgentInstalling = false
+    @Published private(set) var hasCompletedInitialLoad = false
 
     private let github: any MarketplaceGitHubServing
     private let searchAI: any CodexServing
@@ -70,6 +71,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
 #if DEBUG
         if ProcessInfo.processInfo.environment["GITGATTO_MARKETPLACE_PREVIEW"] == "1" {
             loadPreviewFixture()
+            hasCompletedInitialLoad = true
             return
         }
 #endif
@@ -114,6 +116,9 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         activeSearchID = searchID
         searchTask = Task {
             defer {
+                if defaultQuery {
+                    hasCompletedInitialLoad = true
+                }
                 if activeSearchID == searchID {
                     isLoading = false
                     isUsingAgent = false
@@ -587,6 +592,9 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 let updated = existing + orderedPage
                 guard self.applications != updated else { return }
                 self.applications = updated
+                if replacingCurrentResults, !updated.isEmpty {
+                    self.hasCompletedInitialLoad = true
+                }
                 if self.selectedApplication == nil, let first = updated.first {
                     self.select(first)
                 }

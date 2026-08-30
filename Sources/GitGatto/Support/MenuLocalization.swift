@@ -15,6 +15,11 @@ final class GitGattoAppDelegate: NSObject, NSApplicationDelegate {
         AppIconAssets.updateApplicationIcon()
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        WindowCloseRuntime.isTerminating = true
+        return .terminateNow
+    }
+
     private func localizeMainMenu() {
         guard let menu = NSApp.mainMenu else { return }
         for item in menu.items {
@@ -56,6 +61,16 @@ final class GitGattoAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 #endif
+}
+
+@MainActor
+enum WindowCloseRuntime {
+    static var isTerminating = false
+
+    static func quit() {
+        isTerminating = true
+        NSApp.terminate(nil)
+    }
 }
 
 enum MenuTitleLocalizer {

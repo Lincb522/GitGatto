@@ -267,7 +267,6 @@ private struct ScannerRepositoryRow: View {
     let action: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {

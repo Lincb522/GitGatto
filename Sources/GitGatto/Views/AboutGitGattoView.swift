@@ -4,7 +4,7 @@ import SwiftUI
 struct AboutGitGattoView: View {
     @ObservedObject var navigation: AppNavigationModel
     @ObservedObject var updateManager: AppUpdateManager
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.openWindow) private var openWindow
@@ -16,12 +16,6 @@ struct AboutGitGattoView: View {
         VStack(spacing: theme == .softGlass ? 10 : 0) {
             HStack(spacing: 15) {
                 AppBrandIcon(size: 60)
-                    .padding(
-                        .leading,
-                        AppThemeLayout.titlebarBrandLeading
-                            - AppThemeLayout.workspaceInset
-                            - 16
-                    )
 
                 VStack(alignment: .leading, spacing: 5) {
                     AppBrandWordmark(width: 140)
@@ -133,7 +127,7 @@ struct AboutGitGattoView: View {
         switch theme {
         case .softGlass:
             NSSize(width: 660, height: 361)
-        case .standard, .console:
+        case .standard, .console, .emerald, .folio:
             NSSize(width: 660, height: 341)
         }
     }
@@ -156,8 +150,6 @@ private struct AboutMetric: View {
         }
         .padding(.horizontal, 11)
         .frame(minWidth: 68, minHeight: 44, alignment: .leading)
-        .background(palette.raisedSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

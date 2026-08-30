@@ -10,18 +10,13 @@ struct HelpCenterView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 10) {
                     AppBrandLockup(iconSize: 32, wordmarkWidth: 88, spacing: 7)
-                        .padding(
-                            .leading,
-                            AppThemeLayout.titlebarBrandLeading
-                                - AppThemeLayout.workspaceInset
-                                - 18
-                        )
                     Text(L10n.text("help.short_title"))
                         .font(.system(size: 13.5, weight: .semibold))
                         .foregroundStyle(palette.ink)
                 }
                 .padding(.horizontal, 18)
-                .frame(height: 62)
+                .padding(.top, 18)
+                .frame(height: 76)
 
                 Rectangle().fill(palette.divider).frame(height: 1)
 

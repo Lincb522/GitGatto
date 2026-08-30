@@ -6,7 +6,7 @@ struct DiffInspectorView: View {
     let previewURL: URL?
 
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @State private var presentation: Presentation = .preview
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
@@ -121,7 +121,7 @@ struct DiffCodeView: View {
     let document: DiffDocument
     var onSelectLine: ((DiffLine) -> Void)? = nil
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
@@ -303,6 +303,7 @@ private struct DiffLineView: View {
     private func gutterBackground(_ palette: AppPalette) -> Color {
         switch theme {
         case .standard: palette.sidebar.opacity(0.62)
+        case .emerald, .folio: palette.background.opacity(0.72)
         case .softGlass: palette.sidebar.opacity(0.20)
         case .console: palette.sidebar.opacity(0.76)
         }

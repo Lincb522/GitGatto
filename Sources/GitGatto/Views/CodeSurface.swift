@@ -9,7 +9,7 @@ struct CodeDocumentView: View {
     var syntaxHighlighting = true
 
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
@@ -57,6 +57,7 @@ struct CodeDocumentView: View {
     private func codeBackground(_ palette: AppPalette) -> Color {
         switch theme {
         case .standard: palette.background
+        case .emerald, .folio: palette.surface
         case .softGlass: palette.background.opacity(0.24)
         case .console: palette.background
         }
@@ -143,6 +144,7 @@ private struct CodeSurfaceLine: View {
     private func gutterBackground(_ palette: AppPalette) -> Color {
         switch theme {
         case .standard: palette.sidebar.opacity(0.60)
+        case .emerald, .folio: palette.background.opacity(0.72)
         case .softGlass: palette.sidebar.opacity(0.22)
         case .console: palette.sidebar.opacity(0.72)
         }
@@ -368,7 +370,7 @@ private final class CodeTokenCache: @unchecked Sendable {
 struct CodeTextEditorView: NSViewRepresentable {
     @Binding var text: String
     let fileName: String
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -444,7 +446,7 @@ struct CodeTextEditorView: NSViewRepresentable {
         weak var ruler: CodeLineNumberRuler?
         private var isApplyingAttributes = false
         private var currentPalette: AppPalette?
-        private var currentTheme = AppVisualTheme.standard
+        private var currentTheme = AppStyleDefaults.defaultTheme
         private var currentLineColor = NSColor.clear
 
         init(_ parent: CodeTextEditorView) {

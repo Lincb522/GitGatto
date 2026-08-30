@@ -3,7 +3,7 @@ import SwiftUI
 struct StashWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -11,6 +11,9 @@ struct StashWorkspaceView: View {
             if AppVisualTheme.resolved(themeRaw) == .standard {
                 content(proxy: proxy, spacing: 0)
             } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
+                content(proxy: proxy, spacing: 10)
+                    .padding(10)
+            } else if AppVisualTheme.resolved(themeRaw) == .emerald {
                 content(proxy: proxy, spacing: 10)
                     .padding(10)
             } else {
@@ -132,6 +135,10 @@ private struct StashPanelModifier: ViewModifier {
             content.appGlassPanel(cornerRadius: 14, elevated: false)
         case .console:
             content.appConsolePanel()
+        case .emerald:
+            content.emeraldSurface(.elevated, cornerRadius: 16)
+        case .folio:
+            content.folioSurface(.elevated, cornerRadius: 16)
         }
     }
 }
@@ -139,6 +146,7 @@ private struct StashPanelModifier: ViewModifier {
 private struct StashNavigator: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     var body: some View {
         let palette = AppPalette(colorScheme)

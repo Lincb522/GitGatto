@@ -26,11 +26,24 @@ struct PersistenceStoreTests {
         #expect(!preferences.liveRefreshEnabled)
         #expect(preferences.commitDraftDetail == .complete)
         #expect(preferences.reopenLastRepository)
+        #expect(preferences.launchAnimationEnabled)
+        #expect(preferences.windowCloseBehavior == .ask)
         #expect(preferences.confirmDiscardChanges)
         #expect(preferences.defaultTranslationTarget == .simplifiedChinese)
 
         let encoded = try #require(String(data: JSONEncoder().encode(preferences), encoding: .utf8))
         #expect(!encoded.contains("autoDiscoverRepositories"))
+    }
+
+    @Test("Persists the selected main-window close behavior")
+    func persistsWindowCloseBehavior() throws {
+        var preferences = AppPreferences()
+        preferences.windowCloseBehavior = .quit
+
+        let data = try JSONEncoder().encode(preferences)
+        let restored = try JSONDecoder().decode(AppPreferences.self, from: data)
+
+        #expect(restored.windowCloseBehavior == .quit)
     }
 
     @Test("Restores Codex conversation text and operation records per repository")

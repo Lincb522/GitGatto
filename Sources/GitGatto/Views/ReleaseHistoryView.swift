@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ReleaseHistoryView: View {
     @ObservedObject var manager: AppUpdateManager
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedReleaseID: String?
     @State private var browserPage: InAppBrowserPage?
@@ -65,12 +65,6 @@ struct ReleaseHistoryView: View {
     private func header(_ palette: AppPalette) -> some View {
         HStack(spacing: 12) {
             AppBrandLockup(iconSize: 34, wordmarkWidth: 92, spacing: 7)
-                .padding(
-                    .leading,
-                    AppThemeLayout.titlebarBrandLeading
-                        - (theme == .softGlass ? AppThemeLayout.workspaceInset : 0)
-                        - 14
-                )
 
             Rectangle().fill(palette.divider).frame(width: 1, height: 25)
 
@@ -94,7 +88,8 @@ struct ReleaseHistoryView: View {
             .disabled(manager.isLoadingReleaseNotes)
         }
         .padding(.horizontal, 14)
-        .frame(height: 62)
+        .padding(.top, 18)
+        .frame(height: 76)
         .background(palette.sidebar.opacity(theme == .softGlass ? 0.18 : 1))
     }
 

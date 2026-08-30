@@ -3,23 +3,58 @@ import SwiftUI
 struct WorktreeWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @State private var confirmsRemoval = false
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            commandBar(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            GeometryReader { proxy in
-                let collectionWidth = min(max(292, proxy.size.width * 0.36), 390)
-                HStack(spacing: 0) {
-                    collection(palette)
-                        .frame(width: collectionWidth)
-                    Rectangle().fill(palette.divider).frame(width: 1)
-                    inspector(palette)
+        Group {
+            if theme == .emerald {
+                VStack(spacing: 10) {
+                    commandBar(palette)
+                        .emeraldSurface(.elevated, cornerRadius: 16)
+                    GeometryReader { proxy in
+                        let collectionWidth = min(max(292, proxy.size.width * 0.36), 390)
+                        HStack(spacing: 10) {
+                            collection(palette)
+                                .frame(width: collectionWidth)
+                                .emeraldSurface(.elevated, cornerRadius: 16)
+                            inspector(palette)
+                                .emeraldSurface(.panel, cornerRadius: 16)
+                        }
+                    }
+                }
+                .padding(10)
+            } else if theme == .folio {
+                VStack(spacing: 10) {
+                    commandBar(palette)
+                        .folioSurface(.elevated, cornerRadius: 16)
+                    GeometryReader { proxy in
+                        let collectionWidth = min(max(292, proxy.size.width * 0.36), 390)
+                        HStack(spacing: 10) {
+                            collection(palette)
+                                .frame(width: collectionWidth)
+                                .folioSurface(.elevated, cornerRadius: 16)
+                            inspector(palette)
+                                .folioSurface(.panel, cornerRadius: 16)
+                        }
+                    }
+                }
+                .padding(10)
+            } else {
+                VStack(spacing: 0) {
+                    commandBar(palette)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    GeometryReader { proxy in
+                        let collectionWidth = min(max(292, proxy.size.width * 0.36), 390)
+                        HStack(spacing: 0) {
+                            collection(palette).frame(width: collectionWidth)
+                            Rectangle().fill(palette.divider).frame(width: 1)
+                            inspector(palette)
+                        }
+                    }
                 }
             }
         }

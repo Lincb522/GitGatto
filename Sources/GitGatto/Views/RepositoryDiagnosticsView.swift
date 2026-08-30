@@ -4,7 +4,7 @@ import SwiftUI
 struct RepositoryDiagnosticsView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 

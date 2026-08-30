@@ -3,7 +3,7 @@ import SwiftUI
 struct BranchesWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     @ViewBuilder
     var body: some View {
@@ -25,6 +25,24 @@ struct BranchesWorkspaceView: View {
                         .appGlassPanel(cornerRadius: 14, elevated: false)
                 }
                 .padding(10)
+            } else if AppVisualTheme.resolved(themeRaw) == .emerald {
+                HStack(spacing: 10) {
+                    BranchNavigator(model: model)
+                        .frame(width: min(380, max(310, proxy.size.width * 0.36)))
+                        .emeraldSurface(.elevated, cornerRadius: 16)
+                    BranchInspector(model: model, branch: model.selectedBranch)
+                        .emeraldSurface(.panel, cornerRadius: 16)
+                }
+                .padding(10)
+            } else if AppVisualTheme.resolved(themeRaw) == .folio {
+                HStack(spacing: 10) {
+                    BranchNavigator(model: model)
+                        .frame(width: min(380, max(310, proxy.size.width * 0.36)))
+                        .folioSurface(.elevated, cornerRadius: 16)
+                    BranchInspector(model: model, branch: model.selectedBranch)
+                        .folioSurface(.panel, cornerRadius: 16)
+                }
+                .padding(10)
             } else {
                 HStack(spacing: 8) {
                     BranchNavigator(model: model)
@@ -43,6 +61,7 @@ struct BranchesWorkspaceView: View {
 private struct BranchNavigator: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     var body: some View {
         let palette = AppPalette(colorScheme)

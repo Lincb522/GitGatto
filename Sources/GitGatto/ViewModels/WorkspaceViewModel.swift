@@ -169,6 +169,9 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var isLaunchingGitHubLogin = false
     private var isLiveRefreshing = false
     @Published private(set) var liveSyncError: String?
+    @Published private(set) var hasCompletedStartup = false
+    @Published private(set) var hasCompletedProjectPreload = false
+    @Published private(set) var hasCompletedRepositorySurfacePreload = false
 
     private let service: any GitRepositoryServing
     private let codexService: any CodexServing
@@ -187,6 +190,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var selectedSectionDetailsTask: Task<Void, Never>?
     private var commitDiffTask: Task<Void, Never>?
     private var commitMediaTask: Task<Void, Never>?
+    private var loadedCommitMediaCommitID: String?
     private var conflictDocumentTask: Task<Void, Never>?
     private var stashDiffTask: Task<Void, Never>?
     private var worktreeRefreshTask: Task<Void, Never>?
@@ -229,6 +233,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryChangeMonitor: RepositoryChangeMonitor?
     private var repositorySnapshotTask: Task<RepositorySnapshot, Error>?
     private var repositorySupplementalTask: Task<RepositorySupplementalState, Error>?
+    private var repositorySurfacePreloadTask: Task<Void, Never>?
     private var activeRepositoryLoadID: UUID?
     private var repositoryCache: [String: RepositoryWorkspaceCache] = [:]
     private var repositoryCacheOrder: [String] = []
@@ -437,7 +442,6 @@ final class WorkspaceViewModel: ObservableObject {
     var canTranslateGitHubReadme: Bool {
         githubReadme != nil
             && readmeRewritePreview == nil
-            && translationAIAvailability.state == .available
             && !isTranslatingGitHubReadme
             && !isPromptTranslating
     }
@@ -477,10 +481,13 @@ final class WorkspaceViewModel: ObservableObject {
     func start() async {
         guard !hasStarted else { return }
         hasStarted = true
+        defer { hasCompletedStartup = true }
         selectedSection = Self.sectionFromArguments() ?? appPreferences.defaultWorkspace
 #if DEBUG
         if ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1" {
             loadWorkspacePreviewFixture()
+            hasCompletedProjectPreload = true
+            hasCompletedRepositorySurfacePreload = true
             if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
                 loadErrorPreviewFixture()
             }
@@ -488,13 +495,15 @@ final class WorkspaceViewModel: ObservableObject {
         }
         githubSearchScope = Self.githubSearchScopeFromArguments() ?? githubSearchScope
 #endif
+        startAvailabilityProbes()
         if let argumentURL = Self.repositoryURLFromArguments() {
             await openRepository(argumentURL)
         } else if appPreferences.reopenLastRepository,
                   let recent = recentRepositories.first {
             await openRepository(recent, showFailure: false)
+        } else {
+            hasCompletedRepositorySurfacePreload = true
         }
-        startAvailabilityProbes()
 #if DEBUG
         if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
             loadErrorPreviewFixture()
@@ -1184,7 +1193,7 @@ final class WorkspaceViewModel: ObservableObject {
                         var showsStatusBar = true
 
                         @Environment(\\.colorScheme) private var colorScheme
-                        @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+                        @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
                         private var theme: AppVisualTheme {
                             AppVisualTheme.resolved(themeRaw)
@@ -1295,6 +1304,8 @@ final class WorkspaceViewModel: ObservableObject {
     func openRepository(_ url: URL, showFailure: Bool = true) async {
         repositorySnapshotTask?.cancel()
         repositorySupplementalTask?.cancel()
+        repositorySurfacePreloadTask?.cancel()
+        hasCompletedRepositorySurfacePreload = false
         let loadID = UUID()
         activeRepositoryLoadID = loadID
         isRefreshing = true
@@ -1315,6 +1326,7 @@ final class WorkspaceViewModel: ObservableObject {
                 prepareForRepositoryChange()
             }
             apply(loaded, preservingSelection: !repositoryChanged)
+            preloadRepositorySurfaces(for: loaded)
             remember(loaded.rootURL)
             isRefreshing = false
             if hasStarted {
@@ -1377,6 +1389,7 @@ final class WorkspaceViewModel: ObservableObject {
                 repositorySupplementalTask = nil
                 activeRepositoryLoadID = nil
                 isRefreshing = false
+                hasCompletedRepositorySurfacePreload = true
             }
             return
         } catch {
@@ -1385,10 +1398,139 @@ final class WorkspaceViewModel: ObservableObject {
             repositorySupplementalTask = nil
             activeRepositoryLoadID = nil
             isRefreshing = false
+            hasCompletedRepositorySurfacePreload = true
             if showFailure {
                 presentError(error, context: .repositoryOpen, repositoryURL: url)
             }
         }
+    }
+
+    private func preloadRepositorySurfaces(for loaded: RepositorySnapshot) {
+        repositorySurfacePreloadTask?.cancel()
+        hasCompletedRepositorySurfacePreload = false
+        let repositoryURL = loaded.rootURL
+        let change = loaded.changes.first
+        let commit = loaded.commits.first
+        let activeChangeTask = selectedSection == .changes ? diffTask : nil
+        let activeCommitTask = selectedSection == .history ? commitDiffTask : nil
+        let repositoryService = service
+        let fileService = fileHistoryService
+        let diagnosticsService = diagnosticService
+
+        repositorySurfacePreloadTask = Task { [weak self] in
+            await withTaskGroup(of: RepositorySurfacePreloadResult.self) { group in
+                group.addTask {
+                    .files(await Self.preloadTrackedFiles(in: repositoryURL, service: fileService))
+                }
+                group.addTask {
+                    .diagnostics(await Self.preloadDiagnostics(in: repositoryURL, service: diagnosticsService))
+                }
+                group.addTask {
+                    if let activeChangeTask {
+                        await activeChangeTask.value
+                        return .change(nil)
+                    }
+                    return .change(
+                        await Self.preloadChangeSurface(
+                            change,
+                            in: repositoryURL,
+                            service: repositoryService
+                        )
+                    )
+                }
+                group.addTask {
+                    if let activeCommitTask {
+                        await activeCommitTask.value
+                        return .commit(nil)
+                    }
+                    return .commit(
+                        await Self.preloadCommitSurface(
+                            commit,
+                            in: repositoryURL,
+                            service: repositoryService
+                        )
+                    )
+                }
+
+                for await result in group {
+                    guard !Task.isCancelled,
+                          let self,
+                          self.snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else {
+                        group.cancelAll()
+                        return
+                    }
+                    switch result {
+                    case let .files(files):
+                        if self.repositoryFiles.isEmpty, let files {
+                            self.repositoryFiles = files
+                            self.selectedRepositoryFile = files.first
+                        }
+                    case let .diagnostics(diagnostics):
+                        if self.repositoryDiagnostics == nil, let diagnostics {
+                            self.repositoryDiagnostics = diagnostics
+                        }
+                    case let .change(surface):
+                        if self.diffDocument == nil,
+                           self.selectedChange?.id == surface?.changeID {
+                            self.diffDocument = surface?.document
+                            self.selectedChangePreviewURL = surface?.previewURL
+                        }
+                    case let .commit(surface):
+                        if self.commitDiffDocument == nil,
+                           self.selectedCommit?.id == surface?.commitID {
+                            self.commitDiffDocument = surface?.document
+                        }
+                    }
+                }
+            }
+            guard !Task.isCancelled,
+                  let self,
+                  self.snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+            self.hasCompletedRepositorySurfacePreload = true
+            self.repositorySurfacePreloadTask = nil
+            self.cacheCurrentRepository()
+        }
+    }
+
+    private nonisolated static func preloadTrackedFiles(
+        in repositoryURL: URL,
+        service: any GitFileHistoryServing
+    ) async -> [RepositoryFileRecord]? {
+        try? await service.trackedFiles(in: repositoryURL)
+    }
+
+    private nonisolated static func preloadDiagnostics(
+        in repositoryURL: URL,
+        service: any GitEnvironmentDiagnosticServing
+    ) async -> RepositoryDiagnostics? {
+        try? await service.diagnose(repositoryURL: repositoryURL)
+    }
+
+    private nonisolated static func preloadChangeSurface(
+        _ change: WorkingTreeChange?,
+        in repositoryURL: URL,
+        service: any GitRepositoryServing
+    ) async -> ChangeSurfacePreload? {
+        guard let change else { return nil }
+        async let document: DiffDocument? = try? await service.diff(for: change, in: repositoryURL)
+        async let previewURL: URL? = try? await service.mediaPreview(for: change, in: repositoryURL)
+        let loaded = await (document, previewURL)
+        guard let document = loaded.0 else { return nil }
+        return ChangeSurfacePreload(
+            changeID: change.id,
+            document: document,
+            previewURL: loaded.1
+        )
+    }
+
+    private nonisolated static func preloadCommitSurface(
+        _ commit: CommitRecord?,
+        in repositoryURL: URL,
+        service: any GitRepositoryServing
+    ) async -> CommitSurfacePreload? {
+        guard let commit,
+              let document = try? await service.diff(for: commit, in: repositoryURL) else { return nil }
+        return CommitSurfacePreload(commitID: commit.id, document: document)
     }
 
     func refresh() async {
@@ -1438,6 +1580,8 @@ final class WorkspaceViewModel: ObservableObject {
         remoteRefreshTask = nil
         repositoryEventRefreshTask?.cancel()
         repositoryEventRefreshTask = nil
+        repositorySurfacePreloadTask?.cancel()
+        repositorySurfacePreloadTask = nil
         activeRepositoryEventRefreshID = nil
         repositoryChangeMonitor?.stop()
         repositoryChangeMonitor = nil
@@ -1611,6 +1755,7 @@ final class WorkspaceViewModel: ObservableObject {
         commitMediaItems = []
         selectedCommitMediaItem = nil
         commitMediaPreviewURL = nil
+        loadedCommitMediaCommitID = nil
 
         guard let commit, let repositoryURL = snapshot?.rootURL else { return }
         commitDiffTask = Task {
@@ -1622,6 +1767,7 @@ final class WorkspaceViewModel: ObservableObject {
                 guard !Task.isCancelled, selectedCommit?.id == commit.id else { return }
                 commitDiffDocument = loadedDocument
                 commitMediaItems = loadedMediaItems
+                loadedCommitMediaCommitID = commit.id
                 if let first = loadedMediaItems.first {
                     selectedCommitMediaItem = first
                     commitMediaPreviewURL = try? await service.mediaPreview(
@@ -1633,6 +1779,36 @@ final class WorkspaceViewModel: ObservableObject {
             } catch {
                 guard !Task.isCancelled else { return }
                 presentError(error, context: .diffLoad, repositoryURL: repositoryURL)
+            }
+        }
+    }
+
+    private func loadSelectedCommitMediaIfNeeded() {
+        guard let commit = selectedCommit,
+              let repositoryURL = snapshot?.rootURL,
+              loadedCommitMediaCommitID != commit.id else { return }
+        commitMediaTask?.cancel()
+        let service = self.service
+        commitMediaTask = Task {
+            do {
+                let items = try await service.mediaItems(for: commit, in: repositoryURL)
+                guard !Task.isCancelled,
+                      selectedCommit?.id == commit.id,
+                      snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                commitMediaItems = items
+                loadedCommitMediaCommitID = commit.id
+                guard let first = items.first else { return }
+                selectedCommitMediaItem = first
+                commitMediaPreviewURL = try? await service.mediaPreview(
+                    for: first,
+                    at: commit,
+                    in: repositoryURL
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedCommit?.id == commit.id else { return }
+                loadedCommitMediaCommitID = commit.id
             }
         }
     }
@@ -3973,6 +4149,11 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    func rememberWindowCloseBehavior(_ behavior: WindowCloseBehavior) {
+        appPreferences.windowCloseBehavior = behavior
+        AppPreferencesStore.save(appPreferences)
+    }
+
     func runCodex() {
         runCodex(prompt: codexPrompt, mode: codexRunMode)
     }
@@ -4643,11 +4824,17 @@ final class WorkspaceViewModel: ObservableObject {
             guard force || diffDocument?.path != selectedChange?.path else { return }
             selectChange(selectedChange)
         case .history:
-            guard force || commitDiffDocument?.path != selectedCommit?.shortHash else { return }
+            if !force, commitDiffDocument?.path == selectedCommit?.shortHash {
+                loadSelectedCommitMediaIfNeeded()
+                return
+            }
             selectCommit(selectedCommit)
         case .stash:
             guard force || stashDiffDocument?.path != selectedStash?.reference else { return }
             selectStash(selectedStash)
+        case .timeMachine:
+            guard fileVersionDocument == nil else { return }
+            selectRepositoryFile(selectedRepositoryFile ?? repositoryFiles.first)
         default:
             break
         }
@@ -4678,6 +4865,7 @@ final class WorkspaceViewModel: ObservableObject {
         }
         if githubProbeTask == nil {
             githubProbeTask = Task {
+                defer { hasCompletedProjectPreload = true }
                 githubAvailability = await githubService.probe()
                 if githubAvailability.state == .available {
                     await loadGitHubAccountRepositories()
@@ -4716,6 +4904,7 @@ final class WorkspaceViewModel: ObservableObject {
         commitMediaItems = []
         selectedCommitMediaItem = nil
         commitMediaPreviewURL = nil
+        loadedCommitMediaCommitID = nil
         codexMessages = []
         codexCommitDraft = nil
         codexActivity = nil
@@ -4743,6 +4932,7 @@ final class WorkspaceViewModel: ObservableObject {
         activeDiagnosticOperation = nil
         isLiveRefreshing = false
         liveSyncError = nil
+        hasCompletedRepositorySurfacePreload = false
     }
 
     private func cacheCurrentRepository() {
@@ -4754,7 +4944,12 @@ final class WorkspaceViewModel: ObservableObject {
             stashes: stashes,
             commitGraph: commitGraph,
             worktrees: worktrees,
-            messages: codexMessages
+            messages: codexMessages,
+            diffDocument: diffDocument,
+            selectedChangePreviewURL: selectedChangePreviewURL,
+            commitDiffDocument: commitDiffDocument,
+            repositoryFiles: repositoryFiles,
+            repositoryDiagnostics: repositoryDiagnostics
         )
         repositoryCacheOrder.removeAll { $0 == path }
         repositoryCacheOrder.insert(path, at: 0)
@@ -4772,6 +4967,14 @@ final class WorkspaceViewModel: ObservableObject {
         commitGraph = cached.commitGraph
         apply(cached.worktrees)
         codexMessages = cached.messages
+        diffDocument = cached.diffDocument
+        selectedChangePreviewURL = cached.selectedChangePreviewURL
+        commitDiffDocument = cached.commitDiffDocument
+        repositoryFiles = cached.repositoryFiles
+        selectedRepositoryFile = cached.repositoryFiles.first
+        repositoryDiagnostics = cached.repositoryDiagnostics
+        hasCompletedRepositorySurfacePreload = true
+        scheduleSelectedSectionDetailsLoad()
         repositoryCacheOrder.removeAll { $0 == path }
         repositoryCacheOrder.insert(path, at: 0)
     }
@@ -4910,6 +5113,24 @@ private struct RepositorySupplementalState: Sendable {
     let messages: [CodexMessage]?
 }
 
+private struct ChangeSurfacePreload: Sendable {
+    let changeID: String
+    let document: DiffDocument
+    let previewURL: URL?
+}
+
+private struct CommitSurfacePreload: Sendable {
+    let commitID: String
+    let document: DiffDocument
+}
+
+private enum RepositorySurfacePreloadResult: Sendable {
+    case files([RepositoryFileRecord]?)
+    case diagnostics(RepositoryDiagnostics?)
+    case change(ChangeSurfacePreload?)
+    case commit(CommitSurfacePreload?)
+}
+
 private struct RepositoryWorkspaceCache {
     let snapshot: RepositorySnapshot
     let operationState: RepositoryOperationState?
@@ -4917,4 +5138,9 @@ private struct RepositoryWorkspaceCache {
     let commitGraph: CommitGraph
     let worktrees: [GitWorktreeRecord]
     let messages: [CodexMessage]
+    let diffDocument: DiffDocument?
+    let selectedChangePreviewURL: URL?
+    let commitDiffDocument: DiffDocument?
+    let repositoryFiles: [RepositoryFileRecord]
+    let repositoryDiagnostics: RepositoryDiagnostics?
 }

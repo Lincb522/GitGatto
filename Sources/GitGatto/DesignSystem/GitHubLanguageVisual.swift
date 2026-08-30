@@ -124,6 +124,22 @@ enum GitHubLanguageIconAssets {
         placeholderCache.setObject(rendered, forKey: key)
         return rendered
     }
+
+    @MainActor
+    static func prewarm(languages: [String?], pointSizes: [CGFloat] = [18, 40]) {
+        var seen = Set<String>()
+        let visibleLanguages = languages.compactMap { language -> String? in
+            guard let language else { return nil }
+            let key = language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !key.isEmpty, seen.insert(key).inserted else { return nil }
+            return language
+        }.prefix(12)
+        for language in visibleLanguages {
+            for pointSize in pointSizes {
+                _ = thumbnail(for: language, pointSize: pointSize)
+            }
+        }
+    }
 }
 
 struct GitHubLanguageStyle: Equatable, Sendable {

@@ -23,15 +23,25 @@ enum CommitDraftDetail: String, CaseIterable, Identifiable, Codable, Sendable {
     var id: String { rawValue }
 }
 
+enum WindowCloseBehavior: String, CaseIterable, Identifiable, Codable, Sendable {
+    case ask
+    case minimize
+    case quit
+
+    var id: String { rawValue }
+}
+
 enum AppVisualTheme: String, CaseIterable, Identifiable, Sendable {
     case standard = "default"
     case softGlass
     case console
+    case emerald
+    case folio
 
     var id: String { rawValue }
 
     static func resolved(_ storedValue: String?) -> AppVisualTheme {
-        storedValue.flatMap(AppVisualTheme.init(rawValue:)) ?? .standard
+        storedValue.flatMap(AppVisualTheme.init(rawValue:)) ?? AppStyleDefaults.defaultTheme
     }
 }
 
@@ -49,6 +59,7 @@ enum AppAccentChoice: String, CaseIterable, Identifiable, Sendable {
 }
 
 enum AppStyleDefaults {
+    static let defaultTheme = AppVisualTheme.softGlass
     static let themeKey = "visualTheme"
     static let accentKey = "accentColor"
     static let customAccentKey = "customAccentHex"
@@ -77,6 +88,8 @@ struct AppPreferences: Codable, Sendable, Equatable {
     var remoteRefreshInterval = 30.0
     var commitDraftDetail: CommitDraftDetail = .concise
     var reopenLastRepository = true
+    var launchAnimationEnabled = true
+    var windowCloseBehavior: WindowCloseBehavior = .ask
     var confirmDiscardChanges = true
     var defaultTranslationTarget: CodexTranslationTarget = .simplifiedChinese
 
@@ -89,6 +102,8 @@ struct AppPreferences: Codable, Sendable, Equatable {
         case remoteRefreshInterval
         case commitDraftDetail
         case reopenLastRepository
+        case launchAnimationEnabled
+        case windowCloseBehavior
         case confirmDiscardChanges
         case defaultTranslationTarget
     }
@@ -105,6 +120,11 @@ struct AppPreferences: Codable, Sendable, Equatable {
         remoteRefreshInterval = try container.decodeIfPresent(Double.self, forKey: .remoteRefreshInterval) ?? 30
         commitDraftDetail = try container.decodeIfPresent(CommitDraftDetail.self, forKey: .commitDraftDetail) ?? .concise
         reopenLastRepository = try container.decodeIfPresent(Bool.self, forKey: .reopenLastRepository) ?? true
+        launchAnimationEnabled = try container.decodeIfPresent(Bool.self, forKey: .launchAnimationEnabled) ?? true
+        windowCloseBehavior = try container.decodeIfPresent(
+            WindowCloseBehavior.self,
+            forKey: .windowCloseBehavior
+        ) ?? .ask
         confirmDiscardChanges = try container.decodeIfPresent(Bool.self, forKey: .confirmDiscardChanges) ?? true
         defaultTranslationTarget = try container.decodeIfPresent(CodexTranslationTarget.self, forKey: .defaultTranslationTarget) ?? .simplifiedChinese
     }

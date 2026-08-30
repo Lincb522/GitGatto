@@ -5,20 +5,54 @@ struct GitHubMarketplaceView: View {
     @ObservedObject var model: GitHubMarketplaceViewModel
     @ObservedObject var downloads: AppDownloadManager
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @State private var inAppBrowserPage: InAppBrowserPage?
     @State private var selectedDetailTab = MarketplaceDetailTab.overview
     @State private var unavailableScreenshotURLs: Set<URL> = []
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            marketplaceHeader(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            HSplitView {
-                resultPane(palette)
-                    .frame(minWidth: 260, idealWidth: 310, maxWidth: 380)
-                detailPane(palette)
-                    .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
+        let theme = AppVisualTheme.resolved(themeRaw)
+        Group {
+            if theme == .emerald {
+                VStack(spacing: 10) {
+                    marketplaceHeader(palette)
+                        .emeraldSurface(.elevated, cornerRadius: 16)
+                    HStack(spacing: 10) {
+                        resultPane(palette)
+                            .frame(minWidth: 260, idealWidth: 310, maxWidth: 380)
+                            .emeraldSurface(.elevated, cornerRadius: 16)
+                        detailPane(palette)
+                            .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
+                            .emeraldSurface(.panel, cornerRadius: 16)
+                    }
+                }
+                .padding(10)
+            } else if theme == .folio {
+                VStack(spacing: 10) {
+                    marketplaceHeader(palette)
+                        .folioSurface(.elevated, cornerRadius: 16)
+                    HStack(spacing: 10) {
+                        resultPane(palette)
+                            .frame(minWidth: 260, idealWidth: 310, maxWidth: 380)
+                            .folioSurface(.elevated, cornerRadius: 16)
+                        detailPane(palette)
+                            .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
+                            .folioSurface(.panel, cornerRadius: 16)
+                    }
+                }
+                .padding(10)
+            } else {
+                VStack(spacing: 0) {
+                    marketplaceHeader(palette)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    HSplitView {
+                        resultPane(palette)
+                            .frame(minWidth: 260, idealWidth: 310, maxWidth: 380)
+                        detailPane(palette)
+                            .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
             }
         }
         .background(palette.background)
@@ -833,10 +867,8 @@ private struct MarketplaceLogoView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let data = try await RemoteImageDataCache.shared.data(for: url)
             guard !Task.isCancelled,
-                  data.count <= 8 * 1_024 * 1_024,
-                  (response as? HTTPURLResponse).map({ 200..<300 ~= $0.statusCode }) ?? true,
                   let loaded = NSImage(data: data) else { return }
             withAnimation(.easeOut(duration: 0.18)) {
                 image = loaded

@@ -613,8 +613,13 @@ struct CircularDownloadIndicator: View {
             Image(gattoSymbol: "pause")
                 .font(.system(size: size * 0.24, weight: .bold))
                 .foregroundStyle(palette.warning)
-        case .completed, .installed:
-            Image(gattoSymbol: state == .installed ? "checkmark.seal.fill" : "checkmark")
+        case .completed:
+            Image(gattoSymbol: "checkmark")
+                .font(.system(size: size * 0.27, weight: .bold))
+                .foregroundStyle(Color.white)
+                .transition(.scale.combined(with: .opacity))
+        case .installed:
+            Image(gattoSymbol: "checkmark.seal.fill")
                 .font(.system(size: size * 0.27, weight: .bold))
                 .foregroundStyle(palette.success)
                 .transition(.scale.combined(with: .opacity))

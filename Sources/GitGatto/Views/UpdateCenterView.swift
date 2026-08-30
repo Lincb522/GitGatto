@@ -11,12 +11,6 @@ struct UpdateCenterView: View {
         VStack(spacing: AppThemeLayout.panelSpacing) {
             HStack(spacing: 12) {
                 AppBrandLockup(iconSize: 36, wordmarkWidth: 94, spacing: 8)
-                    .padding(
-                        .leading,
-                        AppThemeLayout.titlebarBrandLeading
-                            - AppThemeLayout.workspaceInset
-                            - 12
-                    )
                 Rectangle().fill(palette.divider).frame(width: 1, height: 26)
                 Text(L10n.text("update.title"))
                     .font(.system(size: 14.5, weight: .semibold))
@@ -24,7 +18,8 @@ struct UpdateCenterView: View {
                 Spacer()
             }
             .padding(.horizontal, 12)
-            .frame(height: 66)
+            .padding(.top, 18)
+            .frame(height: 80)
             .background(palette.sidebar.opacity(0.18))
             .appGlassPanel(cornerRadius: 16, elevated: false)
 

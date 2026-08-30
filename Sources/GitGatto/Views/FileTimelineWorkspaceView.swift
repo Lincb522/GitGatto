@@ -3,28 +3,71 @@ import SwiftUI
 struct FileTimelineWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppVisualTheme.standard.rawValue
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @State private var confirmsRestore = false
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            commandBar(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            GeometryReader { proxy in
-                let fileWidth = min(272, max(200, proxy.size.width * 0.25))
-                let revisionWidth = min(310, max(232, proxy.size.width * 0.28))
-                HStack(spacing: 0) {
-                    fileNavigator(palette)
-                        .frame(width: fileWidth)
-                    Rectangle().fill(palette.divider).frame(width: 1)
-                    revisionTimeline(palette)
-                        .frame(width: revisionWidth)
-                    Rectangle().fill(palette.divider).frame(width: 1)
-                    fileInspector(palette)
-                        .frame(maxWidth: .infinity)
+        Group {
+            if theme == .emerald {
+                VStack(spacing: 10) {
+                    commandBar(palette)
+                        .emeraldSurface(.elevated, cornerRadius: 16)
+                    GeometryReader { proxy in
+                        let fileWidth = min(272, max(200, proxy.size.width * 0.25))
+                        let revisionWidth = min(310, max(232, proxy.size.width * 0.28))
+                        HStack(spacing: 10) {
+                            fileNavigator(palette)
+                                .frame(width: fileWidth)
+                                .emeraldSurface(.elevated, cornerRadius: 16)
+                            revisionTimeline(palette)
+                                .frame(width: revisionWidth)
+                                .emeraldSurface(.elevated, cornerRadius: 16)
+                            fileInspector(palette)
+                                .frame(maxWidth: .infinity)
+                                .emeraldSurface(.panel, cornerRadius: 16)
+                        }
+                    }
+                }
+                .padding(10)
+            } else if theme == .folio {
+                VStack(spacing: 10) {
+                    commandBar(palette)
+                        .folioSurface(.elevated, cornerRadius: 16)
+                    GeometryReader { proxy in
+                        let fileWidth = min(272, max(200, proxy.size.width * 0.25))
+                        let revisionWidth = min(310, max(232, proxy.size.width * 0.28))
+                        HStack(spacing: 10) {
+                            fileNavigator(palette)
+                                .frame(width: fileWidth)
+                                .folioSurface(.elevated, cornerRadius: 16)
+                            revisionTimeline(palette)
+                                .frame(width: revisionWidth)
+                                .folioSurface(.elevated, cornerRadius: 16)
+                            fileInspector(palette)
+                                .frame(maxWidth: .infinity)
+                                .folioSurface(.panel, cornerRadius: 16)
+                        }
+                    }
+                }
+                .padding(10)
+            } else {
+                VStack(spacing: 0) {
+                    commandBar(palette)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    GeometryReader { proxy in
+                        let fileWidth = min(272, max(200, proxy.size.width * 0.25))
+                        let revisionWidth = min(310, max(232, proxy.size.width * 0.28))
+                        HStack(spacing: 0) {
+                            fileNavigator(palette).frame(width: fileWidth)
+                            Rectangle().fill(palette.divider).frame(width: 1)
+                            revisionTimeline(palette).frame(width: revisionWidth)
+                            Rectangle().fill(palette.divider).frame(width: 1)
+                            fileInspector(palette).frame(maxWidth: .infinity)
+                        }
+                    }
                 }
             }
         }
