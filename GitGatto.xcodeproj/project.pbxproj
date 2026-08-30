@@ -36,6 +36,7 @@
 		1842D89E955A82F97DB045F4 /* GitHubLanguageStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3052E29C8B4766CBBF7578E5 /* GitHubLanguageStyleTests.swift */; };
 		1B0230750C3762B1AE47346E /* gatto-circle-dotted.svg in Resources */ = {isa = PBXBuildFile; fileRef = 3CF4C02DFAD917751F4E4032 /* gatto-circle-dotted.svg */; };
 		1C1D7402124C81C28B23062F /* gatto-arrow-clockwise.svg in Resources */ = {isa = PBXBuildFile; fileRef = A989241A5B9C63682A61B948 /* gatto-arrow-clockwise.svg */; };
+		1CE4AAA75418622D967C4F6F /* MarketplaceApplicationDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1EC417E83AC3CE0C38C328 /* MarketplaceApplicationDetails.swift */; };
 		1F2EA959BF0A9369F4EE8A43 /* gatto-house-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = A448475E2BB9D323B0C9D83B /* gatto-house-fill.svg */; };
 		22D9ECC04B8483B27C93409A /* CodexWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38287E6370FD3144329DA3D8 /* CodexWorkspaceView.swift */; };
 		2619FC0C4AB85B68C274B3DE /* MarketplaceTranslationStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663058658725FAFEFE3F0A39 /* MarketplaceTranslationStoreTests.swift */; };
@@ -52,7 +53,9 @@
 		30F75F295BA2311FDF33BAF3 /* GitHubLanguageVisual.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7833C42F4B838B5B8F6A33 /* GitHubLanguageVisual.swift */; };
 		3391B03AEB39F8F841358C2F /* MarketplaceTranslationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A09C9C271208D3D6C22889 /* MarketplaceTranslationStore.swift */; };
 		342CC3B4B02C24AF7F147FAF /* gatto-chevron-compact-down.svg in Resources */ = {isa = PBXBuildFile; fileRef = B42A6F6EA7F66DCF868F61EA /* gatto-chevron-compact-down.svg */; };
+		3477194B696396681C6129A1 /* SparkleProgressLaunchRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5867C3003E2DE01000EA25BB /* SparkleProgressLaunchRecovery.swift */; };
 		35EA96287D61D0A279F63F17 /* gatto-checkmark-seal-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = 7F6DDE28027F2353D1C1A9DC /* gatto-checkmark-seal-fill.svg */; };
+		36164D018CB458055A91299A /* RepositoryChangeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23527F3DF87169E2E4A9DA51 /* RepositoryChangeMonitor.swift */; };
 		362132F62947134DBAFF5C96 /* GitCommandRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C5BBF7DC3B438A2C76FCB0 /* GitCommandRunner.swift */; };
 		366EEEC150DE32A4768E854B /* gatto-hammer.svg in Resources */ = {isa = PBXBuildFile; fileRef = 119B35732ACB422CB0555477 /* gatto-hammer.svg */; };
 		36FAD3BFC41F69B58CE92BDB /* GitAgentProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A6C84BD2C3977E98FBE4F6 /* GitAgentProfile.swift */; };
@@ -118,6 +121,7 @@
 		7175069C20CC2059D1C4303D /* GitHubAPIParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1189141191D0F65182423FB2 /* GitHubAPIParserTests.swift */; };
 		760EA642D96E41471FD29AA7 /* InAppBrowserSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4BECAC1068A1853F738BF1C /* InAppBrowserSheet.swift */; };
 		78F4A7FE9653D4AC3ED19E56 /* BrandAssetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6FD6467D3A736D023FEC9F /* BrandAssetTests.swift */; };
+		7900A6022F2EB59905897F5C /* RepositoryChangeMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62A8CC6F9FFD2503F03CBE2 /* RepositoryChangeMonitorTests.swift */; };
 		79CBBBE66CECE5A27AF9B631 /* AppThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 051E4BD4D843828AC076CE32 /* AppThemeTests.swift */; };
 		7BCFDFD4B55807272714CBC1 /* gatto-exclamationmark-triangle-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = 19DDCFAB49A6CE0BB5E08346 /* gatto-exclamationmark-triangle-fill.svg */; };
 		7D811DB4E11EB80D1E48ECCE /* GitHubReadmeTranslationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46D7808D76C0C6B19F16E6C1 /* GitHubReadmeTranslationStore.swift */; };
@@ -308,6 +312,7 @@
 		2310DC60A3C4C7BD19B252F8 /* GitGatto-AppIcon.svg */ = {isa = PBXFileReference; path = "GitGatto-AppIcon.svg"; sourceTree = "<group>"; };
 		23113D8AEF097B239EB81351 /* create-dmg.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "create-dmg.sh"; sourceTree = "<group>"; };
 		234472750BC34DF40ADD3FBE /* gatto-play-circle.svg */ = {isa = PBXFileReference; path = "gatto-play-circle.svg"; sourceTree = "<group>"; };
+		23527F3DF87169E2E4A9DA51 /* RepositoryChangeMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryChangeMonitor.swift; sourceTree = "<group>"; };
 		2461F515072A137810E93D11 /* gatto-person-crop-circle-badge-questionmark.svg */ = {isa = PBXFileReference; path = "gatto-person-crop-circle-badge-questionmark.svg"; sourceTree = "<group>"; };
 		25AE95C4D82BF7F0614E985B /* gatto-arrow-right.svg */ = {isa = PBXFileReference; path = "gatto-arrow-right.svg"; sourceTree = "<group>"; };
 		268F1AEE4AABC2392D17145D /* gatto-media-fit.svg */ = {isa = PBXFileReference; path = "gatto-media-fit.svg"; sourceTree = "<group>"; };
@@ -366,6 +371,7 @@
 		55FF3F29C5DA5661DD129730 /* gatto-text-badge-plus.svg */ = {isa = PBXFileReference; path = "gatto-text-badge-plus.svg"; sourceTree = "<group>"; };
 		5703D7E19D7C43BBA677DD09 /* GitGatto-AppIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "GitGatto-AppIcon.png"; sourceTree = "<group>"; };
 		5800802C9088BAFD6D5B5E3F /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		5867C3003E2DE01000EA25BB /* SparkleProgressLaunchRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleProgressLaunchRecovery.swift; sourceTree = "<group>"; };
 		5AC96EC6A854BECCCCC1B256 /* gatto-link.svg */ = {isa = PBXFileReference; path = "gatto-link.svg"; sourceTree = "<group>"; };
 		5B4062CAF1EF9E3C13776AA0 /* gatto-point-3-filled-connected-trianglepath-dotted.svg */ = {isa = PBXFileReference; path = "gatto-point-3-filled-connected-trianglepath-dotted.svg"; sourceTree = "<group>"; };
 		5B50531F0467ADAC4DDD677B /* GitGatto-Wordmark-Light.svg */ = {isa = PBXFileReference; path = "GitGatto-Wordmark-Light.svg"; sourceTree = "<group>"; };
@@ -529,12 +535,14 @@
 		EBF519234CFCC58C402186A3 /* gatto-arrow-up-right-square.svg */ = {isa = PBXFileReference; path = "gatto-arrow-up-right-square.svg"; sourceTree = "<group>"; };
 		ECA2653BCF345EECA3E79074 /* HistoryWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWorkspaceView.swift; sourceTree = "<group>"; };
 		EE00C157F088AA82ACBAFBBD /* CodexService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexService.swift; sourceTree = "<group>"; };
+		EF1EC417E83AC3CE0C38C328 /* MarketplaceApplicationDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceApplicationDetails.swift; sourceTree = "<group>"; };
 		F035454E4B1A98EE1EE9AF1C /* GitHubMarketplaceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubMarketplaceViewModel.swift; sourceTree = "<group>"; };
 		F2909330F9596EFAFA02299C /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		F2B85FEA8DFFFF680F04B702 /* gatto-legal-privacy.svg */ = {isa = PBXFileReference; path = "gatto-legal-privacy.svg"; sourceTree = "<group>"; };
 		F3E822D7BE65EC1F5D091254 /* DESIGN.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DESIGN.md; sourceTree = "<group>"; };
 		F45753B6D6CE34F39FC2DC55 /* gatto-minus-circle.svg */ = {isa = PBXFileReference; path = "gatto-minus-circle.svg"; sourceTree = "<group>"; };
 		F56654C1C1C14A54E9676F80 /* ReleaseHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseHistoryView.swift; sourceTree = "<group>"; };
+		F62A8CC6F9FFD2503F03CBE2 /* RepositoryChangeMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryChangeMonitorTests.swift; sourceTree = "<group>"; };
 		F6C97D93E6BF812D6F49C658 /* gatto-chevron-compact-up.svg */ = {isa = PBXFileReference; path = "gatto-chevron-compact-up.svg"; sourceTree = "<group>"; };
 		F73CD23C26377F612646D3B6 /* gatto-xmark-circle-fill.svg */ = {isa = PBXFileReference; path = "gatto-xmark-circle-fill.svg"; sourceTree = "<group>"; };
 		F7B297B0D056D40DF7E14E81 /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
@@ -618,6 +626,7 @@
 				070EC64EC4458AE394013A4F /* MacApplicationInstaller.swift */,
 				10A09C9C271208D3D6C22889 /* MarketplaceTranslationStore.swift */,
 				21974E05AB7668106EE25D39 /* RepositoryDiscoveryService.swift */,
+				5867C3003E2DE01000EA25BB /* SparkleProgressLaunchRecovery.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -809,7 +818,9 @@
 				473753EFC527EC36CB1D80DF /* GitHubSearchQueryResolver.swift */,
 				8B0FBDC36C31AE29D9395305 /* HTMLTextTranslationPlan.swift */,
 				E537EAD5F66751FF54201ECE /* L10n.swift */,
+				EF1EC417E83AC3CE0C38C328 /* MarketplaceApplicationDetails.swift */,
 				BB40D5EF971016F605A31059 /* MenuLocalization.swift */,
+				23527F3DF87169E2E4A9DA51 /* RepositoryChangeMonitor.swift */,
 				E92AB6EB7D470D81AC037CFE /* RepositoryMediaSupport.swift */,
 				5BF7622AD3C355B7CD01FF3E /* StableHash.swift */,
 			);
@@ -913,6 +924,7 @@
 				694F5B1A0AC7685BD11EB10D /* MenuLocalizationTests.swift */,
 				82786E615DB7F5C875ABE410 /* PersistenceStoreTests.swift */,
 				D58F9255A52D052D724E5F5E /* ProductCopyTests.swift */,
+				F62A8CC6F9FFD2503F03CBE2 /* RepositoryChangeMonitorTests.swift */,
 				BCC90B8A203C02679751AFF8 /* RepositoryDiscoveryServiceTests.swift */,
 				9C3DBAA84E42B40D67B130C8 /* RepositoryMediaSupportTests.swift */,
 			);
@@ -1265,6 +1277,7 @@
 				0928DFE721CCBA6142A51383 /* MenuLocalizationTests.swift in Sources */,
 				CC672794EAB69986A71BF998 /* PersistenceStoreTests.swift in Sources */,
 				62B3F4BA36C603124C523653 /* ProductCopyTests.swift in Sources */,
+				7900A6022F2EB59905897F5C /* RepositoryChangeMonitorTests.swift in Sources */,
 				C53394B112AF3961A135DBCF /* RepositoryDiscoveryServiceTests.swift in Sources */,
 				65D01D9945A5CF4587BC02B7 /* RepositoryMediaSupportTests.swift in Sources */,
 			);
@@ -1330,9 +1343,11 @@
 				56B38947919E209B444A31D2 /* LegalDocumentsView.swift in Sources */,
 				0AAD535AD7972C5CB0FCC1FF /* LocalRepositoryCatalog.swift in Sources */,
 				BBAA669B40167EC2BDC4AE9A /* MacApplicationInstaller.swift in Sources */,
+				1CE4AAA75418622D967C4F6F /* MarketplaceApplicationDetails.swift in Sources */,
 				3391B03AEB39F8F841358C2F /* MarketplaceTranslationStore.swift in Sources */,
 				26DEAB77B137F29C73B62C8A /* MenuLocalization.swift in Sources */,
 				F1B61D4D958AB6A9AC606CA1 /* ReleaseHistoryView.swift in Sources */,
+				36164D018CB458055A91299A /* RepositoryChangeMonitor.swift in Sources */,
 				E27F3E4B2FE216C6D2A9F258 /* RepositoryDiagnosticsView.swift in Sources */,
 				62434AA78BDF531AA1CB3DCF /* RepositoryDiscoveryService.swift in Sources */,
 				0624AAF1714152672C7C0AFC /* RepositoryInsightModels.swift in Sources */,
@@ -1341,6 +1356,7 @@
 				B52A682F6A9088087E87396F /* RepositoryReleasesView.swift in Sources */,
 				7DCF09D0CA6FADBA133F3831 /* RepositoryScannerView.swift in Sources */,
 				064DEE4B3C70FB3818B32E66 /* RepositorySidebar.swift in Sources */,
+				3477194B696396681C6129A1 /* SparkleProgressLaunchRecovery.swift in Sources */,
 				8EA71A5BC73551C3984F776C /* StableHash.swift in Sources */,
 				5FF280EB62E8240C979A63D9 /* StashWorkspaceView.swift in Sources */,
 				EDB491BE9563D2284039ACFB /* UpdateActionButton.swift in Sources */,
@@ -1507,7 +1523,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18004;
+				CURRENT_PROJECT_VERSION = 18005;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1528,7 +1544,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.4;
+				MARKETING_VERSION = 0.18.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1574,7 +1590,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18004;
+				CURRENT_PROJECT_VERSION = 18005;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1589,7 +1605,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.4;
+				MARKETING_VERSION = 0.18.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
