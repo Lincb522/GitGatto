@@ -139,19 +139,23 @@ struct RepositorySidebar: View {
                             openWindow(id: "repository-scanner")
                         }
                     } label: {
-                        ZStack {
-                            if model.isScanningRepositories {
-                                GattoLoadingGlyph(size: 22)
-                            } else {
-                                GattoIcon(symbol: "folder.badge.plus", size: 24)
-                                    .foregroundStyle(palette.subtleInk)
-                            }
-                        }
-                        .frame(width: 30, height: 30)
+                        Color.clear
+                            .frame(width: 34, height: 34)
                         .contentShape(Rectangle())
                     }
                     .menuStyle(.borderlessButton)
                     .menuIndicator(.hidden)
+                    .overlay {
+                        Group {
+                            if model.isScanningRepositories {
+                                GattoLoadingGlyph(size: 20)
+                            } else {
+                                GattoIcon(symbol: "folder.badge.plus", size: 22)
+                                    .foregroundStyle(palette.ink)
+                            }
+                        }
+                        .allowsHitTesting(false)
+                    }
                     .fixedSize()
                     .help(L10n.text("action.open_repository"))
                 }

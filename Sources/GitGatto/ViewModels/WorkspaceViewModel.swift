@@ -3920,12 +3920,15 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func performGitHubClone(fork: Bool, parentDirectory: URL) {
         guard let repository = selectedGitHubRepository else { return }
-        activeGitHubOperation = fork ? .fork : .clone
+        let operation: GitHubOperationKind = fork ? .fork : .clone
+        activeGitHubOperation = operation
         githubError = nil
         githubActivity = L10n.text(fork ? "github.status.forking" : "github.status.cloning")
         githubTask = Task {
             defer {
-                activeGitHubOperation = nil
+                if activeGitHubOperation == operation {
+                    activeGitHubOperation = nil
+                }
                 githubTask = nil
             }
             do {
@@ -3935,6 +3938,7 @@ final class WorkspaceViewModel: ObservableObject {
                     try await githubService.clone(repository, into: parentDirectory)
                 }
                 guard !Task.isCancelled else { return }
+                activeGitHubOperation = nil
                 githubActivity = L10n.text(fork ? "github.status.forked" : "github.status.cloned")
                 await openRepository(localURL)
                 selectedSection = .changes
@@ -4395,14 +4399,15 @@ final class WorkspaceViewModel: ObservableObject {
     ) async -> Bool {
         guard let repositoryURL = snapshot?.rootURL, activeOperation == nil else { return false }
         activeOperation = operation
-        defer { activeOperation = nil }
 
         do {
             try await action(repositoryURL)
+            activeOperation = nil
             showNotice(.init(message: L10n.text(successKey), tone: noticeTone))
             await refresh()
             return true
         } catch {
+            activeOperation = nil
             await refresh()
             presentError(error, context: .git(operation), repositoryURL: repositoryURL)
             return false

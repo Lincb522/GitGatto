@@ -531,7 +531,13 @@ struct GitHubMarketplaceView: View {
             .buttonStyle(SecondaryButtonStyle())
             .disabled(true)
         } else {
-            Menu {
+            let title = model.activeTranslationTarget.map {
+                L10n.text("codex.translate.short.\($0.rawValue)")
+            } ?? L10n.text("codex.action.translate")
+            MotionLabelMenu(
+                accessibilityLabel: title,
+                isDisabled: model.isLoadingDetails
+            ) {
                 Button(L10n.text("marketplace.translation.original")) { model.showOriginal() }
                 if !model.availableTranslationTargets.isEmpty {
                     Divider()
@@ -549,9 +555,7 @@ struct GitHubMarketplaceView: View {
                 }
             } label: {
                 DocumentTranslationActionLabel(
-                    title: model.activeTranslationTarget.map {
-                        L10n.text("codex.translate.short.\($0.rawValue)")
-                    } ?? L10n.text("codex.action.translate"),
+                    title: title,
                     activeTitle: L10n.text("codex.status.translating"),
                     isActive: false,
                     completionID: model.translationCompletionID,
@@ -559,8 +563,6 @@ struct GitHubMarketplaceView: View {
                 )
                 .foregroundStyle(model.activeTranslationTarget == nil ? palette.ink : palette.primary)
             }
-            .buttonStyle(SecondaryButtonStyle())
-            .disabled(model.isLoadingDetails)
         }
     }
 }

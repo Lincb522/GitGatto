@@ -408,12 +408,12 @@ private struct ConsoleRepositoryDock: View {
             } label: {
                 GattoIcon(
                     symbol: model.isScanningRepositories ? "arrow.triangle.2.circlepath" : "folder.badge.plus",
-                    size: 22
+                    size: 24
                 )
-                    .frame(width: 28, height: 28)
+                    .frame(width: 30, height: 30)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(model.isScanningRepositories ? palette.accent : palette.mutedInk)
+            .foregroundStyle(model.isScanningRepositories ? palette.accent : palette.ink)
             .help(L10n.text("repository.scan.open"))
 
             Menu {
@@ -787,12 +787,11 @@ private struct RemoteSyncButton: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    @State private var isHovering = false
     @State private var showsCompletion = false
     @State private var lastCompletionID: UUID?
 
     private var isExpanded: Bool {
-        isHovering || isActive || showsCompletion
+        isActive || showsCompletion
     }
 
     private var width: CGFloat {
@@ -871,12 +870,6 @@ private struct RemoteSyncButton: View {
         .buttonStyle(.plain)
         .allowsHitTesting(!isDisabled)
         .opacity(isDisabled && !isActive ? 0.42 : 1)
-        .onHover { hovering in
-            guard !isDisabled else { return }
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) {
-                isHovering = hovering
-            }
-        }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: isActive)
         .onAppear {
             lastCompletionID = completionID
@@ -888,7 +881,7 @@ private struct RemoteSyncButton: View {
                 showsCompletion = true
             }
             try? await Task.sleep(for: .milliseconds(reduceMotion ? 500 : 950))
-            guard !Task.isCancelled, !isActive else { return }
+            guard !Task.isCancelled else { return }
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
                 showsCompletion = false
             }

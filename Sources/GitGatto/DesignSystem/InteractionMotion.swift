@@ -104,11 +104,15 @@ struct ReadmeRewriteMotionLabel: View {
                         .foregroundStyle(Color.white)
                         .transition(.scale(scale: 0.72).combined(with: .opacity))
                 } else if let systemImage {
-                    TranslationMotionGlyph(symbol: systemImage, isActive: isActive)
+                    TranslationMotionGlyph(
+                        symbol: systemImage,
+                        isActive: isActive,
+                        tint: isOpen ? Color.white : palette.primary
+                    )
                         .transition(.opacity)
                 } else {
                     ReadmeFolderMotionGlyph(isOpen: isOpen, isWriting: isActive)
-                        .scaleEffect(0.58)
+                        .scaleEffect(0.64)
                         .transition(.opacity)
                 }
             }
@@ -177,6 +181,7 @@ struct ReadmeRewriteMotionLabel: View {
 private struct TranslationMotionGlyph: View {
     let symbol: String
     let isActive: Bool
+    let tint: Color
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var startedAt = Date.now
@@ -184,8 +189,8 @@ private struct TranslationMotionGlyph: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 24.0, paused: !isActive || reduceMotion)) { context in
             let elapsed = reduceMotion ? 0 : context.date.timeIntervalSince(startedAt)
-            GattoIcon(symbol: symbol, size: 20)
-                .foregroundStyle(Color.white)
+            GattoIcon(symbol: symbol, size: 21)
+                .foregroundStyle(tint)
                 .rotation3DEffect(
                     .degrees(isActive && !reduceMotion ? sin(elapsed * 3.8) * 9 : 0),
                     axis: (x: 0, y: 1, z: 0),
@@ -335,11 +340,9 @@ struct CloneActionButton: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    @State private var isHovering = false
-
     private var width: CGFloat { compact ? 170 : 192 }
     private var height: CGFloat { compact ? 34 : 40 }
-    private var isExpanded: Bool { isHovering || isActive }
+    private var isExpanded: Bool { isActive }
     private var leadingPlateWidth: CGFloat {
         isExpanded ? width - 6 : (compact ? 36 : 42)
     }
@@ -402,16 +405,6 @@ struct CloneActionButton: View {
         .buttonStyle(.plain)
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.44 : 1)
-        .onHover { hovering in
-            guard !isDisabled else { return }
-            if reduceMotion {
-                isHovering = hovering
-            } else {
-                withAnimation(.easeInOut(duration: 0.5)) {
-                    isHovering = hovering
-                }
-            }
-        }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: isActive)
         .help(isActive ? L10n.text("github.action.cancel") : title)
         .accessibilityLabel(isActive ? activeTitle : title)
@@ -424,27 +417,42 @@ struct CloneActivityGlyph: View {
     var travelsUp = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var hasTraveled = false
+    @State private var startedAt = Date.now
 
+    @ViewBuilder
     var body: some View {
-        let distance: CGFloat = travelsUp ? -6 : 6
+        if reduceMotion {
+            glyph(offset: 0, opacity: 1)
+                .frame(width: 16, height: 16)
+        } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
+                let elapsed = context.date.timeIntervalSince(startedAt)
+                let progress = (elapsed / 1.8 + 0.12).truncatingRemainder(dividingBy: 1)
+                ZStack {
+                    travelingGlyph(progress: progress)
+                    travelingGlyph(progress: (progress + 0.5).truncatingRemainder(dividingBy: 1))
+                }
+            }
+            .frame(width: 16, height: 16)
+            .clipped()
+            .onAppear { startedAt = .now }
+        }
+    }
+
+    private func travelingGlyph(progress: Double) -> some View {
+        let eased = progress * progress * (3 - 2 * progress)
+        let visibility = pow(max(0, sin(progress * .pi)), 3)
+        let direction: CGFloat = travelsUp ? -1 : 1
+        let offset = CGFloat(eased * 2 - 1) * 5.5 * direction
+        return glyph(offset: offset, opacity: visibility)
+    }
+
+    private func glyph(offset: CGFloat, opacity: Double) -> some View {
         Image(gattoSymbol: systemImage)
             .font(.system(size: 10.5, weight: .bold))
             .foregroundStyle(tint)
-            .offset(y: reduceMotion ? 0 : (hasTraveled ? distance : -distance))
-            .opacity(reduceMotion ? 1 : (hasTraveled ? 0.3 : 1))
-            .frame(width: 16, height: 16)
-            .clipped()
-            .onAppear { updateAnimation() }
-            .onChange(of: reduceMotion) { _, _ in updateAnimation() }
-    }
-
-    private func updateAnimation() {
-        hasTraveled = false
-        guard !reduceMotion else { return }
-        withAnimation(.easeIn(duration: 0.55).repeatForever(autoreverses: false)) {
-            hasTraveled = true
-        }
+            .offset(y: offset)
+            .opacity(opacity)
     }
 }
 
@@ -1252,5 +1260,32 @@ struct DocumentTranslationActionLabel: View {
             systemImage: "ai.translation",
             showsCancelIndicator: showsCancelIndicator
         )
+    }
+}
+
+struct MotionLabelMenu<Content: View, Label: View>: View {
+    let accessibilityLabel: String
+    var isDisabled = false
+    @ViewBuilder let content: () -> Content
+    @ViewBuilder let label: () -> Label
+
+    var body: some View {
+        label()
+            .fixedSize()
+            .overlay {
+                GeometryReader { geometry in
+                    Menu {
+                        content()
+                    } label: {
+                        Color.clear
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .contentShape(Rectangle())
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .accessibilityLabel(accessibilityLabel)
+                }
+            }
+            .disabled(isDisabled)
     }
 }

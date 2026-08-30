@@ -565,7 +565,8 @@ struct GitHubWorkspaceView: View {
                     activeTitle: L10n.text("github.status.cloning"),
                     systemImage: "tray.and.arrow.down",
                     isActive: model.activeGitHubOperation == .clone,
-                    isDisabled: model.activeGitHubOperation != nil && model.activeGitHubOperation != .clone
+                    isDisabled: model.isRefreshing
+                        || (model.activeGitHubOperation != nil && model.activeGitHubOperation != .clone)
                 ) {
                     if model.activeGitHubOperation == .clone {
                         model.cancelGitHubOperation()
@@ -579,7 +580,8 @@ struct GitHubWorkspaceView: View {
                     activeTitle: L10n.text("github.status.forking"),
                     systemImage: "arrow.triangle.branch",
                     isActive: model.activeGitHubOperation == .fork,
-                    isDisabled: model.activeGitHubOperation != nil && model.activeGitHubOperation != .fork
+                    isDisabled: model.isRefreshing
+                        || (model.activeGitHubOperation != nil && model.activeGitHubOperation != .fork)
                 ) {
                     if model.activeGitHubOperation == .fork {
                         model.cancelGitHubOperation()
@@ -705,7 +707,7 @@ struct GitHubWorkspaceView: View {
                     systemImage: "tray.and.arrow.down",
                     compact: true,
                     isActive: false,
-                    isDisabled: false
+                    isDisabled: model.isRefreshing
                 ) {
                     model.chooseGitHubCloneDestination(fork: false)
                 }
@@ -715,7 +717,7 @@ struct GitHubWorkspaceView: View {
                     systemImage: "arrow.triangle.branch",
                     compact: true,
                     isActive: false,
-                    isDisabled: false
+                    isDisabled: model.isRefreshing
                 ) {
                     model.chooseGitHubCloneDestination(fork: true)
                 }
@@ -968,7 +970,10 @@ struct GitHubWorkspaceView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
 
-                Menu {
+                MotionLabelMenu(
+                    accessibilityLabel: L10n.text("codex.action.translate"),
+                    isDisabled: !model.canTranslateGitHubReadme
+                ) {
                     Button(L10n.text("codex.translate.simplifiedChinese")) {
                         model.translateGitHubReadme(to: .simplifiedChinese)
                     }
@@ -985,9 +990,6 @@ struct GitHubWorkspaceView: View {
                     )
                     .font(.system(size: 10.5, weight: .semibold))
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .disabled(!model.canTranslateGitHubReadme)
 
                 readmeAgentMenu(titleKey: "github.readme.agent")
             }
@@ -998,7 +1000,10 @@ struct GitHubWorkspaceView: View {
     }
 
     private func readmeAgentMenu(titleKey: String) -> some View {
-        Menu {
+        MotionLabelMenu(
+            accessibilityLabel: L10n.text(titleKey),
+            isDisabled: !model.canBeautifySelectedReadme
+        ) {
             ForEach(ReadmeAgentStyle.allCases) { style in
                 Button(L10n.text("github.readme.style.\(style.rawValue)")) {
                     model.beautifySelectedReadme(style: style)
@@ -1012,9 +1017,6 @@ struct GitHubWorkspaceView: View {
                 showsInitialCompletion: true
             )
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .disabled(!model.canBeautifySelectedReadme)
     }
 
     private var githubReadmeTranslationStatus: String {

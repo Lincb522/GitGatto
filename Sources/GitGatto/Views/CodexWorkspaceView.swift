@@ -279,7 +279,10 @@ struct CodexWorkspaceView: View {
                     .buttonStyle(SecondaryButtonStyle())
                     .disabled(true)
                 } else {
-                    Menu {
+                    MotionLabelMenu(
+                        accessibilityLabel: L10n.text("codex.action.translate"),
+                        isDisabled: !model.canTranslatePrompt
+                    ) {
                         ForEach(CodexTranslationTarget.allCases) { target in
                             Button(L10n.text("codex.translate.\(target.rawValue)")) {
                                 model.codexTranslationTarget = target
@@ -296,9 +299,6 @@ struct CodexWorkspaceView: View {
                         )
                         .font(.system(size: 11.5, weight: .semibold))
                     }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
-                    .disabled(!model.canTranslatePrompt)
                 }
 
                 if model.isCodexRunning {
