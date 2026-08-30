@@ -1,6 +1,6 @@
 import Foundation
 
-struct MarketplaceApplicationDetails: Equatable {
+struct MarketplaceApplicationDetails: Equatable, Sendable {
     let summary: String?
     let paragraphs: [String]
     let features: [String]
@@ -16,6 +16,18 @@ struct MarketplaceApplicationDetails: Equatable {
             logoURL: nil
         )
     }
+
+    var translationSourceText: String? {
+        let values = paragraphs + features
+        guard !values.isEmpty else { return nil }
+        return values.joined(separator: "\u{1F}")
+    }
+}
+
+struct MarketplaceApplicationTranslatedText: Equatable, Sendable {
+    let repositoryDescription: String?
+    let paragraphs: [String]
+    let features: [String]
 }
 
 enum MarketplaceApplicationDetailsExtractor {
@@ -55,22 +67,88 @@ enum MarketplaceApplicationDetailsExtractor {
         .filter { $0.count >= 3 && $0.count <= 240 }
         .uniqued()
         .prefix(8)
-        let images = imageCandidates(in: html)
+        let images = imageCandidates(in: html, headings: headings)
         let logo = images.first(where: \.isLogo)?.url
-            ?? GitHubReadmeHTML.primaryImageURL(in: document)
+            ?? images.first(where: { !$0.isScreenshot })?.url
         let screenshots = images
-            .filter { !$0.isLogo && $0.url != logo }
+            .filter { !$0.isLogo && $0.isScreenshot }
             .map(\.url)
             .uniqued()
-            .prefix(6)
 
         return MarketplaceApplicationDetails(
             summary: repositoryDescription,
             paragraphs: Array(paragraphs),
             features: Array(features),
-            screenshots: Array(screenshots),
+            screenshots: screenshots,
             logoURL: logo
         )
+    }
+
+    static func translationHTML(
+        repositoryDescription: String?,
+        details: MarketplaceApplicationDetails
+    ) -> String? {
+        let description = repositoryDescription?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard description?.isEmpty == false || !details.paragraphs.isEmpty || !details.features.isEmpty else {
+            return nil
+        }
+
+        var sections: [String] = []
+        if let description, !description.isEmpty {
+            sections.append(
+                #"<section data-gitgatto-part="description"><p>\#(escapedHTML(description))</p></section>"#
+            )
+        }
+        if !details.paragraphs.isEmpty {
+            let paragraphs = details.paragraphs
+                .map { "<p>\(escapedHTML($0))</p>" }
+                .joined()
+            sections.append(
+                #"<section data-gitgatto-part="paragraphs">\#(paragraphs)</section>"#
+            )
+        }
+        if !details.features.isEmpty {
+            let features = details.features
+                .map { "<li>\(escapedHTML($0))</li>" }
+                .joined()
+            sections.append(
+                #"<section data-gitgatto-part="features"><ul>\#(features)</ul></section>"#
+            )
+        }
+        return #"<article data-gitgatto-marketplace-details="1">\#(sections.joined())</article>"#
+    }
+
+    static func translatedText(from html: String) -> MarketplaceApplicationTranslatedText? {
+        let description = section(named: "description", in: html)
+            .flatMap { elements(pattern: #"(?is)<p\b[^>]*>(.*?)</p>"#, in: $0).first?.value }
+            .map(plainText)
+        let paragraphs = section(named: "paragraphs", in: html)
+            .map { elements(pattern: #"(?is)<p\b[^>]*>(.*?)</p>"#, in: $0).map { plainText($0.value) } }
+            ?? []
+        let features = section(named: "features", in: html)
+            .map { elements(pattern: #"(?is)<li\b[^>]*>(.*?)</li>"#, in: $0).map { plainText($0.value) } }
+            ?? []
+        guard description?.isEmpty == false || !paragraphs.isEmpty || !features.isEmpty else { return nil }
+        return MarketplaceApplicationTranslatedText(
+            repositoryDescription: description,
+            paragraphs: paragraphs,
+            features: features
+        )
+    }
+
+    private static func section(named name: String, in html: String) -> String? {
+        let escapedName = NSRegularExpression.escapedPattern(for: name)
+        let pattern = "(?is)<section\\b(?=[^>]*\\bdata-gitgatto-part\\s*=\\s*[\\\"']\(escapedName)[\\\"'])[^>]*>(.*?)</section>"
+        return elements(pattern: pattern, in: html).first?.value
+    }
+
+    private static func escapedHTML(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&#39;")
     }
 
     private struct Element {
@@ -81,6 +159,7 @@ enum MarketplaceApplicationDetailsExtractor {
     private struct ImageCandidate {
         let url: URL
         let isLogo: Bool
+        let isScreenshot: Bool
     }
 
     private static func elements(pattern: String, in html: String) -> [(location: Int, value: String)] {
@@ -108,7 +187,7 @@ enum MarketplaceApplicationDetailsExtractor {
         return featureSectionTerms.contains(where: value.contains)
     }
 
-    private static func imageCandidates(in html: String) -> [ImageCandidate] {
+    private static func imageCandidates(in html: String, headings: [Element]) -> [ImageCandidate] {
         guard let expression = try? NSRegularExpression(
             pattern: #"(?is)<img\b([^>]*)>"#
         ) else { return [] }
@@ -120,11 +199,13 @@ enum MarketplaceApplicationDetailsExtractor {
                   let url = URL(string: source),
                   ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return nil }
             let alt = attribute("alt", in: attributes) ?? ""
-            let identity = "\(source) \(alt)".lowercased()
+            let section = heading(at: match.range.location, in: headings)
+            let identity = "\(source) \(alt) \(section)".lowercased()
             guard !discardedImageTerms.contains(where: identity.contains) else { return nil }
             return ImageCandidate(
                 url: url,
-                isLogo: logoTerms.contains(where: identity.contains)
+                isLogo: logoTerms.contains(where: identity.contains),
+                isScreenshot: screenshotTerms.contains(where: identity.contains)
             )
         }
     }
@@ -211,6 +292,10 @@ enum MarketplaceApplicationDetailsExtractor {
     ]
     private static let logoTerms = [
         "appicon", "app-icon", "app_icon", "logo", "brand", "icon.png", "icon.svg",
+    ]
+    private static let screenshotTerms = [
+        "screenshot", "screen-shot", "preview", "gallery", "interface", "showcase",
+        "截图", "预览", "界面", "演示",
     ]
 }
 

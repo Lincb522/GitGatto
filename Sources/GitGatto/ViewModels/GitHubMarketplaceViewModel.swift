@@ -20,6 +20,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published private(set) var searchPage = 0
     @Published private(set) var isUsingAgent = false
     @Published private(set) var isTranslating = false
+    @Published private(set) var translationCompletionID: UUID?
     @Published private(set) var activeTranslationTarget: CodexTranslationTarget?
     @Published private(set) var translations: [CodexTranslationTarget: MarketplaceTranslationDocument] = [:]
     @Published private(set) var translationError: String?
@@ -220,7 +221,6 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         loadedReleaseApplicationID = nil
         detailError = nil
         guard let application else { return }
-        restoreTranslations(for: application, release: application.latestRelease)
         let github = self.github
         detailsTask = Task {
             defer {
@@ -242,14 +242,25 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 )
                 selectedDetails = details
                 selectedLogoURL = details.logoURL ?? application.ownerAvatarURL
+                restoreTranslations(
+                    for: application,
+                    release: selectedRelease ?? application.latestRelease,
+                    details: details
+                )
             } catch is CancellationError {
                 return
             } catch {
                 guard selectedApplication?.id == application.id else { return }
-                selectedDetails = MarketplaceApplicationDetails.fallback(
+                let details = MarketplaceApplicationDetails.fallback(
                     description: application.repository.description
                 )
+                selectedDetails = details
                 selectedLogoURL = application.ownerAvatarURL
+                restoreTranslations(
+                    for: application,
+                    release: selectedRelease ?? application.latestRelease,
+                    details: details
+                )
             }
         }
     }
@@ -276,7 +287,11 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 loadedReleaseApplicationID = application.id
                 if let release = loaded.first(where: { $0.id == selectedReleaseID }) ?? loaded.first {
                     selectedReleaseID = release.id
-                    restoreTranslations(for: application, release: release)
+                    restoreTranslations(
+                        for: application,
+                        release: release,
+                        details: selectedDetails ?? .fallback(description: application.repository.description)
+                    )
                 }
             } catch is CancellationError {
                 return
@@ -298,7 +313,11 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         translations = [:]
         activeTranslationTarget = nil
         translationError = nil
-        restoreTranslations(for: application, release: release)
+        restoreTranslations(
+            for: application,
+            release: release,
+            details: selectedDetails ?? .fallback(description: application.repository.description)
+        )
     }
 
     func translateSelected(to target: CodexTranslationTarget) {
@@ -308,13 +327,21 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             return
         }
         guard !isTranslating,
+              !isLoadingDetails,
               let application = selectedApplication,
-              let release = selectedRelease else { return }
+              let release = selectedRelease,
+              let details = selectedDetails else { return }
         let sourceDescription = application.repository.description
         let sourceNotes = release.body
-        guard sourceDescription?.isEmpty == false || !sourceNotes.isEmpty else { return }
+        let sourceDetailHTML = MarketplaceApplicationDetailsExtractor.translationHTML(
+            repositoryDescription: sourceDescription,
+            details: details
+        )
+        guard sourceDetailHTML != nil || !sourceNotes.isEmpty else { return }
 
         translationTask?.cancel()
+        translationCacheTask?.cancel()
+        translationCacheTask = nil
         isTranslating = true
         translationError = nil
         translationTask = Task {
@@ -325,11 +352,18 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 }
             }
             do {
-                let translatedDescription: String?
-                if let sourceDescription, !sourceDescription.isEmpty {
-                    translatedDescription = try await translationAI.translate(sourceDescription, target: target)
+                let translatedDetails: MarketplaceApplicationTranslatedText?
+                if let sourceDetailHTML {
+                    let translatedHTML = try await translationAI.translateHTML(sourceDetailHTML, target: target)
+                    guard let parsed = MarketplaceApplicationDetailsExtractor.translatedText(from: translatedHTML),
+                          parsed.paragraphs.count == details.paragraphs.count,
+                          parsed.features.count == details.features.count,
+                          sourceDescription?.isEmpty != false || parsed.repositoryDescription?.isEmpty == false else {
+                        throw CodexServiceError.invalidTranslation
+                    }
+                    translatedDetails = parsed
                 } else {
-                    translatedDescription = nil
+                    translatedDetails = nil
                 }
                 let translatedNotes = sourceNotes.isEmpty
                     ? nil
@@ -338,17 +372,21 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                       selectedApplication?.id == application.id,
                       selectedReleaseID == release.id else { return }
                 let document = MarketplaceTranslationDocument(
-                    repositoryDescription: translatedDescription,
-                    releaseNotes: translatedNotes
+                    repositoryDescription: translatedDetails?.repositoryDescription,
+                    releaseNotes: translatedNotes,
+                    detailParagraphs: translatedDetails?.paragraphs,
+                    detailFeatures: translatedDetails?.features
                 )
                 translations[target] = document
                 activeTranslationTarget = target
+                translationCompletionID = UUID()
                 try await translationStore.save(
                     document,
                     repositoryName: application.repository.fullName,
                     releaseID: release.id,
                     sourceDescription: sourceDescription,
                     sourceReleaseNotes: sourceNotes,
+                    sourceDetails: details.translationSourceText,
                     target: target
                 )
             } catch is CancellationError {
@@ -375,6 +413,19 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         guard let activeTranslationTarget else { return application.repository.description }
         return translations[activeTranslationTarget]?.repositoryDescription
             ?? application.repository.description
+    }
+
+    func displayedDetails(for application: MarketplaceApplication) -> MarketplaceApplicationDetails {
+        let details = selectedDetails ?? .fallback(description: application.repository.description)
+        guard let activeTranslationTarget,
+              let document = translations[activeTranslationTarget] else { return details }
+        return MarketplaceApplicationDetails(
+            summary: document.repositoryDescription ?? details.summary,
+            paragraphs: document.detailParagraphs ?? details.paragraphs,
+            features: document.detailFeatures ?? details.features,
+            screenshots: details.screenshots,
+            logoURL: details.logoURL
+        )
     }
 
     func displayedReleaseNotes(for release: GitHubRelease) -> String {
@@ -421,7 +472,8 @@ final class GitHubMarketplaceViewModel: ObservableObject {
 
     private func restoreTranslations(
         for application: MarketplaceApplication,
-        release: GitHubRelease
+        release: GitHubRelease,
+        details: MarketplaceApplicationDetails
     ) {
         translationCacheTask?.cancel()
         let store = translationStore
@@ -433,6 +485,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                     releaseID: release.id,
                     sourceDescription: application.repository.description,
                     sourceReleaseNotes: release.body,
+                    sourceDetails: details.translationSourceText,
                     target: target
                 ) {
                     cached[target] = document
@@ -639,6 +692,17 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         selectedApplication = application
         releases = [release]
         selectedLogoURL = appIconURL
+        let previewScreenshots: [URL]
+        if ProcessInfo.processInfo.environment["GITGATTO_MARKETPLACE_CAROUSEL_PREVIEW"] == "1" {
+            let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+            previewScreenshots = [
+                root.appendingPathComponent("docs/media/workspace.png"),
+                root.appendingPathComponent("dist/qa/submit-motion-commit.png"),
+                root.appendingPathComponent("dist/qa/star-motion-selected.png")
+            ].filter { FileManager.default.fileExists(atPath: $0.path) }
+        } else {
+            previewScreenshots = []
+        }
         selectedDetails = MarketplaceApplicationDetails(
             summary: repository.description,
             paragraphs: [
@@ -649,7 +713,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 "在当前仓库使用 Agent 起草提交、处理错误并执行 Git 操作",
                 "搜索 GitHub 项目与应用发行版，直接下载并管理安装包"
             ],
-            screenshots: [],
+            screenshots: previewScreenshots,
             logoURL: appIconURL
         )
         isLoadingDetails = false

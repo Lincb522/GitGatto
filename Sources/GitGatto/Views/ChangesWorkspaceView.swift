@@ -107,7 +107,9 @@ private struct ChangeNavigator: View {
                             SectionLabel(
                                 titleKey: "changes.staged",
                                 count: staged.count,
-                                actionTitleKey: "action.unstage_all"
+                                actionTitleKey: "action.unstage_all",
+                                isActionLoading: staged.contains { model.pendingStagePaths.contains($0.path) },
+                                isActionDisabled: model.activeOperation != nil
                             ) {
                                 Task { await model.unstage(staged) }
                             }
@@ -130,7 +132,9 @@ private struct ChangeNavigator: View {
                             SectionLabel(
                                 titleKey: "changes.unstaged",
                                 count: unstaged.count,
-                                actionTitleKey: "action.stage_all"
+                                actionTitleKey: "action.stage_all",
+                                isActionLoading: unstaged.contains { model.pendingStagePaths.contains($0.path) },
+                                isActionDisabled: model.activeOperation != nil
                             ) {
                                 Task { await model.stage(unstaged) }
                             }
@@ -199,6 +203,10 @@ private struct ChangeRow: View {
         }
     }
 
+    private var isUpdatingStage: Bool {
+        model.pendingStagePaths.contains(change.path)
+    }
+
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: select) {
@@ -224,16 +232,23 @@ private struct ChangeRow: View {
 
                 Spacer(minLength: 4)
 
-                if isHovering || isSelected {
+                if isHovering || isSelected || isUpdatingStage {
                     Button(action: toggleStage) {
-                        Image(gattoSymbol: change.isStaged ? "minus" : "plus")
-                            .font(.system(size: 10.5, weight: .bold))
-                            .foregroundStyle(palette.primary)
-                            .frame(width: 24, height: 24)
-                            .background(palette.raisedSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        Group {
+                            if isUpdatingStage {
+                                GattoLoadingGlyph(size: 14)
+                            } else {
+                                Image(gattoSymbol: change.isStaged ? "minus" : "plus")
+                                    .font(.system(size: 10.5, weight: .bold))
+                                    .foregroundStyle(palette.primary)
+                            }
+                        }
+                        .frame(width: 24, height: 24)
+                        .background(palette.raisedSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .disabled(isUpdatingStage)
                     .help(L10n.text(change.isStaged ? "action.unstage" : "action.stage"))
                 }
             }
@@ -418,11 +433,15 @@ private struct CommitComposer: View {
                 } label: {
                     HStack(spacing: 7) {
                         if model.isDraftingCommitMessage {
-                            ProgressView().controlSize(.small)
+                            GattoLoadingGlyph(size: 16)
                         } else {
                             Image(gattoSymbol: "sparkles")
+                                .frame(width: 16, height: 16)
                         }
-                        Text(L10n.text("commit.agent_draft"))
+                        Text(L10n.text(model.isDraftingCommitMessage
+                            ? "codex.status.drafting_commit"
+                            : "commit.agent_draft"))
+                            .lineLimit(1)
                     }
                     .font(.system(size: 11.5, weight: .semibold))
                 }
@@ -439,18 +458,17 @@ private struct CommitComposer: View {
             Button {
                 Task { await model.commit() }
             } label: {
-                HStack(spacing: 8) {
-                    if model.activeOperation == .commit {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(Color.white)
-                    }
-                    Text(L10n.text("action.commit"))
-                    Spacer()
-                    Text("⌘↩")
-                        .font(.system(size: 10.5, weight: .medium))
-                        .opacity(0.75)
-                }
+                SubmitMotionLabel(
+                    title: L10n.text("action.commit"),
+                    activeTitle: L10n.text("codex.status.committing"),
+                    systemImage: "checkmark.circle.fill",
+                    isActive: model.activeOperation == .commit,
+                    completionID: model.notice?.message == L10n.text("notice.committed")
+                        ? model.notice?.id
+                        : nil,
+                    shortcut: "⌘↩",
+                    expandsWhenIdle: true
+                )
             }
             .buttonStyle(PrimaryButtonStyle())
             .keyboardShortcut(.return, modifiers: .command)

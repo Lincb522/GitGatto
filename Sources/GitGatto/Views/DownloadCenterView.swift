@@ -75,14 +75,11 @@ struct DownloadCenterView: View {
     private func downloadCard(_ record: AppDownloadRecord, palette: AppPalette) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 11) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(stateColor(record.state, palette: palette).opacity(0.14))
-                    Image(gattoSymbol: stateIcon(record.state))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(stateColor(record.state, palette: palette))
-                }
-                .frame(width: 38, height: 38)
+                CircularDownloadIndicator(
+                    state: record.state,
+                    progress: record.progress,
+                    size: 38
+                )
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(record.fileName)
@@ -97,18 +94,17 @@ struct DownloadCenterView: View {
                             Text("·")
                             Text(ByteCountFormatter.string(fromByteCount: record.expectedBytes, countStyle: .file))
                         }
+                        if record.state == .downloading {
+                            Text("·")
+                            Text("\(Int(min(1, max(0, record.progress)) * 100))%")
+                                .monospacedDigit()
+                        }
                     }
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(palette.subtleInk)
                 }
                 Spacer(minLength: 8)
                 actions(record, palette: palette)
-            }
-
-            if [.queued, .downloading, .paused, .failed].contains(record.state) {
-                ProgressView(value: record.progress)
-                    .progressViewStyle(.linear)
-                    .tint(palette.primary)
             }
 
             if let error = record.errorMessage, !error.isEmpty {
@@ -149,7 +145,7 @@ struct DownloadCenterView: View {
             case .cancelled:
                 miniButton("downloads.action.remove", icon: "trash") { manager.remove(record.id) }
             case .installing:
-                ProgressView().controlSize(.small)
+                EmptyView()
             }
         }
     }
@@ -164,23 +160,4 @@ struct DownloadCenterView: View {
         .help(L10n.text(key))
     }
 
-    private func stateIcon(_ state: AppDownloadState) -> String {
-        switch state {
-        case .queued, .downloading: "arrow.down.circle"
-        case .paused: "play.circle"
-        case .completed: "checkmark.circle.fill"
-        case .failed: "exclamationmark.triangle.fill"
-        case .cancelled: "xmark.circle.fill"
-        case .installing: "arrow.down.app"
-        case .installed: "checkmark.seal.fill"
-        }
-    }
-
-    private func stateColor(_ state: AppDownloadState, palette: AppPalette) -> Color {
-        switch state {
-        case .failed, .cancelled: palette.danger
-        case .completed, .installed: palette.success
-        default: palette.primary
-        }
-    }
 }

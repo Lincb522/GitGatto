@@ -416,6 +416,7 @@ private struct AppGlassPanelModifier: ViewModifier {
         let palette = AppPalette(colorScheme)
         if AppVisualTheme.resolved(themeRaw) == .softGlass {
             content
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .background {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .fill(
@@ -423,8 +424,14 @@ private struct AppGlassPanelModifier: ViewModifier {
                                 ? Color.black.opacity(elevated ? 0.50 : 0.38)
                                 : Color.white.opacity(elevated ? 0.58 : 0.44)
                         )
+                        .shadow(
+                            color: Color.black.opacity(
+                                elevated ? (colorScheme == .dark ? 0.28 : 0.10) : 0
+                            ),
+                            radius: elevated ? 14 : 0,
+                            y: elevated ? 6 : 0
+                        )
                 }
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .stroke(
@@ -434,11 +441,6 @@ private struct AppGlassPanelModifier: ViewModifier {
                             lineWidth: 1
                         )
                 }
-                .shadow(
-                    color: Color.black.opacity(elevated ? (colorScheme == .dark ? 0.28 : 0.10) : 0),
-                    radius: elevated ? 14 : 0,
-                    y: elevated ? 6 : 0
-                )
         } else {
             content.background(palette.surface)
         }

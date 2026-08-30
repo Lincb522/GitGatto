@@ -7,7 +7,7 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var selectedSection: WorkspaceSection = .github {
         didSet {
             if selectedSection != oldValue {
-                loadSelectedSectionDetails()
+                scheduleSelectedSectionDetailsLoad()
             }
         }
     }
@@ -27,8 +27,10 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var selectedRepositoryScanPaths = Set<String>()
     @Published private(set) var repositoryScanRoots: [URL] = []
     @Published private(set) var repositoryScanHasRun = false
+    @Published private(set) var repositoryAddCompletionID: UUID?
     @Published private(set) var isRefreshing = false
     @Published private(set) var activeOperation: OperationKind?
+    @Published private(set) var pendingStagePaths = Set<String>()
     @Published private(set) var repositoryOperationState: RepositoryOperationState?
     @Published private(set) var selectedConflictPath: String?
     @Published private(set) var conflictDocument: ConflictFileDocument?
@@ -83,6 +85,7 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var codexActivity: String?
     @Published private(set) var codexError: String?
     @Published private(set) var isPromptTranslating = false
+    @Published private(set) var promptTranslationCompletionID: UUID?
     @Published private(set) var promptTranslationActivity: String?
     @Published private(set) var promptTranslationError: String?
     @Published var githubQuery = ""
@@ -108,12 +111,14 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var isApplyingReadmeRewrite = false
     @Published private(set) var readmeAgentError: String?
     @Published private(set) var readmeRewritePreview: GitHubReadmeDocument?
+    @Published private(set) var readmeRewriteCompletionID: UUID?
     @Published var githubProjectDetailTab: GitHubProjectDetailTab = .overview
     @Published private(set) var githubReadme: GitHubReadmeDocument?
     @Published private(set) var translatedGitHubReadme: GitHubReadmeDocument?
     @Published private(set) var githubReadmeTranslations: [CodexTranslationTarget: GitHubReadmeDocument] = [:]
     @Published private(set) var githubReadmeHistory: [GitHubReadmeDocument] = []
     @Published private(set) var isTranslatingGitHubReadme = false
+    @Published private(set) var githubReadmeTranslationCompletionID: UUID?
     @Published private(set) var githubReadmeTranslationProgress: (current: Int, total: Int)?
     @Published private(set) var githubReadmeTranslationTarget: CodexTranslationTarget?
     @Published private(set) var githubReadmeTranslationError: String?
@@ -162,7 +167,7 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var githubContentsError: String?
     @Published private(set) var githubPullRequestsError: String?
     @Published private(set) var isLaunchingGitHubLogin = false
-    @Published private(set) var isLiveRefreshing = false
+    private var isLiveRefreshing = false
     @Published private(set) var liveSyncError: String?
 
     private let service: any GitRepositoryServing
@@ -179,6 +184,7 @@ final class WorkspaceViewModel: ObservableObject {
     private let diagnosticService: any GitEnvironmentDiagnosticServing
     private var hasStarted = false
     private var diffTask: Task<Void, Never>?
+    private var selectedSectionDetailsTask: Task<Void, Never>?
     private var commitDiffTask: Task<Void, Never>?
     private var commitMediaTask: Task<Void, Never>?
     private var conflictDocumentTask: Task<Void, Never>?
@@ -219,6 +225,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var remoteRefreshTask: Task<Void, Never>?
     private var repositoryEventRefreshTask: Task<Void, Never>?
     private var activeRepositoryEventRefreshID: UUID?
+    private var repositoryMutationGeneration = 0
     private var repositoryChangeMonitor: RepositoryChangeMonitor?
     private var repositorySnapshotTask: Task<RepositorySnapshot, Error>?
     private var repositorySupplementalTask: Task<RepositorySupplementalState, Error>?
@@ -238,6 +245,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var readmeRewriteRepositoryURL: URL?
     private var readmeRewriteRelativePath: String?
     private var readmeRewriteCommitCreated = false
+    private var readmeRewriteTemporaryRoot: URL?
 
     init(
         service: any GitRepositoryServing = GitRepositoryService(),
@@ -442,7 +450,7 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     var canBeautifySelectedReadme: Bool {
-        selectedGitHubLocalRepositoryURL != nil
+        selectedGitHubRepository != nil
             && codexAvailability.state == .available
             && !isCodexRunning
             && !isBeautifyingReadme
@@ -534,6 +542,7 @@ final class WorkspaceViewModel: ObservableObject {
         selectedChange = stagedChange
         selectedBranch = snapshot?.branches.first
         selectedCommit = snapshot?.commits.first
+        commitMessage = "feat: refine repository sync feedback"
         commitGraph = CommitGraph(
             nodes: [
                 CommitGraphNode(
@@ -907,6 +916,9 @@ final class WorkspaceViewModel: ObservableObject {
             )
         ].compactMap { $0 }
         selectedGitHubRepository = githubAccountRepositories.first
+        if ProcessInfo.processInfo.environment["GITGATTO_STAR_PREVIEW"] == "selected" {
+            isSelectedGitHubRepositoryStarred = true
+        }
 
         if let repository = selectedGitHubRepository,
            let rawURL = URL(string: "https://raw.githubusercontent.com/\(repository.fullName)/main/"),
@@ -925,6 +937,18 @@ final class WorkspaceViewModel: ObservableObject {
                 assetBaseURL: rawURL,
                 assetRootURL: rawURL
             )
+            if ProcessInfo.processInfo.environment["GITGATTO_README_CARD_PREVIEW"] == "1",
+               let githubReadme {
+                let translation = githubReadme.replacingHTML(with: """
+                <h1>GitGatto</h1>
+                <p>A native macOS Git client for repository work, GitHub collaboration, and local Agent workflows.</p>
+                <h2>Repository workspace</h2>
+                <ul><li>Review working tree and staged changes</li><li>Browse code, history, releases, and pull requests</li></ul>
+                """)
+                githubReadmeTranslations[.english] = translation
+                translatedGitHubReadme = translation
+                githubReadmeTranslationTarget = .english
+            }
             if ProcessInfo.processInfo.environment["GITGATTO_README_REWRITE_PREVIEW"] == "1" {
                 readmeRewritePreview = GitHubReadmeDocument(
                     path: "README.md",
@@ -1203,6 +1227,42 @@ final class WorkspaceViewModel: ObservableObject {
         if ProcessInfo.processInfo.environment["GITGATTO_LOADING_PREVIEW"] == "1" {
             diffDocument = nil
         }
+
+        switch ProcessInfo.processInfo.environment["GITGATTO_ACTIVITY_PREVIEW"] {
+        case "stage":
+            activeOperation = .stage
+            pendingStagePaths = [unstagedChange.path]
+            applyOptimisticStaging(paths: [unstagedChange.path], stages: true)
+        case "commit":
+            activeOperation = .commit
+        case "pull":
+            activeOperation = .pull
+        case "push":
+            activeOperation = .push
+        case "clone":
+            activeGitHubOperation = .clone
+            githubActivity = L10n.text("github.status.cloning")
+        case "fork":
+            activeGitHubOperation = .fork
+            githubActivity = L10n.text("github.status.forking")
+        case "translation":
+            codexPrompt = "Review the latest repository changes"
+            isPromptTranslating = true
+        case "readme":
+            selectedSection = .github
+            githubProjectDetailTab = .overview
+            isBeautifyingReadme = true
+        case "draft":
+            isDraftingCommitMessage = true
+            isCodexRunning = true
+        case "unpushed":
+            notice = OperationNotice(
+                message: L10n.text("notice.committed"),
+                tone: .attention
+            )
+        default:
+            break
+        }
     }
 
     private func loadErrorPreviewFixture() {
@@ -1428,6 +1488,7 @@ final class WorkspaceViewModel: ObservableObject {
               !isLiveRefreshing,
               activeOperation == nil else { return }
         let repositoryURL = currentSnapshot.rootURL
+        let mutationGeneration = repositoryMutationGeneration
         isLiveRefreshing = true
         defer { isLiveRefreshing = false }
 
@@ -1437,12 +1498,20 @@ final class WorkspaceViewModel: ObservableObject {
                 in: repositoryURL,
                 changes: liveState.changes
             )
-            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
+                  repositoryMutationGeneration == mutationGeneration else { return }
             apply(liveState)
             apply(operationState)
-            liveSyncError = nil
+            if liveSyncError != nil {
+                liveSyncError = nil
+            }
         } catch {
-            liveSyncError = L10n.format("sync.error.refresh", error.localizedDescription)
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
+                  repositoryMutationGeneration == mutationGeneration else { return }
+            let message = L10n.format("sync.error.refresh", error.localizedDescription)
+            if liveSyncError != message {
+                liveSyncError = message
+            }
         }
     }
 
@@ -1482,6 +1551,7 @@ final class WorkspaceViewModel: ObservableObject {
               !isLiveRefreshing,
               activeOperation == nil else { return }
         let repositoryURL = currentSnapshot.rootURL
+        let mutationGeneration = repositoryMutationGeneration
         isLiveRefreshing = true
         defer { isLiveRefreshing = false }
 
@@ -1492,12 +1562,20 @@ final class WorkspaceViewModel: ObservableObject {
                 in: repositoryURL,
                 changes: liveState.changes
             )
-            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
+                  repositoryMutationGeneration == mutationGeneration else { return }
             apply(liveState)
             apply(operationState)
-            liveSyncError = nil
+            if liveSyncError != nil {
+                liveSyncError = nil
+            }
         } catch {
-            liveSyncError = L10n.format("sync.error.refresh", error.localizedDescription)
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
+                  repositoryMutationGeneration == mutationGeneration else { return }
+            let message = L10n.format("sync.error.refresh", error.localizedDescription)
+            if liveSyncError != message {
+                liveSyncError = message
+            }
         }
     }
 
@@ -1513,9 +1591,10 @@ final class WorkspaceViewModel: ObservableObject {
                 async let document = service.diff(for: change, in: repositoryURL)
                 async let previewURL = service.mediaPreview(for: change, in: repositoryURL)
                 let loadedDocument = try await document
-                let loadedPreviewURL = try? await previewURL
                 guard !Task.isCancelled, selectedChange?.id == change.id else { return }
                 diffDocument = loadedDocument
+                let loadedPreviewURL = try? await previewURL
+                guard !Task.isCancelled, selectedChange?.id == change.id else { return }
                 selectedChangePreviewURL = loadedPreviewURL
             } catch {
                 guard !Task.isCancelled else { return }
@@ -1761,16 +1840,60 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func stage(_ changes: [WorkingTreeChange]) async {
-        let service = self.service
-        await perform(.stage, successKey: "notice.staged") { repositoryURL in
-            try await service.stage(paths: changes.map(\.path), in: repositoryURL)
-        }
+        await updateStaging(changes, stages: true)
     }
 
     func unstage(_ changes: [WorkingTreeChange]) async {
-        let service = self.service
-        await perform(.unstage, successKey: "notice.unstaged") { repositoryURL in
-            try await service.unstage(paths: changes.map(\.path), in: repositoryURL)
+        await updateStaging(changes, stages: false)
+    }
+
+    private func updateStaging(_ changes: [WorkingTreeChange], stages: Bool) async {
+        guard let repositoryURL = snapshot?.rootURL,
+              activeOperation == nil,
+              !changes.isEmpty else { return }
+
+        let operation: OperationKind = stages ? .stage : .unstage
+        let paths = Array(Set(changes.map(\.path)))
+        let previousSnapshot = snapshot
+        repositoryMutationGeneration += 1
+        repositoryEventRefreshTask?.cancel()
+        repositoryEventRefreshTask = nil
+        activeRepositoryEventRefreshID = nil
+        activeOperation = operation
+        pendingStagePaths.formUnion(paths)
+        applyOptimisticStaging(paths: Set(paths), stages: stages)
+
+        defer {
+            pendingStagePaths.subtract(paths)
+            activeOperation = nil
+        }
+
+        do {
+            if stages {
+                try await service.stage(paths: paths, in: repositoryURL)
+            } else {
+                try await service.unstage(paths: paths, in: repositoryURL)
+            }
+            let liveState = try await service.loadLiveState(at: repositoryURL)
+            let operationState = try await service.repositoryOperationState(
+                in: repositoryURL,
+                changes: liveState.changes
+            )
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+            apply(liveState)
+            apply(operationState)
+            liveSyncError = nil
+            if selectedSection == .changes {
+                selectChange(selectedChange)
+            }
+            cacheCurrentRepository()
+            showNotice(.init(message: L10n.text(stages ? "notice.staged" : "notice.unstaged")))
+        } catch {
+            if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
+               let previousSnapshot {
+                apply(previousSnapshot, preservingSelection: true)
+            }
+            presentError(error, context: .git(operation), repositoryURL: repositoryURL)
         }
     }
 
@@ -1858,6 +1981,11 @@ final class WorkspaceViewModel: ObservableObject {
                     repositoryDiscoveryRunID = nil
                     repositoryDiscoveryTask = nil
                     isScanningRepositories = false
+#if DEBUG
+                    if ProcessInfo.processInfo.environment["GITGATTO_ADD_PREVIEW"] == "selected" {
+                        selectedRepositoryScanPaths = Set(repositoryScanResults.prefix(3).map(\.id))
+                    }
+#endif
                 }
             }
 
@@ -1914,13 +2042,18 @@ final class WorkspaceViewModel: ObservableObject {
         selectedRepositoryScanPaths.subtract(addedPaths)
         normalizeRepositoryCatalog()
         persistRepositoryLists()
+        repositoryAddCompletionID = UUID()
     }
 
     func commit() async {
         let message = commitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !message.isEmpty else { return }
         let service = self.service
-        let didCommit = await perform(.commit, successKey: "notice.committed") { repositoryURL in
+        let didCommit = await perform(
+            .commit,
+            successKey: "notice.committed",
+            noticeTone: .attention
+        ) { repositoryURL in
             try await service.commit(message: message, in: repositoryURL)
         }
         if didCommit {
@@ -2605,6 +2738,16 @@ final class WorkspaceViewModel: ObservableObject {
         if isTranslatingGitHubReadme {
             Task { await translationService.cancel() }
         }
+        readmeAgentTask?.cancel()
+        readmeAgentTask = nil
+        readmeApplyTask?.cancel()
+        readmeApplyTask = nil
+        if isBeautifyingReadme {
+            Task { await codexService.cancel() }
+        }
+        isBeautifyingReadme = false
+        isApplyingReadmeRewrite = false
+        discardReadmeRewriteTemporaryWorkspace()
         selectedGitHubRepository = repository
         githubPullRequests = []
         githubReleases = []
@@ -2663,8 +2806,6 @@ final class WorkspaceViewModel: ObservableObject {
         githubFileTask?.cancel()
         githubReleaseTask?.cancel()
         githubStarTask?.cancel()
-        readmeAgentTask?.cancel()
-        readmeApplyTask?.cancel()
         guard let repository else {
             isLoadingPullRequests = false
             isLoadingPullRequestReview = false
@@ -2757,18 +2898,36 @@ final class WorkspaceViewModel: ObservableObject {
 
     func beautifySelectedReadme(style: ReadmeAgentStyle) {
         guard canBeautifySelectedReadme,
-              let repositoryURL = selectedGitHubLocalRepositoryURL,
               let repository = selectedGitHubRepository else { return }
+        let existingWorkspace = selectedGitHubLocalRepositoryURL ?? readmeRewriteRepositoryURL
+        let existingTemporaryRoot = selectedGitHubLocalRepositoryURL == nil
+            ? readmeRewriteTemporaryRoot
+            : nil
         readmeAgentTask?.cancel()
         isBeautifyingReadme = true
         readmeAgentError = nil
         readmeRewritePreview = nil
-        readmeRewriteRepositoryURL = nil
         readmeRewriteRelativePath = nil
         readmeRewriteCommitCreated = false
         readmeAgentTask = Task {
-            defer { isBeautifyingReadme = false }
+            var temporaryRoot = existingTemporaryRoot
+            var keepsWorkspace = false
+            defer {
+                isBeautifyingReadme = false
+                if !keepsWorkspace, let temporaryRoot {
+                    discardReadmeRewriteTemporaryWorkspace(temporaryRoot)
+                }
+            }
             do {
+                let repositoryURL: URL
+                if let existingWorkspace {
+                    repositoryURL = existingWorkspace
+                } else {
+                    let root = try Self.makeReadmeRewriteTemporaryRoot()
+                    temporaryRoot = root
+                    readmeRewriteTemporaryRoot = root
+                    repositoryURL = try await githubService.cloneReadmeWorkspace(repository, into: root)
+                }
                 _ = try await codexService.run(
                     prompt: GitAgentProfile.readmePrompt(style: style),
                     context: [],
@@ -2776,8 +2935,7 @@ final class WorkspaceViewModel: ObservableObject {
                     mode: .edit
                 )
                 guard !Task.isCancelled,
-                      selectedGitHubRepository?.id == repository.id,
-                      selectedGitHubLocalRepositoryURL?.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                      selectedGitHubRepository?.id == repository.id else { return }
                 guard let localReadme = Self.primaryReadme(
                     in: repositoryURL,
                     preferredPath: githubReadme?.path
@@ -2790,9 +2948,9 @@ final class WorkspaceViewModel: ObservableObject {
                     in: repository
                 )
                 guard !Task.isCancelled,
-                      selectedGitHubRepository?.id == repository.id,
-                      selectedGitHubLocalRepositoryURL?.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                      selectedGitHubRepository?.id == repository.id else { return }
                 readmeRewritePreview = preview
+                readmeRewriteCompletionID = UUID()
                 readmeRewriteRepositoryURL = repositoryURL
                 readmeRewriteRelativePath = localReadme.relativePath
                 translatedGitHubReadme = nil
@@ -2800,13 +2958,22 @@ final class WorkspaceViewModel: ObservableObject {
                 if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL {
                     await refresh()
                 }
+                keepsWorkspace = true
                 showNotice(.init(message: L10n.text("github.readme.agent.preview_ready")))
             } catch is CancellationError {
                 return
             } catch {
+                guard !Task.isCancelled else { return }
                 readmeAgentError = L10n.format("github.readme.agent.error", error.localizedDescription)
             }
         }
+    }
+
+    func cancelReadmeRewrite() {
+        guard isBeautifyingReadme else { return }
+        readmeAgentTask?.cancel()
+        readmeAgentTask = nil
+        Task { await codexService.cancel() }
     }
 
     func applyReadmeRewrite() {
@@ -2841,6 +3008,7 @@ final class WorkspaceViewModel: ObservableObject {
                 readmeRewriteRepositoryURL = nil
                 readmeRewriteRelativePath = nil
                 readmeRewriteCommitCreated = false
+                discardReadmeRewriteTemporaryWorkspace()
                 if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL {
                     await refresh()
                 }
@@ -2863,6 +3031,32 @@ final class WorkspaceViewModel: ObservableObject {
                 )
             }
         }
+    }
+
+    private static func makeReadmeRewriteTemporaryRoot() throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGatto-README-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        return root
+    }
+
+    private func discardReadmeRewriteTemporaryWorkspace(_ root: URL? = nil) {
+        let target = root ?? readmeRewriteTemporaryRoot
+        guard let target else { return }
+        let temporaryDirectory = FileManager.default.temporaryDirectory.standardizedFileURL
+        let standardizedTarget = target.standardizedFileURL
+        guard standardizedTarget.path.hasPrefix(temporaryDirectory.path + "/GitGatto-README-") else { return }
+        if readmeRewriteTemporaryRoot?.standardizedFileURL == standardizedTarget {
+            readmeRewriteTemporaryRoot = nil
+        }
+        if let repositoryURL = readmeRewriteRepositoryURL?.standardizedFileURL,
+           repositoryURL.path.hasPrefix(standardizedTarget.path + "/") {
+            readmeRewritePreview = nil
+            readmeRewriteRepositoryURL = nil
+            readmeRewriteRelativePath = nil
+            readmeRewriteCommitCreated = false
+        }
+        try? FileManager.default.removeItem(at: standardizedTarget)
     }
 
     private static func primaryReadme(
@@ -3013,6 +3207,7 @@ final class WorkspaceViewModel: ObservableObject {
                 translatedGitHubReadme = translated
                 githubReadmeTranslations[target] = translated
                 githubReadmeTranslationTarget = target
+                githubReadmeTranslationCompletionID = UUID()
                 do {
                     try await githubReadmeTranslationStore.save(
                         translated,
@@ -3798,6 +3993,7 @@ final class WorkspaceViewModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 codexPrompt = translation
                 promptTranslationActivity = L10n.text("codex.status.translation_completed")
+                promptTranslationCompletionID = UUID()
             } catch is CancellationError {
                 promptTranslationActivity = L10n.text("codex.status.cancelled")
             } catch {
@@ -3981,7 +4177,8 @@ final class WorkspaceViewModel: ObservableObject {
                 .init(
                     message: L10n.text(
                         pushesAfterCommit ? "notice.committed_pushed" : "notice.committed"
-                    )
+                    ),
+                    tone: pushesAfterCommit ? .success : .attention
                 )
             )
             await refresh()
@@ -4193,6 +4390,7 @@ final class WorkspaceViewModel: ObservableObject {
     private func perform(
         _ operation: OperationKind,
         successKey: String,
+        noticeTone: OperationNotice.Tone = .success,
         action: @escaping @Sendable (URL) async throws -> Void
     ) async -> Bool {
         guard let repositoryURL = snapshot?.rootURL, activeOperation == nil else { return false }
@@ -4201,7 +4399,7 @@ final class WorkspaceViewModel: ObservableObject {
 
         do {
             try await action(repositoryURL)
-            showNotice(.init(message: L10n.text(successKey)))
+            showNotice(.init(message: L10n.text(successKey), tone: noticeTone))
             await refresh()
             return true
         } catch {
@@ -4242,8 +4440,14 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     private func apply(_ state: RepositoryOperationState?) {
-        repositoryOperationState = state
+        if repositoryOperationState != state {
+            repositoryOperationState = state
+        }
         guard let state else {
+            guard selectedConflictPath != nil
+                    || conflictDocument != nil
+                    || !conflictResolutionText.isEmpty
+                    || isLoadingConflictDocument else { return }
             conflictDocumentTask?.cancel()
             selectedConflictPath = nil
             conflictDocument = nil
@@ -4382,7 +4586,7 @@ final class WorkspaceViewModel: ObservableObject {
         guard let current = snapshot else { return }
         let changesChanged = current.changes != liveState.changes
         let selectedPath = selectedChange?.path
-        snapshot = RepositorySnapshot(
+        let updated = RepositorySnapshot(
             rootURL: current.rootURL,
             branchName: liveState.branchName,
             upstreamName: liveState.upstreamName,
@@ -4392,6 +4596,8 @@ final class WorkspaceViewModel: ObservableObject {
             commits: current.commits,
             branches: current.branches
         )
+        guard updated != current else { return }
+        snapshot = updated
 
         if changesChanged {
             let updatedSelection = selectedPath.flatMap { path in
@@ -4402,6 +4608,28 @@ final class WorkspaceViewModel: ObservableObject {
                 selectChange(updatedSelection)
             }
         }
+    }
+
+    private func applyOptimisticStaging(paths: Set<String>, stages: Bool) {
+        guard let current = snapshot else { return }
+        let updatedChanges = current.changes.map { change in
+            guard paths.contains(change.path) else { return change }
+            return change.stagingPreview(stages: stages)
+        }
+        let selectedPath = selectedChange?.path
+        snapshot = RepositorySnapshot(
+            rootURL: current.rootURL,
+            branchName: current.branchName,
+            upstreamName: current.upstreamName,
+            aheadCount: current.aheadCount,
+            behindCount: current.behindCount,
+            changes: updatedChanges,
+            commits: current.commits,
+            branches: current.branches
+        )
+        selectedChange = selectedPath.flatMap { path in
+            updatedChanges.first { $0.path == path }
+        } ?? updatedChanges.first
     }
 
     private func loadSelectedSectionDetails(force: Bool = false) {
@@ -4417,6 +4645,18 @@ final class WorkspaceViewModel: ObservableObject {
             selectStash(selectedStash)
         default:
             break
+        }
+    }
+
+    private func scheduleSelectedSectionDetailsLoad() {
+        selectedSectionDetailsTask?.cancel()
+        let section = selectedSection
+        selectedSectionDetailsTask = Task { [weak self] in
+            await Task.yield()
+            guard !Task.isCancelled,
+                  let self,
+                  self.selectedSection == section else { return }
+            self.loadSelectedSectionDetails()
         }
     }
 
@@ -4454,6 +4694,8 @@ final class WorkspaceViewModel: ObservableObject {
         repositoryChangeMonitor = nil
         cancelCodex()
         cancelAllWorktreeAgents()
+        selectedSectionDetailsTask?.cancel()
+        selectedSectionDetailsTask = nil
         diffTask?.cancel()
         commitDiffTask?.cancel()
         commitMediaTask?.cancel()
@@ -4494,6 +4736,8 @@ final class WorkspaceViewModel: ObservableObject {
         fileBlameLines = []
         repositoryDiagnostics = nil
         activeDiagnosticOperation = nil
+        isLiveRefreshing = false
+        liveSyncError = nil
     }
 
     private func cacheCurrentRepository() {

@@ -231,6 +231,32 @@ struct GitRepositoryServiceTests {
         #expect(model.snapshot?.unstagedChanges.isEmpty == true)
     }
 
+    @Test("Optimistic staging preserves the worktree meaning")
+    func previewsStagingState() {
+        let modified = WorkingTreeChange(
+            path: "tracked.txt",
+            originalPath: nil,
+            indexStatus: .unmodified,
+            workTreeStatus: .modified
+        )
+        let added = WorkingTreeChange(
+            path: "new.txt",
+            originalPath: nil,
+            indexStatus: .added,
+            workTreeStatus: .unmodified
+        )
+
+        let staged = modified.stagingPreview(stages: true)
+        #expect(staged.indexStatus == .modified)
+        #expect(staged.workTreeStatus == .unmodified)
+        #expect(staged.isStaged)
+
+        let unstaged = added.stagingPreview(stages: false)
+        #expect(unstaged.indexStatus == .unmodified)
+        #expect(unstaged.workTreeStatus == .untracked)
+        #expect(!unstaged.isStaged)
+    }
+
     @Test("Fetches the configured upstream before reporting remote divergence")
     func refreshesRemoteTrackingState() async throws {
         let root = FileManager.default.temporaryDirectory

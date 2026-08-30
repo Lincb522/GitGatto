@@ -286,18 +286,18 @@ actor GitRepositoryService: GitRepositoryServing {
         if change.isStaged {
             result = try await runner.run(
                 at: repositoryURL,
-                arguments: ["diff", "--cached", "--no-color", "--unified=4", "--", change.path]
+                arguments: ["diff", "--cached", "--no-ext-diff", "--no-textconv", "--no-color", "--unified=4", "--", change.path]
             )
         } else if change.workTreeStatus == .untracked {
             result = try await runner.run(
                 at: repositoryURL,
-                arguments: ["diff", "--no-index", "--no-color", "--unified=4", "/dev/null", change.path],
+                arguments: ["diff", "--no-index", "--no-ext-diff", "--no-textconv", "--no-color", "--unified=4", "/dev/null", change.path],
                 acceptedExitCodes: [0, 1]
             )
         } else {
             result = try await runner.run(
                 at: repositoryURL,
-                arguments: ["diff", "--no-color", "--unified=4", "--", change.path]
+                arguments: ["diff", "--no-ext-diff", "--no-textconv", "--no-color", "--unified=4", "--", change.path]
             )
         }
         return GitParsers.diff(from: result.text, path: change.path)
@@ -306,7 +306,7 @@ actor GitRepositoryService: GitRepositoryServing {
     func diff(for commit: CommitRecord, in repositoryURL: URL) async throws -> DiffDocument {
         let result = try await runner.run(
             at: repositoryURL,
-            arguments: ["show", "--format=", "--no-color", "--unified=4", commit.hash]
+            arguments: ["show", "--format=", "--no-ext-diff", "--no-textconv", "--no-color", "--unified=4", commit.hash]
         )
         return GitParsers.diff(from: result.text, path: commit.shortHash)
     }

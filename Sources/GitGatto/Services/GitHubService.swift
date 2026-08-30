@@ -69,6 +69,7 @@ protocol GitHubServing: Sendable {
         to destination: URL,
         in repository: GitHubRepository
     ) async throws
+    func cloneReadmeWorkspace(_ repository: GitHubRepository, into parentDirectory: URL) async throws -> URL
     func clone(_ repository: GitHubRepository, into parentDirectory: URL) async throws -> URL
     func forkAndClone(_ repository: GitHubRepository, into parentDirectory: URL) async throws -> URL
     func postComment(_ body: String, to pullRequest: GitHubPullRequest, in repository: GitHubRepository) async throws
@@ -782,6 +783,21 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
         }
         _ = try await execute(
             arguments: ["repo", "clone", repository.fullName, destination.path],
+            currentDirectoryURL: parentDirectory
+        )
+        return destination
+    }
+
+    func cloneReadmeWorkspace(_ repository: GitHubRepository, into parentDirectory: URL) async throws -> URL {
+        let destination = parentDirectory.appendingPathComponent(repository.name, isDirectory: true)
+        guard !FileManager.default.fileExists(atPath: destination.path) else {
+            throw GitHubServiceError.destinationExists
+        }
+        _ = try await execute(
+            arguments: [
+                "repo", "clone", repository.fullName, destination.path,
+                "--", "--depth=1"
+            ],
             currentDirectoryURL: parentDirectory
         )
         return destination

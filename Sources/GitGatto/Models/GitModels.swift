@@ -64,6 +64,32 @@ struct WorkingTreeChange: Identifiable, Sendable, Hashable {
     var primaryStatus: GitFileStatus {
         isStaged ? indexStatus : workTreeStatus
     }
+
+    func stagingPreview(stages: Bool) -> WorkingTreeChange {
+        if stages {
+            return WorkingTreeChange(
+                path: path,
+                originalPath: originalPath,
+                indexStatus: workTreeStatus == .untracked ? .added : workTreeStatus,
+                workTreeStatus: .unmodified
+            )
+        }
+
+        let previewWorkTreeStatus: GitFileStatus
+        if workTreeStatus != .unmodified {
+            previewWorkTreeStatus = workTreeStatus
+        } else if indexStatus == .added {
+            previewWorkTreeStatus = .untracked
+        } else {
+            previewWorkTreeStatus = indexStatus
+        }
+        return WorkingTreeChange(
+            path: path,
+            originalPath: originalPath,
+            indexStatus: .unmodified,
+            workTreeStatus: previewWorkTreeStatus
+        )
+    }
 }
 
 struct CommitRecord: Identifiable, Sendable, Hashable {
@@ -115,7 +141,7 @@ struct BranchRecord: Identifiable, Sendable, Hashable {
     var id: String { name }
 }
 
-struct RepositorySnapshot: Sendable {
+struct RepositorySnapshot: Sendable, Equatable {
     let rootURL: URL
     let branchName: String
     let upstreamName: String?
@@ -318,8 +344,14 @@ struct GitWorktreeAgentRun: Sendable, Equatable {
 }
 
 struct OperationNotice: Identifiable, Equatable {
+    enum Tone: Equatable {
+        case success
+        case attention
+    }
+
     let id = UUID()
     let message: String
+    var tone: Tone = .success
 }
 
 enum CodexRunMode: String, CaseIterable, Identifiable, Sendable, Codable {

@@ -64,6 +64,14 @@ License: https://zappicon.com/license
 
 GitGatto uses Zappicon Regular and Filled SVG interface icons under the Zappicon license.
 
+## SwiftUI-Animations
+
+Project: https://github.com/Shubham0812/SwiftUI-Animations
+
+Copyright © 2021 Shubham Singh.
+
+GitGatto adapts the Octocat Wink geometry and motion patterns from Circular Download, SubmitView, Like, AddView, Wifi, ChatBar, Auto Scroller, BookLoader, and Cards Swap under the Apache License 2.0. The license text is included at [docs/licenses/swiftui-animations/LICENSE.md](docs/licenses/swiftui-animations/LICENSE.md).
+
 ## GitHub language icons
 
 The 833-language icon catalog uses marks from the following projects and custom fallbacks derived from GitHub Linguist language names and colors:

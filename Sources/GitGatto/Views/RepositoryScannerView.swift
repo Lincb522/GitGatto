@@ -211,8 +211,14 @@ struct RepositoryScannerView: View {
 
             Spacer()
 
-            Button(L10n.text("repository.scan.add_selected")) {
+            Button {
                 model.addSelectedScannedRepositories()
+            } label: {
+                AddSelectionMotionLabel(
+                    title: L10n.text("repository.scan.add_selected"),
+                    selectedCount: model.selectedRepositoryScanPaths.count,
+                    completionID: model.repositoryAddCompletionID
+                )
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(model.selectedRepositoryScanPaths.isEmpty)

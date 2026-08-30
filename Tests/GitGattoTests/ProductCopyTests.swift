@@ -17,4 +17,19 @@ struct ProductCopyTests {
                 == "A native-built Git management tool, driven by Agent."
         )
     }
+
+    @Test("Local commit confirmation states that the commit is not pushed")
+    func marksLocalCommitAsUnpushed() {
+        let chinese = L10n.bundle(preferredLanguages: ["zh-Hans"])
+        let english = L10n.bundle(preferredLanguages: ["en"])
+
+        #expect(
+            chinese.localizedString(forKey: "notice.committed", value: nil, table: nil)
+                == "提交已创建 · 尚未推送"
+        )
+        #expect(
+            english.localizedString(forKey: "notice.committed", value: nil, table: nil)
+                == "Commit created · Not pushed"
+        )
+    }
 }

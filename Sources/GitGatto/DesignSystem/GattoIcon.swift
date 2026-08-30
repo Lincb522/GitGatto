@@ -71,7 +71,10 @@ enum GattoIconAssets {
     }
 
     static func assetName(for symbol: String) -> String {
-        "gatto-" + symbol.replacingOccurrences(of: ".", with: "-")
+        if symbol == "github" {
+            return "GitHub-Mark"
+        }
+        return "gatto-" + symbol.replacingOccurrences(of: ".", with: "-")
     }
 }
 

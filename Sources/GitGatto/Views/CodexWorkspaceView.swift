@@ -4,6 +4,8 @@ struct CodexWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var showsComposerSkills = false
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -21,6 +23,13 @@ struct CodexWorkspaceView: View {
             }
         }
         .background(palette.background)
+#if DEBUG
+        .onAppear {
+            if ProcessInfo.processInfo.environment["GITGATTO_COMPOSER_TOOLS_PREVIEW"] == "1" {
+                showsComposerSkills = true
+            }
+        }
+#endif
     }
 
     private func header(_ palette: AppPalette) -> some View {
@@ -117,6 +126,12 @@ struct CodexWorkspaceView: View {
                                 canCommitAndPush: model.canCommitAndPushCodexDraft,
                                 canRewrite: model.canRewriteCodexCommitDraft,
                                 activeCommitOperation: model.activeOperation,
+                                commitCompletionID: model.notice?.message == L10n.text("notice.committed")
+                                    ? model.notice?.id
+                                    : nil,
+                                commitPushCompletionID: model.notice?.message == L10n.text("notice.committed_pushed")
+                                    ? model.notice?.id
+                                    : nil,
                                 rewrite: model.rewriteCodexCommitDraft,
                                 commit: {
                                     Task { await model.commitCodexDraft() }
@@ -189,7 +204,43 @@ struct CodexWorkspaceView: View {
                 .fill(palette.divider)
                 .frame(height: 1)
 
+            if showsComposerSkills {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(GitAgentSkill.allCases) { skill in
+                            Button {
+                                showsComposerSkills = false
+                                model.runGitAgentSkill(skill)
+                            } label: {
+                                GattoLabel(L10n.text(skill.titleKey), systemImage: skill.systemImage)
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                }
+                .frame(maxWidth: 808)
+                .frame(maxWidth: .infinity)
+                .background(palette.surface)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
             HStack(alignment: .bottom, spacing: 12) {
+                ComposerToolsButton(
+                    isExpanded: showsComposerSkills,
+                    isDisabled: model.codexAvailability.state != .available
+                        || model.snapshot == nil
+                        || model.isCodexRunning
+                ) {
+                    withAnimation(
+                        reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.82)
+                    ) {
+                        showsComposerSkills.toggle()
+                    }
+                }
+
                 ZStack(alignment: .topLeading) {
                     if model.codexPrompt.isEmpty {
                         Text(L10n.text("codex.composer.placeholder"))
@@ -217,11 +268,16 @@ struct CodexWorkspaceView: View {
                 }
 
                 if model.isPromptTranslating {
-                    HStack(spacing: 7) {
-                        ProgressView().controlSize(.small)
-                        Text(L10n.text("codex.status.translating"))
-                            .font(.system(size: 11.5, weight: .medium))
+                    Button {} label: {
+                        DocumentTranslationActionLabel(
+                            title: L10n.text("codex.action.translate"),
+                            activeTitle: L10n.text("codex.status.translating"),
+                            isActive: true,
+                            completionID: model.promptTranslationCompletionID
+                        )
                     }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(true)
                 } else {
                     Menu {
                         ForEach(CodexTranslationTarget.allCases) { target in
@@ -231,8 +287,14 @@ struct CodexWorkspaceView: View {
                             }
                         }
                     } label: {
-                        GattoLabel(L10n.text("codex.action.translate"), systemImage: "ai.translation")
-                            .font(.system(size: 11.5, weight: .semibold))
+                        DocumentTranslationActionLabel(
+                            title: L10n.text("codex.action.translate"),
+                            activeTitle: L10n.text("codex.status.translating"),
+                            isActive: false,
+                            completionID: model.promptTranslationCompletionID,
+                            showsInitialCompletion: true
+                        )
+                        .font(.system(size: 11.5, weight: .semibold))
                     }
                     .menuStyle(.borderlessButton)
                     .fixedSize()
@@ -240,13 +302,22 @@ struct CodexWorkspaceView: View {
                 }
 
                 if model.isCodexRunning {
-                    Button(L10n.text("codex.action.cancel")) {
+                    Button {
                         model.cancelCodex()
+                    } label: {
+                        HStack(spacing: 7) {
+                            GattoLoadingGlyph(size: 16)
+                            Text(L10n.text("codex.status.writing"))
+                                .lineLimit(1)
+                        }
                     }
-                    .buttonStyle(SecondaryButtonStyle())
+                    .buttonStyle(PrimaryButtonStyle())
+                    .help(L10n.text("codex.action.cancel"))
                 } else {
-                    Button(L10n.text("codex.action.run")) {
+                    Button {
                         model.runCodex()
+                    } label: {
+                        GattoLabel(L10n.text("codex.action.run"), systemImage: "sparkles")
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(!model.canRunCodex)
@@ -317,9 +388,7 @@ private struct CodexAvailabilityBadge: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 5) {
-            Circle()
-                .fill(availability.state == .available ? palette.success : palette.subtleInk)
-                .frame(width: 6, height: 6)
+            ConnectivityMotionGlyph(state: motionState, size: 14)
             Text(label)
                 .lineLimit(1)
         }
@@ -340,6 +409,14 @@ private struct CodexAvailabilityBadge: View {
             availability.version ?? L10n.text("codex.status.available")
         case .unavailable:
             L10n.text("codex.status.unavailable")
+        }
+    }
+
+    private var motionState: ConnectivityMotionState {
+        switch availability.state {
+        case .checking: .checking
+        case .available: .available
+        case .unavailable: .unavailable
         }
     }
 }
@@ -437,6 +514,8 @@ private struct CodexMessageRow: View {
     let canCommitAndPush: Bool
     let canRewrite: Bool
     let activeCommitOperation: OperationKind?
+    let commitCompletionID: UUID?
+    let commitPushCompletionID: UUID?
     let rewrite: () -> Void
     let commit: () -> Void
     let commitAndPush: () -> Void
@@ -553,31 +632,26 @@ private struct CodexMessageRow: View {
 
                         HStack(spacing: 8) {
                             Button(action: commit) {
-                                HStack(spacing: 7) {
-                                    if activeCommitOperation == .commit {
-                                        ProgressView()
-                                            .controlSize(.small)
-                                            .tint(Color.white)
-                                    } else {
-                                        Image(gattoSymbol: "checkmark.circle.fill")
-                                    }
-                                    Text(L10n.text("action.commit"))
-                                }
+                                SubmitMotionLabel(
+                                    title: L10n.text("action.commit"),
+                                    activeTitle: L10n.text("codex.status.committing"),
+                                    systemImage: "checkmark.circle.fill",
+                                    isActive: activeCommitOperation == .commit,
+                                    completionID: commitCompletionID
+                                )
                             }
                             .buttonStyle(PrimaryButtonStyle())
                             .disabled(!canCommit)
                             .opacity(canCommit ? 1 : 0.48)
 
                             Button(action: commitAndPush) {
-                                HStack(spacing: 7) {
-                                    if activeCommitOperation == .commitAndPush {
-                                        ProgressView()
-                                            .controlSize(.small)
-                                    } else {
-                                        Image(gattoSymbol: "arrow.up.circle")
-                                    }
-                                    Text(L10n.text("codex.action.commit_push"))
-                                }
+                                SubmitMotionLabel(
+                                    title: L10n.text("codex.action.commit_push"),
+                                    activeTitle: L10n.text("sync.progress.commit_push"),
+                                    systemImage: "arrow.up.circle",
+                                    isActive: activeCommitOperation == .commitAndPush,
+                                    completionID: commitPushCompletionID
+                                )
                             }
                             .buttonStyle(SecondaryButtonStyle())
                             .disabled(!canCommitAndPush)

@@ -78,6 +78,147 @@ struct GitHubMarketplaceViewModelTests {
         #expect(await fixture.requestedPages == [1, 2])
     }
 
+    @Test("Keeps every supplied screenshot without promoting one to the app logo")
+    func keepsEveryScreenshot() throws {
+        let linkRoot = try #require(URL(string: "https://github.com/example/App/blob/main/"))
+        let assetRoot = try #require(URL(string: "https://raw.githubusercontent.com/example/App/main/"))
+        let images = (1...8)
+            .map { #"<img src="Screenshots/\#($0).png" alt="Screenshot \#($0)">"# }
+            .joined()
+        let document = GitHubReadmeDocument(
+            path: "README.md",
+            html: "<h2>Screenshots</h2>\(images)",
+            linkBaseURL: linkRoot,
+            linkRootURL: linkRoot,
+            assetBaseURL: assetRoot,
+            assetRootURL: assetRoot
+        )
+
+        let details = MarketplaceApplicationDetailsExtractor.extract(
+            from: document,
+            repositoryDescription: "Example app"
+        )
+
+        #expect(details.screenshots.count == 8)
+        #expect(details.screenshots.first?.absoluteString.hasSuffix("/Screenshots/1.png") == true)
+        #expect(details.screenshots.last?.absoluteString.hasSuffix("/Screenshots/8.png") == true)
+        #expect(details.logoURL == nil)
+    }
+
+    @Test("Preserves detailed introduction structure through translation")
+    func preservesTranslatedIntroductionStructure() throws {
+        let details = MarketplaceApplicationDetails(
+            summary: "Native Git client",
+            paragraphs: ["Review repositories & releases.", "Manage work without leaving the app."],
+            features: ["Inspect changes", "Download releases"],
+            screenshots: [],
+            logoURL: nil
+        )
+        let sourceHTML = try #require(
+            MarketplaceApplicationDetailsExtractor.translationHTML(
+                repositoryDescription: details.summary,
+                details: details
+            )
+        )
+        let translatedHTML = sourceHTML
+            .replacingOccurrences(of: "Native Git client", with: "原生 Git 客户端")
+            .replacingOccurrences(of: "Review repositories &amp; releases.", with: "查看仓库与发行版。")
+            .replacingOccurrences(of: "Manage work without leaving the app.", with: "无需离开应用即可管理工作。")
+            .replacingOccurrences(of: "Inspect changes", with: "检查改动")
+            .replacingOccurrences(of: "Download releases", with: "下载发行版")
+        let translated = try #require(
+            MarketplaceApplicationDetailsExtractor.translatedText(from: translatedHTML)
+        )
+
+        #expect(translated.repositoryDescription == "原生 Git 客户端")
+        #expect(translated.paragraphs == ["查看仓库与发行版。", "无需离开应用即可管理工作。"])
+        #expect(translated.features == ["检查改动", "下载发行版"])
+    }
+
+    @Test("Translates the app header, detailed introduction, features, and release notes together")
+    @MainActor
+    func translatesCompleteApplicationDetails() async throws {
+        let fixture = try MarketplaceGitHubFixture()
+        let translator = MarketplaceTranslationAIFixture()
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoMarketplaceTranslationFlow-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let model = GitHubMarketplaceViewModel(
+            github: fixture,
+            translationAI: translator,
+            translationStore: MarketplaceTranslationStore(directoryURL: directory)
+        )
+        model.query = "GitGatto"
+        model.search()
+
+        for await details in model.$selectedDetails.values {
+            if details?.paragraphs.isEmpty == false { break }
+        }
+        await fixture.finishDelayedRelease()
+        for await isLoading in model.$isLoading.values {
+            if !isLoading { break }
+        }
+        model.translateSelected(to: .simplifiedChinese)
+        for await target in model.$activeTranslationTarget.values {
+            if target == .simplifiedChinese { break }
+        }
+
+        let application = try #require(model.selectedApplication)
+        let release = try #require(model.selectedRelease)
+        let details = model.displayedDetails(for: application)
+        #expect(model.displayedDescription(for: application) == "原生 Git 客户端")
+        #expect(details.paragraphs == ["用于仓库管理、审查与协作的原生 Git 客户端。"])
+        #expect(details.features == ["提交前检查改动"])
+        #expect(model.displayedReleaseNotes(for: release) == "已翻译：Release notes")
+    }
+
+}
+
+private actor MarketplaceTranslationAIFixture: CodexServing {
+    func probe() async -> CodexAvailability {
+        .unavailable
+    }
+
+    func run(
+        prompt: String,
+        context: [CodexMessage],
+        in repositoryURL: URL,
+        mode: CodexRunMode
+    ) async throws -> CodexRunResult {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func runWithProvidedContext(
+        prompt: String,
+        context: [CodexMessage]
+    ) async throws -> CodexRunResult {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func draftPullRequestReply(context: GitHubPullRequestContext) async throws -> String {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func translate(_ text: String, target: CodexTranslationTarget) async throws -> String {
+        "已翻译：\(text)"
+    }
+
+    func translateHTML(
+        _ html: String,
+        target: CodexTranslationTarget,
+        progress: @escaping @Sendable (_ currentBatch: Int, _ totalBatches: Int) async -> Void
+    ) async throws -> String {
+        await progress(1, 1)
+        return html
+            .replacingOccurrences(of: "Native Git client", with: "原生 Git 客户端")
+            .replacingOccurrences(
+                of: "原生 Git 客户端 for repository management, review, and collaboration.",
+                with: "用于仓库管理、审查与协作的原生 Git 客户端。"
+            )
+            .replacingOccurrences(of: "Review changes before committing", with: "提交前检查改动")
+    }
+
+    func cancel() async {}
 }
 
 private actor MarketplaceGitHubFixture: MarketplaceGitHubServing {

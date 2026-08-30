@@ -433,13 +433,15 @@ struct ConflictResolutionWorkspaceView: View {
             Button {
                 Task { await model.continueRepositoryOperation() }
             } label: {
-                HStack(spacing: 6) {
-                    if model.activeOperation == .continueConflictOperation {
-                        ProgressView().controlSize(.small)
-                    }
-                    Text(L10n.text("conflict.action.continue"))
-                    Image(gattoSymbol: "arrow.right")
-                }
+                SubmitMotionLabel(
+                    title: L10n.text("conflict.action.continue"),
+                    activeTitle: L10n.text("conflict.action.continue"),
+                    systemImage: "arrow.right",
+                    isActive: model.activeOperation == .continueConflictOperation,
+                    completionID: model.notice?.message == L10n.text("notice.operation_continued")
+                        ? model.notice?.id
+                        : nil
+                )
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(!state.canContinue || model.activeOperation != nil)

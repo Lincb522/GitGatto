@@ -208,6 +208,7 @@ fileprivate enum CodeTokenKind {
 }
 
 enum CodeSyntax {
+    private static let tokenCache = CodeTokenCache()
     private static let keywords: Set<String> = [
         "actor", "async", "await", "break", "case", "catch", "class", "const", "continue",
         "default", "defer", "do", "else", "enum", "export", "extends", "false", "final",
@@ -220,6 +221,10 @@ enum CodeSyntax {
     fileprivate static func tokenize(_ line: String, fileName: String) -> [CodeToken] {
         guard !line.isEmpty else { return [CodeToken(value: " ", kind: .plain)] }
         let extensionName = (fileName as NSString).pathExtension.lowercased()
+        let cacheKey = "\(extensionName)\u{0}\(line)" as NSString
+        if let cached = tokenCache.value(for: cacheKey) {
+            return cached
+        }
         let hashComments = ["py", "rb", "sh", "bash", "zsh", "yml", "yaml", "toml"].contains(extensionName)
         var tokens: [CodeToken] = []
         var index = line.startIndex
@@ -307,6 +312,7 @@ enum CodeSyntax {
             tokens.append(CodeToken(value: String(line[index..<end]), kind: .plain))
             index = end
         }
+        tokenCache.insert(tokens, for: cacheKey)
         return tokens
     }
 
@@ -331,6 +337,31 @@ enum CodeSyntax {
         case "xml": "XML"
         default: L10n.text("code_surface.plain_text")
         }
+    }
+}
+
+private final class CodeTokenBox {
+    let tokens: [CodeToken]
+
+    init(_ tokens: [CodeToken]) {
+        self.tokens = tokens
+    }
+}
+
+private final class CodeTokenCache: @unchecked Sendable {
+    private let storage: NSCache<NSString, CodeTokenBox>
+
+    init() {
+        storage = NSCache<NSString, CodeTokenBox>()
+        storage.countLimit = 2_048
+    }
+
+    func value(for key: NSString) -> [CodeToken]? {
+        storage.object(forKey: key)?.tokens
+    }
+
+    func insert(_ tokens: [CodeToken], for key: NSString) {
+        storage.setObject(CodeTokenBox(tokens), forKey: key)
     }
 }
 

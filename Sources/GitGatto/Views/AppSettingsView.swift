@@ -1285,7 +1285,10 @@ private struct AISettingsAvailability: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        GattoLabel(label, systemImage: availability.state == .available ? "checkmark.circle.fill" : "circle.dotted")
+        HStack(spacing: 6) {
+            ConnectivityMotionGlyph(state: motionState, size: 15)
+            Text(label)
+        }
             .font(.system(size: 10.5, weight: .semibold))
             .foregroundStyle(availability.state == .available ? palette.success : palette.subtleInk)
     }
@@ -1295,6 +1298,14 @@ private struct AISettingsAvailability: View {
         case .checking: L10n.text("codex.status.checking")
         case .available: L10n.text("codex.status.available")
         case .unavailable: L10n.text("codex.status.unavailable")
+        }
+    }
+
+    private var motionState: ConnectivityMotionState {
+        switch availability.state {
+        case .checking: .checking
+        case .available: .available
+        case .unavailable: .unavailable
         }
     }
 }

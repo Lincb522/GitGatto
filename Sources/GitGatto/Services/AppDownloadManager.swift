@@ -39,11 +39,48 @@ final class AppDownloadManager: ObservableObject {
         try? fileManager.createDirectory(at: resumeDirectory, withIntermediateDirectories: true)
         try? fileManager.createDirectory(at: self.downloadDirectory, withIntermediateDirectories: true)
         restore()
+#if DEBUG
+        if ProcessInfo.processInfo.environment["GITGATTO_DOWNLOAD_PREVIEW"] == "1" {
+            records = Self.previewRecords()
+            isPresented = true
+        }
+#endif
     }
 
     var activeCount: Int {
         records.filter { [.queued, .downloading, .installing].contains($0.state) }.count
     }
+
+#if DEBUG
+    private static func previewRecords() -> [AppDownloadRecord] {
+        let now = Date()
+        let samples: [(String, AppDownloadState, Double, Int64)] = [
+            ("GitGatto-0.19.0.dmg", .downloading, 0.64, 76_800_000),
+            ("GitGatto-symbols.zip", .paused, 0.38, 24_200_000),
+            ("GitGatto-0.18.5.dmg", .completed, 1, 74_600_000),
+            ("GitGatto-Tools.pkg", .installing, 1, 12_400_000)
+        ]
+        return samples.enumerated().map { index, sample in
+            AppDownloadRecord(
+                id: UUID(),
+                repositoryName: "Lincb522/GitGatto",
+                assetID: Int64(index + 1),
+                fileName: sample.0,
+                sourceURL: URL(fileURLWithPath: "/tmp/\(sample.0)"),
+                expectedBytes: sample.3,
+                destinationURL: sample.1 == .completed
+                    ? URL(fileURLWithPath: "/tmp/\(sample.0)")
+                    : nil,
+                state: sample.1,
+                progress: sample.2,
+                receivedBytes: Int64(Double(sample.3) * sample.2),
+                errorMessage: nil,
+                createdAt: now.addingTimeInterval(Double(-index * 900)),
+                updatedAt: now
+            )
+        }
+    }
+#endif
 
     func start(asset: GitHubReleaseAsset, repositoryName: String) {
         start(

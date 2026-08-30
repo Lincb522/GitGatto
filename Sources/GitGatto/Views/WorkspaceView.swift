@@ -406,7 +406,10 @@ private struct ConsoleRepositoryDock: View {
             Button {
                 openWindow(id: "repository-scanner")
             } label: {
-                Image(gattoSymbol: model.isScanningRepositories ? "arrow.triangle.2.circlepath" : "folder.badge.plus")
+                GattoIcon(
+                    symbol: model.isScanningRepositories ? "arrow.triangle.2.circlepath" : "folder.badge.plus",
+                    size: 22
+                )
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
@@ -594,18 +597,27 @@ private struct RepositoryTopBar: View {
             if model.snapshot != nil {
                 RemoteSyncButton(
                     titleKey: "action.pull",
-                    direction: .down,
+                    activity: .pull,
+                    compact: compact,
                     isActive: model.activeOperation == .pull,
-                    isDisabled: model.activeOperation != nil
+                    isDisabled: model.activeOperation != nil,
+                    completionID: model.notice?.message == L10n.text("notice.pulled")
+                        ? model.notice?.id
+                        : nil
                 ) {
                     Task { await model.pull() }
                 }
 
                 RemoteSyncButton(
                     titleKey: "action.push",
-                    direction: .up,
+                    activity: .push,
+                    compact: compact,
                     isActive: model.activeOperation == .push || model.activeOperation == .commitAndPush,
-                    isDisabled: model.activeOperation != nil
+                    isDisabled: model.activeOperation != nil,
+                    completionID: model.notice?.message == L10n.text("notice.pushed")
+                        || model.notice?.message == L10n.text("notice.committed_pushed")
+                        ? model.notice?.id
+                        : nil
                 ) {
                     Task { await model.push() }
                 }
@@ -728,21 +740,37 @@ private struct RepositorySyncStatusView: View {
         }
     }
 
+    private func foreground(_ palette: AppPalette) -> Color {
+        return switch state {
+        case .synced: palette.success
+        case .ahead, .diverged, .noUpstream: palette.warning
+        case .behind: palette.primary
+        }
+    }
+
+    private func background(_ palette: AppPalette) -> Color {
+        return switch state {
+        case .synced: palette.successSoft
+        case .ahead, .diverged, .noUpstream: palette.warningSoft
+        case .behind: palette.primarySoft
+        }
+    }
+
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 6) {
-            Image(gattoSymbol: error == nil ? presentation.icon : "exclamationmark.triangle.fill")
+            GattoIcon(symbol: presentation.icon, size: 14)
             Text(presentation.text)
         }
             .font(.system(size: 10.5, weight: .semibold))
-            .foregroundStyle(error != nil ? palette.warning : (state == .synced ? palette.success : palette.mutedInk))
+            .foregroundStyle(foreground(palette))
             .lineLimit(1)
             .padding(.horizontal, 8)
             .frame(height: 25)
-            .background(state == .synced ? palette.successSoft : palette.raisedSurface)
+            .background(background(palette))
             .clipShape(Capsule())
             .overlay {
-                Capsule().stroke(palette.divider, lineWidth: state == .synced ? 0 : 1)
+                Capsule().stroke(foreground(palette).opacity(0.22), lineWidth: 1)
             }
             .help(error ?? L10n.text("sync.status.live"))
     }
@@ -750,29 +778,137 @@ private struct RepositorySyncStatusView: View {
 
 private struct RemoteSyncButton: View {
     let titleKey: String
-    let direction: SyncActivityGlyph.Direction
+    let activity: TaskButtonActivityKind
+    let compact: Bool
     let isActive: Bool
     let isDisabled: Bool
+    let completionID: UUID?
     let action: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isHovering = false
+    @State private var showsCompletion = false
+    @State private var lastCompletionID: UUID?
+
+    private var isExpanded: Bool {
+        isHovering || isActive || showsCompletion
+    }
+
+    private var width: CGFloat {
+        compact ? 108 : 120
+    }
+
+    private var leadingPlateWidth: CGFloat {
+        isExpanded ? width - 6 : (compact ? 36 : 42)
+    }
+
+    private var cornerRadius: CGFloat {
+        AppThemeLayout.controlCornerRadius
+    }
+
     var body: some View {
+        let palette = AppPalette(colorScheme)
         Button(action: action) {
-            HStack(spacing: 7) {
-                if isActive {
-                    SyncActivityGlyph(direction: direction, size: 10)
-                } else {
-                    Image(gattoSymbol: direction == .up ? "arrow.up" : "arrow.down")
-                        .font(.system(size: 11.5, weight: .bold))
-                }
-                Text(L10n.text(isActive ? (direction == .up ? "sync.progress.push" : "sync.progress.pull") : titleKey))
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(palette.raisedSurface)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(palette.divider, lineWidth: 1)
+                    }
+
+                Text(L10n.text(titleKey))
+                    .font(.system(size: compact ? 10.5 : 11.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
                     .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+                    .offset(x: compact ? 8 : 10)
+
+                RoundedRectangle(
+                    cornerRadius: max(3, cornerRadius - 2),
+                    style: .continuous
+                )
+                .fill(showsCompletion ? palette.success : (isExpanded ? palette.primary : palette.primarySoft))
+                .frame(width: leadingPlateWidth, height: 32)
+                .overlay {
+                    if isActive || showsCompletion {
+                        HStack(spacing: 7) {
+                            if showsCompletion {
+                                GattoIcon(symbol: "checkmark", size: 15)
+                            } else {
+                                CloneActivityGlyph(
+                                    systemImage: syncSymbol,
+                                    tint: Color.white,
+                                    travelsUp: activity == .push
+                                )
+                            }
+                            Text(buttonTitle)
+                                .lineLimit(1)
+                        }
+                        .font(.system(size: compact ? 10 : 11, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .padding(.horizontal, 9)
+                    } else {
+                        GattoIcon(symbol: syncSymbol, size: compact ? 17 : 19)
+                            .foregroundStyle(isExpanded ? Color.white : palette.primary)
+                    }
+                }
+                .overlay {
+                    if isActive {
+                        CloneProgressBorder(
+                            tint: Color.white.opacity(0.92),
+                            cornerRadius: max(3, cornerRadius - 2)
+                        )
+                    }
+                }
+                .padding(.leading, 3)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: isExpanded)
             }
-            .font(.system(size: 11.5, weight: .semibold))
-            .fixedSize(horizontal: true, vertical: false)
+            .frame(width: width, height: 38)
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         }
-        .buttonStyle(SecondaryButtonStyle())
-        .disabled(isDisabled)
-        .accessibilityLabel(L10n.text(isActive ? (direction == .up ? "sync.progress.push" : "sync.progress.pull") : titleKey))
+        .buttonStyle(.plain)
+        .allowsHitTesting(!isDisabled)
+        .opacity(isDisabled && !isActive ? 0.42 : 1)
+        .onHover { hovering in
+            guard !isDisabled else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) {
+                isHovering = hovering
+            }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: isActive)
+        .onAppear {
+            lastCompletionID = completionID
+        }
+        .task(id: completionID) {
+            guard let completionID, completionID != lastCompletionID else { return }
+            lastCompletionID = completionID
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
+                showsCompletion = true
+            }
+            try? await Task.sleep(for: .milliseconds(reduceMotion ? 500 : 950))
+            guard !Task.isCancelled, !isActive else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
+                showsCompletion = false
+            }
+        }
+        .help(L10n.text(titleKey))
+        .accessibilityLabel(buttonTitle)
+    }
+
+    private var buttonTitle: String {
+        if showsCompletion {
+            return L10n.text("downloads.state.completed")
+        }
+        if isActive {
+            return L10n.text(activity == .push ? "sync.progress.push" : "sync.progress.pull")
+        }
+        return L10n.text(titleKey)
+    }
+
+    private var syncSymbol: String {
+        activity == .push ? "arrow.up" : "arrow.down"
     }
 }
 

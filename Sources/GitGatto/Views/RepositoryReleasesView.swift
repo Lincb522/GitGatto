@@ -194,15 +194,21 @@ struct ReleaseAssetRow: View {
             }
             Spacer(minLength: 8)
             if let record {
-                if record.state == .downloading || record.state == .queued {
-                    ProgressView(value: record.progress)
-                        .frame(width: 70)
-                } else {
-                    Button(L10n.text("downloads.state.\(record.state.rawValue)")) {
-                        downloads.isPresented = true
+                Button {
+                    downloads.isPresented = true
+                } label: {
+                    HStack(spacing: 7) {
+                        CircularDownloadIndicator(
+                            state: record.state,
+                            progress: record.progress,
+                            size: 28
+                        )
+                        Text(downloadStatus(record))
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .monospacedDigit()
                     }
-                    .buttonStyle(SecondaryButtonStyle())
                 }
+                .buttonStyle(SecondaryButtonStyle())
             } else {
                 Button(L10n.text("github.releases.download")) {
                     downloads.start(asset: asset, repositoryName: repositoryName)
@@ -222,5 +228,12 @@ struct ReleaseAssetRow: View {
         case "zip", "tar.gz", "tar.xz": "archivebox"
         default: "doc"
         }
+    }
+
+    private func downloadStatus(_ record: AppDownloadRecord) -> String {
+        if record.state == .downloading {
+            return "\(Int(min(1, max(0, record.progress)) * 100))%"
+        }
+        return L10n.text("downloads.state.\(record.state.rawValue)")
     }
 }

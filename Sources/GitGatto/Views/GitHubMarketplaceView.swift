@@ -7,6 +7,7 @@ struct GitHubMarketplaceView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var inAppBrowserPage: InAppBrowserPage?
     @State private var selectedDetailTab = MarketplaceDetailTab.overview
+    @State private var unavailableScreenshotURLs: Set<URL> = []
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -24,6 +25,10 @@ struct GitHubMarketplaceView: View {
         .onAppear { model.loadIfNeeded() }
         .onChange(of: model.selectedApplication?.id) { _, _ in
             selectedDetailTab = .overview
+            unavailableScreenshotURLs = []
+        }
+        .onChange(of: model.selectedDetails?.screenshots) { _, screenshots in
+            unavailableScreenshotURLs.formIntersection(screenshots ?? [])
         }
         .onChange(of: selectedDetailTab) { _, tab in
             if tab == .releases {
@@ -187,9 +192,7 @@ struct GitHubMarketplaceView: View {
                     .pickerStyle(.segmented)
                     .frame(width: 240)
                     Spacer()
-                    if selectedDetailTab == .releases {
-                        translationMenu(palette)
-                    }
+                    translationMenu(palette)
                 }
                 .padding(.horizontal, 20)
                 .frame(height: 50)
@@ -283,10 +286,17 @@ struct GitHubMarketplaceView: View {
         if model.isLoadingDetails, model.selectedDetails == nil {
             GattoLoadingState(text: L10n.text("marketplace.detail.loading"))
         } else {
-            let details = model.selectedDetails
-                ?? MarketplaceApplicationDetails.fallback(description: application.repository.description)
+            let details = model.displayedDetails(for: application)
+            let screenshotURLs = details.screenshots.filter { !unavailableScreenshotURLs.contains($0) }
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    if let error = model.translationError {
+                        Text(error)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(palette.danger)
+                            .textSelection(.enabled)
+                    }
+
                     if !details.paragraphs.isEmpty {
                         marketplaceDetailSection(L10n.text("marketplace.detail.about"), palette: palette) {
                             VStack(alignment: .leading, spacing: 10) {
@@ -305,15 +315,14 @@ struct GitHubMarketplaceView: View {
                             .foregroundStyle(palette.mutedInk)
                     }
 
-                    if !details.screenshots.isEmpty {
-                        marketplaceDetailSection(L10n.text("marketplace.detail.screenshots"), palette: palette) {
-                            LazyVGrid(
-                                columns: [GridItem(.adaptive(minimum: 230, maximum: 440), spacing: 12)],
-                                spacing: 12
-                            ) {
-                                ForEach(details.screenshots, id: \.absoluteString) { url in
-                                    MarketplaceScreenshotView(url: url)
-                                }
+                    marketplaceDetailSection(L10n.text("marketplace.detail.screenshots"), palette: palette) {
+                        if screenshotURLs.isEmpty {
+                            Text(L10n.text("marketplace.detail.screenshots.empty"))
+                                .font(.system(size: 12.5))
+                                .foregroundStyle(palette.mutedInk)
+                        } else {
+                            MarketplaceScreenshotCarousel(urls: screenshotURLs) { url in
+                                unavailableScreenshotURLs.insert(url)
                             }
                         }
                     }
@@ -508,40 +517,51 @@ struct GitHubMarketplaceView: View {
         model.selectedRelease ?? application.latestRelease
     }
 
+    @ViewBuilder
     private func translationMenu(_ palette: AppPalette) -> some View {
-        Menu {
-            Button(L10n.text("marketplace.translation.original")) { model.showOriginal() }
-            if !model.availableTranslationTargets.isEmpty {
-                Divider()
-                ForEach(model.availableTranslationTargets) { target in
-                    Button(L10n.text("codex.translate.short.\(target.rawValue)")) {
-                        model.showTranslation(target)
-                    }
-                }
-            }
-            Divider()
-            ForEach(CodexTranslationTarget.allCases) { target in
-                Button(L10n.text("codex.translate.\(target.rawValue)")) {
-                    model.translateSelected(to: target)
-                }
-            }
-        } label: {
-            HStack(spacing: 7) {
-                if model.isTranslating {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Image(gattoSymbol: "ai.translation")
-                }
-                Text(
-                    model.activeTranslationTarget.map {
-                        L10n.text("codex.translate.short.\($0.rawValue)")
-                    } ?? L10n.text("codex.action.translate")
+        if model.isTranslating {
+            Button {} label: {
+                DocumentTranslationActionLabel(
+                    title: L10n.text("codex.action.translate"),
+                    activeTitle: L10n.text("codex.status.translating"),
+                    isActive: true,
+                    completionID: model.translationCompletionID
                 )
             }
-            .foregroundStyle(model.activeTranslationTarget == nil ? palette.ink : palette.primary)
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(true)
+        } else {
+            Menu {
+                Button(L10n.text("marketplace.translation.original")) { model.showOriginal() }
+                if !model.availableTranslationTargets.isEmpty {
+                    Divider()
+                    ForEach(model.availableTranslationTargets) { target in
+                        Button(L10n.text("codex.translate.short.\(target.rawValue)")) {
+                            model.showTranslation(target)
+                        }
+                    }
+                }
+                Divider()
+                ForEach(CodexTranslationTarget.allCases) { target in
+                    Button(L10n.text("codex.translate.\(target.rawValue)")) {
+                        model.translateSelected(to: target)
+                    }
+                }
+            } label: {
+                DocumentTranslationActionLabel(
+                    title: model.activeTranslationTarget.map {
+                        L10n.text("codex.translate.short.\($0.rawValue)")
+                    } ?? L10n.text("codex.action.translate"),
+                    activeTitle: L10n.text("codex.status.translating"),
+                    isActive: false,
+                    completionID: model.translationCompletionID,
+                    showsInitialCompletion: true
+                )
+                .foregroundStyle(model.activeTranslationTarget == nil ? palette.ink : palette.primary)
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(model.isLoadingDetails)
         }
-        .buttonStyle(SecondaryButtonStyle())
-        .disabled(model.isTranslating)
     }
 }
 
@@ -584,36 +604,172 @@ private struct MarketplaceInformationCell: View {
 
 private struct MarketplaceScreenshotView: View {
     let url: URL
+    var height: CGFloat = 176
+    let onFailure: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let palette = AppPalette(colorScheme)
         AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.18))) { phase in
             switch phase {
             case let .success(image):
-                image
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
+                screenshotContainer {
+                    image
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                }
             case .failure:
-                Image(gattoSymbol: "photo")
-                    .font(.system(size: 22))
-                    .foregroundStyle(palette.subtleInk)
+                EmptyView()
+                    .onAppear(perform: onFailure)
             case .empty:
-                ProgressView().controlSize(.small)
+                screenshotContainer {
+                    ProgressView().controlSize(.small)
+                }
             @unknown default:
                 EmptyView()
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 176)
-        .background(palette.raisedSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(palette.divider, lineWidth: 1)
+    }
+
+    private func screenshotContainer<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let palette = AppPalette(colorScheme)
+        return content()
+            .frame(maxWidth: .infinity)
+            .frame(height: height)
+            .background(palette.raisedSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(palette.divider, lineWidth: 1)
+            }
+    }
+}
+
+private struct MarketplaceScreenshotCarousel: View {
+    let urls: [URL]
+    let onFailure: (URL) -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var selectedIndex = 0
+    @State private var movesBackward = false
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        VStack(spacing: 10) {
+            ZStack {
+                MarketplaceScreenshotView(url: urls[selectedIndex], height: 238) {
+                    onFailure(urls[selectedIndex])
+                }
+                .id(urls[selectedIndex])
+                .transition(
+                    reduceMotion
+                        ? .opacity
+                        : .asymmetric(
+                            insertion: .move(edge: movesBackward ? .leading : .trailing)
+                                .combined(with: .opacity),
+                            removal: .move(edge: movesBackward ? .trailing : .leading)
+                                .combined(with: .opacity)
+                        )
+                )
+
+                if urls.count > 1 {
+                    HStack {
+                        carouselButton(systemName: "chevron.left", isDisabled: selectedIndex == 0) {
+                            select(selectedIndex - 1)
+                        }
+                        Spacer()
+                        carouselButton(systemName: "chevron.right", isDisabled: selectedIndex == urls.count - 1) {
+                            select(selectedIndex + 1)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 28)
+                    .onEnded { value in
+                        if value.translation.width < -60, selectedIndex < urls.count - 1 {
+                            select(selectedIndex + 1)
+                        } else if value.translation.width > 60, selectedIndex > 0 {
+                            select(selectedIndex - 1)
+                        }
+                    }
+            )
+
+            if urls.count > 1 {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(urls.enumerated()), id: \.element.absoluteString) { index, url in
+                            Button {
+                                select(index)
+                            } label: {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case let .success(image):
+                                        image
+                                            .resizable()
+                                            .interpolation(.high)
+                                            .scaledToFill()
+                                    case .empty:
+                                        ProgressView().controlSize(.mini)
+                                    default:
+                                        Color.clear
+                                    }
+                                }
+                                .frame(width: 74, height: 46)
+                                .background(palette.raisedSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .strokeBorder(
+                                            index == selectedIndex ? palette.primary : palette.divider,
+                                            lineWidth: index == selectedIndex ? 2 : 1
+                                        )
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+            }
         }
+        .onChange(of: urls) { _, newValue in
+            selectedIndex = min(selectedIndex, max(0, newValue.count - 1))
+        }
+    }
+
+    private func select(_ index: Int) {
+        guard urls.indices.contains(index), index != selectedIndex else { return }
+        movesBackward = index < selectedIndex
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.32)) {
+            selectedIndex = index
+        }
+    }
+
+    private func carouselButton(
+        systemName: String,
+        isDisabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        let palette = AppPalette(colorScheme)
+        return Button(action: action) {
+            Image(gattoSymbol: systemName)
+                .font(.system(size: 11.5, weight: .bold))
+                .foregroundStyle(palette.ink)
+                .frame(width: 30, height: 30)
+                .background(.regularMaterial)
+                .clipShape(Circle())
+                .overlay { Circle().stroke(palette.divider, lineWidth: 1) }
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.3 : 1)
     }
 }
 

@@ -3,6 +3,20 @@ import Foundation
 struct MarketplaceTranslationDocument: Codable, Equatable, Sendable {
     let repositoryDescription: String?
     let releaseNotes: String?
+    let detailParagraphs: [String]?
+    let detailFeatures: [String]?
+
+    init(
+        repositoryDescription: String?,
+        releaseNotes: String?,
+        detailParagraphs: [String]? = nil,
+        detailFeatures: [String]? = nil
+    ) {
+        self.repositoryDescription = repositoryDescription
+        self.releaseNotes = releaseNotes
+        self.detailParagraphs = detailParagraphs
+        self.detailFeatures = detailFeatures
+    }
 }
 
 protocol MarketplaceTranslationStoring: Sendable {
@@ -11,6 +25,7 @@ protocol MarketplaceTranslationStoring: Sendable {
         releaseID: Int64,
         sourceDescription: String?,
         sourceReleaseNotes: String?,
+        sourceDetails: String?,
         target: CodexTranslationTarget
     ) async throws -> MarketplaceTranslationDocument?
 
@@ -20,6 +35,7 @@ protocol MarketplaceTranslationStoring: Sendable {
         releaseID: Int64,
         sourceDescription: String?,
         sourceReleaseNotes: String?,
+        sourceDetails: String?,
         target: CodexTranslationTarget
     ) async throws
 }
@@ -41,6 +57,7 @@ actor MarketplaceTranslationStore: MarketplaceTranslationStoring {
         releaseID: Int64,
         sourceDescription: String?,
         sourceReleaseNotes: String?,
+        sourceDetails: String?,
         target: CodexTranslationTarget
     ) async throws -> MarketplaceTranslationDocument? {
         let url = fileURL(
@@ -48,6 +65,7 @@ actor MarketplaceTranslationStore: MarketplaceTranslationStoring {
             releaseID: releaseID,
             sourceDescription: sourceDescription,
             sourceReleaseNotes: sourceReleaseNotes,
+            sourceDetails: sourceDetails,
             target: target
         )
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
@@ -63,6 +81,7 @@ actor MarketplaceTranslationStore: MarketplaceTranslationStoring {
         releaseID: Int64,
         sourceDescription: String?,
         sourceReleaseNotes: String?,
+        sourceDetails: String?,
         target: CodexTranslationTarget
     ) async throws {
         try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
@@ -73,6 +92,7 @@ actor MarketplaceTranslationStore: MarketplaceTranslationStoring {
                 releaseID: releaseID,
                 sourceDescription: sourceDescription,
                 sourceReleaseNotes: sourceReleaseNotes,
+                sourceDetails: sourceDetails,
                 target: target
             ),
             options: .atomic
@@ -84,11 +104,20 @@ actor MarketplaceTranslationStore: MarketplaceTranslationStoring {
         releaseID: Int64,
         sourceDescription: String?,
         sourceReleaseNotes: String?,
+        sourceDetails: String?,
         target: CodexTranslationTarget
     ) -> URL {
-        let key = StableHash.hex(
-            "\(repositoryName)\u{0}\(releaseID)\u{0}\(target.rawValue)\u{0}\(sourceDescription ?? "")\u{0}\(sourceReleaseNotes ?? "")"
-        )
+        var source = [
+            repositoryName,
+            String(releaseID),
+            target.rawValue,
+            sourceDescription ?? "",
+            sourceReleaseNotes ?? "",
+        ]
+        if let sourceDetails {
+            source.append(sourceDetails)
+        }
+        let key = StableHash.hex(source.joined(separator: "\u{0}"))
         return directoryURL.appendingPathComponent("\(key).json")
     }
 }

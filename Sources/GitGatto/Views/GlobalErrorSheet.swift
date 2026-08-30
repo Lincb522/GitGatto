@@ -45,6 +45,13 @@ struct GlobalErrorSheet: View {
                         palette: palette
                     )
 
+                    detailSection(
+                        title: L10n.text("error.section.explanation"),
+                        content: report.explanation,
+                        monospaced: false,
+                        palette: palette
+                    )
+
                     VStack(alignment: .leading, spacing: 9) {
                         Text(L10n.text("error.section.details"))
                             .font(.system(size: 12.5, weight: .semibold))
@@ -103,13 +110,11 @@ struct GlobalErrorSheet: View {
                     .buttonStyle(SecondaryButtonStyle())
                     .keyboardShortcut(.cancelAction)
 
-                Button(action: useAgent) {
-                    GattoLabel(L10n.text("error.action.agent_resolve"), systemImage: "sparkles")
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(!canUseAgent)
-                .opacity(canUseAgent ? 1 : 0.48)
-                .keyboardShortcut(.defaultAction)
+                FlatAgentResolveButton(
+                    title: L10n.text("error.action.agent_resolve"),
+                    isDisabled: !canUseAgent,
+                    action: useAgent
+                )
             }
             .padding(.horizontal, 20)
             .frame(height: 64)

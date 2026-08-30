@@ -141,14 +141,13 @@ struct RepositorySidebar: View {
                     } label: {
                         ZStack {
                             if model.isScanningRepositories {
-                                ProgressView().controlSize(.small)
+                                GattoLoadingGlyph(size: 22)
                             } else {
-                                Image(gattoSymbol: "folder.badge.plus")
-                                    .font(.system(size: 10.5, weight: .semibold))
+                                GattoIcon(symbol: "folder.badge.plus", size: 24)
                                     .foregroundStyle(palette.subtleInk)
                             }
                         }
-                        .frame(width: 22, height: 22)
+                        .frame(width: 30, height: 30)
                         .contentShape(Rectangle())
                     }
                     .menuStyle(.borderlessButton)
