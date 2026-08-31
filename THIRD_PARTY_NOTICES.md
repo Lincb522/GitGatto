@@ -54,16 +54,6 @@ Sparkle is distributed under the MIT License:
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-## Zappicon
-
-Project: https://zappicon.com/
-
-Figma: https://www.figma.com/design/wNyuKVd4m7cMkMPeWwlTKa/Zappicon
-
-License: https://zappicon.com/license
-
-GitGatto uses Zappicon Regular and Filled SVG interface icons under the Zappicon license.
-
 ## SwiftUI-Animations
 
 Project: https://github.com/Shubham0812/SwiftUI-Animations

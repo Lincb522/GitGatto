@@ -1,142 +1,122 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+
+import hashlib
 import json
 import re
 from pathlib import Path
 
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "Sources" / "GitGatto"
-OUTPUT = ROOT / "docs" / "icon-system" / "zappicon-icon-manifest.json"
-SYMBOL_MAP = ROOT / "docs" / "icon-system" / "zappicon-symbol-map.json"
+DESIGN_ROOT = ROOT / "docs" / "icon-system" / "image2-all-icons"
+ASSET_ROOT = SOURCE_ROOT / "Resources" / "UIIcons"
+OUTPUT = ROOT / "docs" / "icon-system" / "image2-icon-manifest.json"
 
-STRING = re.compile(r'"([a-z0-9]+(?:\.[a-z0-9]+)*|[a-z]+)"')
-ICON_MEMBER = re.compile(r'\b(?:var|func)\s+(?:icon|systemImage|symbol|statusSymbol|iconName)\b')
-LOCALIZATION_PREFIXES = (
-    "about.", "action.", "ai.", "changes.", "codex.", "conflict.",
-    "diagnostics.", "downloads.", "error.", "github.", "installer.", "legal.",
-    "marketplace.", "nav.", "repository.", "settings.", "stash.", "sync.",
-    "update.", "worktree."
+DIRECT_ICON_ARGUMENT = re.compile(
+    r"(?:gattoSymbol|systemImage|systemName|symbol)\s*:\s*\"([^\"]+)\""
 )
-NON_ICONS = {
-    "approved", "available", "cancelled", "checking", "comment", "completed",
-    "current", "failed", "merge", "neutral", "rebase", "revert", "running",
-    "skipped", "success", "unknown", "conflict.txt",
-    "c", "cpp", "gif", "go", "h", "jpeg", "jpg", "js", "json", "jsx",
-    "m", "md", "mm", "plist", "png", "py", "rs", "rst", "svg", "swift",
-    "toml", "ts", "tsx", "txt", "webp", "yaml", "yml", "dmg", "gz",
-    "heic", "m4v", "mov", "mp4", "pkg", "webm", "xz", "zip"
-}
-PRODUCT_ICONS = {
+CORE_OVERRIDES = {
     "ai.translation",
-    "code.source",
-    "git.pull.request",
+    "archivebox",
+    "arrow.down.app",
+    "arrow.triangle.branch",
+    "clock.arrow.circlepath",
+    "gearshape",
     "history.file",
-    "legal.disclaimer",
-    "legal.open.source",
-    "legal.privacy",
+    "rectangle.split.2x1",
+    "sparkles",
+    "square.grid.2x2",
+    "square.stack.3d.up",
+    "stethoscope",
 }
 
 
-def category(symbol: str) -> str:
-    if symbol.startswith("legal."):
-        return "legal"
-    if symbol in {"ai.translation", "code.source", "git.pull.request", "history.file"}:
-        return "git-and-code"
-    if symbol.startswith(("arrow", "chevron", "point.")):
-        return "navigation"
-    if symbol.startswith(("checkmark", "exclamationmark", "xmark", "info", "circle", "record", "lock")):
-        return "status"
-    if symbol.startswith(("doc", "folder", "archivebox", "shippingbox", "tray", "internaldrive", "externaldrive", "photo")):
-        return "files"
-    if symbol.startswith(("person", "bubble", "text.bubble", "building", "location", "globe", "house", "star", "link")):
-        return "people-and-web"
-    if symbol in {"terminal", "curlybraces.square", "stethoscope", "clock.arrow.circlepath", "clock.badge.checkmark", "rectangle.split.2x1"}:
-        return "git-and-code"
-    return "actions-and-tools"
-
-
-def extract() -> dict[str, set[str]]:
-    symbols: dict[str, set[str]] = {}
+def source_references(symbol: str) -> list[str]:
+    token = f'"{symbol}"'
+    references = []
     for path in SOURCE_ROOT.rglob("*.swift"):
-        lines = path.read_text(encoding="utf-8").splitlines()
         relative = path.relative_to(ROOT).as_posix()
-        for index, line in enumerate(lines):
-            candidates: set[str] = set()
-            candidates.update(symbol for symbol in PRODUCT_ICONS if f'"{symbol}"' in line)
-            if (
-                "systemName:" in line
-                or "systemImage:" in line
-                or "gattoSymbol:" in line
-                or "GattoIcon(" in line
-            ):
-                block = "\n".join(lines[max(0, index - 1): min(len(lines), index + 5)])
-                candidates.update(STRING.findall(block))
-            if ICON_MEMBER.search(line):
-                depth = 0
-                started = False
-                block_lines: list[str] = []
-                for current in range(index, min(len(lines), index + 50)):
-                    block_lines.append(lines[current])
-                    depth += lines[current].count("{") - lines[current].count("}")
-                    started = started or "{" in lines[current]
-                    if started and depth <= 0:
-                        break
-                candidates.update(STRING.findall("\n".join(block_lines)))
-            for value in candidates:
-                if value in NON_ICONS or (
-                    value not in PRODUCT_ICONS and value.startswith(LOCALIZATION_PREFIXES)
-                ):
-                    continue
-                if value.endswith((".title", ".body")):
-                    continue
-                symbols.setdefault(value, set()).add(f"{relative}:{index + 1}")
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(),
+            start=1,
+        ):
+            if token in line:
+                references.append(f"{relative}:{line_number}")
+    return references
+
+
+def direct_symbols() -> set[str]:
+    symbols = set()
+    for path in SOURCE_ROOT.rglob("*.swift"):
+        symbols.update(DIRECT_ICON_ARGUMENT.findall(path.read_text(encoding="utf-8")))
     return symbols
 
 
 def main() -> None:
-    symbols = extract()
-    symbols.setdefault("pause", set()).add("Sources/GitGatto/Views/DownloadCenterView.swift")
-    zappicon_mappings = json.loads(SYMBOL_MAP.read_text(encoding="utf-8"))
-    missing = sorted(set(symbols) - set(zappicon_mappings))
-    obsolete = sorted(set(zappicon_mappings) - set(symbols))
-    if missing or obsolete:
-        details = []
-        if missing:
-            details.append("Missing Zappicon mappings: " + ", ".join(missing))
-        if obsolete:
-            details.append("Unused Zappicon mappings: " + ", ".join(obsolete))
-        raise SystemExit("\n".join(details))
+    groups = json.loads((DESIGN_ROOT / "manifest.json").read_text(encoding="utf-8"))
+    supplemental = json.loads(
+        (DESIGN_ROOT / "supplemental.json").read_text(encoding="utf-8")
+    )
+    design_sources = {
+        name.replace("-", "."): f"batch-{group['batch']}-sheet.png"
+        for group in groups
+        for name in group["icons"]
+    }
+    design_sources.update(
+        {item["symbol"]: item["source"] for item in supplemental}
+    )
+    design_sources.update(
+        {symbol: "core-agent-monochrome.png" for symbol in CORE_OVERRIDES}
+    )
 
     entries = []
-    for source_symbol in sorted(symbols):
-        asset_id = "gatto-" + source_symbol.replace(".", "-")
-        entries.append({
-            "sourceSymbol": source_symbol,
-            "assetID": asset_id,
-            "zappiconName": zappicon_mappings[source_symbol]["component"],
-            "zappiconStyle": zappicon_mappings[source_symbol]["style"],
-            "figmaNodeID": zappicon_mappings[source_symbol]["node_id"],
-            "category": category(source_symbol),
-            "assetPath": f"Sources/GitGatto/Resources/UIIcons/{asset_id}.svg",
-            "sourceRefs": sorted(symbols[source_symbol]),
-        })
+    for symbol in sorted(design_sources):
+        asset_name = f"gatto-{symbol.replace('.', '-')}.png"
+        asset_path = ASSET_ROOT / asset_name
+        if not asset_path.is_file():
+            raise SystemExit(f"Missing GitGatto icon asset: {asset_name}")
+        entries.append(
+            {
+                "symbol": symbol,
+                "asset": asset_path.relative_to(ROOT).as_posix(),
+                "designSource": (
+                    DESIGN_ROOT / design_sources[symbol]
+                ).relative_to(ROOT).as_posix(),
+                "sha256": hashlib.sha256(asset_path.read_bytes()).hexdigest(),
+                "sourceRefs": source_references(symbol),
+            }
+        )
+
+    symbols = {entry["symbol"] for entry in entries}
+    missing = sorted(direct_symbols() - symbols)
+    if missing:
+        raise SystemExit("Missing GitGatto icon mappings: " + ", ".join(missing))
+
+    expected_assets = {Path(entry["asset"]).name for entry in entries}
+    unexpected = sorted(
+        path.name
+        for path in ASSET_ROOT.glob("gatto-*.png")
+        if path.name not in expected_assets
+    )
+    if unexpected:
+        raise SystemExit("Unexpected GitGatto icon assets: " + ", ".join(unexpected))
+
     payload = {
         "schemaVersion": 1,
         "generator": "scripts/inventory-icons.py",
-        "source": "SwiftUI systemName/systemImage references and icon properties",
-        "iconPack": "Zappicon",
-        "iconPackURL": "https://www.figma.com/design/wNyuKVd4m7cMkMPeWwlTKa/Zappicon",
-        "iconPackCreator": "Zappicon",
+        "designTool": "Infinite Canvas / Image 2",
         "style": {
-            "variant": "Regular and Filled",
-            "canvas": "Zappicon SVG component bounds",
-            "rendering": "template tint with point-size 1x/2x/3x raster representations"
+            "canvas": "256x256 RGBA",
+            "rendering": "template tint with point-size 1x/2x/3x raster representations",
         },
         "count": len(entries),
-        "icons": entries
+        "icons": entries,
     }
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"{len(entries)} Zappicon mappings -> {OUTPUT}")
+    OUTPUT.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(f"{len(entries)} GitGatto icons -> {OUTPUT}")
 
 
 if __name__ == "__main__":

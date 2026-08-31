@@ -110,6 +110,12 @@ struct ReadmeRewriteMotionLabel: View {
                         tint: isOpen ? Color.white : palette.primary
                     )
                         .transition(.opacity)
+                } else if !isActive {
+                    GattoIcon(symbol: "ai.writing", size: 23)
+                        .foregroundStyle(isOpen ? Color.white : palette.primary)
+                        .scaleEffect(isOpen && !reduceMotion ? 1.04 : 1)
+                        .rotationEffect(.degrees(isOpen && !reduceMotion ? -1.5 : 0))
+                        .transition(.opacity)
                 } else {
                     ReadmeFolderMotionGlyph(isOpen: isOpen, isWriting: isActive)
                         .scaleEffect(0.64)

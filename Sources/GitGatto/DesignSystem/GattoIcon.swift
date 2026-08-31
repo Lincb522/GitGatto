@@ -22,6 +22,8 @@ struct GattoIcon: View {
 }
 
 enum GattoIconAssets {
+    private static let opticalScale: CGFloat = 1.16
+
     nonisolated(unsafe) private static let sourceCache: NSCache<NSString, NSImage> = {
         let cache = NSCache<NSString, NSImage>()
         cache.countLimit = 256
@@ -50,7 +52,8 @@ enum GattoIconAssets {
         let source = sourceImage(named: name)
         let image = PixelAlignedImageRenderer.render(
             source,
-            pointSize: resolvedSize
+            pointSize: resolvedSize,
+            contentScale: opticalScale
         )
         image.isTemplate = true
         let pixels = Int(ceil(resolvedSize))
@@ -63,30 +66,36 @@ enum GattoIconAssets {
             return cached
         }
         let bundle = AppResourceBundle.current
-        let url = bundle.url(forResource: name, withExtension: "svg", subdirectory: "UIIcons")
-            ?? bundle.url(forResource: name, withExtension: "svg")
+        let url = bundle.url(forResource: name, withExtension: "png", subdirectory: "UIIcons")
+            ?? bundle.url(forResource: name, withExtension: "png")
         let image = url.flatMap(NSImage.init(contentsOf:)) ?? NSImage(size: NSSize(width: 18, height: 18))
         sourceCache.setObject(image, forKey: name as NSString, cost: 64 * 1_024)
         return image
     }
 
     static func assetName(for symbol: String) -> String {
-        if symbol == "github" {
-            return "GitHub-Mark"
-        }
         return "gatto-" + symbol.replacingOccurrences(of: ".", with: "-")
     }
 }
 
 enum PixelAlignedImageRenderer {
-    static func render(_ source: NSImage, pointSize: CGFloat) -> NSImage {
-        render(pointSize: pointSize, sourceForScale: { _ in source }) ?? NSImage(
+    static func render(
+        _ source: NSImage,
+        pointSize: CGFloat,
+        contentScale: CGFloat = 1
+    ) -> NSImage {
+        render(
+            pointSize: pointSize,
+            contentScale: contentScale,
+            sourceForScale: { _ in source }
+        ) ?? NSImage(
             size: NSSize(width: pointSize, height: pointSize)
         )
     }
 
     static func render(
         pointSize: CGFloat,
+        contentScale: CGFloat = 1,
         sourceForScale: (Int) -> NSImage?
     ) -> NSImage? {
         let logicalSize = NSSize(width: pointSize, height: pointSize)
@@ -113,7 +122,17 @@ enum PixelAlignedImageRenderer {
             context.shouldAntialias = true
 
             let base = NSRect(origin: .zero, size: logicalSize)
-            source.draw(in: base, from: .zero, operation: .sourceOver, fraction: 1)
+            let opticalSize = NSSize(
+                width: logicalSize.width * contentScale,
+                height: logicalSize.height * contentScale
+            )
+            let opticalRect = NSRect(
+                x: (base.width - opticalSize.width) / 2,
+                y: (base.height - opticalSize.height) / 2,
+                width: opticalSize.width,
+                height: opticalSize.height
+            )
+            source.draw(in: opticalRect, from: .zero, operation: .sourceOver, fraction: 1)
             context.flushGraphics()
             NSGraphicsContext.restoreGraphicsState()
             output.addRepresentation(representation)

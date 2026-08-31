@@ -5,8 +5,8 @@ import Testing
 
 @Suite("Brand assets")
 struct BrandAssetTests {
-    @Test("Loads the complete Zappicon UI icon set")
-    func zappiconUIIconsLoad() throws {
+    @Test("Loads the complete GitGatto UI icon set")
+    func gitGattoUIIconsLoad() throws {
         let resourceURL = try #require(AppResourceBundle.current.resourceURL)
         let enumerator = try #require(
             FileManager.default.enumerator(
@@ -15,22 +15,30 @@ struct BrandAssetTests {
             )
         )
         let iconURLs = enumerator.compactMap { $0 as? URL }.filter {
-            $0.pathExtension == "svg" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
+            $0.pathExtension == "png" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
         }
 
-        #expect(iconURLs.count == 126)
+        #expect(iconURLs.count == 129)
         #expect(GattoIconAssets.assetName(for: "arrow.clockwise") == "gatto-arrow-clockwise")
         #expect(GattoIconAssets.assetName(for: "sun.max") == "gatto-sun-max")
         #expect(GattoIconAssets.assetName(for: "moon") == "gatto-moon")
+        #expect(GattoIconAssets.assetName(for: "github") == "gatto-github")
+        for url in iconURLs {
+            let representation = try #require(NSBitmapImageRep(data: Data(contentsOf: url)))
+            #expect(representation.pixelsWide == 256)
+            #expect(representation.pixelsHigh == 256)
+            #expect(representation.hasAlpha)
+            #expect((representation.colorAt(x: 0, y: 0)?.alphaComponent ?? 1) <= 0.01)
+        }
         let source = try #require(
             AppResourceBundle.current.url(
                 forResource: "gatto-arrow-clockwise",
-                withExtension: "svg",
+                withExtension: "png",
                 subdirectory: "UIIcons"
-            ) ?? AppResourceBundle.current.url(forResource: "gatto-arrow-clockwise", withExtension: "svg")
+            ) ?? AppResourceBundle.current.url(forResource: "gatto-arrow-clockwise", withExtension: "png")
         )
         let sourceImage = try #require(NSImage(contentsOf: source))
-        #expect(sourceImage.representations.contains { String(describing: type(of: $0)).contains("SVG") })
+        #expect(!sourceImage.representations.isEmpty)
         let icon = GattoIconAssets.image(for: "arrow.clockwise")
         #expect(!icon.representations.isEmpty)
         #expect(icon.isTemplate)

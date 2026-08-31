@@ -440,7 +440,7 @@ struct GitHubMarketplaceView: View {
             Button {
                 inAppBrowserPage = InAppBrowserPage(url: application.repository.webURL, persistent: true)
             } label: {
-                Label(L10n.text("github.action.open_web"), systemImage: "arrow.up.right.square")
+                GattoLabel(L10n.text("github.action.open_web"), systemImage: "arrow.up.right.square")
             }
             .buttonStyle(SecondaryButtonStyle())
         }

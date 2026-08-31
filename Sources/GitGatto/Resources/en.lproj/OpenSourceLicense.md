@@ -12,4 +12,4 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 ## Third-party software
 
-GitGatto uses Sparkle 2, Devicon programming-language assets, Zappicon interface icons, and selected geometry and motion patterns from SwiftUI-Animations. See `THIRD_PARTY_NOTICES.md` in the repository for attribution and license terms.
+GitGatto uses Sparkle 2, Devicon programming-language assets, and selected geometry and motion patterns from SwiftUI-Animations. See `THIRD_PARTY_NOTICES.md` in the repository for attribution and license terms.

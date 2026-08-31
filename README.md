@@ -123,7 +123,6 @@ GitGatto 将本地仓库、GitHub 与本机 Agent 放在同一个原生工作区
 - [Sparkle](https://github.com/sparkle-project/Sparkle) — 应用内更新
 - [Alamofire](https://github.com/Alamofire/Alamofire) — 下载与网络传输
 - [GitHub CLI](https://github.com/cli/cli) — GitHub 登录与 API 访问
-- [Zappicon](https://zappicon.com/) — 界面图标资源
 - [Simple Icons](https://github.com/simple-icons/simple-icons)、[VSCode Icons](https://github.com/vscode-icons/vscode-icons)、[Devicon](https://github.com/devicons/devicon) 与 [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) — 语言图标来源
 
 其他归属与许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
