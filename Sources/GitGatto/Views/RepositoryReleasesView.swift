@@ -164,6 +164,7 @@ struct ReleaseAssetRow: View {
     let asset: GitHubReleaseAsset
     let repositoryName: String
     @ObservedObject var downloads: AppDownloadManager
+    var quickInstall: (() -> Void)? = nil
     @Environment(\.colorScheme) private var colorScheme
 
     private var record: AppDownloadRecord? {
@@ -194,26 +195,43 @@ struct ReleaseAssetRow: View {
             }
             Spacer(minLength: 8)
             if let record {
-                Button {
-                    downloads.isPresented = true
-                } label: {
-                    HStack(spacing: 7) {
-                        CircularDownloadIndicator(
-                            state: record.state,
-                            progress: record.progress,
-                            size: 28
-                        )
-                        Text(downloadStatus(record))
-                            .font(.system(size: 10.5, weight: .semibold))
-                            .monospacedDigit()
+                HStack(spacing: 7) {
+                    Button {
+                        downloads.isPresented = true
+                    } label: {
+                        HStack(spacing: 7) {
+                            CircularDownloadIndicator(
+                                state: record.state,
+                                progress: record.progress,
+                                size: 28
+                            )
+                            Text(downloadStatus(record))
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .monospacedDigit()
+                        }
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    if record.state == .completed, let quickInstall {
+                        Button(L10n.text("marketplace.quick_install.action"), action: quickInstall)
+                            .buttonStyle(PrimaryButtonStyle())
                     }
                 }
-                .buttonStyle(SecondaryButtonStyle())
             } else {
-                Button(L10n.text("github.releases.download")) {
-                    downloads.start(asset: asset, repositoryName: repositoryName)
+                if let quickInstall {
+                    HStack(spacing: 7) {
+                        Button(L10n.text("github.releases.download")) {
+                            downloads.start(asset: asset, repositoryName: repositoryName)
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                        Button(L10n.text("marketplace.quick_install.action"), action: quickInstall)
+                            .buttonStyle(PrimaryButtonStyle())
+                    }
+                } else {
+                    Button(L10n.text("github.releases.download")) {
+                        downloads.start(asset: asset, repositoryName: repositoryName)
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle())
             }
         }
         .padding(11)

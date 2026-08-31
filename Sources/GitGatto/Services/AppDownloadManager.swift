@@ -10,8 +10,10 @@ final class AppDownloadManager: ObservableObject {
 
     private let fileManager: FileManager
     private let installer: MacApplicationInstaller
+    private let agentInstaller: any CodexServing
     private let session: Session
     private var requests: [UUID: DownloadRequest] = [:]
+    private var installationTasks: [UUID: Task<Void, Never>] = [:]
     private var resumeData: [UUID: Data] = [:]
     private let storeURL: URL
     private let resumeDirectory: URL
@@ -20,12 +22,14 @@ final class AppDownloadManager: ObservableObject {
     init(
         fileManager: FileManager = .default,
         installer: MacApplicationInstaller = MacApplicationInstaller(),
+        agentInstaller: any CodexServing = CodexService(lane: .installer),
         sessionConfiguration: URLSessionConfiguration = .default,
         appSupportDirectory: URL? = nil,
         downloadDirectory: URL? = nil
     ) {
         self.fileManager = fileManager
         self.installer = installer
+        self.agentInstaller = agentInstaller
         self.session = Session(configuration: sessionConfiguration)
         let appSupport = appSupportDirectory
             ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -92,19 +96,39 @@ final class AppDownloadManager: ObservableObject {
         )
     }
 
+    func quickInstall(asset: GitHubReleaseAsset, repositoryName: String) {
+        start(
+            url: asset.downloadURL,
+            fileName: asset.name,
+            expectedBytes: asset.size,
+            repositoryName: repositoryName,
+            assetID: asset.id,
+            installAfterDownload: true
+        )
+    }
+
     func start(
         url: URL,
         fileName: String,
         expectedBytes: Int64,
         repositoryName: String,
-        assetID: Int64 = 0
+        assetID: Int64 = 0,
+        installAfterDownload: Bool = false
     ) {
         guard url.scheme?.lowercased() == "https" else { return }
         if let existing = records.first(where: {
             $0.assetID == assetID && $0.sourceURL == url && $0.state != .cancelled
         }) {
+            if installAfterDownload {
+                update(existing.id) {
+                    $0.installAfterDownload = true
+                    $0.errorMessage = nil
+                }
+            }
             if existing.state == .failed || existing.state == .paused {
                 resume(existing.id)
+            } else if installAfterDownload, existing.state == .completed {
+                install(existing.id, replacingExisting: true)
             }
             isPresented = true
             return
@@ -124,6 +148,7 @@ final class AppDownloadManager: ObservableObject {
             progress: 0,
             receivedBytes: 0,
             errorMessage: nil,
+            installAfterDownload: installAfterDownload,
             createdAt: now,
             updatedAt: now
         )
@@ -159,6 +184,10 @@ final class AppDownloadManager: ObservableObject {
     }
 
     func cancel(_ id: UUID) {
+        if record(id)?.state == .installing {
+            cancelInstallation(id)
+            return
+        }
         requests[id]?.cancel()
         requests[id] = nil
         resumeData[id] = nil
@@ -171,7 +200,7 @@ final class AppDownloadManager: ObservableObject {
     }
 
     func remove(_ id: UUID) {
-        guard record(id)?.state != .downloading else { return }
+        guard let state = record(id)?.state, state != .downloading, state != .installing else { return }
         requests[id]?.cancel()
         requests[id] = nil
         resumeData[id] = nil
@@ -186,26 +215,78 @@ final class AppDownloadManager: ObservableObject {
     }
 
     func install(_ id: UUID, replacingExisting: Bool = false) {
-        guard let record = record(id), let url = record.destinationURL, record.canInstallOnMac else { return }
+        guard let record = record(id), let url = record.destinationURL, record.state == .completed else { return }
+        if record.canInstallOnMac {
+            installNatively(id, url: url, replacingExisting: replacingExisting)
+        } else {
+            installWithAgent(id)
+        }
+    }
+
+    func installWithAgent(_ id: UUID) {
+        guard let record = record(id), let url = record.destinationURL, record.state == .completed else { return }
+        installationTasks[id]?.cancel()
         update(id) {
             $0.state = .installing
+            $0.installationMethod = .agent
+            $0.installationPhase = .preparing
+            $0.installationMessage = L10n.text("installer.phase.preparing")
+            $0.agentResult = nil
             $0.errorMessage = nil
             $0.updatedAt = Date()
         }
-        Task {
+        let agentInstaller = self.agentInstaller
+        installationTasks[id] = Task {
             do {
-                _ = try await installer.install(url, replacingExisting: replacingExisting)
+                let result = try await agentInstaller.installDownloadedArtifact(
+                    at: url,
+                    displayName: record.repositoryName
+                ) { [weak self] progress in
+                    await MainActor.run {
+                        self?.apply(progress, to: id)
+                    }
+                }
+                guard !Task.isCancelled else { return }
                 update(id) {
                     $0.state = .installed
+                    $0.installationPhase = nil
+                    $0.installationMessage = nil
+                    $0.agentResult = result.response
+                    $0.updatedAt = Date()
+                }
+            } catch is CancellationError {
+                update(id) {
+                    $0.state = .completed
+                    $0.installationPhase = nil
+                    $0.installationMessage = nil
+                    $0.errorMessage = L10n.text("installer.error.cancelled")
                     $0.updatedAt = Date()
                 }
             } catch {
                 update(id) {
                     $0.state = .completed
+                    $0.installationPhase = nil
+                    $0.installationMessage = nil
                     $0.errorMessage = error.localizedDescription
                     $0.updatedAt = Date()
                 }
             }
+            installationTasks[id] = nil
+        }
+    }
+
+    func cancelInstallation(_ id: UUID) {
+        guard record(id)?.state == .installing else { return }
+        installationTasks[id]?.cancel()
+        installationTasks[id] = nil
+        let agentInstaller = self.agentInstaller
+        Task { await agentInstaller.cancel() }
+        update(id) {
+            $0.state = .completed
+            $0.installationPhase = nil
+            $0.installationMessage = nil
+            $0.errorMessage = L10n.text("installer.error.cancelled")
+            $0.updatedAt = Date()
         }
     }
 
@@ -258,6 +339,9 @@ final class AppDownloadManager: ObservableObject {
                             $0.errorMessage = nil
                             $0.updatedAt = Date()
                         }
+                        if self.record(id)?.shouldInstallAutomatically == true {
+                            self.install(id, replacingExisting: true)
+                        }
                     } else if self.record(id)?.state != .paused && self.record(id)?.state != .cancelled {
                         if let data = response.resumeData {
                             self.resumeData[id] = data
@@ -283,10 +367,88 @@ final class AppDownloadManager: ObservableObject {
         guard let data = try? Data(contentsOf: storeURL),
               var saved = try? JSONDecoder().decode([AppDownloadRecord].self, from: data) else { return }
         for index in saved.indices where [.queued, .downloading, .installing].contains(saved[index].state) {
-            saved[index].state = fileManager.fileExists(atPath: resumeURL(for: saved[index].id).path) ? .paused : .failed
-            saved[index].errorMessage = saved[index].state == .failed ? L10n.text("downloads.error.interrupted") : nil
+            if saved[index].state == .installing, saved[index].destinationURL != nil {
+                saved[index].state = .completed
+                saved[index].errorMessage = L10n.text("installer.error.interrupted")
+                saved[index].installationPhase = nil
+                saved[index].installationMessage = nil
+            } else {
+                saved[index].state = fileManager.fileExists(atPath: resumeURL(for: saved[index].id).path) ? .paused : .failed
+                saved[index].errorMessage = saved[index].state == .failed ? L10n.text("downloads.error.interrupted") : nil
+            }
         }
         records = saved
+    }
+
+    private func installNatively(_ id: UUID, url: URL, replacingExisting: Bool) {
+        installationTasks[id]?.cancel()
+        update(id) {
+            $0.state = .installing
+            $0.installationMethod = .native
+            $0.installationPhase = .preparing
+            $0.installationMessage = L10n.text("installer.phase.preparing")
+            $0.agentResult = nil
+            $0.errorMessage = nil
+            $0.updatedAt = Date()
+        }
+        installationTasks[id] = Task {
+            do {
+                update(id) {
+                    $0.installationPhase = .installing
+                    $0.installationMessage = L10n.text("installer.phase.installing")
+                }
+                _ = try await installer.install(url, replacingExisting: replacingExisting)
+                guard !Task.isCancelled else { return }
+                update(id) {
+                    $0.state = .installed
+                    $0.installationPhase = nil
+                    $0.installationMessage = nil
+                    $0.updatedAt = Date()
+                }
+            } catch is CancellationError {
+                update(id) {
+                    $0.state = .completed
+                    $0.installationPhase = nil
+                    $0.installationMessage = nil
+                    $0.errorMessage = L10n.text("installer.error.cancelled")
+                }
+            } catch {
+                if record(id)?.shouldInstallAutomatically == true {
+                    update(id) {
+                        $0.state = .completed
+                        $0.installationPhase = nil
+                        $0.installationMessage = nil
+                    }
+                    installationTasks[id] = nil
+                    Task { @MainActor [weak self] in
+                        self?.installWithAgent(id)
+                    }
+                    return
+                }
+                update(id) {
+                    $0.state = .completed
+                    $0.installationPhase = nil
+                    $0.installationMessage = nil
+                    $0.errorMessage = error.localizedDescription
+                    $0.updatedAt = Date()
+                }
+            }
+            installationTasks[id] = nil
+        }
+    }
+
+    private func apply(_ progress: AgentInstallProgress, to id: UUID) {
+        update(id) {
+            $0.installationPhase = switch progress.phase {
+            case .preparing: .preparing
+            case .inspecting: .inspecting
+            case .installing: .installing
+            case .verifying: .verifying
+            }
+            $0.installationMessage = progress.detail
+                ?? L10n.text("installer.phase.\(progress.phase.rawValue)")
+            $0.updatedAt = Date()
+        }
     }
 
     private func persist() {

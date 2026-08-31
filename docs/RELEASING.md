@@ -1,6 +1,6 @@
 # 发布与应用内更新
 
-GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.4 完成下载、安装和重新启动。更新中心通过 GitHub Releases API 展示版本历史与 Markdown 更新日志。
+GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.6 完成下载、安装和重新启动。更新中心通过 GitHub Releases API 展示版本历史与 Markdown 更新日志。
 
 ## GitHub Actions 凭据
 

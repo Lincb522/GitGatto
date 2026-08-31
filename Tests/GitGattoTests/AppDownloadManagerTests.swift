@@ -35,6 +35,83 @@ struct AppDownloadManagerTests {
         #expect(try Data(contentsOf: destination) == ReleaseAssetURLProtocol.payload)
     }
 
+    @Test("Restores download records written before installation metadata existed")
+    func decodesLegacyDownloadRecord() throws {
+        let record = AppDownloadRecord(
+            id: UUID(),
+            repositoryName: "example/tool",
+            assetID: 9,
+            fileName: "tool.zip",
+            sourceURL: try #require(URL(string: "https://downloads.example/tool.zip")),
+            expectedBytes: 120,
+            destinationURL: nil,
+            state: .completed,
+            progress: 1,
+            receivedBytes: 120,
+            errorMessage: nil,
+            createdAt: Date(timeIntervalSinceReferenceDate: 10),
+            updatedAt: Date(timeIntervalSinceReferenceDate: 20)
+        )
+        let encoded = try JSONEncoder().encode(record)
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        for key in [
+            "installAfterDownload",
+            "installationMethod",
+            "installationPhase",
+            "installationMessage",
+            "agentResult"
+        ] {
+            object.removeValue(forKey: key)
+        }
+
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppDownloadRecord.self, from: legacyData)
+
+        #expect(decoded.id == record.id)
+        #expect(decoded.installAfterDownload == nil)
+        #expect(decoded.installationMethod == nil)
+        #expect(decoded.agentResult == nil)
+    }
+
+    @Test("Quick install hands command-line packages to Agent after download")
+    @MainActor
+    func quickInstallsCommandLinePackageWithAgent() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGatto-Quick-Install-Test-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [ReleaseAssetURLProtocol.self]
+        let agent = DownloadAgentFixture()
+        let manager = AppDownloadManager(
+            agentInstaller: agent,
+            sessionConfiguration: configuration,
+            appSupportDirectory: root.appendingPathComponent("State", isDirectory: true),
+            downloadDirectory: root.appendingPathComponent("Downloads", isDirectory: true)
+        )
+        let source = try #require(URL(string: "https://downloads.example/tool.pkg"))
+        let asset = GitHubReleaseAsset(
+            id: 42,
+            name: "tool.pkg",
+            size: Int64(ReleaseAssetURLProtocol.payload.count),
+            downloadCount: 0,
+            contentType: "application/octet-stream",
+            downloadURL: source,
+            createdAt: Date()
+        )
+
+        manager.quickInstall(asset: asset, repositoryName: "example/tool")
+
+        for _ in 0..<200 where manager.records.first?.state != .installed {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        let record = try #require(manager.records.first)
+        #expect(record.state == .installed)
+        #expect(record.installationMethod == .agent)
+        #expect(record.agentResult == "Installed and verified")
+        #expect(await agent.installedDisplayNames == ["example/tool"])
+    }
+
     @Test("Installs a zipped macOS application into the selected Applications directory")
     func installsZippedApplication() async throws {
         let fileManager = FileManager.default
@@ -67,6 +144,51 @@ struct AppDownloadManagerTests {
         process.waitUntilExit()
         #expect(process.terminationStatus == 0)
     }
+}
+
+private actor DownloadAgentFixture: CodexServing {
+    private(set) var installedDisplayNames: [String] = []
+
+    func probe() async -> CodexAvailability { .unavailable }
+
+    func run(
+        prompt: String,
+        context: [CodexMessage],
+        in repositoryURL: URL,
+        mode: CodexRunMode
+    ) async throws -> CodexRunResult {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func runWithProvidedContext(
+        prompt: String,
+        context: [CodexMessage]
+    ) async throws -> CodexRunResult {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func draftPullRequestReply(context: GitHubPullRequestContext) async throws -> String {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func translate(_ text: String, target: CodexTranslationTarget) async throws -> String {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func translateHTML(
+        _ html: String,
+        target: CodexTranslationTarget,
+        progress: @escaping @Sendable (Int, Int) async -> Void
+    ) async throws -> String {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func installDownloadedArtifact(at url: URL, displayName: String) async throws -> CodexRunResult {
+        installedDisplayNames.append(displayName)
+        return CodexRunResult(response: "Installed and verified", commandCount: 1, fileChangeCount: 0)
+    }
+
+    func cancel() async {}
 }
 
 private final class ReleaseAssetURLProtocol: URLProtocol, @unchecked Sendable {

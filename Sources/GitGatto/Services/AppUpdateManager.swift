@@ -27,7 +27,6 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     private var didStart = false
     private var didLoadGitHubReleaseNotes = false
-    private var progressLaunchRecoveryTask: Task<Void, Never>?
     private let releaseService = GitHubReleaseService()
     private lazy var updaterController = SPUStandardUpdaterController(
         startingUpdater: false,
@@ -37,8 +36,8 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     override init() {
         let info = Bundle.main.infoDictionary ?? [:]
-        currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.18.9"
-        currentBuild = info["CFBundleVersion"] as? String ?? "18009"
+        currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.18.10"
+        currentBuild = info["CFBundleVersion"] as? String ?? "18010"
         releaseNotes = Self.bundledReleaseNotes(version: currentVersion)
         state = Self.hasUpdateConfiguration(info) ? .ready : .configurationRequired
         super.init()
@@ -118,23 +117,11 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         )
     }
 
-    func updater(_: SPUUpdater, willExtractUpdate _: SUAppcastItem) {
-        progressLaunchRecoveryTask?.cancel()
-        let recovery = SparkleProgressLaunchRecovery(
-            bundleIdentifier: Bundle.main.bundleIdentifier ?? "dev.gitgatto.client"
-        )
-        progressLaunchRecoveryTask = Task {
-            await recovery.run()
-        }
-    }
-
     func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: any Error) {
         state = .current
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
-        progressLaunchRecoveryTask?.cancel()
-        progressLaunchRecoveryTask = nil
         state = Self.stateAfterAborting(with: error)
     }
 
@@ -144,7 +131,25 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
            nsError.code == Int(SUError.noUpdateError.rawValue) {
             return .current
         }
-        return .failed(message: error.localizedDescription)
+        return .failed(message: failureMessage(for: nsError))
+    }
+
+    static func failureMessage(for error: NSError) -> String {
+        var details = [error.localizedDescription]
+        if let reason = error.localizedFailureReason, !details.contains(reason) {
+            details.append(reason)
+        }
+        if let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError {
+            let description = underlying.localizedDescription
+            if !details.contains(description) {
+                details.append(description)
+            }
+            if let reason = underlying.localizedFailureReason, !details.contains(reason) {
+                details.append(reason)
+            }
+        }
+        details.append("\(error.domain) · \(error.code)")
+        return details.joined(separator: "\n")
     }
 
     static func hasUpdateConfiguration(_ info: [String: Any]) -> Bool {

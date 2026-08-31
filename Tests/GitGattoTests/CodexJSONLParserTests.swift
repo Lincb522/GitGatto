@@ -166,4 +166,43 @@ struct IndependentAILaneTests {
         #expect(project.response == "project-complete")
         #expect(FileManager.default.fileExists(atPath: completed.path))
     }
+
+    @Test("Renews the timeout for each document translation batch")
+    func renewsTranslationTimeoutPerBatch() async throws {
+        let previousTranslation = AIProviderSettings.load(.translation)
+        defer { AIProviderSettings.save(previousTranslation, lane: .translation) }
+
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGatto-translation-timeout-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let executable = directory.appendingPathComponent("translation-cli")
+        let script = #"""
+        #!/bin/sh
+        cat >/dev/null
+        sleep 3
+        if [ -f "$0.state" ]; then
+            printf '{"translations":["translated"]}\n'
+        else
+            : > "$0.state"
+            printf '{"translations":["translated","translated","translated","translated","translated"]}\n'
+        fi
+        """#
+        try script.write(to: executable, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+
+        var configuration = AIProviderConfiguration.preset(.custom)
+        configuration.executable = executable.path
+        configuration.versionArguments = ""
+        configuration.translationArguments = ""
+        AIProviderSettings.save(configuration, lane: .translation)
+
+        let service = CodexService(lane: .translation, translationRunTimeout: .seconds(5))
+        let source = "<article><p>\(String(repeating: "a", count: 36_000))</p></article>"
+        let translated = try await service.translateHTML(source, target: .simplifiedChinese)
+
+        #expect(translated.contains("translated"))
+        #expect(!translated.contains("aaaa"))
+    }
 }

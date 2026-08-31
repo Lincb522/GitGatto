@@ -28,7 +28,7 @@ Alamofire is distributed under the MIT License:
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 > THE SOFTWARE.
 
-## Sparkle 2.9.4
+## Sparkle 2.9.6
 
 Project: https://github.com/sparkle-project/Sparkle
 

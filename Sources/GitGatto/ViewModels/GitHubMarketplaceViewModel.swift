@@ -25,20 +25,16 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published private(set) var translations: [CodexTranslationTarget: MarketplaceTranslationDocument] = [:]
     @Published private(set) var translationError: String?
     @Published private(set) var error: String?
-    @Published private(set) var agentInstallResult: String?
-    @Published private(set) var isAgentInstalling = false
     @Published private(set) var hasCompletedInitialLoad = false
 
     private let github: any MarketplaceGitHubServing
     private let searchAI: any CodexServing
-    private let installerAI: any CodexServing
     private let translationAI: any CodexServing
     private let translationStore: any MarketplaceTranslationStoring
     private var searchTask: Task<Void, Never>?
     private var loadMoreTask: Task<Void, Never>?
     private var detailTask: Task<Void, Never>?
     private var detailsTask: Task<Void, Never>?
-    private var installTask: Task<Void, Never>?
     private var translationTask: Task<Void, Never>?
     private var translationCacheTask: Task<Void, Never>?
     private var activeSearchID: UUID?
@@ -50,13 +46,11 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     init(
         github: any MarketplaceGitHubServing = GitHubService(),
         searchAI: any CodexServing = CodexService(lane: .search),
-        installerAI: any CodexServing = CodexService(lane: .installer),
         translationAI: any CodexServing = CodexService(lane: .translation),
         translationStore: any MarketplaceTranslationStoring = MarketplaceTranslationStore()
     ) {
         self.github = github
         self.searchAI = searchAI
-        self.installerAI = installerAI
         self.translationAI = translationAI
         self.translationStore = translationStore
     }
@@ -96,7 +90,6 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         translationError = nil
         translations = [:]
         activeTranslationTarget = nil
-        agentInstallResult = nil
         applications = []
         selectedApplication = nil
         releases = []
@@ -450,29 +443,6 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         guard platform != newValue else { return }
         platform = newValue
         search(defaultQuery: query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-    }
-
-    func installWithAgent(_ record: AppDownloadRecord) {
-        guard let url = record.destinationURL, !isAgentInstalling else { return }
-        installTask?.cancel()
-        isAgentInstalling = true
-        agentInstallResult = nil
-        error = nil
-        installTask = Task {
-            defer { isAgentInstalling = false }
-            do {
-                let result = try await installerAI.installDownloadedArtifact(
-                    at: url,
-                    displayName: record.repositoryName
-                )
-                guard !Task.isCancelled else { return }
-                agentInstallResult = result.response
-            } catch is CancellationError {
-                return
-            } catch {
-                self.error = L10n.format("marketplace.error.agent_install", error.localizedDescription)
-            }
-        }
     }
 
     private func restoreTranslations(

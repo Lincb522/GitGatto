@@ -5,6 +5,7 @@ struct WorkspaceView: View {
     let onInitialContentReady: () -> Void
     let canCaptureSnapshot: Bool
     @StateObject private var marketplaceModel = GitHubMarketplaceViewModel()
+    @StateObject private var developerToolsModel = DeveloperToolsViewModel()
     @StateObject private var downloads = AppDownloadManager()
     @State private var didReportInitialContentReady = false
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
@@ -256,10 +257,7 @@ struct WorkspaceView: View {
             )
         }
         .sheet(isPresented: $downloads.isPresented) {
-            DownloadCenterView(
-                manager: downloads,
-                installWithAgent: marketplaceModel.installWithAgent
-            )
+            DownloadCenterView(manager: downloads)
             .frame(minWidth: 620, minHeight: 520)
         }
 #if DEBUG
@@ -285,7 +283,11 @@ struct WorkspaceView: View {
         if model.selectedSection == .github {
             GitHubWorkspaceView(model: model, downloads: downloads)
         } else if model.selectedSection == .marketplace {
-            GitHubMarketplaceView(model: marketplaceModel, downloads: downloads)
+            GitHubMarketplaceView(
+                model: marketplaceModel,
+                developerTools: developerToolsModel,
+                downloads: downloads
+            )
         } else if model.snapshot == nil, model.isRefreshing {
             GattoLoadingState(text: L10n.text("loading.generic"))
         } else if model.snapshot == nil {
@@ -309,7 +311,11 @@ struct WorkspaceView: View {
             case .github:
                 GitHubWorkspaceView(model: model, downloads: downloads)
             case .marketplace:
-                GitHubMarketplaceView(model: marketplaceModel, downloads: downloads)
+                GitHubMarketplaceView(
+                    model: marketplaceModel,
+                    developerTools: developerToolsModel,
+                    downloads: downloads
+                )
             case .codex:
                 CodexWorkspaceView(model: model)
             }

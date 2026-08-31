@@ -2,7 +2,6 @@ import SwiftUI
 
 struct DownloadCenterView: View {
     @ObservedObject var manager: AppDownloadManager
-    let installWithAgent: (AppDownloadRecord) -> Void
     @Environment(\.colorScheme) private var colorScheme
     @State private var pendingInstallID: UUID?
 
@@ -10,7 +9,7 @@ struct DownloadCenterView: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack {
-                Text(L10n.text("downloads.title"))
+                Text(L10n.text("install_center.title"))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(palette.ink)
                 if !manager.records.isEmpty {
@@ -56,7 +55,7 @@ struct DownloadCenterView: View {
         }
         .background(palette.background)
         .confirmationDialog(
-            L10n.text("installer.confirm.title"),
+            L10n.text("installer.confirm.start.title"),
             isPresented: Binding(
                 get: { pendingInstallID != nil },
                 set: { if !$0 { pendingInstallID = nil } }
@@ -68,8 +67,16 @@ struct DownloadCenterView: View {
             }
             Button(L10n.text("action.cancel"), role: .cancel) { pendingInstallID = nil }
         } message: {
-            Text(L10n.text("installer.confirm.body"))
+            Text(L10n.text(pendingUsesAgent
+                ? "installer.confirm.agent.body"
+                : "installer.confirm.body"))
         }
+    }
+
+    private var pendingUsesAgent: Bool {
+        guard let pendingInstallID,
+              let record = manager.record(pendingInstallID) else { return false }
+        return !record.canInstallOnMac
     }
 
     private func downloadCard(_ record: AppDownloadRecord, palette: AppPalette) -> some View {
@@ -113,6 +120,32 @@ struct DownloadCenterView: View {
                     .foregroundStyle(palette.danger)
                     .textSelection(.enabled)
             }
+
+            if record.state == .downloading {
+                ProgressView(value: min(1, max(0, record.progress)))
+                    .progressViewStyle(.linear)
+                    .tint(palette.primary)
+            } else if record.state == .installing {
+                HStack(spacing: 9) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(record.installationMessage ?? L10n.text("installer.phase.installing"))
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(palette.mutedInk)
+                    Spacer()
+                }
+            }
+
+            if let result = record.agentResult, !result.isEmpty {
+                Text(result)
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(palette.mutedInk)
+                    .textSelection(.enabled)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(palette.raisedSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
         }
         .padding(13)
         .background(palette.surface)
@@ -138,14 +171,16 @@ struct DownloadCenterView: View {
                 if record.canInstallOnMac {
                     miniButton("installer.action.install", icon: "arrow.down.app") { pendingInstallID = record.id }
                 } else {
-                    miniButton("installer.action.agent", icon: "sparkles") { installWithAgent(record) }
+                    miniButton("installer.action.agent", icon: "sparkles") { pendingInstallID = record.id }
                 }
             case .installed:
                 miniButton("downloads.action.reveal", icon: "folder") { manager.reveal(record.id) }
             case .cancelled:
                 miniButton("downloads.action.remove", icon: "trash") { manager.remove(record.id) }
             case .installing:
-                EmptyView()
+                miniButton("downloads.action.cancel", icon: "xmark") {
+                    manager.cancelInstallation(record.id)
+                }
             }
         }
     }
