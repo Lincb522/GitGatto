@@ -1106,6 +1106,7 @@
 "installer.phase.preparing" = "准备安装…";
 "installer.phase.inspecting" = "检查安装方式…";
 "installer.phase.installing" = "正在安装…";
+"installer.phase.configuring" = "正在完成环境配置…";
 "installer.phase.verifying" = "验证安装结果…";
 "installer.error.cancelled" = "安装已取消。";
 "installer.error.interrupted" = "上次安装被应用退出中断，请重试。";
@@ -1170,12 +1171,16 @@
 "developer_tools.action.pinned" = "已固定版本";
 "developer_tools.updates.count" = "%d 个可升级";
 "developer_tools.install.confirm.title" = "安装此开发工具？";
-"developer_tools.install.confirm.body" = "Agent 将使用官方来源或已配置的软件包管理器安装，并验证可执行文件。";
+"developer_tools.install.confirm.body" = "Agent 将安装工具、完成当前用户配置，并验证可执行文件与版本。";
 "developer_tools.install.verified" = "已检测到可执行文件。";
-"developer_tools.install.action_required" = "Agent 已完成，但尚未检测到可执行文件。请查看结果并完成系统提示或 PATH 配置。";
+"developer_tools.install.configured" = "已安装并完成环境配置。";
+"developer_tools.install.configuration_failed" = "工具已安装，但环境配置失败：%@";
+"developer_tools.install.action_required" = "Agent 已完成，但尚未检测到可执行文件。请查看完整结果和系统提示后重试。";
 "developer_tools.upgrade.confirm.title" = "升级此开发工具？";
 "developer_tools.upgrade.confirm.body" = "Agent 将只升级所选软件包，并在完成后重新检测版本。";
 "developer_tools.upgrade.verified" = "升级完成，已检测到新版本。";
+"developer_tools.upgrade.configured" = "升级完成并已更新环境配置。";
+"developer_tools.upgrade.configuration_failed" = "工具已升级，但环境配置失败：%@";
 "developer_tools.upgrade.action_required" = "Agent 已完成，但仍检测到可升级版本。请查看结果后重试。";
 "developer_tools.detail.installation" = "安装方式";
 "developer_tools.detail.agent" = "Agent";
@@ -1207,6 +1212,7 @@
 "developer_tools.upgrade.phase.preparing" = "准备升级";
 "developer_tools.upgrade.phase.inspecting" = "检查当前版本与软件包状态";
 "developer_tools.upgrade.phase.installing" = "正在升级所选软件包";
+"developer_tools.upgrade.phase.configuring" = "正在完成环境配置";
 "developer_tools.upgrade.phase.verifying" = "正在验证升级结果";
 "developer_tools.tool.xcode-command-line-tools.summary" = "Clang、macOS SDK 与常用命令行构建工具。";
 "developer_tools.tool.homebrew.summary" = "macOS 软件包管理器。";

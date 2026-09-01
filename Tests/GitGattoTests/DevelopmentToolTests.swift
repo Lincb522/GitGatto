@@ -39,6 +39,9 @@ struct DevelopmentToolTests {
         #expect(installPrompt.contains(tool.name))
         #expect(installPrompt.contains(tool.packageHint))
         #expect(installPrompt.contains("git-lfs"))
+        #expect(installPrompt.contains("Complete every documented non-secret current-user setup step"))
+        #expect(installPrompt.contains("persists the verified executable directory"))
+        #expect(!installPrompt.contains("report a required PATH line"))
 
         let upgradePrompt = CodexService.developmentToolUpgradePrompt(
             tool,
@@ -52,6 +55,55 @@ struct DevelopmentToolTests {
         #expect(upgradePrompt.contains("upgrade only that formula"))
     }
 
+    @Test("Post-install setup persists a user-local executable directory once")
+    func persistsUserLocalPath() async throws {
+        let home = FileManager.default.temporaryDirectory
+            .appendingPathComponent("gitgatto-environment-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let profile = home.appendingPathComponent(".zprofile")
+        try Data("export EXISTING_VALUE=1\n".utf8).write(to: profile)
+        let executable = home.appendingPathComponent(".local/bin/example-tool")
+        let configurator = DevelopmentToolEnvironmentConfigurator(
+            homeDirectory: home,
+            shellPath: "/bin/zsh",
+            environmentPath: "/usr/bin:/bin",
+            updatesProcessEnvironment: false
+        )
+
+        let first = try await configurator.configure(executableURL: executable)
+        let second = try await configurator.configure(executableURL: executable)
+        let content = try String(contentsOf: profile, encoding: .utf8)
+
+        #expect(first == .updated(profileURL: profile))
+        #expect(second == .unchanged)
+        #expect(content.hasPrefix("export EXISTING_VALUE=1\n"))
+        #expect(content.contains("export PATH=\"$HOME/.local/bin:$PATH\""))
+        #expect(content.components(separatedBy: "# GitGatto PATH: $HOME/.local/bin").count == 2)
+    }
+
+    @Test("Post-install setup leaves an effective PATH unchanged")
+    func keepsEffectivePathUnchanged() async throws {
+        let home = FileManager.default.temporaryDirectory
+            .appendingPathComponent("gitgatto-environment-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let directory = home.appendingPathComponent(".local/bin", isDirectory: true)
+        let configurator = DevelopmentToolEnvironmentConfigurator(
+            homeDirectory: home,
+            shellPath: "/bin/zsh",
+            environmentPath: "\(directory.path):/usr/bin:/bin",
+            updatesProcessEnvironment: false
+        )
+
+        let result = try await configurator.configure(
+            executableURL: directory.appendingPathComponent("example-tool")
+        )
+
+        #expect(result == .unchanged)
+        #expect(!FileManager.default.fileExists(atPath: home.appendingPathComponent(".zprofile").path))
+    }
+
     @Test("Agent install progress ends in a verified installed state")
     @MainActor
     func installsAndVerifiesTool() async throws {
@@ -59,7 +111,8 @@ struct DevelopmentToolTests {
         let model = DeveloperToolsViewModel(
             installer: fixture,
             probe: fixture,
-            updateChecker: fixture
+            updateChecker: fixture,
+            environmentConfigurator: fixture
         )
         let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
 
@@ -73,6 +126,7 @@ struct DevelopmentToolTests {
         #expect(status.updateAvailability == .available)
         #expect(status.result == "Installed and verified")
         #expect(await fixture.installedToolIDs == ["git-lfs"])
+        #expect(await fixture.configuredExecutableNames == ["git-lfs"])
     }
 
     @Test("Installed and updates filters use scanned local state and Agent verifies an upgrade")
@@ -84,7 +138,8 @@ struct DevelopmentToolTests {
         let model = DeveloperToolsViewModel(
             installer: fixture,
             probe: fixture,
-            updateChecker: fixture
+            updateChecker: fixture,
+            environmentConfigurator: fixture
         )
 
         model.refresh()
@@ -158,7 +213,8 @@ struct DevelopmentToolTests {
         let developerTools = DeveloperToolsViewModel(
             installer: fixture,
             probe: fixture,
-            updateChecker: fixture
+            updateChecker: fixture,
+            environmentConfigurator: fixture
         )
         developerTools.refresh()
         try await waitUntil {
@@ -211,10 +267,12 @@ struct DevelopmentToolTests {
 private actor DevelopmentToolInstallFixture:
     CodexServing,
     DevelopmentToolProbing,
-    DevelopmentToolUpdateChecking
+    DevelopmentToolUpdateChecking,
+    DevelopmentToolEnvironmentConfiguring
 {
     private(set) var installedToolIDs: [String] = []
     private(set) var upgradedToolIDs: [String] = []
+    private(set) var configuredExecutableNames: [String] = []
 
     func seedInstalled(_ toolID: String) {
         installedToolIDs = [toolID]
@@ -227,8 +285,16 @@ private actor DevelopmentToolInstallFixture:
         let upgraded = upgradedToolIDs.contains(tool.id)
         return DevelopmentToolProbeResult(
             isInstalled: installed,
-            version: installed ? (upgraded ? "3.8.0" : "git-lfs/3.7.1") : nil
+            version: installed ? (upgraded ? "3.8.0" : "git-lfs/3.7.1") : nil,
+            executableURL: installed
+                ? URL(fileURLWithPath: "/Users/fixture/.local/bin/git-lfs")
+                : nil
         )
+    }
+
+    func configure(executableURL: URL) async throws -> DevelopmentToolEnvironmentConfiguration {
+        configuredExecutableNames.append(executableURL.lastPathComponent)
+        return .updated(profileURL: URL(fileURLWithPath: "/Users/fixture/.zprofile"))
     }
 
     func checkUpdates(for tools: [DevelopmentTool]) async -> [String: DevelopmentToolUpdateResult] {

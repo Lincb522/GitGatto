@@ -4,6 +4,7 @@ enum AgentInstallPhase: String, Sendable, Codable {
     case preparing
     case inspecting
     case installing
+    case configuring
     case verifying
 }
 
@@ -160,7 +161,7 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             icon: "curlybraces.square",
             formula: "openjdk",
             executable: "java",
-            packageHint: "Use the current stable Homebrew openjdk formula. Report any required PATH entry without editing shell startup files."
+            packageHint: "Use the current stable Homebrew openjdk formula."
         ),
         brew(
             id: "ruby",

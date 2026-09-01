@@ -3,6 +3,7 @@ import Foundation
 struct DevelopmentToolProbeResult: Sendable, Equatable {
     let isInstalled: Bool
     let version: String?
+    let executableURL: URL?
 }
 
 protocol DevelopmentToolProbing: Sendable {
@@ -27,7 +28,7 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
             tool.executableCandidates,
             homebrewFormula: tool.homebrewFormula
         ) else {
-            return DevelopmentToolProbeResult(isInstalled: false, version: nil)
+            return DevelopmentToolProbeResult(isInstalled: false, version: nil, executableURL: nil)
         }
         return await probeCommand(executableURL: executableURL, arguments: tool.versionArguments)
     }
@@ -84,14 +85,26 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
                 let stdout = output.fileHandleForReading.readDataToEndOfFile()
                 let stderr = error.fileHandleForReading.readDataToEndOfFile()
                 guard process.terminationStatus == 0 else {
-                    return DevelopmentToolProbeResult(isInstalled: false, version: nil)
+                    return DevelopmentToolProbeResult(
+                        isInstalled: false,
+                        version: nil,
+                        executableURL: executableURL
+                    )
                 }
                 let text = String(decoding: stdout.isEmpty ? stderr : stdout, as: UTF8.self)
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 let firstLine = text.split(whereSeparator: \Character.isNewline).first.map(String.init)
-                return DevelopmentToolProbeResult(isInstalled: true, version: firstLine)
+                return DevelopmentToolProbeResult(
+                    isInstalled: true,
+                    version: firstLine,
+                    executableURL: executableURL
+                )
             } catch {
-                return DevelopmentToolProbeResult(isInstalled: false, version: nil)
+                return DevelopmentToolProbeResult(
+                    isInstalled: false,
+                    version: nil,
+                    executableURL: executableURL
+                )
             }
         }.value
     }

@@ -13,6 +13,7 @@ final class DeveloperToolsViewModel: ObservableObject {
     private let installer: any CodexServing
     private let probe: any DevelopmentToolProbing
     private let updateChecker: any DevelopmentToolUpdateChecking
+    private let environmentConfigurator: any DevelopmentToolEnvironmentConfiguring
     private var operationTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var updateTask: Task<Void, Never>?
@@ -21,11 +22,13 @@ final class DeveloperToolsViewModel: ObservableObject {
     init(
         installer: any CodexServing = CodexService(lane: .installer),
         probe: any DevelopmentToolProbing = DevelopmentToolProbe(),
-        updateChecker: any DevelopmentToolUpdateChecking = DevelopmentToolUpdateService()
+        updateChecker: any DevelopmentToolUpdateChecking = DevelopmentToolUpdateService(),
+        environmentConfigurator: any DevelopmentToolEnvironmentConfiguring = DevelopmentToolEnvironmentConfigurator()
     ) {
         self.installer = installer
         self.probe = probe
         self.updateChecker = updateChecker
+        self.environmentConfigurator = environmentConfigurator
         selectedTool = DevelopmentTool.catalog.first
 
 #if DEBUG
@@ -199,6 +202,7 @@ final class DeveloperToolsViewModel: ObservableObject {
         let installer = self.installer
         let probe = self.probe
         let checker = self.updateChecker
+        let environmentConfigurator = self.environmentConfigurator
         operationTask = Task {
             do {
                 let result: CodexRunResult
@@ -220,6 +224,21 @@ final class DeveloperToolsViewModel: ObservableObject {
 
                 guard !Task.isCancelled else { return }
                 let verification = await probe.probe(tool)
+                var environmentConfiguration: DevelopmentToolEnvironmentConfiguration = .unchanged
+                var environmentConfigurationError: Error?
+                if verification.isInstalled, let executableURL = verification.executableURL {
+                    var configuring = statuses[tool.id] ?? DevelopmentToolStatus()
+                    configuring.phase = .configuring
+                    configuring.detail = phaseText(operation, phase: .configuring)
+                    statuses[tool.id] = configuring
+                    do {
+                        environmentConfiguration = try await environmentConfigurator.configure(
+                            executableURL: executableURL
+                        )
+                    } catch {
+                        environmentConfigurationError = error
+                    }
+                }
                 let updateResults = verification.isInstalled
                     ? await checker.checkUpdates(for: [tool])
                     : [:]
@@ -237,17 +256,37 @@ final class DeveloperToolsViewModel: ObservableObject {
 
                 switch operation {
                 case .install:
-                    completed.state = verification.isInstalled ? .installed : .actionRequired
-                    completed.detail = verification.isInstalled
-                        ? L10n.text("developer_tools.install.verified")
-                        : L10n.text("developer_tools.install.action_required")
+                    if let environmentConfigurationError {
+                        completed.state = .actionRequired
+                        completed.detail = L10n.format(
+                            "developer_tools.install.configuration_failed",
+                            environmentConfigurationError.localizedDescription
+                        )
+                    } else {
+                        completed.state = verification.isInstalled ? .installed : .actionRequired
+                        completed.detail = verification.isInstalled
+                            ? environmentConfiguration == .unchanged
+                                ? L10n.text("developer_tools.install.verified")
+                                : L10n.text("developer_tools.install.configured")
+                            : L10n.text("developer_tools.install.action_required")
+                    }
                 case .upgrade:
                     let upgraded = verification.isInstalled
                         && updateResult?.availability != .available
-                    completed.state = upgraded ? .installed : .actionRequired
-                    completed.detail = upgraded
-                        ? L10n.text("developer_tools.upgrade.verified")
-                        : L10n.text("developer_tools.upgrade.action_required")
+                    if let environmentConfigurationError {
+                        completed.state = .actionRequired
+                        completed.detail = L10n.format(
+                            "developer_tools.upgrade.configuration_failed",
+                            environmentConfigurationError.localizedDescription
+                        )
+                    } else {
+                        completed.state = upgraded ? .installed : .actionRequired
+                        completed.detail = upgraded
+                            ? environmentConfiguration == .unchanged
+                                ? L10n.text("developer_tools.upgrade.verified")
+                                : L10n.text("developer_tools.upgrade.configured")
+                            : L10n.text("developer_tools.upgrade.action_required")
+                    }
                 }
                 statuses[tool.id] = completed
             } catch is CancellationError {

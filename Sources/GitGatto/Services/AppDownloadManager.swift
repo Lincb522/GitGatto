@@ -443,6 +443,7 @@ final class AppDownloadManager: ObservableObject {
             case .preparing: .preparing
             case .inspecting: .inspecting
             case .installing: .installing
+            case .configuring: .configuring
             case .verifying: .verifying
             }
             $0.installationMessage = progress.detail

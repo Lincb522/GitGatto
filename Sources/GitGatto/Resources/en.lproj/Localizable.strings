@@ -1106,6 +1106,7 @@
 "installer.phase.preparing" = "Preparing installation…";
 "installer.phase.inspecting" = "Checking the installation method…";
 "installer.phase.installing" = "Installing…";
+"installer.phase.configuring" = "Completing environment setup…";
 "installer.phase.verifying" = "Verifying the installation…";
 "installer.error.cancelled" = "Installation cancelled.";
 "installer.error.interrupted" = "The previous installation was interrupted when the app exited. Try again.";
@@ -1170,12 +1171,16 @@
 "developer_tools.action.pinned" = "Version Pinned";
 "developer_tools.updates.count" = "%d updates";
 "developer_tools.install.confirm.title" = "Install this developer tool?";
-"developer_tools.install.confirm.body" = "Agent will use the official source or configured package manager, then verify the executable.";
+"developer_tools.install.confirm.body" = "Agent will install the tool, complete current-user setup, and verify the executable and version.";
 "developer_tools.install.verified" = "Executable detected.";
-"developer_tools.install.action_required" = "Agent finished, but the executable is not available yet. Review the result and complete any system prompt or PATH setup.";
+"developer_tools.install.configured" = "Installed and configured for the current user.";
+"developer_tools.install.configuration_failed" = "The tool was installed, but environment setup failed: %@";
+"developer_tools.install.action_required" = "Agent finished, but the executable is not available yet. Review the full result and any system prompt, then try again.";
 "developer_tools.upgrade.confirm.title" = "Upgrade this developer tool?";
 "developer_tools.upgrade.confirm.body" = "Agent will upgrade only the selected package, then verify the installed version.";
 "developer_tools.upgrade.verified" = "Upgrade completed and the new version was detected.";
+"developer_tools.upgrade.configured" = "The upgrade completed and the environment was updated.";
+"developer_tools.upgrade.configuration_failed" = "The tool was upgraded, but environment setup failed: %@";
 "developer_tools.upgrade.action_required" = "Agent finished, but an update is still detected. Review the result and try again.";
 "developer_tools.detail.installation" = "Installation";
 "developer_tools.detail.agent" = "Agent";
@@ -1207,6 +1212,7 @@
 "developer_tools.upgrade.phase.preparing" = "Preparing the upgrade";
 "developer_tools.upgrade.phase.inspecting" = "Checking the installed version and package state";
 "developer_tools.upgrade.phase.installing" = "Upgrading the selected package";
+"developer_tools.upgrade.phase.configuring" = "Completing environment setup";
 "developer_tools.upgrade.phase.verifying" = "Verifying the upgraded version";
 "developer_tools.tool.xcode-command-line-tools.summary" = "Clang, macOS SDKs, and common command-line build tools.";
 "developer_tools.tool.homebrew.summary" = "Package manager for macOS.";

@@ -20,6 +20,7 @@ enum AppInstallationPhase: String, Codable, Sendable {
     case preparing
     case inspecting
     case installing
+    case configuring
     case verifying
 }
 
