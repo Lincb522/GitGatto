@@ -33,15 +33,26 @@ struct DevelopmentToolTests {
         )
         #expect(artifactPrompt.contains(artifactURL.path))
         #expect(artifactPrompt.contains("example/tool"))
+        #expect(artifactPrompt.contains("Post-install configuration is required"))
+        #expect(artifactPrompt.contains("Never stop after merely printing a suggested setup command"))
 
         let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
         let installPrompt = CodexService.developmentToolInstallPrompt(tool)
         #expect(installPrompt.contains(tool.name))
         #expect(installPrompt.contains(tool.packageHint))
         #expect(installPrompt.contains("git-lfs"))
-        #expect(installPrompt.contains("Complete every documented non-secret current-user setup step"))
+        #expect(installPrompt.contains("every documented non-secret initialization"))
         #expect(installPrompt.contains("persists the verified executable directory"))
         #expect(!installPrompt.contains("report a required PATH line"))
+
+        for catalogTool in DevelopmentTool.catalog {
+            let prompt = CodexService.developmentToolInstallPrompt(catalogTool)
+            #expect(prompt.contains(catalogTool.name))
+            #expect(prompt.contains(catalogTool.packageHint))
+            #expect(prompt.contains("Post-install configuration is a required phase for every tool"))
+            #expect(prompt.contains("Run setup commands instead of returning them as instructions"))
+            #expect(prompt.contains("documented configuration or status check"))
+        }
 
         let upgradePrompt = CodexService.developmentToolUpgradePrompt(
             tool,
@@ -53,6 +64,8 @@ struct DevelopmentToolTests {
         #expect(upgradePrompt.contains("3.7.1"))
         #expect(upgradePrompt.contains("3.8.0"))
         #expect(upgradePrompt.contains("upgrade only that formula"))
+        #expect(upgradePrompt.contains("Post-upgrade configuration is a required phase"))
+        #expect(upgradePrompt.contains("apply every documented non-secret migration"))
     }
 
     @Test("Post-install setup persists a user-local executable directory once")
