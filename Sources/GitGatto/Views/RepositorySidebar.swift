@@ -63,6 +63,15 @@ struct RepositorySidebar: View {
                 ) {
                     model.selectedSection = .marketplace
                 }
+
+                SidebarNavigationButton(
+                    titleKey: "nav.goals",
+                    systemImage: "checkmark.seal",
+                    count: model.activeProjectGoalCount == 0 ? nil : model.activeProjectGoalCount,
+                    isSelected: model.selectedSection == .goals
+                ) {
+                    model.selectedSection = .goals
+                }
                 }
 
                 sidebarSectionHeader(
@@ -446,13 +455,14 @@ struct RepositorySidebar: View {
     }
 
     private var collapsedSections: [WorkspaceSection] {
-        [.github, .marketplace, .changes, .stash, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex]
+        [.github, .marketplace, .goals, .changes, .stash, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex]
     }
 
     private func count(for section: WorkspaceSection) -> Int? {
         switch section {
         case .github: model.githubAccountRepositories.count
         case .marketplace: nil
+        case .goals: model.activeProjectGoalCount
         case .changes: model.snapshot?.changes.count
         case .stash: model.stashes.count
         case .history: model.commitGraph.nodes.count
@@ -541,6 +551,7 @@ private struct FolioRailNavigationButton: View {
         switch section {
         case .github: "square.grid.2x2"
         case .marketplace: "arrow.down.app"
+        case .goals: "checkmark.seal"
         case .changes: "square.stack.3d.up"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
@@ -591,6 +602,7 @@ private struct CollapsedSidebarNavigationButton: View {
         switch section {
         case .github: "square.grid.2x2"
         case .marketplace: "arrow.down.app"
+        case .goals: "checkmark.seal"
         case .changes: "square.stack.3d.up"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"

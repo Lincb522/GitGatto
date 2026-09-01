@@ -61,6 +61,8 @@ protocol GitRepositoryServing: Sendable {
     func stageCommitAndPush(paths: [String], message: String, in repositoryURL: URL) async throws
     func pull(in repositoryURL: URL) async throws
     func push(in repositoryURL: URL) async throws
+    func remoteIdentity(in repositoryURL: URL) async throws -> RepositoryRemoteIdentity?
+    func isCommitPublished(_ hash: String, in repositoryURL: URL) async throws -> Bool
     func repositoryOperationState(in repositoryURL: URL) async throws -> RepositoryOperationState?
     func repositoryOperationState(
         in repositoryURL: URL,
@@ -107,6 +109,14 @@ extension GitRepositoryServing {
         in repositoryURL: URL
     ) async throws -> URL? {
         nil
+    }
+
+    func remoteIdentity(in repositoryURL: URL) async throws -> RepositoryRemoteIdentity? {
+        nil
+    }
+
+    func isCommitPublished(_ hash: String, in repositoryURL: URL) async throws -> Bool {
+        false
     }
 
     func prepareCommitDraft(in repositoryURL: URL) async throws -> CommitDraftEvidence {
@@ -603,6 +613,53 @@ actor GitRepositoryService: GitRepositoryServing {
             at: repositoryURL,
             arguments: ["push", "--set-upstream", remote, branch]
         )
+    }
+
+    func remoteIdentity(in repositoryURL: URL) async throws -> RepositoryRemoteIdentity? {
+        let upstream = try await runner.run(
+            at: repositoryURL,
+            arguments: ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+            acceptedExitCodes: [0, 128]
+        )
+        let upstreamName = upstream.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let upstreamRemote = upstream.exitCode == 0
+            ? upstreamName.split(separator: "/").first.map(String.init)
+            : nil
+        let remotesResult = try await runner.run(at: repositoryURL, arguments: ["remote"])
+        let remotes = remotesResult.text.split(whereSeparator: \Character.isNewline).map(String.init)
+        guard let remote = upstreamRemote ?? (remotes.contains("origin") ? "origin" : remotes.first) else {
+            return nil
+        }
+        let configuredURL = try await runner.run(
+            at: repositoryURL,
+            arguments: ["config", "--get", "remote.\(remote).url"],
+            acceptedExitCodes: [0, 1]
+        )
+        if configuredURL.exitCode == 0,
+           let identity = RepositoryRemoteIdentity.parse(remoteName: remote, remoteURL: configuredURL.text) {
+            return identity
+        }
+        let resolvedURL = try await runner.run(
+            at: repositoryURL,
+            arguments: ["remote", "get-url", remote]
+        )
+        return RepositoryRemoteIdentity.parse(remoteName: remote, remoteURL: resolvedURL.text)
+    }
+
+    func isCommitPublished(_ hash: String, in repositoryURL: URL) async throws -> Bool {
+        guard !hash.isEmpty else { return false }
+        let upstream = try await runner.run(
+            at: repositoryURL,
+            arguments: ["rev-parse", "--verify", "@{upstream}"],
+            acceptedExitCodes: [0, 128]
+        )
+        guard upstream.exitCode == 0 else { return false }
+        let result = try await runner.run(
+            at: repositoryURL,
+            arguments: ["merge-base", "--is-ancestor", hash, "@{upstream}"],
+            acceptedExitCodes: [0, 1, 128]
+        )
+        return result.exitCode == 0
     }
 
     func repositoryOperationState(in repositoryURL: URL) async throws -> RepositoryOperationState? {

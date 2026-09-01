@@ -11,6 +11,7 @@ enum AppErrorContext: Sendable, Equatable {
     case agent
     case worktree
     case github
+    case goal
 
     fileprivate var codeComponent: String {
         switch self {
@@ -23,6 +24,7 @@ enum AppErrorContext: Sendable, Equatable {
         case .agent: "AGENT-RUN"
         case .worktree: "WORKTREE"
         case .github: "GITHUB"
+        case .goal: "PROJECT-GOAL"
         }
     }
 
@@ -37,6 +39,7 @@ enum AppErrorContext: Sendable, Equatable {
         case .agent: L10n.text("error.operation.agent")
         case .worktree: L10n.text("error.operation.worktree")
         case .github: L10n.text("error.operation.github")
+        case .goal: L10n.text("error.operation.goal")
         }
     }
 
@@ -60,6 +63,8 @@ enum AppErrorContext: Sendable, Equatable {
             L10n.text("error.recovery.worktree")
         case .github:
             L10n.text("error.recovery.github")
+        case .goal:
+            L10n.text("error.recovery.goal")
         }
     }
 }
@@ -279,6 +284,7 @@ private enum AppErrorCatalog {
         case .agent: "error.explanation.agent_unknown"
         case .worktree: "error.explanation.worktree_unknown"
         case .github: "error.explanation.github_unknown"
+        case .goal: "error.explanation.goal_unknown"
         case .git: exitCode == 128 ? "error.explanation.git_fatal" : "error.explanation.git_unknown"
         }
         return AppErrorDiagnosis(

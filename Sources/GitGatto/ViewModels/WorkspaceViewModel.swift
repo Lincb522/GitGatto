@@ -172,6 +172,13 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var hasCompletedStartup = false
     @Published private(set) var hasCompletedProjectPreload = false
     @Published private(set) var hasCompletedRepositorySurfacePreload = false
+    @Published private(set) var projectGoals: [ProjectGoal] = []
+    @Published var selectedProjectGoalID: UUID?
+    @Published var projectGoalCommitMessage = ""
+    @Published var projectGoalReleaseVersion = ""
+    @Published var projectGoalReleaseBuildNumber = ""
+    @Published private(set) var activeProjectGoalID: UUID?
+    @Published private(set) var isRefreshingProjectGoals = false
 
     private let service: any GitRepositoryServing
     private let codexService: any CodexServing
@@ -185,6 +192,8 @@ final class WorkspaceViewModel: ObservableObject {
     private let worktreeAgentCoordinator: any GitWorktreeAgentCoordinating
     private let fileHistoryService: any GitFileHistoryServing
     private let diagnosticService: any GitEnvironmentDiagnosticServing
+    private let projectGoalStore: any ProjectGoalStoring
+    private let projectGoalRuntime: ProjectGoalRuntime
     private var hasStarted = false
     private var diffTask: Task<Void, Never>?
     private var selectedSectionDetailsTask: Task<Void, Never>?
@@ -239,6 +248,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryCacheOrder: [String] = []
     private var repositoryDiscoveryTask: Task<Void, Never>?
     private var repositoryDiscoveryRunID: UUID?
+    private var projectGoalMonitorTask: Task<Void, Never>?
     private let recentRepositoriesKey = "recentRepositories"
     private let localRepositoriesKey = "managedLocalRepositories"
     private let legacyLocalRepositoriesKey = "localRepositories"
@@ -264,7 +274,8 @@ final class WorkspaceViewModel: ObservableObject {
         worktreeService: any GitWorktreeServing = GitWorktreeService(),
         worktreeAgentCoordinator: any GitWorktreeAgentCoordinating = GitWorktreeAgentCoordinator(),
         fileHistoryService: any GitFileHistoryServing = GitFileHistoryService(),
-        diagnosticService: any GitEnvironmentDiagnosticServing = GitEnvironmentDiagnosticService()
+        diagnosticService: any GitEnvironmentDiagnosticServing = GitEnvironmentDiagnosticService(),
+        projectGoalStore: any ProjectGoalStoring = ProjectGoalStore()
     ) {
         self.service = service
         self.codexService = codexService
@@ -278,6 +289,11 @@ final class WorkspaceViewModel: ObservableObject {
         self.worktreeAgentCoordinator = worktreeAgentCoordinator
         self.fileHistoryService = fileHistoryService
         self.diagnosticService = diagnosticService
+        self.projectGoalStore = projectGoalStore
+        self.projectGoalRuntime = ProjectGoalRuntime(
+            repositoryService: service,
+            githubService: githubService
+        )
         projectAIConfiguration = AIProviderSettings.load(.project)
         translationAIConfiguration = AIProviderSettings.load(.translation)
         codexTranslationTarget = appPreferences.defaultTranslationTarget
@@ -299,6 +315,80 @@ final class WorkspaceViewModel: ObservableObject {
 
     var repositoryName: String? {
         snapshot?.rootURL.lastPathComponent
+    }
+
+    var currentRepositoryGoals: [ProjectGoal] {
+        guard let path = snapshot?.rootURL.standardizedFileURL.path else { return [] }
+        return projectGoals
+            .filter { $0.repositoryPath == path }
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    var selectedProjectGoal: ProjectGoal? {
+        if let selectedProjectGoalID,
+           let selected = currentRepositoryGoals.first(where: { $0.id == selectedProjectGoalID }) {
+            return selected
+        }
+        return currentRepositoryGoals.first
+    }
+
+    var activeProjectGoalCount: Int {
+        projectGoals.filter { !$0.status.isTerminal }.count
+    }
+
+    var canRepairSelectedProjectGoalWithAgent: Bool {
+        selectedProjectGoal?.kind == .githubDelivery
+            && selectedProjectGoal?.lastActionFailure != nil
+            && codexAvailability.state == .available
+            && activeProjectGoalID == nil
+            && activeOperation == nil
+            && !isCodexRunning
+    }
+
+    var canPrepareSelectedReleaseWithAgent: Bool {
+        guard let goal = selectedProjectGoal,
+              goal.kind == .completeRelease else { return false }
+        let preparation: Set<ProjectGoalStepKind> = [
+            .readme, .translation, .version, .changelog, .releasePipeline
+        ]
+        return goal.steps.contains { preparation.contains($0.kind) && $0.status == .blocked }
+            && codexAvailability.state == .available
+            && activeProjectGoalID == nil
+            && activeOperation == nil
+            && !isCodexRunning
+    }
+
+    var canPublishSelectedProjectRelease: Bool {
+        guard let goal = selectedProjectGoal,
+              goal.kind == .completeRelease,
+              goal.nextStep == .releaseTag else { return false }
+        return goal.step(.releaseTag)?.status == .pending
+            && activeProjectGoalID == nil
+            && activeOperation == nil
+    }
+
+    var canInstallSelectedProjectRelease: Bool {
+        guard let goal = selectedProjectGoal,
+              goal.kind == .completeRelease,
+              goal.step(.githubRelease)?.status == .completed,
+              goal.step(.dmg)?.status == .completed,
+              goal.step(.updateFeed)?.status == .completed else { return false }
+        return goal.step(.localApplication)?.status == .pending
+            && activeProjectGoalID == nil
+            && activeOperation == nil
+    }
+
+    var canMergeSelectedProjectGoal: Bool {
+        guard let goal = selectedProjectGoal,
+              goal.kind == .githubDelivery,
+              goal.pullRequestNumber != nil,
+              goal.step(.merge)?.status == .pending else { return false }
+        return goal.steps
+            .prefix { $0.kind != .merge }
+            .allSatisfy(\.status.isSatisfied)
+            && activeProjectGoalID == nil
+            && activeOperation == nil
+            && !isCodexRunning
     }
 
     var displayedGitHubActionRuns: [GitHubActionsRun] {
@@ -495,6 +585,7 @@ final class WorkspaceViewModel: ObservableObject {
         }
         githubSearchScope = Self.githubSearchScopeFromArguments() ?? githubSearchScope
 #endif
+        await loadProjectGoals()
         startAvailabilityProbes()
         if let argumentURL = Self.repositoryURLFromArguments() {
             await openRepository(argumentURL)
@@ -1237,6 +1328,130 @@ final class WorkspaceViewModel: ObservableObject {
             diffDocument = nil
         }
 
+        if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] {
+            selectedSection = .goals
+            let now = Date()
+            let target = "9c5e78fd5ed55962f4e2ba63a866678997958145"
+            var goal = ProjectGoal(
+                kind: .completeRelease,
+                repositoryPath: rootURL.standardizedFileURL.path,
+                repositoryName: "GitGatto",
+                branchName: "main",
+                baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                commitMessage: "release: v0.19.0",
+                targetHeadSHA: target,
+                remoteFullName: "Lincb522/GitGatto",
+                releaseVersion: "0.19.0",
+                releaseBuildNumber: "19000",
+                releaseTag: "v0.19.0",
+                releaseApplicationName: "GitGatto",
+                releaseURL: URL(string: "https://github.com/Lincb522/GitGatto/releases/tag/v0.19.0"),
+                releaseAssetNames: ["GitGatto-0.19.0.dmg", "appcast.xml", "SHA256SUMS"],
+                installedApplicationPath: "/Applications/GitGatto.app",
+                installedApplicationVersion: "0.18.10",
+                installedApplicationBuild: "18010",
+                status: preview == "waiting" ? .waiting : .ready,
+                createdAt: now.addingTimeInterval(-980)
+            )
+            let completed: [(ProjectGoalStepKind, String)] = [
+                (.readme, "README.md"),
+                (.translation, "README.en.md"),
+                (.version, "0.19.0 (19000)"),
+                (.changelog, "CHANGELOG.md"),
+                (.releasePipeline, ".github/workflows/release-macos.yml"),
+                (.stageChanges, "5"),
+                (.commit, String(target.prefix(12))),
+                (.push, String(target.prefix(12))),
+                (.releaseTag, "v0.19.0")
+            ]
+            for (index, item) in completed.enumerated() {
+                goal.updateStep(
+                    item.0,
+                    status: .completed,
+                    evidence: item.1,
+                    at: now.addingTimeInterval(Double(-760 + index * 62))
+                )
+            }
+            if preview == "waiting" {
+                goal.releaseWorkflowRunNumber = 142
+                goal.updateStep(.githubRelease, status: .waiting, evidence: "#142", at: now)
+            } else {
+                goal.updateStep(.githubRelease, status: .completed, evidence: "v0.19.0", at: now.addingTimeInterval(-90))
+                goal.updateStep(.dmg, status: .completed, evidence: "GitGatto-0.19.0.dmg", at: now.addingTimeInterval(-60))
+                goal.updateStep(.updateFeed, status: .completed, evidence: "appcast.xml", at: now.addingTimeInterval(-30))
+                goal.updateStep(.localApplication, status: .pending, evidence: "0.18.10 (18010)", at: now)
+            }
+            projectGoals = [goal]
+            selectedProjectGoalID = goal.id
+        } else if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P1_PREVIEW"] {
+            selectedSection = .goals
+            let now = Date()
+            let target = "7b3f4be834ac9d10d7052856c34f574792706bf2"
+            var goal = ProjectGoal(
+                kind: .githubDelivery,
+                repositoryPath: rootURL.standardizedFileURL.path,
+                repositoryName: rootURL.lastPathComponent,
+                branchName: "feature/delivery-goal",
+                baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                commitMessage: "feat: add GitHub delivery convergence",
+                targetHeadSHA: target,
+                remoteFullName: "Lincb522/GitGatto",
+                baseBranch: "main",
+                pullRequestNumber: 184,
+                pullRequestTitle: "Add GitHub delivery convergence",
+                pullRequestURL: URL(string: "https://github.com/Lincb522/GitGatto/pull/184"),
+                status: preview == "failure" ? .blocked : .ready,
+                createdAt: now.addingTimeInterval(-720)
+            )
+            goal.updateStep(.stageChanges, status: .completed, evidence: "4", at: now.addingTimeInterval(-650))
+            goal.updateStep(.commit, status: .completed, evidence: String(target.prefix(12)), at: now.addingTimeInterval(-580))
+            goal.updateStep(.push, status: .completed, evidence: String(target.prefix(12)), at: now.addingTimeInterval(-510))
+            goal.updateStep(.pullRequest, status: .completed, evidence: "PR #184 → main", at: now.addingTimeInterval(-430))
+            goal.updateStep(.review, status: .completed, evidence: "2 项批准", at: now.addingTimeInterval(-320))
+            if preview == "failure" {
+                let failure = ProjectGoalActionFailure(
+                    runID: 618,
+                    runNumber: 126,
+                    workflowName: "macOS CI",
+                    conclusion: "failure",
+                    webURL: URL(string: "https://github.com/Lincb522/GitGatto/actions/runs/618")!,
+                    logExcerpt: "Test Suite 'GitGattoTests' failed\nProjectGoalTests.swift: expected merge state to be completed"
+                )
+                goal.lastActionFailure = failure
+                let explanation = L10n.text("goal.actions.conclusion.failure")
+                goal.lastError = explanation
+                goal.updateStep(.actions, status: .blocked, evidence: "#126 · macOS CI", error: explanation, at: now)
+            } else {
+                goal.artifactNames = ["GitGatto.dmg", "GitGatto-symbols.zip"]
+                goal.updateStep(.actions, status: .completed, evidence: "#126", at: now.addingTimeInterval(-210))
+                goal.updateStep(.artifact, status: .completed, evidence: goal.artifactNames.joined(separator: ", "), at: now.addingTimeInterval(-160))
+                goal.updateStep(.merge, status: .pending, at: now)
+            }
+            projectGoals = [goal]
+            selectedProjectGoalID = goal.id
+        } else if ProcessInfo.processInfo.environment["GITGATTO_GOALS_PREVIEW"] == "1" {
+            selectedSection = .goals
+            let now = Date()
+            var goal = ProjectGoal(
+                repositoryPath: rootURL.standardizedFileURL.path,
+                repositoryName: rootURL.lastPathComponent,
+                branchName: "main",
+                baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                commitMessage: "feat: refine repository sync feedback",
+                targetHeadSHA: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                remoteFullName: "Lincb522/GitGatto",
+                status: .waiting,
+                createdAt: now.addingTimeInterval(-420)
+            )
+            goal.updateStep(.stageChanges, status: .completed, evidence: "2", at: now.addingTimeInterval(-360))
+            goal.updateStep(.commit, status: .completed, evidence: "7b3f4be834ac", at: now.addingTimeInterval(-280))
+            goal.updateStep(.push, status: .completed, evidence: "7b3f4be834ac", at: now.addingTimeInterval(-190))
+            goal.updateStep(.actions, status: .waiting, evidence: "184", at: now)
+            goal.status = .waiting
+            projectGoals = [goal]
+            selectedProjectGoalID = goal.id
+        }
+
         switch ProcessInfo.processInfo.environment["GITGATTO_ACTIVITY_PREVIEW"] {
         case "stage":
             activeOperation = .stage
@@ -1533,6 +1748,479 @@ final class WorkspaceViewModel: ObservableObject {
         return CommitSurfacePreload(commitID: commit.id, document: document)
     }
 
+    func selectProjectGoal(_ goal: ProjectGoal) {
+        selectedProjectGoalID = goal.id
+        projectGoalCommitMessage = goal.commitMessage
+    }
+
+    func updateSelectedProjectGoalCommitMessage(_ message: String) {
+        guard let id = selectedProjectGoal?.id,
+              let index = projectGoals.firstIndex(where: { $0.id == id }),
+              projectGoals[index].targetHeadSHA == nil,
+              activeProjectGoalID == nil else { return }
+        projectGoals[index].commitMessage = message
+        projectGoals[index].updatedAt = Date()
+        projectGoalCommitMessage = message
+        Task { try? await projectGoalStore.save(projectGoals) }
+    }
+
+    func createProjectDeliveryGoal() async {
+        await createProjectGoal(kind: .deliverChanges)
+    }
+
+    func createGitHubDeliveryGoal() async {
+        await createProjectGoal(kind: .githubDelivery)
+    }
+
+    func prepareProjectReleaseDraftIfNeeded() async {
+        guard projectGoalReleaseVersion.isEmpty,
+              let repositoryURL = snapshot?.rootURL else { return }
+        let path = repositoryURL.standardizedFileURL.path
+        let suggestion = await Task.detached(priority: .utility) {
+            ProjectReleaseInspector.suggestedVersion(at: repositoryURL)
+        }.value
+        guard snapshot?.rootURL.standardizedFileURL.path == path,
+              projectGoalReleaseVersion.isEmpty,
+              let suggestion else { return }
+        updateProjectReleaseVersionDraft(suggestion)
+    }
+
+    func updateProjectReleaseVersionDraft(_ version: String) {
+        projectGoalReleaseVersion = version
+        if let buildNumber = ProjectReleaseInspector.buildNumber(for: version) {
+            projectGoalReleaseBuildNumber = buildNumber
+        }
+    }
+
+    func createCompleteReleaseGoal() async {
+        let version = projectGoalReleaseVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+        let buildNumber = projectGoalReleaseBuildNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard ProjectReleaseInspector.buildNumber(for: version) != nil else {
+            presentError(
+                ProjectGoalRuntimeError.invalidReleaseVersion,
+                context: .goal,
+                repositoryURL: snapshot?.rootURL
+            )
+            return
+        }
+        guard !buildNumber.isEmpty, buildNumber.allSatisfy(\.isNumber) else {
+            presentError(
+                ProjectGoalRuntimeError.invalidReleaseBuildNumber,
+                context: .goal,
+                repositoryURL: snapshot?.rootURL
+            )
+            return
+        }
+        await createProjectGoal(
+            kind: .completeRelease,
+            releaseVersion: version,
+            releaseBuildNumber: buildNumber
+        )
+    }
+
+    private func createProjectGoal(
+        kind: ProjectGoalKind,
+        releaseVersion: String? = nil,
+        releaseBuildNumber: String? = nil
+    ) async {
+        guard let snapshot else { return }
+        if let existing = currentRepositoryGoals.first(where: { !$0.status.isTerminal }) {
+            selectProjectGoal(existing)
+            return
+        }
+        let baseline = snapshot.commits.first?.hash ?? ""
+        guard !baseline.isEmpty || !snapshot.changes.isEmpty else {
+            presentError(
+                ProjectGoalRuntimeError.repositoryHasNoHead,
+                context: .goal,
+                repositoryURL: snapshot.rootURL
+            )
+            return
+        }
+        let message = kind == .completeRelease
+            ? releaseVersion.map { "release: v\($0)" } ?? ""
+            : projectGoalCommitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        var goal = ProjectGoal(
+            kind: kind,
+            repositoryPath: snapshot.rootURL.standardizedFileURL.path,
+            repositoryName: snapshot.rootURL.lastPathComponent,
+            branchName: snapshot.branchName,
+            baselineHeadSHA: baseline,
+            commitMessage: message,
+            releaseVersion: releaseVersion,
+            releaseBuildNumber: releaseBuildNumber,
+            releaseTag: releaseVersion.map { "v\($0)" },
+            releaseApplicationName: snapshot.rootURL.lastPathComponent
+        )
+        if snapshot.changes.isEmpty, kind != .completeRelease {
+            goal.targetHeadSHA = baseline
+        }
+        projectGoals.insert(goal, at: 0)
+        selectedProjectGoalID = goal.id
+        do {
+            try await projectGoalStore.save(projectGoals)
+            await refreshProjectGoal(id: goal.id, showErrors: true)
+        } catch {
+            projectGoals.removeAll { $0.id == goal.id }
+            presentError(error, context: .goal, repositoryURL: snapshot.rootURL)
+        }
+    }
+
+    func continueSelectedProjectGoal() async {
+        guard let id = selectedProjectGoal?.id,
+              activeProjectGoalID == nil,
+              activeOperation == nil,
+              !isCodexRunning else { return }
+        activeProjectGoalID = id
+        defer {
+            activeProjectGoalID = nil
+            activeOperation = nil
+        }
+
+        do {
+            for _ in 0..<8 {
+                guard let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+                var goal = try await reconciledProjectGoal(projectGoals[index])
+                projectGoals[index] = goal
+                try await projectGoalStore.save(projectGoals)
+
+                guard !goal.status.isTerminal,
+                      goal.status != .waiting,
+                      let step = goal.nextStep else {
+                    startProjectGoalMonitorIfNeeded()
+                    return
+                }
+                if [
+                    .readme,
+                    .translation,
+                    .version,
+                    .changelog,
+                    .releasePipeline,
+                    .review,
+                    .actions,
+                    .artifact,
+                    .merge,
+                    .releaseTag,
+                    .githubRelease,
+                    .dmg,
+                    .updateFeed,
+                    .localApplication
+                ].contains(step)
+                    || goal.step(step)?.status == .blocked {
+                    startProjectGoalMonitorIfNeeded()
+                    return
+                }
+
+                goal.status = .running
+                goal.lastError = nil
+                goal.updateStep(step, status: .running)
+                projectGoals[index] = goal
+                try await projectGoalStore.save(projectGoals)
+
+                activeOperation = step.operation
+                let result = try await projectGoalRuntime.execute(step, goal: goal)
+                activeOperation = nil
+                if case let .committed(hash) = result {
+                    goal.targetHeadSHA = hash
+                    goal.updateStep(.commit, status: .completed, evidence: String(hash.prefix(12)))
+                    projectGoals[index] = goal
+                    try await projectGoalStore.save(projectGoals)
+                }
+            }
+            await refreshProjectGoal(id: id, showErrors: true)
+            await refresh()
+        } catch is CancellationError {
+            return
+        } catch {
+            guard let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+            var goal = projectGoals[index]
+            let failedStep = goal.steps.first(where: { $0.status == .running })?.kind ?? goal.nextStep
+            if let failedStep {
+                goal.updateStep(failedStep, status: .blocked, error: error.localizedDescription)
+            }
+            goal.status = .blocked
+            goal.lastError = error.localizedDescription
+            projectGoals[index] = goal
+            try? await projectGoalStore.save(projectGoals)
+            let context = failedStep?.operation.map(AppErrorContext.git) ?? .goal
+            presentError(
+                error,
+                context: context,
+                repositoryURL: URL(fileURLWithPath: goal.repositoryPath, isDirectory: true)
+            )
+        }
+    }
+
+    func repairSelectedProjectGoalWithAgent() async {
+        guard canRepairSelectedProjectGoalWithAgent,
+              let id = selectedProjectGoal?.id,
+              let index = projectGoals.firstIndex(where: { $0.id == id }),
+              let failure = projectGoals[index].lastActionFailure else { return }
+        var goal = projectGoals[index]
+        goal.resetForActionsRepair()
+        projectGoals[index] = goal
+        do {
+            try await projectGoalStore.save(projectGoals)
+        } catch {
+            presentError(
+                error,
+                context: .goal,
+                repositoryURL: URL(fileURLWithPath: goal.repositoryPath, isDirectory: true)
+            )
+            return
+        }
+        selectedSection = .codex
+        runCodex(
+            prompt: GitAgentProfile.actionsRepairPrompt(goal: goal, failure: failure),
+            displayPrompt: L10n.format("goal.agent.display", failure.workflowName, failure.runNumber),
+            mode: .edit
+        )
+    }
+
+    func prepareSelectedReleaseWithAgent() {
+        guard canPrepareSelectedReleaseWithAgent,
+              let goal = selectedProjectGoal else { return }
+        selectedSection = .codex
+        runCodex(
+            prompt: GitAgentProfile.releasePreparationPrompt(goal: goal),
+            displayPrompt: L10n.format("goal.release.agent.display", goal.releaseTag ?? ""),
+            mode: .edit
+        )
+    }
+
+    func publishSelectedProjectRelease() async {
+        guard canPublishSelectedProjectRelease,
+              let id = selectedProjectGoal?.id,
+              let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+        activeProjectGoalID = id
+        defer { activeProjectGoalID = nil }
+        var goal = projectGoals[index]
+        goal.status = .running
+        goal.lastError = nil
+        goal.updateStep(.releaseTag, status: .running)
+        projectGoals[index] = goal
+        do {
+            try await projectGoalStore.save(projectGoals)
+            _ = try await projectGoalRuntime.execute(.releaseTag, goal: goal)
+            await refreshProjectGoal(id: id, showErrors: true)
+            startProjectGoalMonitorIfNeeded()
+        } catch is CancellationError {
+            return
+        } catch {
+            await recordProjectGoalFailure(error, id: id, step: .releaseTag)
+        }
+    }
+
+    func installSelectedProjectRelease() async {
+        guard canInstallSelectedProjectRelease,
+              let id = selectedProjectGoal?.id,
+              let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+        activeProjectGoalID = id
+        defer { activeProjectGoalID = nil }
+        var goal = projectGoals[index]
+        goal.status = .running
+        goal.lastError = nil
+        goal.updateStep(.localApplication, status: .running)
+        projectGoals[index] = goal
+        do {
+            try await projectGoalStore.save(projectGoals)
+            let result = try await projectGoalRuntime.execute(.localApplication, goal: goal)
+            if case let .installed(path) = result,
+               let currentIndex = projectGoals.firstIndex(where: { $0.id == id }) {
+                projectGoals[currentIndex].installedApplicationPath = path
+                try await projectGoalStore.save(projectGoals)
+            }
+            await refreshProjectGoal(id: id, showErrors: true)
+        } catch is CancellationError {
+            return
+        } catch {
+            await recordProjectGoalFailure(error, id: id, step: .localApplication)
+        }
+    }
+
+    private func recordProjectGoalFailure(
+        _ error: Error,
+        id: UUID,
+        step: ProjectGoalStepKind
+    ) async {
+        guard let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+        var goal = projectGoals[index]
+        goal.updateStep(step, status: .blocked, error: error.localizedDescription)
+        goal.status = .blocked
+        goal.lastError = error.localizedDescription
+        projectGoals[index] = goal
+        try? await projectGoalStore.save(projectGoals)
+        presentError(
+            error,
+            context: .goal,
+            repositoryURL: URL(fileURLWithPath: goal.repositoryPath, isDirectory: true)
+        )
+    }
+
+    func mergeSelectedProjectGoal() async {
+        guard canMergeSelectedProjectGoal,
+              let id = selectedProjectGoal?.id,
+              let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+        activeProjectGoalID = id
+        defer { activeProjectGoalID = nil }
+        var goal = projectGoals[index]
+        goal.status = .running
+        goal.lastError = nil
+        goal.updateStep(.merge, status: .running)
+        projectGoals[index] = goal
+        do {
+            try await projectGoalStore.save(projectGoals)
+            _ = try await projectGoalRuntime.execute(.merge, goal: goal)
+            await refreshProjectGoal(id: id, showErrors: true)
+            startProjectGoalMonitorIfNeeded()
+        } catch is CancellationError {
+            return
+        } catch {
+            guard let currentIndex = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+            var current = projectGoals[currentIndex]
+            current.updateStep(.merge, status: .blocked, error: error.localizedDescription)
+            current.status = .blocked
+            current.lastError = error.localizedDescription
+            projectGoals[currentIndex] = current
+            try? await projectGoalStore.save(projectGoals)
+            presentError(
+                error,
+                context: .goal,
+                repositoryURL: URL(fileURLWithPath: goal.repositoryPath, isDirectory: true)
+            )
+        }
+    }
+
+    func refreshProjectGoals(showErrors: Bool = true) async {
+        guard !isRefreshingProjectGoals else { return }
+        isRefreshingProjectGoals = true
+        defer { isRefreshingProjectGoals = false }
+        let ids = currentRepositoryGoals
+            .filter {
+                !$0.status.isTerminal
+                    || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
+                        && $0.status == .completed)
+            }
+            .map(\.id)
+        for id in ids {
+            await refreshProjectGoal(id: id, showErrors: showErrors)
+        }
+        startProjectGoalMonitorIfNeeded()
+    }
+
+    func cancelSelectedProjectGoal() async {
+        guard let id = selectedProjectGoal?.id,
+              activeProjectGoalID != id,
+              let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+        projectGoals[index].status = .cancelled
+        projectGoals[index].updatedAt = Date()
+        try? await projectGoalStore.save(projectGoals)
+        startProjectGoalMonitorIfNeeded()
+    }
+
+    private func loadProjectGoals() async {
+        do {
+            projectGoals = try await projectGoalStore.load().map { source in
+                var goal = source
+                if goal.status == .running {
+                    goal.status = .ready
+                    for index in goal.steps.indices where goal.steps[index].status == .running {
+                        goal.steps[index].status = .pending
+                    }
+                }
+                return goal
+            }
+            selectedProjectGoalID = projectGoals.first?.id
+            projectGoalCommitMessage = selectedProjectGoal?.commitMessage ?? ""
+            startProjectGoalMonitorIfNeeded()
+        } catch {
+            presentError(error, context: .goal, repositoryURL: snapshot?.rootURL)
+        }
+    }
+
+    private func refreshProjectGoal(id: UUID, showErrors: Bool) async {
+        guard let index = projectGoals.firstIndex(where: { $0.id == id }),
+              projectGoals[index].status != .cancelled else { return }
+        do {
+            let goal = try await reconciledProjectGoal(projectGoals[index])
+            projectGoals[index] = goal
+            try await projectGoalStore.save(projectGoals)
+        } catch is CancellationError {
+            return
+        } catch {
+            var goal = projectGoals[index]
+            goal.status = .blocked
+            goal.lastError = error.localizedDescription
+            if let step = goal.nextStep {
+                goal.updateStep(step, status: .blocked, error: error.localizedDescription)
+            }
+            projectGoals[index] = goal
+            try? await projectGoalStore.save(projectGoals)
+            if showErrors {
+                presentError(
+                    error,
+                    context: .goal,
+                    repositoryURL: URL(fileURLWithPath: goal.repositoryPath, isDirectory: true)
+                )
+            }
+        }
+    }
+
+    private func reconciledProjectGoal(_ goal: ProjectGoal) async throws -> ProjectGoal {
+        let observation = try await projectGoalRuntime.observe(goal)
+        return ProjectGoalReconciler.reconcile(goal, with: observation)
+    }
+
+    private func startProjectGoalMonitorIfNeeded() {
+        projectGoalMonitorTask?.cancel()
+        let ids = projectGoals
+            .filter {
+                $0.status == .waiting
+                    || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
+                        && $0.status == .ready)
+                    || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
+                        && $0.status == .completed)
+            }
+            .map(\.id)
+        guard !ids.isEmpty else {
+            projectGoalMonitorTask = nil
+            return
+        }
+        projectGoalMonitorTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    let hasWaiting = self?.projectGoals.contains(where: {
+                        ids.contains($0.id) && $0.status == .waiting
+                    }) == true
+                    let hasReady = self?.projectGoals.contains(where: {
+                        ids.contains($0.id)
+                            && [ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
+                            && $0.status == .ready
+                    }) == true
+                    let delay = hasWaiting ? 8 : (hasReady ? 20 : 60)
+                    try await Task.sleep(for: .seconds(delay))
+                } catch {
+                    return
+                }
+                guard let self else { return }
+                for id in ids {
+                    await self.refreshProjectGoal(id: id, showErrors: false)
+                }
+                if !self.projectGoals.contains(where: {
+                    ids.contains($0.id)
+                        && ($0.status == .waiting
+                            || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
+                                && $0.status == .ready)
+                            || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
+                                && $0.status == .completed))
+                }) {
+                    self.startProjectGoalMonitorIfNeeded()
+                    return
+                }
+            }
+        }
+    }
+
     func refresh() async {
         guard let url = snapshot?.rootURL else { return }
         activeRepositoryLoadID = nil
@@ -1568,6 +2256,7 @@ final class WorkspaceViewModel: ObservableObject {
             apply(supplemental.stashes)
             commitGraph = supplemental.commitGraph
             apply(supplemental.worktrees)
+            await refreshProjectGoals(showErrors: false)
         } catch {
             presentError(error, context: .repositoryRefresh, repositoryURL: url)
         }
@@ -4540,6 +5229,7 @@ final class WorkspaceViewModel: ObservableObject {
                 }
                 if mode == .edit {
                     await refresh()
+                    await refreshProjectGoals(showErrors: false)
                 }
             } catch is CancellationError {
                 guard activeCodexRunID == runID else { return }

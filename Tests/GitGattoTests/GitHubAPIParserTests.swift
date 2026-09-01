@@ -175,6 +175,48 @@ struct GitHubAPIParserTests {
         #expect(try GitHubAPIParser.pullRequestChecks(from: checks).first?.conclusion == "success")
     }
 
+    @Test("Builds deterministic delivery review and merge evidence")
+    func decodesDeliveryPullRequestEvidence() throws {
+        let detail = Data("""
+        {
+          "number":42,
+          "title":"Deliver feature",
+          "html_url":"https://github.com/octocat/Hello-World/pull/42",
+          "state":"open",
+          "draft":false,
+          "merged_at":null,
+          "mergeable":true,
+          "head":{"ref":"feature/delivery","sha":"abcdef1234567890"},
+          "base":{"ref":"main","sha":"1111111111111111"},
+          "requested_reviewers":[{"login":"maintainer"}]
+        }
+        """.utf8)
+        let reviews = Data("""
+        [[
+          {"id":1,"user":{"login":"reviewer"},"body":"Please revise","state":"CHANGES_REQUESTED","submitted_at":"2026-08-25T12:30:00Z"},
+          {"id":2,"user":{"login":"reviewer"},"body":"Resolved","state":"APPROVED","submitted_at":"2026-08-25T12:40:00Z"},
+          {"id":3,"user":{"login":"second"},"body":"Still failing","state":"CHANGES_REQUESTED","submitted_at":"2026-08-25T12:42:00Z"}
+        ]]
+        """.utf8)
+        let reviewSummary = Data("""
+        {"data":{"repository":{"pullRequest":{"reviewDecision":"CHANGES_REQUESTED","reviewThreads":{"nodes":[{"isResolved":true},{"isResolved":false}],"pageInfo":{"hasNextPage":true}}}}}}
+        """.utf8)
+
+        let pullRequest = try GitHubAPIParser.deliveryPullRequest(
+            detail: detail,
+            reviews: reviews,
+            reviewSummary: reviewSummary
+        )
+
+        #expect(pullRequest.number == 42)
+        #expect(pullRequest.approvalCount == 1)
+        #expect(pullRequest.changesRequestedCount == 1)
+        #expect(pullRequest.requestedReviewerCount == 1)
+        #expect(pullRequest.unresolvedThreadCount == 1)
+        #expect(pullRequest.hasUnscannedReviewThreads)
+        #expect(pullRequest.mergeable == true)
+    }
+
     @Test("Decodes paginated Actions workflows, runs, jobs, and artifacts")
     func decodesActionsPayloads() throws {
         let workflows = Data("""

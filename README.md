@@ -37,6 +37,7 @@ GitGatto 是面向 macOS 的 Git 与 GitHub 客户端。本地仓库状态直接
 - 查看逐行 Diff、提交图、单文件历史、Blame，以及历史版本中的图片、SVG 和视频。
 - 处理合并、变基与贮藏冲突，可编辑结果并继续、跳过或中止操作。
 - 检查 Git LFS、Hook、上游和仓库环境问题，并从错误报告直接交给 Agent 处理。
+- 将当前修改设为交付目标，持续核对暂存、提交、推送、Pull Request、审查意见、Actions、构建产物与合并状态；Actions 失败可在保留运行证据后交给 Agent 修复，中断后从已确认的步骤继续。
 - 手动扫描指定目录，从当前用户可读写的 Git 仓库中选择要加入的项目。
 
 ## GitHub
@@ -76,7 +77,7 @@ GitGatto 是面向 macOS 的 Git 与 GitHub 客户端。本地仓库状态直接
 
 ## 本地数据与权限
 
-- 设置、仓库列表、Agent 对话与操作记录、下载记录和译文保存在本机。
+- 设置、仓库列表、项目目标、Agent 对话与操作记录、下载记录和译文保存在本机。
 - Git、SSH、GitHub CLI 与 Agent CLI 继续使用各自的凭据来源；GitGatto 不保存令牌、密码或私钥。
 - Pull、Push、Fork、评论、Review、Actions 操作、应用安装和开发工具变更均由明确的应用操作触发。
 

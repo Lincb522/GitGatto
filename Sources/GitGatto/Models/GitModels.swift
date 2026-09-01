@@ -11,6 +11,7 @@ enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable, Codable {
     case diagnostics
     case github
     case marketplace
+    case goals
     case codex
 
     var id: String { rawValue }
@@ -670,6 +671,29 @@ struct GitHubPullRequestContext: Sendable {
     let repositoryName: String
     let pullRequest: GitHubPullRequest
     let diff: String
+}
+
+struct GitHubDeliveryPullRequest: Sendable, Equatable {
+    let number: Int
+    let title: String
+    let webURL: URL
+    let headBranch: String
+    let headSHA: String
+    let baseBranch: String
+    let isDraft: Bool
+    let isMerged: Bool
+    let isClosed: Bool
+    let mergeable: Bool?
+    let reviewDecision: String?
+    let approvalCount: Int
+    let changesRequestedCount: Int
+    let requestedReviewerCount: Int
+    let unresolvedThreadCount: Int
+    let hasUnscannedReviewThreads: Bool
+
+    var hasReviewBlockers: Bool {
+        changesRequestedCount > 0 || unresolvedThreadCount > 0 || hasUnscannedReviewThreads
+    }
 }
 
 enum GitHubProjectDetailTab: String, CaseIterable, Identifiable, Sendable {

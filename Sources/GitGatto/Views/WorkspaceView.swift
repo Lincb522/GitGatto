@@ -70,6 +70,8 @@ struct WorkspaceView: View {
         return switch model.selectedSection {
         case .github, .marketplace:
             true
+        case .goals:
+            !model.isRefreshingProjectGoals
         case .codex:
             model.codexAvailability.state != .checking
         case .timeMachine:
@@ -308,6 +310,8 @@ struct WorkspaceView: View {
                 WorktreeWorkspaceView(model: model)
             case .diagnostics:
                 RepositoryDiagnosticsView(model: model)
+            case .goals:
+                ProjectGoalsWorkspaceView(model: model)
             case .github:
                 GitHubWorkspaceView(model: model, downloads: downloads)
             case .marketplace:
@@ -408,7 +412,7 @@ private struct ConsoleSectionRail: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private let sections: [WorkspaceSection] = [
-        .github, .marketplace, .changes, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex
+        .github, .marketplace, .goals, .changes, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex
     ]
 
     var body: some View {
@@ -457,6 +461,7 @@ private struct ConsoleSectionRail: View {
         switch model.selectedSection {
         case .github: model.githubAccountRepositories.count
         case .marketplace: marketplaceCount
+        case .goals: model.activeProjectGoalCount
         case .changes: model.snapshot?.changes.count
         case .stash: model.stashes.count
         case .history: model.commitGraph.nodes.count
@@ -472,6 +477,7 @@ private struct ConsoleSectionRail: View {
         switch section {
         case .github: "square.grid.2x2"
         case .marketplace: "arrow.down.app"
+        case .goals: "checkmark.seal"
         case .changes: "square.stack.3d.up"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"

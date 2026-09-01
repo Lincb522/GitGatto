@@ -13,7 +13,14 @@ struct GitGattoApp: App {
     init() {
         let preferences = AppPreferencesStore.load()
         let holdsForPreview = ProcessInfo.processInfo.environment["GITGATTO_LAUNCH_PREVIEW"] == "1"
-        _showsLaunchAnimation = State(initialValue: preferences.launchAnimationEnabled || holdsForPreview)
+#if DEBUG
+        let capturesSnapshot = ProcessInfo.processInfo.arguments.contains("--snapshot")
+#else
+        let capturesSnapshot = false
+#endif
+        _showsLaunchAnimation = State(
+            initialValue: !capturesSnapshot && (preferences.launchAnimationEnabled || holdsForPreview)
+        )
     }
 
     var body: some Scene {
@@ -117,7 +124,13 @@ struct GitGattoApp: App {
                 .frame(minWidth: 960, minHeight: 620)
                 .task {
                     await model.start()
+#if DEBUG
+                    if !ProcessInfo.processInfo.arguments.contains("--snapshot") {
+                        updateManager.startIfConfigured()
+                    }
+#else
                     updateManager.startIfConfigured()
+#endif
                 }
     }
 }
@@ -417,6 +430,7 @@ private struct GitGattoCommands: Commands {
             workspaceCommand(.codex, shortcut: "6")
             workspaceCommand(.timeMachine, shortcut: "7")
             workspaceCommand(.diagnostics, shortcut: "8")
+            workspaceCommand(.goals, shortcut: "9")
         }
 
         CommandMenu(L10n.text("menu.repository")) {

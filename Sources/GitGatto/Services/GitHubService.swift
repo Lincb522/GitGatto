@@ -20,6 +20,13 @@ protocol GitHubServing: Sendable {
     func contents(at path: String, in repository: GitHubRepository) async throws -> [GitHubContentItem]
     func file(_ item: GitHubContentItem, in repository: GitHubRepository) async throws -> GitHubFileDocument
     func releases(for repository: GitHubRepository) async throws -> [GitHubRelease]
+    func releaseAssetData(_ asset: GitHubReleaseAsset, in repository: GitHubRepository) async throws -> Data
+    func downloadReleaseAsset(
+        _ asset: GitHubReleaseAsset,
+        tag: String,
+        in repository: GitHubRepository,
+        to directory: URL
+    ) async throws -> URL
     func isStarred(_ repository: GitHubRepository) async throws -> Bool
     func setStarred(_ starred: Bool, repository: GitHubRepository) async throws
     func pullRequests(for repository: GitHubRepository) async throws -> [GitHubPullRequest]
@@ -49,6 +56,22 @@ protocol GitHubServing: Sendable {
         _ path: String,
         viewed: Bool,
         in pullRequest: GitHubPullRequest
+    ) async throws
+    func deliveryPullRequest(
+        headBranch: String,
+        targetSHA: String,
+        in repository: GitHubRepository
+    ) async throws -> (pullRequest: GitHubDeliveryPullRequest?, defaultBranch: String)
+    func createDeliveryPullRequest(
+        title: String,
+        body: String,
+        headBranch: String,
+        baseBranch: String,
+        in repository: GitHubRepository
+    ) async throws
+    func mergeDeliveryPullRequest(
+        number: Int,
+        in repository: GitHubRepository
     ) async throws
     func actionWorkflows(for repository: GitHubRepository) async throws -> [GitHubActionsWorkflow]
     func actionRuns(for repository: GitHubRepository) async throws -> [GitHubActionsRun]
@@ -100,6 +123,19 @@ extension GitHubServing {
         throw GitHubServiceError.invalidResponse
     }
 
+    func releaseAssetData(_ asset: GitHubReleaseAsset, in repository: GitHubRepository) async throws -> Data {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func downloadReleaseAsset(
+        _ asset: GitHubReleaseAsset,
+        tag: String,
+        in repository: GitHubRepository,
+        to directory: URL
+    ) async throws -> URL {
+        throw GitHubServiceError.invalidResponse
+    }
+
     func isStarred(_ repository: GitHubRepository) async throws -> Bool {
         false
     }
@@ -147,6 +183,31 @@ extension GitHubServing {
         _ path: String,
         viewed: Bool,
         in pullRequest: GitHubPullRequest
+    ) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func deliveryPullRequest(
+        headBranch: String,
+        targetSHA: String,
+        in repository: GitHubRepository
+    ) async throws -> (pullRequest: GitHubDeliveryPullRequest?, defaultBranch: String) {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func createDeliveryPullRequest(
+        title: String,
+        body: String,
+        headBranch: String,
+        baseBranch: String,
+        in repository: GitHubRepository
+    ) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func mergeDeliveryPullRequest(
+        number: Int,
+        in repository: GitHubRepository
     ) async throws {
         throw GitHubServiceError.invalidResponse
     }
@@ -459,6 +520,38 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
         return try GitHubAPIParser.releases(from: response)
     }
 
+    func releaseAssetData(_ asset: GitHubReleaseAsset, in repository: GitHubRepository) async throws -> Data {
+        try await api([
+            "-H", "Accept: application/octet-stream",
+            "-X", "GET",
+            "repos/\(repository.fullName)/releases/assets/\(asset.id)"
+        ])
+    }
+
+    func downloadReleaseAsset(
+        _ asset: GitHubReleaseAsset,
+        tag: String,
+        in repository: GitHubRepository,
+        to directory: URL
+    ) async throws -> URL {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        _ = try await execute(
+            arguments: [
+                "release", "download", tag,
+                "--repo", repository.fullName,
+                "--pattern", asset.name,
+                "--dir", directory.path,
+                "--clobber"
+            ],
+            currentDirectoryURL: directory
+        )
+        let downloaded = directory.appendingPathComponent(asset.name)
+        guard FileManager.default.fileExists(atPath: downloaded.path) else {
+            throw GitHubServiceError.invalidResponse
+        }
+        return downloaded
+    }
+
     func marketplaceRelease(for repository: GitHubRepository) async throws -> GitHubRelease? {
         let key = repository.fullName.lowercased()
         let now = Date()
@@ -689,6 +782,105 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
         ])
     }
 
+    func deliveryPullRequest(
+        headBranch: String,
+        targetSHA: String,
+        in repository: GitHubRepository
+    ) async throws -> (pullRequest: GitHubDeliveryPullRequest?, defaultBranch: String) {
+        let settings = try GitHubAPIParser.deliveryRepositorySettings(
+            from: await api(["repos/\(repository.fullName)"])
+        )
+        let response = try await api([
+            "-X", "GET",
+            "repos/\(repository.fullName)/pulls",
+            "-f", "state=all",
+            "-f", "head=\(repository.owner):\(headBranch)",
+            "-f", "sort=updated",
+            "-f", "direction=desc",
+            "-f", "per_page=100"
+        ])
+        let candidates = try GitHubAPIParser.deliveryPullRequestCandidates(from: response)
+        guard let candidate = candidates.first(where: { $0.headSHA == targetSHA })
+            ?? candidates.first(where: { $0.headBranch == headBranch && !$0.isClosed })
+            ?? candidates.first(where: { $0.headBranch == headBranch }) else {
+            return (nil, settings.defaultBranch)
+        }
+        let detailResponse = try await api(["repos/\(repository.fullName)/pulls/\(candidate.number)"])
+        let reviewsResponse = try await paginated("repos/\(repository.fullName)/pulls/\(candidate.number)/reviews")
+        let reviewResponse = try await api([
+            "graphql",
+            "-f", "query=\(Self.deliveryReviewQuery)",
+            "-f", "owner=\(repository.owner)",
+            "-f", "name=\(repository.name)",
+            "-F", "number=\(candidate.number)"
+        ])
+        let model = try GitHubAPIParser.deliveryPullRequest(
+            detail: detailResponse,
+            reviews: reviewsResponse,
+            reviewSummary: reviewResponse
+        )
+        return (model, settings.defaultBranch)
+    }
+
+    func createDeliveryPullRequest(
+        title: String,
+        body: String,
+        headBranch: String,
+        baseBranch: String,
+        in repository: GitHubRepository
+    ) async throws {
+        _ = try await api([
+            "-X", "POST",
+            "repos/\(repository.fullName)/pulls",
+            "-f", "title=\(title)",
+            "-f", "body=\(body)",
+            "-f", "head=\(headBranch)",
+            "-f", "base=\(baseBranch)"
+        ])
+    }
+
+    func mergeDeliveryPullRequest(
+        number: Int,
+        in repository: GitHubRepository
+    ) async throws {
+        let settings = try GitHubAPIParser.deliveryRepositorySettings(
+            from: await api(["repos/\(repository.fullName)"])
+        )
+        let method: String
+        if settings.allowsMergeCommit {
+            method = "merge"
+        } else if settings.allowsSquashMerge {
+            method = "squash"
+        } else if settings.allowsRebaseMerge {
+            method = "rebase"
+        } else {
+            throw GitHubServiceError.invalidResponse
+        }
+        let response = try await api([
+            "-X", "PUT",
+            "repos/\(repository.fullName)/pulls/\(number)/merge",
+            "-f", "merge_method=\(method)"
+        ])
+        let result = try GitHubAPIParser.deliveryMergeResult(from: response)
+        guard result.merged else {
+            throw GitHubServiceError.commandFailed(result.message)
+        }
+    }
+
+    private static let deliveryReviewQuery = """
+    query($owner:String!,$name:String!,$number:Int!){
+      repository(owner:$owner,name:$name){
+        pullRequest(number:$number){
+          reviewDecision
+          reviewThreads(first:100){
+            nodes{isResolved}
+            pageInfo{hasNextPage}
+          }
+        }
+      }
+    }
+    """
+
     func actionWorkflows(for repository: GitHubRepository) async throws -> [GitHubActionsWorkflow] {
         let response = try await api([
             "--paginate", "--slurp", "-X", "GET",
@@ -912,8 +1104,65 @@ enum GitHubAPIParser {
         try decode([PullRequestPayload].self, from: data).map(\.model)
     }
 
+    fileprivate static func deliveryRepositorySettings(from data: Data) throws -> DeliveryRepositorySettingsPayload {
+        try decode(DeliveryRepositorySettingsPayload.self, from: data)
+    }
+
+    fileprivate static func deliveryPullRequestCandidates(from data: Data) throws -> [DeliveryPullRequestPayload] {
+        try decode([DeliveryPullRequestPayload].self, from: data)
+    }
+
+    fileprivate static func deliveryPullRequestDetail(from data: Data) throws -> DeliveryPullRequestPayload {
+        try decode(DeliveryPullRequestPayload.self, from: data)
+    }
+
+    fileprivate static func deliveryReviewSummary(from data: Data) throws -> DeliveryReviewGraphQLPayload.Summary {
+        try decode(DeliveryReviewGraphQLPayload.self, from: data).summary
+    }
+
+    fileprivate static func deliveryMergeResult(from data: Data) throws -> DeliveryMergePayload {
+        try decode(DeliveryMergePayload.self, from: data)
+    }
+
     static func pullRequestReviews(from data: Data) throws -> [GitHubPullRequestReview] {
         try decodePages(ReviewPayload.self, from: data).map(\.model)
+    }
+
+    static func deliveryPullRequest(
+        detail detailData: Data,
+        reviews reviewData: Data,
+        reviewSummary summaryData: Data
+    ) throws -> GitHubDeliveryPullRequest {
+        let detail = try deliveryPullRequestDetail(from: detailData)
+        let reviews = try pullRequestReviews(from: reviewData)
+        let latestReviews = Dictionary(grouping: reviews, by: \.author).compactMap { _, values in
+            values.max { lhs, rhs in
+                (lhs.submittedAt ?? .distantPast) < (rhs.submittedAt ?? .distantPast)
+            }
+        }
+        let reviewSummary = try deliveryReviewSummary(from: summaryData)
+        return GitHubDeliveryPullRequest(
+            number: detail.number,
+            title: detail.title,
+            webURL: detail.webURL,
+            headBranch: detail.headBranch,
+            headSHA: detail.headSHA,
+            baseBranch: detail.baseBranch,
+            isDraft: detail.isDraft,
+            isMerged: detail.isMerged,
+            isClosed: detail.isClosed,
+            mergeable: detail.mergeable,
+            reviewDecision: reviewSummary.reviewDecision,
+            approvalCount: latestReviews.filter {
+                $0.state.caseInsensitiveCompare("APPROVED") == .orderedSame
+            }.count,
+            changesRequestedCount: latestReviews.filter {
+                $0.state.caseInsensitiveCompare("CHANGES_REQUESTED") == .orderedSame
+            }.count,
+            requestedReviewerCount: detail.requestedReviewerCount,
+            unresolvedThreadCount: reviewSummary.unresolvedThreadCount,
+            hasUnscannedReviewThreads: reviewSummary.hasMoreThreads
+        )
     }
 
     static func pullRequestComments(
@@ -1312,6 +1561,110 @@ private struct PullRequestPayload: Decodable {
             updatedAt: updatedAt
         )
     }
+}
+
+fileprivate struct DeliveryRepositorySettingsPayload: Decodable {
+    let defaultBranch: String
+    let allowsMergeCommit: Bool
+    let allowsSquashMerge: Bool
+    let allowsRebaseMerge: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case defaultBranch = "default_branch"
+        case allowsMergeCommit = "allow_merge_commit"
+        case allowsSquashMerge = "allow_squash_merge"
+        case allowsRebaseMerge = "allow_rebase_merge"
+    }
+}
+
+fileprivate struct DeliveryPullRequestPayload: Decodable {
+    struct Branch: Decodable {
+        let ref: String
+        let sha: String
+    }
+
+    let number: Int
+    let title: String
+    let htmlURL: URL
+    let state: String
+    let draft: Bool
+    let mergedAt: Date?
+    let mergeable: Bool?
+    let head: Branch
+    let base: Branch
+    let requestedReviewers: [RequestedReviewer]?
+
+    struct RequestedReviewer: Decodable {
+        let login: String
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case number, title, state, draft, mergeable, head, base
+        case htmlURL = "html_url"
+        case mergedAt = "merged_at"
+        case requestedReviewers = "requested_reviewers"
+    }
+
+    var webURL: URL { htmlURL }
+    var headBranch: String { head.ref }
+    var headSHA: String { head.sha }
+    var baseBranch: String { base.ref }
+    var isDraft: Bool { draft }
+    var isMerged: Bool { mergedAt != nil }
+    var isClosed: Bool { state.caseInsensitiveCompare("closed") == .orderedSame && !isMerged }
+    var requestedReviewerCount: Int { requestedReviewers?.count ?? 0 }
+}
+
+fileprivate struct DeliveryReviewGraphQLPayload: Decodable {
+    struct DataPayload: Decodable {
+        let repository: RepositoryPayload?
+    }
+
+    struct RepositoryPayload: Decodable {
+        let pullRequest: PullRequestPayload?
+    }
+
+    struct PullRequestPayload: Decodable {
+        let reviewDecision: String?
+        let reviewThreads: ReviewThreadsPayload
+    }
+
+    struct ReviewThreadsPayload: Decodable {
+        let nodes: [ReviewThreadPayload]
+        let pageInfo: PageInfoPayload
+    }
+
+    struct ReviewThreadPayload: Decodable {
+        let isResolved: Bool
+    }
+
+    struct PageInfoPayload: Decodable {
+        let hasNextPage: Bool
+    }
+
+    struct Summary {
+        let reviewDecision: String?
+        let unresolvedThreadCount: Int
+        let hasMoreThreads: Bool
+    }
+
+    let data: DataPayload
+
+    var summary: Summary {
+        guard let pullRequest = data.repository?.pullRequest else {
+            return Summary(reviewDecision: nil, unresolvedThreadCount: 0, hasMoreThreads: false)
+        }
+        return Summary(
+            reviewDecision: pullRequest.reviewDecision,
+            unresolvedThreadCount: pullRequest.reviewThreads.nodes.filter { !$0.isResolved }.count,
+            hasMoreThreads: pullRequest.reviewThreads.pageInfo.hasNextPage
+        )
+    }
+}
+
+fileprivate struct DeliveryMergePayload: Decodable {
+    let merged: Bool
+    let message: String
 }
 
 private struct ReviewPayload: Decodable {
