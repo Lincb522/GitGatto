@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="title desc">
+<title id="title">Lincb522/GitGatto Star History</title>
+<desc id="desc">14 GitHub stars from 2026-08-27 through 2026-09-02.</desc>
+<style>
+            :root { color-scheme: light dark; }
+            .background { fill: #ffffff; }
+            .grid { stroke: #e4e8eb; stroke-width: 1; }
+            .axis { fill: #68727d; font: 500 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            .title { fill: #161c22; font: 700 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            .subtitle { fill: #68727d; font: 500 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            .area { fill: #e85d24; opacity: .10; }
+            .curve { fill: none; stroke: #e85d24; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+            .point { fill: #ffffff; stroke: #e85d24; stroke-width: 4; }
+            .total { fill: #161c22; font: 700 22px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            @media (prefers-color-scheme: dark) {
+                .background { fill: #101419; }
+                .grid { stroke: #2b333b; }
+                .axis, .subtitle { fill: #9ba7b3; }
+                .title, .total { fill: #f4f6f8; }
+                .area { opacity: .18; }
+                .point { fill: #101419; }
+            }
+        </style>
+<rect class="background" width="1280" height="560" rx="24"/>
+<text class="title" x="64" y="54">Lincb522/GitGatto Star History</text>
+<text class="subtitle" x="64" y="81">GitHub stargazers · 2026-08-27 — 2026-09-02</text>
+<text class="total" x="1216" y="58" text-anchor="end">★ 14</text>
+<line class="grid" x1="92" y1="472.0" x2="1204" y2="472.0"/>
+<text class="axis" x="74" y="477.0" text-anchor="end">0</text>
+<line class="grid" x1="92" y1="352.0" x2="1204" y2="352.0"/>
+<text class="axis" x="74" y="357.0" text-anchor="end">5</text>
+<line class="grid" x1="92" y1="232.0" x2="1204" y2="232.0"/>
+<text class="axis" x="74" y="237.0" text-anchor="end">10</text>
+<line class="grid" x1="92" y1="112.0" x2="1204" y2="112.0"/>
+<text class="axis" x="74" y="117.0" text-anchor="end">15</text>
+<polygon class="area" points="92.0,472.0 92.0,472.0 277.3,472.0 462.7,472.0 648.0,448.0 833.3,448.0 1018.7,400.0 1204.0,136.0 1204.0,472.0"/>
+<polyline class="curve" points="92.0,472.0 277.3,472.0 462.7,472.0 648.0,448.0 833.3,448.0 1018.7,400.0 1204.0,136.0"/>
+<circle class="point" cx="648.0" cy="448.0" r="7"><title>2026-08-30: 1 stars</title></circle>
+<circle class="point" cx="1018.7" cy="400.0" r="7"><title>2026-09-01: 3 stars</title></circle>
+<circle class="point" cx="1204.0" cy="136.0" r="7"><title>2026-09-02: 14 stars</title></circle>
+<text class="axis" x="92.0" y="504.0" text-anchor="middle">08-27</text>
+<text class="axis" x="648.0" y="504.0" text-anchor="middle">08-30</text>
+<text class="axis" x="1204.0" y="504.0" text-anchor="middle">09-02</text>
+<text class="axis" x="92" y="532" text-anchor="start">Source: GitHub Stargazers API</text>
+<text class="axis" x="1204" y="532" text-anchor="end">Updated 2026-09-02 UTC</text>
+</svg>

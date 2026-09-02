@@ -95,13 +95,13 @@ Un Agent puede usar la salida de error completa para tratar problemas de Git, Gi
 
 - [Hoja de ruta](docs/ROADMAP.md): etapas implementadas, trabajo previsto y límites.
 - [Arquitectura](docs/ARCHITECTURE.md): propiedad del estado, límites de servicios y flujos principales.
-- [Curva de versiones](docs/UPDATE_HISTORY.md): historial generado a partir de las fechas del CHANGELOG.
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date): evolución de las estrellas de GitHub.
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![Curva de versiones de GitGatto](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## Instalación
 

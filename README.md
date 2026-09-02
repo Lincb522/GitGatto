@@ -113,13 +113,13 @@ Agent 可以根据完整错误输出处理 Git、Git LFS、Hook、签名、分�
 
 - [路线图](docs/ROADMAP.md)：已实现阶段、下一步计划与边界。
 - [架构图](docs/ARCHITECTURE.md)：状态所有权、服务边界与关键数据流。
-- [更新曲线](docs/UPDATE_HISTORY.md)：按 CHANGELOG 实际日期生成的版本记录。
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date)：GitHub Star 增长记录。
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![GitGatto 更新曲线](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## 安装
 

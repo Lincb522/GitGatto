@@ -95,13 +95,13 @@ Ein Agent kann vollständige Fehlerausgaben zu Git, Git LFS, Hooks, Signaturen, 
 
 - [Roadmap](docs/ROADMAP.md): implementierte Etappen, geplante Arbeit und Grenzen.
 - [Architektur](docs/ARCHITECTURE.md): Zuständigkeit für Zustände, Servicegrenzen und zentrale Datenflüsse.
-- [Release-Kurve](docs/UPDATE_HISTORY.md): aus datierten CHANGELOG-Einträgen erzeugter Versionsverlauf.
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date): Entwicklung der GitHub Stars.
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![GitGatto Release-Kurve](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## Installation
 

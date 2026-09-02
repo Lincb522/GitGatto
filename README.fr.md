@@ -95,13 +95,13 @@ Un Agent peut exploiter la sortie d'erreur complète pour traiter Git, Git LFS, 
 
 - [Feuille de route](docs/ROADMAP.md) : étapes réalisées, travaux prévus et limites.
 - [Architecture](docs/ARCHITECTURE.md) : propriété des états, frontières des services et principaux flux de données.
-- [Courbe des versions](docs/UPDATE_HISTORY.md) : historique généré à partir des dates du CHANGELOG.
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date) : évolution des étoiles GitHub.
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![Courbe des versions de GitGatto](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## Installation
 

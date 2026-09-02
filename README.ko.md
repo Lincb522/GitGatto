@@ -113,13 +113,13 @@ Agent는 전체 오류 출력을 바탕으로 Git, Git LFS, Hook, 서명, 브랜
 
 - [로드맵](docs/ROADMAP.md): 구현 완료 단계, 다음 계획 및 범위.
 - [아키텍처](docs/ARCHITECTURE.md): 상태 소유권, 서비스 경계 및 주요 데이터 흐름.
-- [업데이트 곡선](docs/UPDATE_HISTORY.md): CHANGELOG의 실제 날짜로 생성한 버전 기록.
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date): GitHub Star 증가 기록.
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![GitGatto 업데이트 곡선](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## 설치
 

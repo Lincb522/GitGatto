@@ -113,13 +113,13 @@ Agent は完全なエラー出力を使って、Git、Git LFS、Hook、署名、
 
 - [ロードマップ](docs/ROADMAP.md)：実装済みの段階、今後の計画、対象外の範囲。
 - [アーキテクチャ](docs/ARCHITECTURE.md)：状態の所有者、サービス境界、主要なデータフロー。
-- [更新曲線](docs/UPDATE_HISTORY.md)：CHANGELOG の実日付から生成したバージョン記録。
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date)：GitHub Star の推移。
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![GitGatto 更新曲線](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## インストール
 

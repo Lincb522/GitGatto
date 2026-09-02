@@ -95,13 +95,13 @@ Agent может обрабатывать полный вывод ошибок G
 
 - [План развития](docs/ROADMAP.md): реализованные этапы, запланированные работы и границы.
 - [Архитектура](docs/ARCHITECTURE.md): владельцы состояний, границы сервисов и основные потоки данных.
-- [Кривая обновлений](docs/UPDATE_HISTORY.md): история, построенная по датированным записям CHANGELOG.
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date): динамика звёзд GitHub.
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![Кривая обновлений GitGatto](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## Установка
 

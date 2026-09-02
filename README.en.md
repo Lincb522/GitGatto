@@ -113,13 +113,13 @@ An Agent can use complete error output to handle Git, Git LFS, hooks, signing, b
 
 - [Roadmap](docs/ROADMAP.md): implemented stages, planned work, and boundaries.
 - [Architecture](docs/ARCHITECTURE.md): state ownership, service boundaries, and key data flows.
-- [Release activity](docs/UPDATE_HISTORY.md): version history generated from dated CHANGELOG entries.
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date): GitHub star growth over time.
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![GitGatto release activity](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## Installation
 

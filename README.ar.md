@@ -95,13 +95,13 @@ GitGatto عميل أصلي لـ Git وGitHub على macOS. يقرأ حالة ا�
 
 - [خريطة الطريق](docs/ROADMAP.md): المراحل المنفذة والعمل المخطط والحدود.
 - [البنية](docs/ARCHITECTURE.md): ملكية الحالة وحدود الخدمات ومسارات البيانات الأساسية.
-- [منحنى التحديثات](docs/UPDATE_HISTORY.md): سجل مولد من التواريخ الفعلية في CHANGELOG.
+- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date): نمو نجوم GitHub بمرور الوقت.
 
 ![GitGatto roadmap](docs/media/roadmap.svg)
 
 ![GitGatto architecture](docs/media/architecture-overview.svg)
 
-![منحنى تحديثات GitGatto](docs/media/update-curve.svg)
+[![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
 ## التثبيت
 
