@@ -25,7 +25,8 @@ struct RepositorySidebar: View {
             } else if isCollapsed {
                 collapsedSidebar(
                     palette: palette,
-                    clearsWindowControls: isStandard || theme == .emerald
+                    clearsWindowControls: isStandard,
+                    showsBrandIcon: isStandard
                 )
             } else {
                 expandedSidebar(palette: palette, isStandard: isStandard)
@@ -385,15 +386,22 @@ struct RepositorySidebar: View {
         .buttonStyle(.plain)
     }
 
-    private func collapsedSidebar(palette: AppPalette, clearsWindowControls: Bool) -> some View {
+    private func collapsedSidebar(
+        palette: AppPalette,
+        clearsWindowControls: Bool,
+        showsBrandIcon: Bool
+    ) -> some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer(minLength: 0)
+            VStack(spacing: showsBrandIcon ? 7 : 0) {
+                if showsBrandIcon {
+                    AppBrandIcon(size: 27)
+                        .accessibilityHidden(true)
+                }
                 sidebarCollapseButton(palette: palette, collapsed: true)
-                Spacer(minLength: 0)
             }
             .padding(.top, clearsWindowControls ? 23 : 8)
-            .frame(height: clearsWindowControls ? 72 : 50)
+            .padding(.bottom, showsBrandIcon ? 9 : 0)
+            .frame(height: showsBrandIcon ? 104 : 50)
 
             Rectangle()
                 .fill(palette.divider)

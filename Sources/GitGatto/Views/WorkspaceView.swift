@@ -141,10 +141,11 @@ struct WorkspaceView: View {
                 case .softGlass:
                     VStack(spacing: AppThemeLayout.panelSpacing) {
                         HStack(spacing: AppThemeLayout.panelSpacing) {
-                            if !isSidebarCollapsed {
-                                WorkspaceBrandBar(compact: compactSidebar)
-                                    .frame(width: activeSidebarWidth.wrappedValue)
-                            }
+                            WorkspaceBrandBar(
+                                compact: compactSidebar,
+                                iconOnly: isSidebarCollapsed
+                            )
+                            .frame(width: activeSidebarWidth.wrappedValue)
 
                             RepositoryTopBar(model: model)
                         }
@@ -172,10 +173,11 @@ struct WorkspaceView: View {
                 case .emerald:
                     HStack(spacing: 12) {
                         VStack(spacing: 0) {
-                            if !isSidebarCollapsed {
-                                WorkspaceBrandBar(compact: compactSidebar)
-                                    .frame(height: 72)
-                            }
+                            WorkspaceBrandBar(
+                                compact: compactSidebar,
+                                iconOnly: isSidebarCollapsed
+                            )
+                            .frame(height: 72)
                             RepositorySidebar(
                                 model: model,
                                 appearanceRaw: $appearanceRaw,
@@ -376,14 +378,21 @@ struct WorkspaceView: View {
 
 private struct WorkspaceBrandBar: View {
     let compact: Bool
+    var iconOnly = false
 
     var body: some View {
         HStack(spacing: 0) {
-            AppBrandLockup(
-                iconSize: compact ? 34 : 38,
-                wordmarkWidth: compact ? 82 : 96,
-                spacing: 7
-            )
+            Group {
+                if iconOnly {
+                    AppBrandIcon(size: 30)
+                } else {
+                    AppBrandLockup(
+                        iconSize: compact ? 34 : 38,
+                        wordmarkWidth: compact ? 82 : 96,
+                        spacing: 7
+                    )
+                }
+            }
             .padding(.leading, AppThemeLayout.titlebarBrandLeading)
             Spacer(minLength: 8)
         }
