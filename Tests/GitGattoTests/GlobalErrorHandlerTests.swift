@@ -135,7 +135,8 @@ struct GlobalErrorHandlerTests {
             .missingResponse,
             .inputTooLarge,
             .invalidTranslation,
-            .timedOut
+            .timedOut,
+            .installerSandboxUnavailable
         ]
 
         for error in errors {

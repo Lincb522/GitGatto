@@ -92,7 +92,8 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             category: .essentials,
             icon: "github",
             formula: "gh",
-            executable: "gh"
+            executable: "gh",
+            packageHint: "Homebrew formula: gh. Install and verify the CLI without inspecting or changing GitHub authentication state."
         ),
         brew(
             id: "git-lfs",

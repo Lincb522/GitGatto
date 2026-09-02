@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import GitGatto
+import Testing
 
 @Suite("Git and GitHub Agent profile")
 struct GitAgentProfileTests {
@@ -13,7 +13,9 @@ struct GitAgentProfileTests {
         #expect(GitAgentProfile.core.contains("Git LFS"))
         #expect(GitAgentProfile.core.contains("submodules"))
         #expect(GitAgentProfile.core.contains("worktrees"))
-        #expect(GitAgentSkill.allCases.count == 9)
+        #expect(GitAgentProfile.core.contains("git fsck"))
+        #expect(GitAgentProfile.core.lowercased().contains("release readiness"))
+        #expect(GitAgentSkill.allCases.count == 13)
     }
 
     @Test("Keeps remote writes behind explicit app controls")
@@ -31,7 +33,9 @@ struct GitAgentProfileTests {
         ("git-lfs was not found on your PATH", GitAgentRepairRoute.largeFiles),
         ("No url found for submodule path", GitAgentRepairRoute.submodules),
         ("Unable to create .git/index.lock", GitAgentRepairRoute.locksAndPermissions),
-        ("branch is already checked out at worktree", GitAgentRepairRoute.worktrees)
+        ("branch is already checked out at worktree", GitAgentRepairRoute.worktrees),
+        ("cannot lock ref 'refs/heads/main'", GitAgentRepairRoute.references),
+        ("fatal: bad object HEAD", GitAgentRepairRoute.repositoryIntegrity)
     ])
     func routesGitFailure(message: String, expected: GitAgentRepairRoute) {
         let report = GlobalErrorHandler.report(
@@ -114,5 +118,25 @@ struct GitAgentProfileTests {
             #expect(title != skill.titleKey)
             #expect(!title.isEmpty)
         }
+    }
+
+    @Test("New recovery and maintenance skills remain read-only", arguments: [
+        GitAgentSkill.branchMaintenance,
+        GitAgentSkill.historyRecovery,
+        GitAgentSkill.releaseReadiness,
+        GitAgentSkill.repositoryHygiene
+    ])
+    func newSkillsHaveBoundedPrompts(skill: GitAgentSkill) {
+        let bundle = L10n.bundle(preferredLanguages: ["en"])
+        let key = switch skill {
+        case .branchMaintenance: "codex.prompt.branch_maintenance"
+        case .historyRecovery: "codex.prompt.history_recovery"
+        case .releaseReadiness: "codex.prompt.release_readiness"
+        case .repositoryHygiene: "codex.prompt.repository_hygiene"
+        default: ""
+        }
+        let prompt = bundle.localizedString(forKey: key, value: key, table: nil)
+        #expect(prompt != key)
+        #expect(prompt.contains("Do not") || prompt.contains("without"))
     }
 }

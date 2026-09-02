@@ -315,6 +315,8 @@ private enum AppErrorCatalog {
                 localized("error.explanation.agent_input_large", "error.recovery.agent_input_large")
             case .invalidTranslation:
                 localized("error.explanation.agent_translation", "error.recovery.agent_translation")
+            case .installerSandboxUnavailable:
+                localized("error.explanation.agent_installer_sandbox", "error.recovery.agent_installer_sandbox")
             case .timedOut:
                 localized("error.explanation.agent_timeout", "error.recovery.agent_timeout")
             }

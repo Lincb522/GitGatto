@@ -13,3 +13,4 @@ outputs-*/
 .env
 .env.*
 !.env.example
+/DESIGN.md

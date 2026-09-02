@@ -16,11 +16,11 @@ struct AppSettingsView: View {
     init(model: WorkspaceViewModel, updateManager: AppUpdateManager) {
         self.model = model
         self.updateManager = updateManager
-#if DEBUG
-        let previewPage = ProcessInfo.processInfo.environment["GITGATTO_SETTINGS_PAGE"]
-            .flatMap(SettingsPage.init(rawValue:)) ?? .appearance
-        _selectedPage = State(initialValue: previewPage)
-#endif
+        #if DEBUG
+            let previewPage = ProcessInfo.processInfo.environment["GITGATTO_SETTINGS_PAGE"]
+                .flatMap(SettingsPage.init(rawValue:)) ?? .appearance
+            _selectedPage = State(initialValue: previewPage)
+        #endif
     }
 
     var body: some View {
@@ -41,13 +41,13 @@ struct AppSettingsView: View {
         }
         .frame(minWidth: 820, minHeight: 650)
         .background(Color.clear)
-#if DEBUG
-        .background(
-            DebugSnapshotCapture(
-                isReady: ProcessInfo.processInfo.environment["GITGATTO_SETTINGS_PREVIEW"] == "1"
+        #if DEBUG
+            .background(
+                DebugSnapshotCapture(
+                    isReady: ProcessInfo.processInfo.environment["GITGATTO_SETTINGS_PREVIEW"] == "1"
+                )
             )
-        )
-#endif
+        #endif
     }
 
     private func standardLayout(_ palette: AppPalette) -> some View {
@@ -451,30 +451,32 @@ struct AppSettingsView: View {
     }
 
     private func glassNavigation(_ palette: AppPalette) -> some View {
-        HStack(spacing: 6) {
-            ForEach(SettingsPage.allCases) { page in
-                Button {
-                    select(page)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(gattoSymbol: page.icon)
-                            .font(.system(size: 12.5, weight: .semibold))
-                        Text(L10n.text(page.titleKey))
-                            .font(.system(size: 12, weight: selectedPage == page ? .semibold : .medium))
-                            .lineLimit(1)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(SettingsPage.allCases) { page in
+                    Button {
+                        select(page)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(gattoSymbol: page.icon)
+                                .font(.system(size: 12.5, weight: .semibold))
+                            Text(L10n.text(page.titleKey))
+                                .font(.system(size: 12, weight: selectedPage == page ? .semibold : .medium))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(selectedPage == page ? palette.ink : palette.mutedInk)
+                        .padding(.horizontal, 12)
+                        .frame(minWidth: 92, minHeight: 38)
+                        .background(selectedPage == page ? palette.primarySoft : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .contentShape(Rectangle())
                     }
-                    .foregroundStyle(selectedPage == page ? palette.ink : palette.mutedInk)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 38)
-                    .background(selectedPage == page ? palette.primarySoft : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
                 }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
             }
+            .padding(.horizontal, 7)
         }
-        .padding(7)
         .frame(height: 52)
     }
 
@@ -546,6 +548,8 @@ struct AppSettingsView: View {
             GeneralSettingsPage(preferences: $model.appPreferences)
         case .git:
             GitSettingsPage(model: model, preferences: $model.appPreferences)
+        case .recovery:
+            RecoverySettingsPage(model: model, preferences: $model.appPreferences)
         case .agent:
             AgentSettingsPage(model: model)
         case .translation:
@@ -560,18 +564,25 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
     case appearance
     case general
     case git
+    case recovery
     case agent
     case translation
     case updates
 
-    var id: String { rawValue }
-    var titleKey: String { "settings.\(rawValue).title" }
+    var id: String {
+        rawValue
+    }
+
+    var titleKey: String {
+        "settings.\(rawValue).title"
+    }
 
     var icon: String {
         switch self {
         case .appearance: "paintpalette"
         case .general: "slider.horizontal.3"
         case .git: "arrow.triangle.branch"
+        case .recovery: "externaldrive.badge.timemachine"
         case .agent: "sparkles"
         case .translation: "ai.translation"
         case .updates: "arrow.triangle.2.circlepath"
@@ -703,12 +714,12 @@ private struct ThemeChoiceButton: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 10) {
                 ThemeLayoutPreview(theme: theme, palette: preview)
-                .frame(height: 92)
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.76), lineWidth: 1)
-                }
+                    .frame(height: 92)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .stroke(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.76), lineWidth: 1)
+                    }
 
                 HStack(spacing: 6) {
                     Text(L10n.text("theme.\(theme.rawValue)"))
@@ -750,7 +761,7 @@ private struct ThemeLayoutPreview: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    ForEach(0..<3, id: \.self) { index in
+                    ForEach(0 ..< 3, id: \.self) { index in
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(index == 0 ? palette.primarySoft : Color.clear)
                             .frame(height: 13)
@@ -808,7 +819,7 @@ private struct ThemeLayoutPreview: View {
                         .frame(height: 15)
                         .overlay {
                             HStack(spacing: 8) {
-                                ForEach(0..<4, id: \.self) { index in
+                                ForEach(0 ..< 4, id: \.self) { index in
                                     Capsule()
                                         .fill(index == 0 ? palette.primary : palette.mutedInk.opacity(0.38))
                                         .frame(width: index == 0 ? 22 : 16, height: 3)
@@ -841,7 +852,7 @@ private struct ThemeLayoutPreview: View {
                             RoundedRectangle(cornerRadius: 2).fill(Color.white.opacity(0.86)).frame(width: 24, height: 4)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        ForEach(0..<4, id: \.self) { index in
+                        ForEach(0 ..< 4, id: \.self) { index in
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(index == 0 ? Color.white.opacity(0.14) : Color.clear)
                                 .frame(height: 11)
@@ -892,7 +903,7 @@ private struct ThemeLayoutPreview: View {
                                     .frame(width: 7, height: 3)
                             }
 
-                        ForEach(0..<3, id: \.self) { index in
+                        ForEach(0 ..< 3, id: \.self) { index in
                             Circle()
                                 .fill(index == 0 ? Color.white.opacity(0.92) : Color.clear)
                                 .frame(width: 13, height: 13)
@@ -965,7 +976,7 @@ private struct ThemeLayoutPreview: View {
 
                 HStack(spacing: 0) {
                     VStack(spacing: 4) {
-                        ForEach(0..<4, id: \.self) { index in
+                        ForEach(0 ..< 4, id: \.self) { index in
                             RoundedRectangle(cornerRadius: 1)
                                 .fill(index == 0 ? palette.accentSoft : Color.clear)
                                 .frame(height: 12)
@@ -1002,7 +1013,7 @@ private struct ThemeLayoutPreview: View {
                 Rectangle().fill(palette.divider).frame(height: 1)
 
                 HStack(spacing: 4) {
-                    ForEach(0..<3, id: \.self) { index in
+                    ForEach(0 ..< 3, id: \.self) { index in
                         RoundedRectangle(cornerRadius: 1)
                             .fill(index == 0 ? palette.accentSoft : palette.raisedSurface)
                             .frame(width: index == 0 ? 36 : 25, height: 7)
@@ -1307,6 +1318,180 @@ private struct GitSettingsPage: View {
     }
 }
 
+private struct RecoverySettingsPage: View {
+    @ObservedObject var model: WorkspaceViewModel
+    @Binding var preferences: AppPreferences
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        SettingsSection(titleKey: "settings.recovery.protection") {
+            SettingsControlRow(
+                titleKey: "settings.git.backup_enabled",
+                descriptionKey: "settings.git.backup_enabled.body"
+            ) {
+                Toggle("", isOn: $preferences.repositoryBackupEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            HStack(spacing: 10) {
+                Image(gattoSymbol: "externaldrive")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(palette.accent)
+                    .frame(width: 34, height: 34)
+                    .background(palette.accentSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L10n.text("settings.recovery.protected_repositories"))
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(palette.mutedInk)
+                    Text(L10n.format("settings.recovery.protected_repositories.value", model.protectedRepositoryCount))
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                }
+                Spacer(minLength: 12)
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(L10n.text("settings.recovery.storage_used"))
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(palette.mutedInk)
+                    Text(ByteCountFormatter.string(fromByteCount: model.repositoryBackupStorageBytes, countStyle: .file))
+                        .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                        .foregroundStyle(palette.ink)
+                }
+            }
+        }
+
+        SettingsSection(titleKey: "settings.recovery.storage") {
+            VStack(alignment: .leading, spacing: 9) {
+                Text(L10n.text("settings.recovery.storage.location"))
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(palette.ink)
+                Text(model.repositoryBackupDirectoryURL.path(percentEncoded: false))
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .foregroundStyle(palette.mutedInk)
+                    .lineLimit(2)
+                    .textSelection(.enabled)
+                    .help(model.repositoryBackupDirectoryURL.path(percentEncoded: false))
+
+                HStack(spacing: 8) {
+                    Button(L10n.text("settings.recovery.storage.choose")) {
+                        model.chooseRepositoryBackupDirectory()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+
+                    Button(L10n.text("settings.recovery.storage.reveal")) {
+                        model.revealRepositoryBackupStorage()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+
+                    Button(L10n.text("settings.recovery.storage.reset")) {
+                        model.resetRepositoryBackupDirectory()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(isUsingDefaultDirectory)
+
+                    if model.isMigratingRepositoryBackupStorage {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(L10n.text("settings.recovery.storage.migrating"))
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(palette.mutedInk)
+                    }
+                }
+                .disabled(model.isMigratingRepositoryBackupStorage)
+
+                if let error = model.repositoryProtectionError {
+                    GattoLabel(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(palette.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+
+        SettingsSection(titleKey: "settings.recovery.schedule") {
+            SettingsControlRow(
+                titleKey: "settings.git.backup_interval",
+                descriptionKey: "settings.git.backup_interval.body"
+            ) {
+                Picker("", selection: $preferences.repositoryBackupIntervalMinutes) {
+                    ForEach([5.0, 10.0, 15.0, 30.0, 60.0], id: \.self) { value in
+                        Text(L10n.format("settings.minutes", value)).tag(value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 130)
+                .disabled(!preferences.repositoryBackupEnabled)
+            }
+
+            SettingsControlRow(
+                titleKey: "settings.git.backup_major_files",
+                descriptionKey: "settings.git.backup_major_files.body"
+            ) {
+                Picker("", selection: $preferences.majorBackupFileThreshold) {
+                    ForEach([5, 10, 20, 40, 80], id: \.self) { value in
+                        Text(L10n.format("settings.files", value)).tag(value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 130)
+                .disabled(!preferences.repositoryBackupEnabled)
+            }
+
+            SettingsControlRow(
+                titleKey: "settings.git.backup_major_lines",
+                descriptionKey: "settings.git.backup_major_lines.body"
+            ) {
+                Picker("", selection: $preferences.majorBackupLineThreshold) {
+                    ForEach([100, 300, 500, 1000, 2000], id: \.self) { value in
+                        Text(L10n.format("settings.lines", value)).tag(value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 130)
+                .disabled(!preferences.repositoryBackupEnabled)
+            }
+        }
+
+        SettingsSection(titleKey: "settings.recovery.retention") {
+            SettingsControlRow(
+                titleKey: "settings.git.backup_retention",
+                descriptionKey: "settings.git.backup_retention.body"
+            ) {
+                Picker("", selection: $preferences.repositoryBackupRetentionCount) {
+                    ForEach(1 ... RepositoryBackupPolicy.maximumRetentionCount, id: \.self) { value in
+                        Text(L10n.format("settings.backups", value)).tag(value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 130)
+                .disabled(!preferences.repositoryBackupEnabled)
+            }
+
+            SettingsControlRow(
+                titleKey: "settings.git.backup_file_limit",
+                descriptionKey: "settings.git.backup_file_limit.body"
+            ) {
+                Picker("", selection: $preferences.repositoryBackupMaximumFileSizeMB) {
+                    ForEach([10, 25, 50, 100, 250], id: \.self) { value in
+                        Text(L10n.format("settings.megabytes", value)).tag(value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 130)
+                .disabled(!preferences.repositoryBackupEnabled)
+            }
+        }
+    }
+
+    private var isUsingDefaultDirectory: Bool {
+        model.repositoryBackupDirectoryURL.standardizedFileURL
+            == RepositoryBackupService.defaultRootURL().standardizedFileURL
+    }
+}
+
 private struct TranslationSettingsPage: View {
     @ObservedObject var model: WorkspaceViewModel
 
@@ -1358,6 +1543,33 @@ private struct AgentSettingsPage: View {
                 .pickerStyle(.segmented)
                 .frame(width: 180)
             }
+
+            SettingsControlRow(
+                titleKey: "settings.agent.conversation_context",
+                descriptionKey: "settings.agent.conversation_context.body"
+            ) {
+                Picker("", selection: $model.appPreferences.agentConversationHistoryLimit) {
+                    ForEach([8, 16, 24, 40], id: \.self) { value in
+                        Text(L10n.format("settings.agent.messages", value)).tag(value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 180)
+            }
+
+            SettingsControlRow(
+                titleKey: "settings.agent.default_mode",
+                descriptionKey: "settings.agent.default_mode.body"
+            ) {
+                Picker("", selection: $model.appPreferences.defaultAgentRunMode) {
+                    ForEach(CodexRunMode.allCases) { mode in
+                        Text(L10n.text("codex.mode.\(mode.rawValue)")).tag(mode)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 180)
+            }
         }
 
         SettingsSection(titleKey: "settings.agent.engine") {
@@ -1375,7 +1587,7 @@ private struct AgentSettingsPage: View {
 private struct GitAgentCapabilitiesView: View {
     @Environment(\.colorScheme) private var colorScheme
 
-    private let tools = ["git status", "git diff", "git log", "git reflog", "git worktree", "git lfs", "gh pr", "gh run"]
+    private let tools = ["git status", "git diff", "git log", "git reflog", "git fsck", "git worktree", "git lfs", "gh pr", "gh release", "gh run"]
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -1420,7 +1632,6 @@ private struct SettingsSection<Content: View>: View {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
-    @ViewBuilder
     var body: some View {
         let palette = AppPalette(colorScheme)
         switch AppVisualTheme.resolved(themeRaw) {
@@ -1697,8 +1908,8 @@ private struct AISettingsAvailability: View {
             ConnectivityMotionGlyph(state: motionState, size: 15)
             Text(label)
         }
-            .font(.system(size: 10.5, weight: .semibold))
-            .foregroundStyle(availability.state == .available ? palette.success : palette.subtleInk)
+        .font(.system(size: 10.5, weight: .semibold))
+        .foregroundStyle(availability.state == .available ? palette.success : palette.subtleInk)
     }
 
     private var label: String {

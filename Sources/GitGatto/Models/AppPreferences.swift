@@ -14,7 +14,9 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable, Sendable {
     case russian = "ru"
     case arabic = "ar"
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var preferredLanguages: [String] {
         switch self {
@@ -88,18 +90,37 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable, Sendable {
         if normalized.hasPrefix("zh-hant")
             || normalized.hasPrefix("zh-tw")
             || normalized.hasPrefix("zh-hk")
-            || normalized.hasPrefix("zh-mo") {
+            || normalized.hasPrefix("zh-mo")
+        {
             return .traditionalChinese
         }
-        if normalized.hasPrefix("zh") { return .simplifiedChinese }
-        if normalized.hasPrefix("ja") { return .japanese }
-        if normalized.hasPrefix("ko") { return .korean }
-        if normalized.hasPrefix("fr") { return .french }
-        if normalized.hasPrefix("de") { return .german }
-        if normalized.hasPrefix("es") { return .spanish }
-        if normalized.hasPrefix("pt") { return .portuguese }
-        if normalized.hasPrefix("ru") { return .russian }
-        if normalized.hasPrefix("ar") { return .arabic }
+        if normalized.hasPrefix("zh") {
+            return .simplifiedChinese
+        }
+        if normalized.hasPrefix("ja") {
+            return .japanese
+        }
+        if normalized.hasPrefix("ko") {
+            return .korean
+        }
+        if normalized.hasPrefix("fr") {
+            return .french
+        }
+        if normalized.hasPrefix("de") {
+            return .german
+        }
+        if normalized.hasPrefix("es") {
+            return .spanish
+        }
+        if normalized.hasPrefix("pt") {
+            return .portuguese
+        }
+        if normalized.hasPrefix("ru") {
+            return .russian
+        }
+        if normalized.hasPrefix("ar") {
+            return .arabic
+        }
         return .english
     }
 }
@@ -108,7 +129,9 @@ enum CommitDraftDetail: String, CaseIterable, Identifiable, Codable, Sendable {
     case concise
     case complete
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 enum WindowCloseBehavior: String, CaseIterable, Identifiable, Codable, Sendable {
@@ -116,7 +139,9 @@ enum WindowCloseBehavior: String, CaseIterable, Identifiable, Codable, Sendable 
     case minimize
     case quit
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 enum AppVisualTheme: String, CaseIterable, Identifiable, Sendable {
@@ -126,7 +151,9 @@ enum AppVisualTheme: String, CaseIterable, Identifiable, Sendable {
     case emerald
     case folio
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     static func resolved(_ storedValue: String?) -> AppVisualTheme {
         storedValue.flatMap(AppVisualTheme.init(rawValue:)) ?? AppStyleDefaults.defaultTheme
@@ -143,7 +170,9 @@ enum AppAccentChoice: String, CaseIterable, Identifiable, Sendable {
     case pink
     case custom
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 enum AppStyleDefaults {
@@ -174,7 +203,16 @@ struct AppPreferences: Codable, Sendable, Equatable {
     var liveRefreshInterval = 1.0
     var remoteRefreshEnabled = true
     var remoteRefreshInterval = 30.0
+    var repositoryBackupEnabled = true
+    var repositoryBackupIntervalMinutes = 10.0
+    var majorBackupFileThreshold = 20
+    var majorBackupLineThreshold = 500
+    var repositoryBackupRetentionCount = RepositoryBackupPolicy.maximumRetentionCount
+    var repositoryBackupMaximumFileSizeMB = 50
+    var repositoryBackupDirectoryPath: String?
     var commitDraftDetail: CommitDraftDetail = .concise
+    var agentConversationHistoryLimit = 24
+    var defaultAgentRunMode: CodexRunMode = .analyze
     var reopenLastRepository = true
     var launchAnimationEnabled = true
     var windowCloseBehavior: WindowCloseBehavior = .ask
@@ -188,7 +226,16 @@ struct AppPreferences: Codable, Sendable, Equatable {
         case liveRefreshInterval
         case remoteRefreshEnabled
         case remoteRefreshInterval
+        case repositoryBackupEnabled
+        case repositoryBackupIntervalMinutes
+        case majorBackupFileThreshold
+        case majorBackupLineThreshold
+        case repositoryBackupRetentionCount
+        case repositoryBackupMaximumFileSizeMB
+        case repositoryBackupDirectoryPath
         case commitDraftDetail
+        case agentConversationHistoryLimit
+        case defaultAgentRunMode
         case reopenLastRepository
         case launchAnimationEnabled
         case windowCloseBehavior
@@ -206,7 +253,45 @@ struct AppPreferences: Codable, Sendable, Equatable {
         liveRefreshInterval = try container.decodeIfPresent(Double.self, forKey: .liveRefreshInterval) ?? 1
         remoteRefreshEnabled = try container.decodeIfPresent(Bool.self, forKey: .remoteRefreshEnabled) ?? true
         remoteRefreshInterval = try container.decodeIfPresent(Double.self, forKey: .remoteRefreshInterval) ?? 30
+        repositoryBackupEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .repositoryBackupEnabled
+        ) ?? true
+        repositoryBackupIntervalMinutes = try container.decodeIfPresent(
+            Double.self,
+            forKey: .repositoryBackupIntervalMinutes
+        ) ?? 10
+        majorBackupFileThreshold = try container.decodeIfPresent(
+            Int.self,
+            forKey: .majorBackupFileThreshold
+        ) ?? 20
+        majorBackupLineThreshold = try container.decodeIfPresent(
+            Int.self,
+            forKey: .majorBackupLineThreshold
+        ) ?? 500
+        repositoryBackupRetentionCount = try RepositoryBackupPolicy.clampedRetentionCount(
+            container.decodeIfPresent(
+                Int.self,
+                forKey: .repositoryBackupRetentionCount
+            ) ?? RepositoryBackupPolicy.maximumRetentionCount
+        )
+        repositoryBackupMaximumFileSizeMB = try container.decodeIfPresent(
+            Int.self,
+            forKey: .repositoryBackupMaximumFileSizeMB
+        ) ?? 50
+        repositoryBackupDirectoryPath = try container.decodeIfPresent(
+            String.self,
+            forKey: .repositoryBackupDirectoryPath
+        )
         commitDraftDetail = try container.decodeIfPresent(CommitDraftDetail.self, forKey: .commitDraftDetail) ?? .concise
+        agentConversationHistoryLimit = try max(1, container.decodeIfPresent(
+            Int.self,
+            forKey: .agentConversationHistoryLimit
+        ) ?? 24)
+        defaultAgentRunMode = try container.decodeIfPresent(
+            CodexRunMode.self,
+            forKey: .defaultAgentRunMode
+        ) ?? .analyze
         reopenLastRepository = try container.decodeIfPresent(Bool.self, forKey: .reopenLastRepository) ?? true
         launchAnimationEnabled = try container.decodeIfPresent(Bool.self, forKey: .launchAnimationEnabled) ?? true
         windowCloseBehavior = try container.decodeIfPresent(
@@ -216,6 +301,25 @@ struct AppPreferences: Codable, Sendable, Equatable {
         confirmDiscardChanges = try container.decodeIfPresent(Bool.self, forKey: .confirmDiscardChanges) ?? true
         defaultTranslationTarget = try container.decodeIfPresent(CodexTranslationTarget.self, forKey: .defaultTranslationTarget) ?? .simplifiedChinese
     }
+
+    var repositoryBackupPolicy: RepositoryBackupPolicy {
+        RepositoryBackupPolicy(
+            majorFileThreshold: max(1, majorBackupFileThreshold),
+            majorLineThreshold: max(1, majorBackupLineThreshold),
+            retentionCount: RepositoryBackupPolicy.clampedRetentionCount(repositoryBackupRetentionCount),
+            maximumFileSize: Int64(max(1, repositoryBackupMaximumFileSizeMB)) * 1024 * 1024
+        )
+    }
+
+    var repositoryBackupDirectoryURL: URL? {
+        guard let repositoryBackupDirectoryPath,
+              !repositoryBackupDirectoryPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return nil
+        }
+        return URL(fileURLWithPath: repositoryBackupDirectoryPath, isDirectory: true)
+            .standardizedFileURL
+    }
 }
 
 enum AppPreferencesStore {
@@ -223,7 +327,8 @@ enum AppPreferencesStore {
 
     static func load() -> AppPreferences {
         guard let data = UserDefaults.standard.data(forKey: key),
-              let preferences = try? JSONDecoder().decode(AppPreferences.self, from: data) else {
+              let preferences = try? JSONDecoder().decode(AppPreferences.self, from: data)
+        else {
             return AppPreferences()
         }
         return preferences

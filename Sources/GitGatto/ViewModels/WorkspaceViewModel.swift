@@ -11,6 +11,7 @@ final class WorkspaceViewModel: ObservableObject {
             }
         }
     }
+
     @Published private(set) var snapshot: RepositorySnapshot?
     @Published private(set) var commitGraph: CommitGraph = .empty
     @Published private(set) var diffDocument: DiffDocument?
@@ -193,6 +194,14 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var regressionFixBody = ""
     @Published private(set) var activeRegressionInvestigationID: UUID?
     @Published private(set) var regressionAgentIsRunning = false
+    @Published private(set) var repositoryBackups: [RepositoryBackup] = []
+    @Published var selectedRepositoryBackupID: UUID?
+    @Published private(set) var repositoryBackupStorageBytes: Int64 = 0
+    @Published private(set) var repositoryBackupDirectoryURL = RepositoryBackupService.defaultRootURL()
+    @Published private(set) var isLoadingRepositoryBackups = false
+    @Published private(set) var isMigratingRepositoryBackupStorage = false
+    @Published private(set) var activeRepositoryBackupPath: String?
+    @Published private(set) var repositoryProtectionError: String?
 
     private let service: any GitRepositoryServing
     private let codexService: any CodexServing
@@ -210,6 +219,7 @@ final class WorkspaceViewModel: ObservableObject {
     private let projectGoalRuntime: ProjectGoalRuntime
     private let regressionInvestigationStore: any RegressionInvestigationStoring
     private let regressionInvestigationRuntime: RegressionInvestigationRuntime
+    private let repositoryBackupService: any RepositoryBackupServing
     private var hasStarted = false
     private var diffTask: Task<Void, Never>?
     private var selectedSectionDetailsTask: Task<Void, Never>?
@@ -266,6 +276,10 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryDiscoveryRunID: UUID?
     private var projectGoalMonitorTask: Task<Void, Never>?
     private var regressionInvestigationTask: Task<Void, Never>?
+    private var repositoryBackupLoadTask: Task<Void, Never>?
+    private var repositoryBackupTimerTask: Task<Void, Never>?
+    private var repositoryBackupTasks: [String: Task<Void, Never>] = [:]
+    private var repositoryBackupMonitors: [String: RepositoryChangeMonitor] = [:]
     private let recentRepositoriesKey = "recentRepositories"
     private let localRepositoriesKey = "managedLocalRepositories"
     private let legacyLocalRepositoriesKey = "localRepositories"
@@ -294,7 +308,10 @@ final class WorkspaceViewModel: ObservableObject {
         diagnosticService: any GitEnvironmentDiagnosticServing = GitEnvironmentDiagnosticService(),
         projectGoalStore: any ProjectGoalStoring = ProjectGoalStore(),
         regressionInvestigationStore: any RegressionInvestigationStoring = RegressionInvestigationStore(),
-        regressionInvestigationRuntime: RegressionInvestigationRuntime = RegressionInvestigationRuntime()
+        regressionInvestigationRuntime: RegressionInvestigationRuntime = RegressionInvestigationRuntime(),
+        repositoryBackupService: any RepositoryBackupServing = RepositoryBackupService(
+            rootURL: AppPreferencesStore.load().repositoryBackupDirectoryURL
+        )
     ) {
         self.service = service
         self.codexService = codexService
@@ -311,12 +328,16 @@ final class WorkspaceViewModel: ObservableObject {
         self.projectGoalStore = projectGoalStore
         self.regressionInvestigationStore = regressionInvestigationStore
         self.regressionInvestigationRuntime = regressionInvestigationRuntime
-        self.projectGoalRuntime = ProjectGoalRuntime(
+        self.repositoryBackupService = repositoryBackupService
+        projectGoalRuntime = ProjectGoalRuntime(
             repositoryService: service,
             githubService: githubService
         )
+        repositoryBackupDirectoryURL = appPreferences.repositoryBackupDirectoryURL
+            ?? RepositoryBackupService.defaultRootURL()
         projectAIConfiguration = AIProviderSettings.load(.project)
         translationAIConfiguration = AIProviderSettings.load(.translation)
+        codexRunMode = appPreferences.defaultAgentRunMode
         codexTranslationTarget = appPreferences.defaultTranslationTarget
         UserDefaults.standard.removeObject(forKey: legacyLocalRepositoriesKey)
         UserDefaults.standard.removeObject(forKey: legacyExcludedRepositoriesKey)
@@ -338,6 +359,28 @@ final class WorkspaceViewModel: ObservableObject {
         snapshot?.rootURL.lastPathComponent
     }
 
+    var selectedRepositoryBackup: RepositoryBackup? {
+        if let selectedRepositoryBackupID,
+           let selected = repositoryBackups.first(where: { $0.id == selectedRepositoryBackupID })
+        {
+            return selected
+        }
+        if let repositoryPath = snapshot?.rootURL.standardizedFileURL.path,
+           let current = repositoryBackups.first(where: { $0.repositoryPath == repositoryPath })
+        {
+            return current
+        }
+        return repositoryBackups.first
+    }
+
+    var lastRepositoryBackupAt: Date? {
+        repositoryBackups.first?.createdAt
+    }
+
+    var protectedRepositoryCount: Int {
+        appPreferences.repositoryBackupEnabled ? localRepositories.count : 0
+    }
+
     var currentRepositoryGoals: [ProjectGoal] {
         guard let path = snapshot?.rootURL.standardizedFileURL.path else { return [] }
         return projectGoals
@@ -347,7 +390,8 @@ final class WorkspaceViewModel: ObservableObject {
 
     var selectedProjectGoal: ProjectGoal? {
         if let selectedProjectGoalID,
-           let selected = currentRepositoryGoals.first(where: { $0.id == selectedProjectGoalID }) {
+           let selected = currentRepositoryGoals.first(where: { $0.id == selectedProjectGoalID })
+        {
             return selected
         }
         return currentRepositoryGoals.first
@@ -368,7 +412,8 @@ final class WorkspaceViewModel: ObservableObject {
         if let selectedRegressionInvestigationID,
            let selected = currentRepositoryRegressionInvestigations.first(where: {
                $0.id == selectedRegressionInvestigationID
-           }) {
+           })
+        {
             return selected
         }
         return currentRepositoryRegressionInvestigations.first
@@ -391,7 +436,7 @@ final class WorkspaceViewModel: ObservableObject {
         guard let goal = selectedProjectGoal,
               goal.usesReleaseFlow else { return false }
         let preparation: Set<ProjectGoalStepKind> = [
-            .readme, .translation, .version, .changelog, .releasePipeline
+            .readme, .translation, .version, .changelog, .releasePipeline,
         ]
         return goal.steps.contains { preparation.contains($0.kind) && $0.status == .blocked }
             && codexAvailability.state == .available
@@ -544,7 +589,9 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     var displayedGitHubRepositories: [GitHubRepository] {
-        if hasGitHubSearched { return githubSearchResults }
+        if hasGitHubSearched {
+            return githubSearchResults
+        }
         return switch githubCollection {
         case .account: githubAccountRepositories
         case .recommendations: githubRecommendations
@@ -552,7 +599,9 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     var githubCollectionTitleKey: String {
-        if hasGitHubSearched { return "github.search.results" }
+        if hasGitHubSearched {
+            return "github.search.results"
+        }
         return switch githubCollection {
         case .account: "github.account.repositories"
         case .recommendations: "github.recommendations.title"
@@ -615,1040 +664,1093 @@ final class WorkspaceViewModel: ObservableObject {
         hasStarted = true
         defer { hasCompletedStartup = true }
         selectedSection = Self.sectionFromArguments() ?? appPreferences.defaultWorkspace
-#if DEBUG
-        if ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1" {
-            loadWorkspacePreviewFixture()
-            hasCompletedProjectPreload = true
-            hasCompletedRepositorySurfacePreload = true
-            if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
-                loadErrorPreviewFixture()
+        #if DEBUG
+            if ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1" {
+                loadWorkspacePreviewFixture()
+                hasCompletedProjectPreload = true
+                hasCompletedRepositorySurfacePreload = true
+                if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
+                    loadErrorPreviewFixture()
+                }
+                return
             }
-            return
-        }
-        githubSearchScope = Self.githubSearchScopeFromArguments() ?? githubSearchScope
-#endif
+            githubSearchScope = Self.githubSearchScopeFromArguments() ?? githubSearchScope
+        #endif
         await loadProjectGoals()
         await loadRegressionInvestigations()
+        await reloadRepositoryBackups()
+        restartRepositoryProtection()
         startAvailabilityProbes()
         if let argumentURL = Self.repositoryURLFromArguments() {
             await openRepository(argumentURL)
         } else if appPreferences.reopenLastRepository,
-                  let recent = recentRepositories.first {
+                  let recent = recentRepositories.first
+        {
             await openRepository(recent, showFailure: false)
         } else {
             hasCompletedRepositorySurfacePreload = true
         }
-#if DEBUG
-        if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
-            loadErrorPreviewFixture()
-        }
-#endif
+        #if DEBUG
+            if ProcessInfo.processInfo.environment["GITGATTO_ERROR_PREVIEW"] == "1" {
+                loadErrorPreviewFixture()
+            }
+        #endif
     }
 
-#if DEBUG
-    private func loadWorkspacePreviewFixture() {
-        let rootURL = Self.repositoryURLFromArguments()
-            ?? URL(fileURLWithPath: "/private/tmp/GitGatto-Preview", isDirectory: true)
-        let stagedChange = WorkingTreeChange(
-            path: "Sources/App/RepositoryStatus.swift",
-            originalPath: nil,
-            indexStatus: .modified,
-            workTreeStatus: .unmodified
-        )
-        let unstagedChange = WorkingTreeChange(
-            path: "Tests/RepositoryStatusTests.swift",
-            originalPath: nil,
-            indexStatus: .unmodified,
-            workTreeStatus: .modified
-        )
-        snapshot = RepositorySnapshot(
-            rootURL: rootURL,
-            branchName: "main",
-            upstreamName: "origin/main",
-            aheadCount: 1,
-            behindCount: 0,
-            changes: [stagedChange, unstagedChange],
-            commits: [
-                CommitRecord(
-                    hash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
-                    shortHash: "7b3f4be",
-                    author: "ZIJIU522",
-                    date: Date().addingTimeInterval(-2_400),
-                    subject: "Merge console theme status"
-                )
-            ],
-            branches: [
-                BranchRecord(name: "main", shortHash: "7b3f4be", upstream: "origin/main", isCurrent: true),
-                BranchRecord(name: "feature/console-theme", shortHash: "43a19ef", upstream: nil, isCurrent: false)
-            ]
-        )
-        selectedChange = stagedChange
-        selectedBranch = snapshot?.branches.first
-        selectedCommit = snapshot?.commits.first
-        commitMessage = "feat: refine repository sync feedback"
-        commitGraph = CommitGraph(
-            nodes: [
-                CommitGraphNode(
-                    hash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
-                    shortHash: "7b3f4be",
-                    parentHashes: ["551d203aac20284853e0317b03f40b248ab381ef", "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af"],
-                    references: ["main", "origin/main"],
-                    author: "ZIJIU522",
-                    date: Date().addingTimeInterval(-2_400),
-                    subject: "Merge console theme status",
-                    lane: 0
-                ),
-                CommitGraphNode(
-                    hash: "551d203aac20284853e0317b03f40b248ab381ef",
-                    shortHash: "551d203",
-                    parentHashes: ["01f47d7303c84b1e451edb8a0be601e9174f3ace"],
-                    references: [],
-                    author: "ZIJIU522",
-                    date: Date().addingTimeInterval(-5_600),
-                    subject: "Refresh repository state after sync",
-                    lane: 0
-                ),
-                CommitGraphNode(
-                    hash: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
-                    shortHash: "43a19ef",
-                    parentHashes: ["01f47d7303c84b1e451edb8a0be601e9174f3ace"],
-                    references: ["feature/console-theme"],
-                    author: "ZIJIU522",
-                    date: Date().addingTimeInterval(-8_400),
-                    subject: "Add terminal workspace layout",
-                    lane: 1
-                ),
-                CommitGraphNode(
-                    hash: "01f47d7303c84b1e451edb8a0be601e9174f3ace",
-                    shortHash: "01f47d7",
-                    parentHashes: ["b822a9cd9ab4fd1c055444913df2c9614848d80d"],
-                    references: [],
-                    author: "ZIJIU522",
-                    date: Date().addingTimeInterval(-13_000),
-                    subject: "Persist workspace preferences",
-                    lane: 0
-                ),
-                CommitGraphNode(
-                    hash: "b822a9cd9ab4fd1c055444913df2c9614848d80d",
-                    shortHash: "b822a9c",
-                    parentHashes: [],
-                    references: ["v1.0.0"],
-                    author: "ZIJIU522",
-                    date: Date().addingTimeInterval(-22_000),
-                    subject: "Initial native Git workspace",
-                    lane: 0
-                )
-            ],
-            laneCount: 2
-        )
-        diffDocument = DiffDocument(
-            path: stagedChange.path,
-            lines: [
-                DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "diff --git a/Sources/App/RepositoryStatus.swift b/Sources/App/RepositoryStatus.swift", kind: .header),
-                DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "@@ -2,4 +2,8 @@ import Foundation", kind: .hunk),
-                DiffLine(oldLineNumber: 2, newLineNumber: 2, text: "struct RepositoryStatus {", kind: .context),
-                DiffLine(oldLineNumber: 3, newLineNumber: 3, text: "    let branch: String", kind: .context),
-                DiffLine(oldLineNumber: nil, newLineNumber: 4, text: "+    let isReady: Bool", kind: .addition),
-                DiffLine(oldLineNumber: nil, newLineNumber: 5, text: "+    let pendingPushCount: Int", kind: .addition),
-                DiffLine(oldLineNumber: 4, newLineNumber: 6, text: "}", kind: .context)
-            ]
-        )
-        commitDiffDocument = diffDocument
-        let timelineFile = RepositoryFileRecord(path: "Sources/GitGatto/Services/GitRepositoryService.swift")
-        repositoryFiles = [
-            timelineFile,
-            RepositoryFileRecord(path: "Sources/GitGatto/ViewModels/WorkspaceViewModel.swift"),
-            RepositoryFileRecord(path: "Sources/GitGatto/Views/WorkspaceView.swift"),
-            RepositoryFileRecord(path: "Sources/GitGatto/Views/ChangesWorkspaceView.swift"),
-            RepositoryFileRecord(path: "Tests/GitGattoTests/GitRepositoryServiceTests.swift"),
-            RepositoryFileRecord(path: "Package.swift"),
-            RepositoryFileRecord(path: "README.md"),
-            RepositoryFileRecord(path: ".github/workflows/release-macos.yml")
-        ]
-        selectedRepositoryFile = timelineFile
-        fileRevisions = [
-            FileRevisionRecord(
-                hash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
-                shortHash: "7b3f4be",
-                author: "ZIJIU522",
-                authorEmail: "zijiu522@example.com",
-                date: Date().addingTimeInterval(-2_400),
-                subject: "Keep repository status responsive",
-                path: timelineFile.path
-            ),
-            FileRevisionRecord(
-                hash: "551d203aac20284853e0317b03f40b248ab381ef",
-                shortHash: "551d203",
-                author: "ZIJIU522",
-                authorEmail: "zijiu522@example.com",
-                date: Date().addingTimeInterval(-86_400),
-                subject: "Add conflict operation recovery",
-                path: timelineFile.path
-            ),
-            FileRevisionRecord(
-                hash: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
-                shortHash: "43a19ef",
-                author: "ZIJIU522",
-                authorEmail: "zijiu522@example.com",
-                date: Date().addingTimeInterval(-172_800),
-                subject: "Introduce repository service",
-                path: timelineFile.path
+    #if DEBUG
+        private func loadWorkspacePreviewFixture() {
+            let rootURL = Self.repositoryURLFromArguments()
+                ?? URL(fileURLWithPath: "/private/tmp/GitGatto-Preview", isDirectory: true)
+            let stagedChange = WorkingTreeChange(
+                path: "Sources/App/RepositoryStatus.swift",
+                originalPath: nil,
+                indexStatus: .modified,
+                workTreeStatus: .unmodified
             )
-        ]
-        fileVersionDocument = FileVersionDocument(
-            path: timelineFile.path,
-            content: """
-            import Foundation
-
-            actor GitRepositoryService: GitRepositoryServing {
-                private let runner: GitCommandRunner
-
-                init(runner: GitCommandRunner = GitCommandRunner()) {
-                    self.runner = runner
-                }
-
-                func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot {
-                    let root = try await runner.run(at: selectedURL, arguments: ["rev-parse", "--show-toplevel"])
-                    return try await snapshot(at: root)
-                }
-            }
-            """,
-            isBinary: false,
-            previewURL: nil,
-            diff: DiffDocument(
-                path: timelineFile.path,
-                lines: [
-                    DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "@@ -8,3 +8,6 @@ actor GitRepositoryService", kind: .hunk),
-                    DiffLine(oldLineNumber: 8, newLineNumber: 8, text: "    func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot {", kind: .context),
-                    DiffLine(oldLineNumber: nil, newLineNumber: 9, text: "+        let root = try await runner.run(at: selectedURL, arguments: [\"rev-parse\", \"--show-toplevel\"])", kind: .addition),
-                    DiffLine(oldLineNumber: 9, newLineNumber: 10, text: "        return try await snapshot(at: root)", kind: .context)
+            let unstagedChange = WorkingTreeChange(
+                path: "Tests/RepositoryStatusTests.swift",
+                originalPath: nil,
+                indexStatus: .unmodified,
+                workTreeStatus: .modified
+            )
+            snapshot = RepositorySnapshot(
+                rootURL: rootURL,
+                branchName: "main",
+                upstreamName: "origin/main",
+                aheadCount: 1,
+                behindCount: 0,
+                changes: [stagedChange, unstagedChange],
+                commits: [
+                    CommitRecord(
+                        hash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                        shortHash: "7b3f4be",
+                        author: "ZIJIU522",
+                        date: Date().addingTimeInterval(-2400),
+                        subject: "Merge console theme status"
+                    ),
+                ],
+                branches: [
+                    BranchRecord(name: "main", shortHash: "7b3f4be", upstream: "origin/main", isCurrent: true),
+                    BranchRecord(name: "feature/console-theme", shortHash: "43a19ef", upstream: nil, isCurrent: false),
                 ]
             )
-        )
-        fileBlameLines = [
-            FileBlameLine(commitHash: fileRevisions[2].hash, originalLineNumber: 1, finalLineNumber: 1, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[2].date, summary: fileRevisions[2].subject, sourcePath: timelineFile.path, text: "import Foundation"),
-            FileBlameLine(commitHash: fileRevisions[2].hash, originalLineNumber: 2, finalLineNumber: 2, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[2].date, summary: fileRevisions[2].subject, sourcePath: timelineFile.path, text: ""),
-            FileBlameLine(commitHash: fileRevisions[1].hash, originalLineNumber: 3, finalLineNumber: 3, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[1].date, summary: fileRevisions[1].subject, sourcePath: timelineFile.path, text: "actor GitRepositoryService: GitRepositoryServing {"),
-            FileBlameLine(commitHash: fileRevisions[1].hash, originalLineNumber: 4, finalLineNumber: 4, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[1].date, summary: fileRevisions[1].subject, sourcePath: timelineFile.path, text: "    private let runner: GitCommandRunner"),
-            FileBlameLine(commitHash: fileRevisions[0].hash, originalLineNumber: 9, finalLineNumber: 9, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[0].date, summary: fileRevisions[0].subject, sourcePath: timelineFile.path, text: "    func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot {"),
-            FileBlameLine(commitHash: fileRevisions[0].hash, originalLineNumber: 10, finalLineNumber: 10, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[0].date, summary: fileRevisions[0].subject, sourcePath: timelineFile.path, text: "        let root = try await runner.run(at: selectedURL, arguments: [\"rev-parse\", \"--show-toplevel\"])")
-        ]
-        let previewHooks = rootURL.appendingPathComponent(".git/hooks", isDirectory: true)
-        repositoryDiagnostics = RepositoryDiagnostics(
-            generatedAt: Date().addingTimeInterval(-12),
-            gitExecutablePath: "/usr/bin/git",
-            gitVersion: "git version 2.50.1 (Apple Git-155)",
-            repositoryRoot: rootURL,
-            objectDatabaseHealthy: true,
-            objectDatabaseMessage: nil,
-            userName: "ZIJIU522",
-            userEmail: "zijiu522@users.noreply.github.com",
-            lfsVersion: "git-lfs/3.7.0",
-            lfsError: nil,
-            usesLFS: true,
-            lfsFilterConfigured: true,
-            lfsTrackedFileCount: 12,
-            hooksDirectory: previewHooks,
-            hooksDirectoryExists: true,
-            hooks: [
-                GitHookRecord(name: "pre-commit", url: previewHooks.appendingPathComponent("pre-commit"), isExecutable: true, isSymbolicLink: false, size: 1_284),
-                GitHookRecord(name: "pre-push", url: previewHooks.appendingPathComponent("pre-push"), isExecutable: true, isSymbolicLink: false, size: 1_172),
-                GitHookRecord(name: "commit-msg", url: previewHooks.appendingPathComponent("commit-msg"), isExecutable: false, isSymbolicLink: false, size: 842)
-            ]
-        )
-        switch ProcessInfo.processInfo.environment["GITGATTO_P2_PREVIEW"] {
-        case "blame":
-            fileTimelineDetailMode = .blame
-        case "revision":
-            selectedFileRevision = fileRevisions.first
-            fileTimelineDetailMode = .changes
-        default:
-            break
-        }
-        if ProcessInfo.processInfo.environment["GITGATTO_CONFLICT_PREVIEW"] == "1" {
-            let conflictPath = "Sources/App/RepositoryStatus.swift"
-            repositoryOperationState = RepositoryOperationState(
-                kind: .rebase,
-                conflictedPaths: [conflictPath, "Sources/Git/SyncCoordinator.swift"],
-                progress: RepositoryOperationProgress(current: 2, total: 4)
+            selectedChange = stagedChange
+            selectedBranch = snapshot?.branches.first
+            selectedCommit = snapshot?.commits.first
+            commitMessage = "feat: refine repository sync feedback"
+            commitGraph = CommitGraph(
+                nodes: [
+                    CommitGraphNode(
+                        hash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                        shortHash: "7b3f4be",
+                        parentHashes: ["551d203aac20284853e0317b03f40b248ab381ef", "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af"],
+                        references: ["main", "origin/main"],
+                        author: "ZIJIU522",
+                        date: Date().addingTimeInterval(-2400),
+                        subject: "Merge console theme status",
+                        lane: 0
+                    ),
+                    CommitGraphNode(
+                        hash: "551d203aac20284853e0317b03f40b248ab381ef",
+                        shortHash: "551d203",
+                        parentHashes: ["01f47d7303c84b1e451edb8a0be601e9174f3ace"],
+                        references: [],
+                        author: "ZIJIU522",
+                        date: Date().addingTimeInterval(-5600),
+                        subject: "Refresh repository state after sync",
+                        lane: 0
+                    ),
+                    CommitGraphNode(
+                        hash: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
+                        shortHash: "43a19ef",
+                        parentHashes: ["01f47d7303c84b1e451edb8a0be601e9174f3ace"],
+                        references: ["feature/console-theme"],
+                        author: "ZIJIU522",
+                        date: Date().addingTimeInterval(-8400),
+                        subject: "Add terminal workspace layout",
+                        lane: 1
+                    ),
+                    CommitGraphNode(
+                        hash: "01f47d7303c84b1e451edb8a0be601e9174f3ace",
+                        shortHash: "01f47d7",
+                        parentHashes: ["b822a9cd9ab4fd1c055444913df2c9614848d80d"],
+                        references: [],
+                        author: "ZIJIU522",
+                        date: Date().addingTimeInterval(-13000),
+                        subject: "Persist workspace preferences",
+                        lane: 0
+                    ),
+                    CommitGraphNode(
+                        hash: "b822a9cd9ab4fd1c055444913df2c9614848d80d",
+                        shortHash: "b822a9c",
+                        parentHashes: [],
+                        references: ["v1.0.0"],
+                        author: "ZIJIU522",
+                        date: Date().addingTimeInterval(-22000),
+                        subject: "Initial native Git workspace",
+                        lane: 0
+                    ),
+                ],
+                laneCount: 2
             )
-            selectedConflictPath = conflictPath
-            conflictDocument = ConflictFileDocument(
-                path: conflictPath,
-                base: "struct RepositoryStatus {\n    let branch: String\n}\n",
-                ours: "struct RepositoryStatus {\n    let branch: String\n    let aheadCount: Int\n}\n",
-                theirs: "struct RepositoryStatus {\n    let branch: String\n    let pendingPushCount: Int\n}\n",
-                result: "struct RepositoryStatus {\n    let branch: String\n<<<<<<< HEAD\n    let aheadCount: Int\n=======\n    let pendingPushCount: Int\n>>>>>>> feature/sync-status\n}\n",
-                isBinary: false
-            )
-            conflictResolutionText = conflictDocument?.result ?? ""
-        }
-        if ProcessInfo.processInfo.environment["GITGATTO_STASH_PREVIEW"] == "1" {
-            let first = StashRecord(
-                reference: "stash@{0}",
-                hash: "95c4396d468ba25e81f98c645fc1188da23d62da",
-                createdAt: Date().addingTimeInterval(-1_800),
-                summary: "On main: Refine sync status"
-            )
-            stashes = [
-                first,
-                StashRecord(
-                    reference: "stash@{1}",
-                    hash: "7aa1f843af3a398a73a72c55b6a6bcb71bdce31a",
-                    createdAt: Date().addingTimeInterval(-86_400),
-                    summary: "On feature/agent: Draft commit composer"
-                )
-            ]
-            selectedStash = first
-            stashDiffDocument = DiffDocument(
-                path: first.reference,
+            diffDocument = DiffDocument(
+                path: stagedChange.path,
                 lines: [
                     DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "diff --git a/Sources/App/RepositoryStatus.swift b/Sources/App/RepositoryStatus.swift", kind: .header),
-                    DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "@@ -2,4 +2,7 @@ struct RepositoryStatus {", kind: .hunk),
-                    DiffLine(oldLineNumber: 2, newLineNumber: 2, text: "     let branch: String", kind: .context),
-                    DiffLine(oldLineNumber: nil, newLineNumber: 3, text: "+    let aheadCount: Int", kind: .addition),
-                    DiffLine(oldLineNumber: nil, newLineNumber: 4, text: "+    let behindCount: Int", kind: .addition),
-                    DiffLine(oldLineNumber: 3, newLineNumber: 5, text: " }", kind: .context)
+                    DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "@@ -2,4 +2,8 @@ import Foundation", kind: .hunk),
+                    DiffLine(oldLineNumber: 2, newLineNumber: 2, text: "struct RepositoryStatus {", kind: .context),
+                    DiffLine(oldLineNumber: 3, newLineNumber: 3, text: "    let branch: String", kind: .context),
+                    DiffLine(oldLineNumber: nil, newLineNumber: 4, text: "+    let isReady: Bool", kind: .addition),
+                    DiffLine(oldLineNumber: nil, newLineNumber: 5, text: "+    let pendingPushCount: Int", kind: .addition),
+                    DiffLine(oldLineNumber: 4, newLineNumber: 6, text: "}", kind: .context),
                 ]
             )
-        }
-        worktrees = [
-            GitWorktreeRecord(
-                path: rootURL,
-                headHash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
-                branch: "main",
-                isMain: true,
-                isLocked: false,
-                isPrunable: false,
-                changesCount: 2,
-                aheadCount: 1,
-                behindCount: 0
-            ),
-            GitWorktreeRecord(
-                path: rootURL.deletingLastPathComponent().appendingPathComponent("GitGatto-pr-184", isDirectory: true),
-                headHash: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
-                branch: "agent/pr-184-review",
-                isMain: false,
-                isLocked: false,
-                isPrunable: false,
-                changesCount: 4,
-                aheadCount: 2,
-                behindCount: 0
-            ),
-            GitWorktreeRecord(
-                path: rootURL.deletingLastPathComponent().appendingPathComponent("GitGatto-actions-fix", isDirectory: true),
-                headHash: "551d203aac20284853e0317b03f40b248ab381ef",
-                branch: "agent/actions-fix",
-                isMain: false,
-                isLocked: false,
-                isPrunable: false,
-                changesCount: 0,
-                aheadCount: 0,
-                behindCount: 1
-            )
-        ]
-        selectedWorktree = worktrees[1]
-        worktreeAgentRuns[worktrees[1].id] = GitWorktreeAgentRun(
-            worktreeID: worktrees[1].id,
-            prompt: "Review the pull request and run the focused tests.",
-            mode: .edit,
-            state: .completed,
-            response: "Reviewed the changed synchronization paths and added the missing regression coverage.",
-            error: nil,
-            startedAt: Date().addingTimeInterval(-420),
-            completedAt: Date().addingTimeInterval(-180),
-            operation: CodexOperationRecord(
-                mode: .edit,
-                commandCount: 3,
-                fileChangeCount: 2,
-                completedAt: Date().addingTimeInterval(-180)
-            )
-        )
-        localRepositories = [
-            rootURL,
-            rootURL.deletingLastPathComponent().appendingPathComponent("aside-music", isDirectory: true)
-        ]
-        recentRepositories = localRepositories
-        codexAvailability = CodexAvailability(state: .available, version: nil)
-        translationAIAvailability = CodexAvailability(state: .available, version: nil)
-        githubAvailability = GitHubAvailability(state: .available, version: nil)
+            commitDiffDocument = diffDocument
+            let timelineFile = RepositoryFileRecord(path: "Sources/GitGatto/Services/GitRepositoryService.swift")
+            repositoryFiles = [
+                timelineFile,
+                RepositoryFileRecord(path: "Sources/GitGatto/ViewModels/WorkspaceViewModel.swift"),
+                RepositoryFileRecord(path: "Sources/GitGatto/Views/WorkspaceView.swift"),
+                RepositoryFileRecord(path: "Sources/GitGatto/Views/ChangesWorkspaceView.swift"),
+                RepositoryFileRecord(path: "Tests/GitGattoTests/GitRepositoryServiceTests.swift"),
+                RepositoryFileRecord(path: "Package.swift"),
+                RepositoryFileRecord(path: "README.md"),
+                RepositoryFileRecord(path: ".github/workflows/release-macos.yml"),
+            ]
+            selectedRepositoryFile = timelineFile
+            fileRevisions = [
+                FileRevisionRecord(
+                    hash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                    shortHash: "7b3f4be",
+                    author: "ZIJIU522",
+                    authorEmail: "zijiu522@example.com",
+                    date: Date().addingTimeInterval(-2400),
+                    subject: "Keep repository status responsive",
+                    path: timelineFile.path
+                ),
+                FileRevisionRecord(
+                    hash: "551d203aac20284853e0317b03f40b248ab381ef",
+                    shortHash: "551d203",
+                    author: "ZIJIU522",
+                    authorEmail: "zijiu522@example.com",
+                    date: Date().addingTimeInterval(-86400),
+                    subject: "Add conflict operation recovery",
+                    path: timelineFile.path
+                ),
+                FileRevisionRecord(
+                    hash: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
+                    shortHash: "43a19ef",
+                    author: "ZIJIU522",
+                    authorEmail: "zijiu522@example.com",
+                    date: Date().addingTimeInterval(-172_800),
+                    subject: "Introduce repository service",
+                    path: timelineFile.path
+                ),
+            ]
+            fileVersionDocument = FileVersionDocument(
+                path: timelineFile.path,
+                content: """
+                import Foundation
 
-        if ProcessInfo.processInfo.environment["GITGATTO_AGENT_DRAFT_PREVIEW"] == "1" {
-            let userMessage = CodexMessage(
-                role: .user,
-                text: L10n.text("codex.prompt.draft_commit.concise")
-            )
-            let assistantMessage = CodexMessage(
-                role: .assistant,
-                text: "feat: deepen Git Agent workflows",
-                operation: CodexOperationRecord(
-                    mode: .analyze,
-                    commandCount: 0,
-                    fileChangeCount: 0,
-                    completedAt: Date()
+                actor GitRepositoryService: GitRepositoryServing {
+                    private let runner: GitCommandRunner
+
+                    init(runner: GitCommandRunner = GitCommandRunner()) {
+                        self.runner = runner
+                    }
+
+                    func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot {
+                        let root = try await runner.run(at: selectedURL, arguments: ["rev-parse", "--show-toplevel"])
+                        return try await snapshot(at: root)
+                    }
+                }
+                """,
+                isBinary: false,
+                previewURL: nil,
+                diff: DiffDocument(
+                    path: timelineFile.path,
+                    lines: [
+                        DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "@@ -8,3 +8,6 @@ actor GitRepositoryService", kind: .hunk),
+                        DiffLine(oldLineNumber: 8, newLineNumber: 8, text: "    func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot {", kind: .context),
+                        DiffLine(oldLineNumber: nil, newLineNumber: 9, text: "+        let root = try await runner.run(at: selectedURL, arguments: [\"rev-parse\", \"--show-toplevel\"])", kind: .addition),
+                        DiffLine(oldLineNumber: 9, newLineNumber: 10, text: "        return try await snapshot(at: root)", kind: .context),
+                    ]
                 )
             )
-            codexMessages = [userMessage, assistantMessage]
-            codexCommitDraft = CodexCommitDraft(
-                messageID: assistantMessage.id,
-                repositoryURL: rootURL,
-                message: assistantMessage.text,
-                automaticallyStagedCount: 1
+            fileBlameLines = [
+                FileBlameLine(commitHash: fileRevisions[2].hash, originalLineNumber: 1, finalLineNumber: 1, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[2].date, summary: fileRevisions[2].subject, sourcePath: timelineFile.path, text: "import Foundation"),
+                FileBlameLine(commitHash: fileRevisions[2].hash, originalLineNumber: 2, finalLineNumber: 2, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[2].date, summary: fileRevisions[2].subject, sourcePath: timelineFile.path, text: ""),
+                FileBlameLine(commitHash: fileRevisions[1].hash, originalLineNumber: 3, finalLineNumber: 3, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[1].date, summary: fileRevisions[1].subject, sourcePath: timelineFile.path, text: "actor GitRepositoryService: GitRepositoryServing {"),
+                FileBlameLine(commitHash: fileRevisions[1].hash, originalLineNumber: 4, finalLineNumber: 4, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[1].date, summary: fileRevisions[1].subject, sourcePath: timelineFile.path, text: "    private let runner: GitCommandRunner"),
+                FileBlameLine(commitHash: fileRevisions[0].hash, originalLineNumber: 9, finalLineNumber: 9, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[0].date, summary: fileRevisions[0].subject, sourcePath: timelineFile.path, text: "    func loadRepository(at selectedURL: URL) async throws -> RepositorySnapshot {"),
+                FileBlameLine(commitHash: fileRevisions[0].hash, originalLineNumber: 10, finalLineNumber: 10, author: "ZIJIU522", authorEmail: "zijiu522@example.com", date: fileRevisions[0].date, summary: fileRevisions[0].subject, sourcePath: timelineFile.path, text: "        let root = try await runner.run(at: selectedURL, arguments: [\"rev-parse\", \"--show-toplevel\"])"),
+            ]
+            let previewHooks = rootURL.appendingPathComponent(".git/hooks", isDirectory: true)
+            repositoryDiagnostics = RepositoryDiagnostics(
+                generatedAt: Date().addingTimeInterval(-12),
+                gitExecutablePath: "/usr/bin/git",
+                gitVersion: "git version 2.50.1 (Apple Git-155)",
+                repositoryRoot: rootURL,
+                objectDatabaseHealthy: true,
+                objectDatabaseMessage: nil,
+                userName: "ZIJIU522",
+                userEmail: "zijiu522@users.noreply.github.com",
+                lfsVersion: "git-lfs/3.7.0",
+                lfsError: nil,
+                usesLFS: true,
+                lfsFilterConfigured: true,
+                lfsTrackedFileCount: 12,
+                hooksDirectory: previewHooks,
+                hooksDirectoryExists: true,
+                hooks: [
+                    GitHookRecord(name: "pre-commit", url: previewHooks.appendingPathComponent("pre-commit"), isExecutable: true, isSymbolicLink: false, size: 1284),
+                    GitHookRecord(name: "pre-push", url: previewHooks.appendingPathComponent("pre-push"), isExecutable: true, isSymbolicLink: false, size: 1172),
+                    GitHookRecord(name: "commit-msg", url: previewHooks.appendingPathComponent("commit-msg"), isExecutable: false, isSymbolicLink: false, size: 842),
+                ]
             )
-            codexActivity = L10n.text("codex.status.completed_plain")
-        }
-
-        guard let accountURL = URL(string: "https://github.com/ZIJIU522") else { return }
-        githubAccount = GitHubAccount(login: "ZIJIU522", name: "ZIJIU522", webURL: accountURL)
-
-        func previewRepository(
-            name: String,
-            description: String,
-            language: String,
-            stars: Int,
-            forks: Int,
-            isPrivate: Bool = false
-        ) -> GitHubRepository? {
-            let fullName = "ZIJIU522/\(name)"
-            guard let webURL = URL(string: "https://github.com/\(fullName)") else { return nil }
-            return GitHubRepository(
-                fullName: fullName,
-                name: name,
-                owner: "ZIJIU522",
-                description: description,
-                webURL: webURL,
-                stars: stars,
-                forks: forks,
-                openIssues: max(1, forks / 3),
-                language: language,
-                updatedAt: Date().addingTimeInterval(-Double(stars * 37)),
-                isPrivate: isPrivate,
-                defaultBranch: "main"
-            )
-        }
-
-        githubAccountRepositories = [
-            previewRepository(
-                name: "GitGatto",
-                description: L10n.text("about.product"),
-                language: "Swift",
-                stars: 268,
-                forks: 24
-            ),
-            previewRepository(
-                name: "gatto-web",
-                description: "项目文档与版本发布站点",
-                language: "TypeScript",
-                stars: 96,
-                forks: 12
-            ),
-            previewRepository(
-                name: "repository-insights",
-                description: "仓库活跃度与贡献数据分析",
-                language: "Python",
-                stars: 42,
-                forks: 8,
-                isPrivate: true
-            ),
-            previewRepository(
-                name: "git-transport",
-                description: "面向桌面客户端的 Git 传输核心",
-                language: "Rust",
-                stars: 31,
-                forks: 5
-            )
-        ].compactMap { $0 }
-        selectedGitHubRepository = githubAccountRepositories.first
-        if ProcessInfo.processInfo.environment["GITGATTO_STAR_PREVIEW"] == "selected" {
-            isSelectedGitHubRepositoryStarred = true
-        }
-
-        if let repository = selectedGitHubRepository,
-           let rawURL = URL(string: "https://raw.githubusercontent.com/\(repository.fullName)/main/"),
-           let webURL = URL(string: "https://github.com/\(repository.fullName)/blob/main/") {
-            githubReadme = GitHubReadmeDocument(
-                path: "README.md",
-                html: """
-                <h1>GitGatto</h1>
-                <p>\(L10n.text("about.product"))</p>
-                <h2>项目管理</h2>
-                <p>在一个工作区内查看改动、提交历史、分支、项目文档与代码。</p>
-                <ul><li>实时暂存状态</li><li>GitHub 项目与 Pull Request</li><li>多 CLI Agent 工作流</li></ul>
-                """,
-                linkBaseURL: webURL,
-                linkRootURL: webURL,
-                assetBaseURL: rawURL,
-                assetRootURL: rawURL
-            )
-            if ProcessInfo.processInfo.environment["GITGATTO_README_CARD_PREVIEW"] == "1",
-               let githubReadme {
-                let translation = githubReadme.replacingHTML(with: """
-                <h1>GitGatto</h1>
-                <p>A native macOS Git client for repository work, GitHub collaboration, and local Agent workflows.</p>
-                <h2>Repository workspace</h2>
-                <ul><li>Review working tree and staged changes</li><li>Browse code, history, releases, and pull requests</li></ul>
-                """)
-                githubReadmeTranslations[.english] = translation
-                translatedGitHubReadme = translation
-                githubReadmeTranslationTarget = .english
+            switch ProcessInfo.processInfo.environment["GITGATTO_P2_PREVIEW"] {
+            case "blame":
+                fileTimelineDetailMode = .blame
+            case "revision":
+                selectedFileRevision = fileRevisions.first
+                fileTimelineDetailMode = .changes
+            default:
+                break
             }
-            if ProcessInfo.processInfo.environment["GITGATTO_README_REWRITE_PREVIEW"] == "1" {
-                readmeRewritePreview = GitHubReadmeDocument(
+            if ProcessInfo.processInfo.environment["GITGATTO_CONFLICT_PREVIEW"] == "1" {
+                let conflictPath = "Sources/App/RepositoryStatus.swift"
+                repositoryOperationState = RepositoryOperationState(
+                    kind: .rebase,
+                    conflictedPaths: [conflictPath, "Sources/Git/SyncCoordinator.swift"],
+                    progress: RepositoryOperationProgress(current: 2, total: 4)
+                )
+                selectedConflictPath = conflictPath
+                conflictDocument = ConflictFileDocument(
+                    path: conflictPath,
+                    base: "struct RepositoryStatus {\n    let branch: String\n}\n",
+                    ours: "struct RepositoryStatus {\n    let branch: String\n    let aheadCount: Int\n}\n",
+                    theirs: "struct RepositoryStatus {\n    let branch: String\n    let pendingPushCount: Int\n}\n",
+                    result: "struct RepositoryStatus {\n    let branch: String\n<<<<<<< HEAD\n    let aheadCount: Int\n=======\n    let pendingPushCount: Int\n>>>>>>> feature/sync-status\n}\n",
+                    isBinary: false
+                )
+                conflictResolutionText = conflictDocument?.result ?? ""
+            }
+            if ProcessInfo.processInfo.environment["GITGATTO_STASH_PREVIEW"] == "1" {
+                let first = StashRecord(
+                    reference: "stash@{0}",
+                    hash: "95c4396d468ba25e81f98c645fc1188da23d62da",
+                    createdAt: Date().addingTimeInterval(-1800),
+                    summary: "On main: Refine sync status"
+                )
+                stashes = [
+                    first,
+                    StashRecord(
+                        reference: "stash@{1}",
+                        hash: "7aa1f843af3a398a73a72c55b6a6bcb71bdce31a",
+                        createdAt: Date().addingTimeInterval(-86400),
+                        summary: "On feature/agent: Draft commit composer"
+                    ),
+                ]
+                selectedStash = first
+                stashDiffDocument = DiffDocument(
+                    path: first.reference,
+                    lines: [
+                        DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "diff --git a/Sources/App/RepositoryStatus.swift b/Sources/App/RepositoryStatus.swift", kind: .header),
+                        DiffLine(oldLineNumber: nil, newLineNumber: nil, text: "@@ -2,4 +2,7 @@ struct RepositoryStatus {", kind: .hunk),
+                        DiffLine(oldLineNumber: 2, newLineNumber: 2, text: "     let branch: String", kind: .context),
+                        DiffLine(oldLineNumber: nil, newLineNumber: 3, text: "+    let aheadCount: Int", kind: .addition),
+                        DiffLine(oldLineNumber: nil, newLineNumber: 4, text: "+    let behindCount: Int", kind: .addition),
+                        DiffLine(oldLineNumber: 3, newLineNumber: 5, text: " }", kind: .context),
+                    ]
+                )
+            }
+            worktrees = [
+                GitWorktreeRecord(
+                    path: rootURL,
+                    headHash: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                    branch: "main",
+                    isMain: true,
+                    isLocked: false,
+                    isPrunable: false,
+                    changesCount: 2,
+                    aheadCount: 1,
+                    behindCount: 0
+                ),
+                GitWorktreeRecord(
+                    path: rootURL.deletingLastPathComponent().appendingPathComponent("GitGatto-pr-184", isDirectory: true),
+                    headHash: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
+                    branch: "agent/pr-184-review",
+                    isMain: false,
+                    isLocked: false,
+                    isPrunable: false,
+                    changesCount: 4,
+                    aheadCount: 2,
+                    behindCount: 0
+                ),
+                GitWorktreeRecord(
+                    path: rootURL.deletingLastPathComponent().appendingPathComponent("GitGatto-actions-fix", isDirectory: true),
+                    headHash: "551d203aac20284853e0317b03f40b248ab381ef",
+                    branch: "agent/actions-fix",
+                    isMain: false,
+                    isLocked: false,
+                    isPrunable: false,
+                    changesCount: 0,
+                    aheadCount: 0,
+                    behindCount: 1
+                ),
+            ]
+            selectedWorktree = worktrees[1]
+            worktreeAgentRuns[worktrees[1].id] = GitWorktreeAgentRun(
+                worktreeID: worktrees[1].id,
+                prompt: "Review the pull request and run the focused tests.",
+                mode: .edit,
+                state: .completed,
+                response: "Reviewed the changed synchronization paths and added the missing regression coverage.",
+                error: nil,
+                startedAt: Date().addingTimeInterval(-420),
+                completedAt: Date().addingTimeInterval(-180),
+                operation: CodexOperationRecord(
+                    mode: .edit,
+                    commandCount: 3,
+                    fileChangeCount: 2,
+                    completedAt: Date().addingTimeInterval(-180)
+                )
+            )
+            localRepositories = [
+                rootURL,
+                rootURL.deletingLastPathComponent().appendingPathComponent("aside-music", isDirectory: true),
+            ]
+            recentRepositories = localRepositories
+            if ProcessInfo.processInfo.environment["GITGATTO_RECOVERY_PREVIEW"] == "1" {
+                repositoryBackups = [
+                    RepositoryBackup(
+                        id: UUID(),
+                        repositoryPath: rootURL.path,
+                        repositoryName: rootURL.lastPathComponent,
+                        branchName: "main",
+                        headSHA: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                        createdAt: Date().addingTimeInterval(-420),
+                        reason: .majorChange,
+                        changedFileCount: 24,
+                        changedLineCount: 684,
+                        storedByteCount: 3_842_100,
+                        omittedFileCount: 0,
+                        directoryName: UUID().uuidString.lowercased()
+                    ),
+                    RepositoryBackup(
+                        id: UUID(),
+                        repositoryPath: rootURL.path,
+                        repositoryName: rootURL.lastPathComponent,
+                        branchName: "main",
+                        headSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                        createdAt: Date().addingTimeInterval(-3600),
+                        reason: .scheduled,
+                        changedFileCount: 8,
+                        changedLineCount: 126,
+                        storedByteCount: 2_194_700,
+                        omittedFileCount: 0,
+                        directoryName: UUID().uuidString.lowercased()
+                    ),
+                    RepositoryBackup(
+                        id: UUID(),
+                        repositoryPath: localRepositories[1].path,
+                        repositoryName: localRepositories[1].lastPathComponent,
+                        branchName: "release",
+                        headSHA: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
+                        createdAt: Date().addingTimeInterval(-86400),
+                        reason: .manual,
+                        changedFileCount: 3,
+                        changedLineCount: 48,
+                        storedByteCount: 1_021_800,
+                        omittedFileCount: 1,
+                        directoryName: UUID().uuidString.lowercased()
+                    ),
+                ]
+                selectedRepositoryBackupID = repositoryBackups.first?.id
+                repositoryBackupStorageBytes = repositoryBackups.reduce(0) { $0 + $1.storedByteCount }
+            }
+            codexAvailability = CodexAvailability(state: .available, version: nil)
+            translationAIAvailability = CodexAvailability(state: .available, version: nil)
+            githubAvailability = GitHubAvailability(state: .available, version: nil)
+
+            if ProcessInfo.processInfo.environment["GITGATTO_AGENT_DRAFT_PREVIEW"] == "1" {
+                let userMessage = CodexMessage(
+                    role: .user,
+                    text: L10n.text("codex.prompt.draft_commit.concise")
+                )
+                let assistantMessage = CodexMessage(
+                    role: .assistant,
+                    text: "feat: deepen Git Agent workflows",
+                    operation: CodexOperationRecord(
+                        mode: .analyze,
+                        commandCount: 0,
+                        fileChangeCount: 0,
+                        completedAt: Date()
+                    )
+                )
+                codexMessages = [userMessage, assistantMessage]
+                codexCommitDraft = CodexCommitDraft(
+                    messageID: assistantMessage.id,
+                    repositoryURL: rootURL,
+                    message: assistantMessage.text,
+                    automaticallyStagedCount: 1
+                )
+                codexActivity = L10n.text("codex.status.completed_plain")
+            }
+
+            guard let accountURL = URL(string: "https://github.com/ZIJIU522") else { return }
+            githubAccount = GitHubAccount(login: "ZIJIU522", name: "ZIJIU522", webURL: accountURL)
+
+            func previewRepository(
+                name: String,
+                description: String,
+                language: String,
+                stars: Int,
+                forks: Int,
+                isPrivate: Bool = false
+            ) -> GitHubRepository? {
+                let fullName = "ZIJIU522/\(name)"
+                guard let webURL = URL(string: "https://github.com/\(fullName)") else { return nil }
+                return GitHubRepository(
+                    fullName: fullName,
+                    name: name,
+                    owner: "ZIJIU522",
+                    description: description,
+                    webURL: webURL,
+                    stars: stars,
+                    forks: forks,
+                    openIssues: max(1, forks / 3),
+                    language: language,
+                    updatedAt: Date().addingTimeInterval(-Double(stars * 37)),
+                    isPrivate: isPrivate,
+                    defaultBranch: "main"
+                )
+            }
+
+            githubAccountRepositories = [
+                previewRepository(
+                    name: "GitGatto",
+                    description: L10n.text("about.product"),
+                    language: "Swift",
+                    stars: 268,
+                    forks: 24
+                ),
+                previewRepository(
+                    name: "gatto-web",
+                    description: "项目文档与版本发布站点",
+                    language: "TypeScript",
+                    stars: 96,
+                    forks: 12
+                ),
+                previewRepository(
+                    name: "repository-insights",
+                    description: "仓库活跃度与贡献数据分析",
+                    language: "Python",
+                    stars: 42,
+                    forks: 8,
+                    isPrivate: true
+                ),
+                previewRepository(
+                    name: "git-transport",
+                    description: "面向桌面客户端的 Git 传输核心",
+                    language: "Rust",
+                    stars: 31,
+                    forks: 5
+                ),
+            ].compactMap { $0 }
+            selectedGitHubRepository = githubAccountRepositories.first
+            if ProcessInfo.processInfo.environment["GITGATTO_STAR_PREVIEW"] == "selected" {
+                isSelectedGitHubRepositoryStarred = true
+            }
+
+            if let repository = selectedGitHubRepository,
+               let rawURL = URL(string: "https://raw.githubusercontent.com/\(repository.fullName)/main/"),
+               let webURL = URL(string: "https://github.com/\(repository.fullName)/blob/main/")
+            {
+                githubReadme = GitHubReadmeDocument(
                     path: "README.md",
                     html: """
                     <h1>GitGatto</h1>
-                    <p>原生 macOS Git 客户端，把仓库管理、GitHub 协作与本机 Agent 放进同一个工作区。</p>
-                    <h2>功能</h2>
-                    <h3>本地仓库</h3>
-                    <ul><li>实时读取工作区、暂存区与上游状态</li><li>查看 Diff、图片和视频改动</li></ul>
-                    <h3>GitHub 与 Agent</h3>
-                    <ul><li>查看代码、Pull Request、Actions 和 Releases</li><li>按仓库证据重写 README</li></ul>
-                    <h2>使用</h2>
-                    <ol><li>下载最新 DMG</li><li>打开本地仓库或 GitHub 项目</li></ol>
+                    <p>\(L10n.text("about.product"))</p>
+                    <h2>项目管理</h2>
+                    <p>在一个工作区内查看改动、提交历史、分支、项目文档与代码。</p>
+                    <ul><li>实时暂存状态</li><li>GitHub 项目与 Pull Request</li><li>多 CLI Agent 工作流</li></ul>
                     """,
                     linkBaseURL: webURL,
                     linkRootURL: webURL,
                     assetBaseURL: rawURL,
                     assetRootURL: rawURL
                 )
-                readmeRewriteRepositoryURL = rootURL
-                readmeRewriteRelativePath = "README.md"
-            }
+                if ProcessInfo.processInfo.environment["GITGATTO_README_CARD_PREVIEW"] == "1",
+                   let githubReadme
+                {
+                    let translation = githubReadme.replacingHTML(with: """
+                    <h1>GitGatto</h1>
+                    <p>A native macOS Git client for repository work, GitHub collaboration, and local Agent workflows.</p>
+                    <h2>Repository workspace</h2>
+                    <ul><li>Review working tree and staged changes</li><li>Browse code, history, releases, and pull requests</li></ul>
+                    """)
+                    githubReadmeTranslations[.english] = translation
+                    translatedGitHubReadme = translation
+                    githubReadmeTranslationTarget = .english
+                }
+                if ProcessInfo.processInfo.environment["GITGATTO_README_REWRITE_PREVIEW"] == "1" {
+                    readmeRewritePreview = GitHubReadmeDocument(
+                        path: "README.md",
+                        html: """
+                        <h1>GitGatto</h1>
+                        <p>原生 macOS Git 客户端，把仓库管理、GitHub 协作与本机 Agent 放进同一个工作区。</p>
+                        <h2>功能</h2>
+                        <h3>本地仓库</h3>
+                        <ul><li>实时读取工作区、暂存区与上游状态</li><li>查看 Diff、图片和视频改动</li></ul>
+                        <h3>GitHub 与 Agent</h3>
+                        <ul><li>查看代码、Pull Request、Actions 和 Releases</li><li>按仓库证据重写 README</li></ul>
+                        <h2>使用</h2>
+                        <ol><li>下载最新 DMG</li><li>打开本地仓库或 GitHub 项目</li></ol>
+                        """,
+                        linkBaseURL: webURL,
+                        linkRootURL: webURL,
+                        assetBaseURL: rawURL,
+                        assetRootURL: rawURL
+                    )
+                    readmeRewriteRepositoryURL = rootURL
+                    readmeRewriteRelativePath = "README.md"
+                }
 
-            let pullRequest = GitHubPullRequest(
-                number: 184,
-                title: "Keep repository monitoring responsive during Agent runs",
-                author: "ZIJIU522",
-                body: "This change separates live Git monitoring from Agent execution and keeps branch, staging, and upstream state current while a task is running.",
-                webURL: repository.webURL.appendingPathComponent("pull/184"),
-                isDraft: false,
-                headBranch: "feature/parallel-repository-monitor",
-                headSHA: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
-                baseBranch: "main",
-                nodeID: "PR_kwDOGitGatto184",
-                updatedAt: Date().addingTimeInterval(-1_200)
-            )
-            githubPullRequests = [pullRequest]
-            let reviewFile = GitHubPullRequestFile(
-                path: "Sources/GitGatto/ViewModels/WorkspaceViewModel.swift",
-                status: "modified",
-                additions: 18,
-                deletions: 5,
-                changes: 23,
-                patch: """
-                @@ -88,7 +88,12 @@ final class WorkspaceViewModel: ObservableObject {
-                -    private var refreshTask: Task<Void, Never>?
-                +    private var localRefreshTask: Task<Void, Never>?
-                +    private var remoteRefreshTask: Task<Void, Never>?
-                +
-                +    var isMonitoringRepository: Bool {
-                +        localRefreshTask != nil
-                +    }
-                """
-            )
-            pullRequestReviewCenter = GitHubPullRequestReviewCenter(
-                reviews: [
-                    GitHubPullRequestReview(
-                        id: 4102,
-                        author: "reviewer",
-                        body: "The independent refresh lane fixes the stale staging state. The focused service tests cover the cancellation boundary.",
-                        state: "APPROVED",
-                        submittedAt: Date().addingTimeInterval(-1_800)
-                    )
-                ],
-                comments: [
-                    GitHubPullRequestComment(
-                        id: 5101,
-                        author: "maintainer",
-                        body: "Please keep remote refresh bounded while the local status lane continues updating.",
-                        createdAt: Date().addingTimeInterval(-3_600),
-                        path: nil,
-                        line: nil,
-                        kind: .conversation
-                    )
-                ],
-                commits: [
-                    GitHubPullRequestCommit(
-                        sha: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
-                        message: "Separate repository monitoring from Agent execution",
-                        author: "ZIJIU522",
-                        date: Date().addingTimeInterval(-2_100)
-                    )
-                ],
-                files: [reviewFile],
-                checks: [
-                    GitHubPullRequestCheck(
-                        id: 6101,
-                        name: "macOS / Swift tests",
-                        status: "completed",
-                        conclusion: "success",
-                        detailsURL: repository.webURL.appendingPathComponent("actions/runs/618"),
-                        startedAt: Date().addingTimeInterval(-1_700),
-                        completedAt: Date().addingTimeInterval(-1_520)
-                    ),
-                    GitHubPullRequestCheck(
-                        id: 6102,
-                        name: "Release package",
-                        status: "completed",
-                        conclusion: "failure",
-                        detailsURL: repository.webURL.appendingPathComponent("actions/runs/617"),
-                        startedAt: Date().addingTimeInterval(-1_650),
-                        completedAt: Date().addingTimeInterval(-1_500)
-                    )
+                let pullRequest = GitHubPullRequest(
+                    number: 184,
+                    title: "Keep repository monitoring responsive during Agent runs",
+                    author: "ZIJIU522",
+                    body: "This change separates live Git monitoring from Agent execution and keeps branch, staging, and upstream state current while a task is running.",
+                    webURL: repository.webURL.appendingPathComponent("pull/184"),
+                    isDraft: false,
+                    headBranch: "feature/parallel-repository-monitor",
+                    headSHA: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
+                    baseBranch: "main",
+                    nodeID: "PR_kwDOGitGatto184",
+                    updatedAt: Date().addingTimeInterval(-1200)
+                )
+                githubPullRequests = [pullRequest]
+                let reviewFile = GitHubPullRequestFile(
+                    path: "Sources/GitGatto/ViewModels/WorkspaceViewModel.swift",
+                    status: "modified",
+                    additions: 18,
+                    deletions: 5,
+                    changes: 23,
+                    patch: """
+                    @@ -88,7 +88,12 @@ final class WorkspaceViewModel: ObservableObject {
+                    -    private var refreshTask: Task<Void, Never>?
+                    +    private var localRefreshTask: Task<Void, Never>?
+                    +    private var remoteRefreshTask: Task<Void, Never>?
+                    +
+                    +    var isMonitoringRepository: Bool {
+                    +        localRefreshTask != nil
+                    +    }
+                    """
+                )
+                pullRequestReviewCenter = GitHubPullRequestReviewCenter(
+                    reviews: [
+                        GitHubPullRequestReview(
+                            id: 4102,
+                            author: "reviewer",
+                            body: "The independent refresh lane fixes the stale staging state. The focused service tests cover the cancellation boundary.",
+                            state: "APPROVED",
+                            submittedAt: Date().addingTimeInterval(-1800)
+                        ),
+                    ],
+                    comments: [
+                        GitHubPullRequestComment(
+                            id: 5101,
+                            author: "maintainer",
+                            body: "Please keep remote refresh bounded while the local status lane continues updating.",
+                            createdAt: Date().addingTimeInterval(-3600),
+                            path: nil,
+                            line: nil,
+                            kind: .conversation
+                        ),
+                    ],
+                    commits: [
+                        GitHubPullRequestCommit(
+                            sha: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
+                            message: "Separate repository monitoring from Agent execution",
+                            author: "ZIJIU522",
+                            date: Date().addingTimeInterval(-2100)
+                        ),
+                    ],
+                    files: [reviewFile],
+                    checks: [
+                        GitHubPullRequestCheck(
+                            id: 6101,
+                            name: "macOS / Swift tests",
+                            status: "completed",
+                            conclusion: "success",
+                            detailsURL: repository.webURL.appendingPathComponent("actions/runs/618"),
+                            startedAt: Date().addingTimeInterval(-1700),
+                            completedAt: Date().addingTimeInterval(-1520)
+                        ),
+                        GitHubPullRequestCheck(
+                            id: 6102,
+                            name: "Release package",
+                            status: "completed",
+                            conclusion: "failure",
+                            detailsURL: repository.webURL.appendingPathComponent("actions/runs/617"),
+                            startedAt: Date().addingTimeInterval(-1650),
+                            completedAt: Date().addingTimeInterval(-1500)
+                        ),
+                    ]
+                )
+                selectedPullRequestFile = reviewFile
+
+                githubActionWorkflows = [
+                    GitHubActionsWorkflow(id: 81, name: "macOS CI", path: ".github/workflows/ci.yml", state: "active"),
+                    GitHubActionsWorkflow(id: 82, name: "Release macOS", path: ".github/workflows/release-macos.yml", state: "active"),
                 ]
-            )
-            selectedPullRequestFile = reviewFile
-
-            githubActionWorkflows = [
-                GitHubActionsWorkflow(id: 81, name: "macOS CI", path: ".github/workflows/ci.yml", state: "active"),
-                GitHubActionsWorkflow(id: 82, name: "Release macOS", path: ".github/workflows/release-macos.yml", state: "active")
-            ]
-            let failedRun = GitHubActionsRun(
-                id: 617,
-                workflowID: 82,
-                name: "Release macOS",
-                displayTitle: "Package signed DMG",
-                event: "push",
-                status: "completed",
-                conclusion: "failure",
-                branch: "main",
-                headSHA: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
-                runNumber: 42,
-                actor: "ZIJIU522",
-                createdAt: Date().addingTimeInterval(-1_900),
-                updatedAt: Date().addingTimeInterval(-1_500),
-                webURL: repository.webURL.appendingPathComponent("actions/runs/617")
-            )
-            githubActionRuns = [
-                GitHubActionsRun(
-                    id: 618,
-                    workflowID: 81,
-                    name: "macOS CI",
-                    displayTitle: "Keep repository monitoring responsive",
-                    event: "pull_request",
-                    status: "in_progress",
-                    conclusion: nil,
-                    branch: "feature/parallel-repository-monitor",
-                    headSHA: "551d203aac20284853e0317b03f40b248ab381ef",
-                    runNumber: 126,
+                let failedRun = GitHubActionsRun(
+                    id: 617,
+                    workflowID: 82,
+                    name: "Release macOS",
+                    displayTitle: "Package signed DMG",
+                    event: "push",
+                    status: "completed",
+                    conclusion: "failure",
+                    branch: "main",
+                    headSHA: "43a19ef41eb3aaf6ad21646924b6d4d3e6ef82af",
+                    runNumber: 42,
                     actor: "ZIJIU522",
-                    createdAt: Date().addingTimeInterval(-540),
-                    updatedAt: Date().addingTimeInterval(-120),
-                    webURL: repository.webURL.appendingPathComponent("actions/runs/618")
-                ),
-                failedRun
-            ]
-            selectedGitHubActionRun = failedRun
-            githubActionRunDetail = GitHubActionsRunDetail(
-                jobs: [
-                    GitHubActionsJob(
-                        id: 7101,
-                        name: "Build, sign and package",
-                        status: "completed",
-                        conclusion: "failure",
-                        startedAt: Date().addingTimeInterval(-1_880),
-                        completedAt: Date().addingTimeInterval(-1_520),
-                        webURL: failedRun.webURL,
-                        steps: [
-                            GitHubActionsStep(number: 1, name: "Build release app", status: "completed", conclusion: "success", startedAt: nil, completedAt: nil),
-                            GitHubActionsStep(number: 2, name: "Sign application", status: "completed", conclusion: "success", startedAt: nil, completedAt: nil),
-                            GitHubActionsStep(number: 3, name: "Notarize DMG", status: "completed", conclusion: "failure", startedAt: nil, completedAt: nil)
-                        ]
-                    )
-                ],
-                artifacts: [
-                    GitHubActionsArtifact(id: 8101, name: "GitGatto-diagnostics", sizeInBytes: 284_440, isExpired: false, expiresAt: Date().addingTimeInterval(604_800))
-                ],
-                log: "notarytool: Submission failed\nstatus: Invalid\nThe archive contains a nested executable without a secure timestamp.",
-                logError: nil
-            )
-
-            let previewCodeFile = GitHubContentItem(
-                name: "CodeSurface.swift",
-                path: "Sources/GitGatto/Views/CodeSurface.swift",
-                kind: .file,
-                size: 10_482,
-                webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/CodeSurface.swift")
-            )
-
-            switch ProcessInfo.processInfo.environment["GITGATTO_P1_PREVIEW"] {
-            case "review":
-                selectedGitHubPullRequest = pullRequest
-            case "review-files":
-                pullRequestReviewTab = .files
-                selectedGitHubPullRequest = pullRequest
-            case "actions":
-                githubProjectDetailTab = .actions
-            case "code":
-                githubProjectDetailTab = .code
-                githubDirectoryPath = "Sources/GitGatto/Views"
-                githubContents = [
-                    GitHubContentItem(
-                        name: "Components",
-                        path: "Sources/GitGatto/Views/Components",
-                        kind: .directory,
-                        size: 0,
-                        webURL: repository.webURL.appendingPathComponent("tree/main/Sources/GitGatto/Views/Components")
+                    createdAt: Date().addingTimeInterval(-1900),
+                    updatedAt: Date().addingTimeInterval(-1500),
+                    webURL: repository.webURL.appendingPathComponent("actions/runs/617")
+                )
+                githubActionRuns = [
+                    GitHubActionsRun(
+                        id: 618,
+                        workflowID: 81,
+                        name: "macOS CI",
+                        displayTitle: "Keep repository monitoring responsive",
+                        event: "pull_request",
+                        status: "in_progress",
+                        conclusion: nil,
+                        branch: "feature/parallel-repository-monitor",
+                        headSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                        runNumber: 126,
+                        actor: "ZIJIU522",
+                        createdAt: Date().addingTimeInterval(-540),
+                        updatedAt: Date().addingTimeInterval(-120),
+                        webURL: repository.webURL.appendingPathComponent("actions/runs/618")
                     ),
-                    previewCodeFile,
-                    GitHubContentItem(
-                        name: "DiffInspectorView.swift",
-                        path: "Sources/GitGatto/Views/DiffInspectorView.swift",
-                        kind: .file,
-                        size: 8_746,
-                        webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/DiffInspectorView.swift")
-                    ),
-                    GitHubContentItem(
-                        name: "GitHubWorkspaceView.swift",
-                        path: "Sources/GitGatto/Views/GitHubWorkspaceView.swift",
-                        kind: .file,
-                        size: 47_114,
-                        webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/GitHubWorkspaceView.swift")
-                    ),
-                    GitHubContentItem(
-                        name: "WorkspaceView.swift",
-                        path: "Sources/GitGatto/Views/WorkspaceView.swift",
-                        kind: .file,
-                        size: 31_420,
-                        webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/WorkspaceView.swift")
-                    )
+                    failedRun,
                 ]
-                selectedGitHubContent = previewCodeFile
-                githubFileDocument = GitHubFileDocument(
-                    name: previewCodeFile.name,
-                    path: previewCodeFile.path,
-                    text: """
-                    import Foundation
-                    import SwiftUI
+                selectedGitHubActionRun = failedRun
+                githubActionRunDetail = GitHubActionsRunDetail(
+                    jobs: [
+                        GitHubActionsJob(
+                            id: 7101,
+                            name: "Build, sign and package",
+                            status: "completed",
+                            conclusion: "failure",
+                            startedAt: Date().addingTimeInterval(-1880),
+                            completedAt: Date().addingTimeInterval(-1520),
+                            webURL: failedRun.webURL,
+                            steps: [
+                                GitHubActionsStep(number: 1, name: "Build release app", status: "completed", conclusion: "success", startedAt: nil, completedAt: nil),
+                                GitHubActionsStep(number: 2, name: "Sign application", status: "completed", conclusion: "success", startedAt: nil, completedAt: nil),
+                                GitHubActionsStep(number: 3, name: "Notarize DMG", status: "completed", conclusion: "failure", startedAt: nil, completedAt: nil),
+                            ]
+                        ),
+                    ],
+                    artifacts: [
+                        GitHubActionsArtifact(id: 8101, name: "GitGatto-diagnostics", sizeInBytes: 284_440, isExpired: false, expiresAt: Date().addingTimeInterval(604_800)),
+                    ],
+                    log: "notarytool: Submission failed\nstatus: Invalid\nThe archive contains a nested executable without a secure timestamp.",
+                    logError: nil
+                )
 
-                    struct CodeDocumentView: View {
-                        let content: String
-                        let fileName: String
-                        var showsStatusBar = true
+                let previewCodeFile = GitHubContentItem(
+                    name: "CodeSurface.swift",
+                    path: "Sources/GitGatto/Views/CodeSurface.swift",
+                    kind: .file,
+                    size: 10482,
+                    webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/CodeSurface.swift")
+                )
 
-                        @Environment(\\.colorScheme) private var colorScheme
-                        @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+                switch ProcessInfo.processInfo.environment["GITGATTO_P1_PREVIEW"] {
+                case "review":
+                    selectedGitHubPullRequest = pullRequest
+                case "review-files":
+                    pullRequestReviewTab = .files
+                    selectedGitHubPullRequest = pullRequest
+                case "actions":
+                    githubProjectDetailTab = .actions
+                case "code":
+                    githubProjectDetailTab = .code
+                    githubDirectoryPath = "Sources/GitGatto/Views"
+                    githubContents = [
+                        GitHubContentItem(
+                            name: "Components",
+                            path: "Sources/GitGatto/Views/Components",
+                            kind: .directory,
+                            size: 0,
+                            webURL: repository.webURL.appendingPathComponent("tree/main/Sources/GitGatto/Views/Components")
+                        ),
+                        previewCodeFile,
+                        GitHubContentItem(
+                            name: "DiffInspectorView.swift",
+                            path: "Sources/GitGatto/Views/DiffInspectorView.swift",
+                            kind: .file,
+                            size: 8746,
+                            webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/DiffInspectorView.swift")
+                        ),
+                        GitHubContentItem(
+                            name: "GitHubWorkspaceView.swift",
+                            path: "Sources/GitGatto/Views/GitHubWorkspaceView.swift",
+                            kind: .file,
+                            size: 47114,
+                            webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/GitHubWorkspaceView.swift")
+                        ),
+                        GitHubContentItem(
+                            name: "WorkspaceView.swift",
+                            path: "Sources/GitGatto/Views/WorkspaceView.swift",
+                            kind: .file,
+                            size: 31420,
+                            webURL: repository.webURL.appendingPathComponent("blob/main/Sources/GitGatto/Views/WorkspaceView.swift")
+                        ),
+                    ]
+                    selectedGitHubContent = previewCodeFile
+                    githubFileDocument = GitHubFileDocument(
+                        name: previewCodeFile.name,
+                        path: previewCodeFile.path,
+                        text: """
+                        import Foundation
+                        import SwiftUI
 
-                        private var theme: AppVisualTheme {
-                            AppVisualTheme.resolved(themeRaw)
-                        }
+                        struct CodeDocumentView: View {
+                            let content: String
+                            let fileName: String
+                            var showsStatusBar = true
 
-                        var body: some View {
-                            let palette = AppPalette(colorScheme)
-                            let lines = content.split(
-                                separator: "\\n",
-                                omittingEmptySubsequences: false
-                            )
+                            @Environment(\\.colorScheme) private var colorScheme
+                            @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
-                            VStack(spacing: 0) {
-                                GeometryReader { proxy in
-                                    ScrollView([.horizontal, .vertical]) {
-                                        codeLines(lines)
-                                            .frame(
-                                                minWidth: proxy.size.width,
-                                                minHeight: proxy.size.height,
-                                                alignment: .topLeading
-                                            )
+                            private var theme: AppVisualTheme {
+                                AppVisualTheme.resolved(themeRaw)
+                            }
+
+                            var body: some View {
+                                let palette = AppPalette(colorScheme)
+                                let lines = content.split(
+                                    separator: "\\n",
+                                    omittingEmptySubsequences: false
+                                )
+
+                                VStack(spacing: 0) {
+                                    GeometryReader { proxy in
+                                        ScrollView([.horizontal, .vertical]) {
+                                            codeLines(lines)
+                                                .frame(
+                                                    minWidth: proxy.size.width,
+                                                    minHeight: proxy.size.height,
+                                                    alignment: .topLeading
+                                                )
+                                        }
                                     }
-                                }
 
-                                if showsStatusBar {
-                                    statusBar(palette)
+                                    if showsStatusBar {
+                                        statusBar(palette)
+                                    }
                                 }
                             }
                         }
-                    }
-                    """,
-                    size: previewCodeFile.size,
-                    webURL: previewCodeFile.webURL
+                        """,
+                        size: previewCodeFile.size,
+                        webURL: previewCodeFile.webURL
+                    )
+                default:
+                    break
+                }
+            }
+
+            if ProcessInfo.processInfo.environment["GITGATTO_LOADING_PREVIEW"] == "1" {
+                diffDocument = nil
+            }
+
+            if ProcessInfo.processInfo.environment["GITGATTO_GOALS_P3_PREVIEW"] == "candidate" {
+                selectedSection = .goals
+                projectGoalCustomIntent = "提交当前修改，创建 Pull Request，等待审查和 Actions 通过，但不要合并"
+                projectGoalCandidate = ProjectGoalCandidate(
+                    title: "完成 Pull Request 验证",
+                    intent: projectGoalCustomIntent,
+                    commitMessage: "feat: complete custom delivery goal",
+                    releaseVersion: nil,
+                    releaseBuildNumber: nil,
+                    stepKinds: Array(ProjectGoalPlanner.pullRequestSteps.prefix(through: 5))
+                )
+            } else if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] {
+                selectedSection = .goals
+                let now = Date()
+                let target = "9c5e78fd5ed55962f4e2ba63a866678997958145"
+                var goal = ProjectGoal(
+                    kind: .completeRelease,
+                    repositoryPath: rootURL.standardizedFileURL.path,
+                    repositoryName: "GitGatto",
+                    branchName: "main",
+                    baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                    commitMessage: "release: v0.19.0",
+                    targetHeadSHA: target,
+                    remoteFullName: "Lincb522/GitGatto",
+                    releaseVersion: "0.19.0",
+                    releaseBuildNumber: "19000",
+                    releaseTag: "v0.19.0",
+                    releaseApplicationName: "GitGatto",
+                    releaseURL: URL(string: "https://github.com/Lincb522/GitGatto/releases/tag/v0.19.0"),
+                    releaseAssetNames: ["GitGatto-0.19.0.dmg", "appcast.xml", "SHA256SUMS"],
+                    installedApplicationPath: "/Applications/GitGatto.app",
+                    installedApplicationVersion: "0.18.10",
+                    installedApplicationBuild: "18010",
+                    status: preview == "waiting" ? .waiting : .ready,
+                    createdAt: now.addingTimeInterval(-980)
+                )
+                let completed: [(ProjectGoalStepKind, String)] = [
+                    (.readme, "README.md"),
+                    (.translation, "README.en.md"),
+                    (.version, "0.19.0 (19000)"),
+                    (.changelog, "CHANGELOG.md"),
+                    (.releasePipeline, ".github/workflows/release-macos.yml"),
+                    (.stageChanges, "5"),
+                    (.commit, String(target.prefix(12))),
+                    (.push, String(target.prefix(12))),
+                    (.releaseTag, "v0.19.0"),
+                ]
+                for (index, item) in completed.enumerated() {
+                    goal.updateStep(
+                        item.0,
+                        status: .completed,
+                        evidence: item.1,
+                        at: now.addingTimeInterval(Double(-760 + index * 62))
+                    )
+                }
+                if preview == "waiting" {
+                    goal.releaseWorkflowRunNumber = 142
+                    goal.updateStep(.githubRelease, status: .waiting, evidence: "#142", at: now)
+                } else {
+                    goal.updateStep(.githubRelease, status: .completed, evidence: "v0.19.0", at: now.addingTimeInterval(-90))
+                    goal.updateStep(.dmg, status: .completed, evidence: "GitGatto-0.19.0.dmg", at: now.addingTimeInterval(-60))
+                    goal.updateStep(.updateFeed, status: .completed, evidence: "appcast.xml", at: now.addingTimeInterval(-30))
+                    goal.updateStep(.localApplication, status: .pending, evidence: "0.18.10 (18010)", at: now)
+                }
+                projectGoals = [goal]
+                selectedProjectGoalID = goal.id
+            } else if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P1_PREVIEW"] {
+                selectedSection = .goals
+                let now = Date()
+                let target = "7b3f4be834ac9d10d7052856c34f574792706bf2"
+                var goal = ProjectGoal(
+                    kind: .githubDelivery,
+                    repositoryPath: rootURL.standardizedFileURL.path,
+                    repositoryName: rootURL.lastPathComponent,
+                    branchName: "feature/delivery-goal",
+                    baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                    commitMessage: "feat: add GitHub delivery convergence",
+                    targetHeadSHA: target,
+                    remoteFullName: "Lincb522/GitGatto",
+                    baseBranch: "main",
+                    pullRequestNumber: 184,
+                    pullRequestTitle: "Add GitHub delivery convergence",
+                    pullRequestURL: URL(string: "https://github.com/Lincb522/GitGatto/pull/184"),
+                    status: preview == "failure" ? .blocked : .ready,
+                    createdAt: now.addingTimeInterval(-720)
+                )
+                goal.updateStep(.stageChanges, status: .completed, evidence: "4", at: now.addingTimeInterval(-650))
+                goal.updateStep(.commit, status: .completed, evidence: String(target.prefix(12)), at: now.addingTimeInterval(-580))
+                goal.updateStep(.push, status: .completed, evidence: String(target.prefix(12)), at: now.addingTimeInterval(-510))
+                goal.updateStep(.pullRequest, status: .completed, evidence: "PR #184 → main", at: now.addingTimeInterval(-430))
+                goal.updateStep(.review, status: .completed, evidence: "2 项批准", at: now.addingTimeInterval(-320))
+                if preview == "failure" {
+                    let failure = ProjectGoalActionFailure(
+                        runID: 618,
+                        runNumber: 126,
+                        workflowName: "macOS CI",
+                        conclusion: "failure",
+                        webURL: URL(string: "https://github.com/Lincb522/GitGatto/actions/runs/618")!,
+                        logExcerpt: "Test Suite 'GitGattoTests' failed\nProjectGoalTests.swift: expected merge state to be completed"
+                    )
+                    goal.lastActionFailure = failure
+                    let explanation = L10n.text("goal.actions.conclusion.failure")
+                    goal.lastError = explanation
+                    goal.updateStep(.actions, status: .blocked, evidence: "#126 · macOS CI", error: explanation, at: now)
+                } else {
+                    goal.artifactNames = ["GitGatto.dmg", "GitGatto-symbols.zip"]
+                    goal.updateStep(.actions, status: .completed, evidence: "#126", at: now.addingTimeInterval(-210))
+                    goal.updateStep(.artifact, status: .completed, evidence: goal.artifactNames.joined(separator: ", "), at: now.addingTimeInterval(-160))
+                    goal.updateStep(.merge, status: .pending, at: now)
+                }
+                projectGoals = [goal]
+                selectedProjectGoalID = goal.id
+            } else if ProcessInfo.processInfo.environment["GITGATTO_GOALS_PREVIEW"] == "1" {
+                selectedSection = .goals
+                let now = Date()
+                var goal = ProjectGoal(
+                    repositoryPath: rootURL.standardizedFileURL.path,
+                    repositoryName: rootURL.lastPathComponent,
+                    branchName: "main",
+                    baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
+                    commitMessage: "feat: refine repository sync feedback",
+                    targetHeadSHA: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                    remoteFullName: "Lincb522/GitGatto",
+                    status: .waiting,
+                    createdAt: now.addingTimeInterval(-420)
+                )
+                goal.updateStep(.stageChanges, status: .completed, evidence: "2", at: now.addingTimeInterval(-360))
+                goal.updateStep(.commit, status: .completed, evidence: "7b3f4be834ac", at: now.addingTimeInterval(-280))
+                goal.updateStep(.push, status: .completed, evidence: "7b3f4be834ac", at: now.addingTimeInterval(-190))
+                goal.updateStep(.actions, status: .waiting, evidence: "184", at: now)
+                goal.status = .waiting
+                projectGoals = [goal]
+                selectedProjectGoalID = goal.id
+            }
+
+            if let regressionPreview = ProcessInfo.processInfo.environment["GITGATTO_REGRESSION_PREVIEW"] {
+                selectedSection = .regression
+                let now = Date()
+                let knownGood = RegressionCommitEvidence(
+                    sha: "01f47d7303c84b1e451edb8a0be601e9174f3ace",
+                    shortSHA: "01f47d7",
+                    subject: "Keep repository switching responsive",
+                    author: "ZIJIU522",
+                    authoredAt: now.addingTimeInterval(-12000)
+                )
+                let skipped = RegressionCommitEvidence(
+                    sha: "551d203aac20284853e0317b03f40b248ab381ef",
+                    shortSHA: "551d203",
+                    subject: "Refresh repository state after sync",
+                    author: "ZIJIU522",
+                    authoredAt: now.addingTimeInterval(-6200)
+                )
+                let culprit = RegressionCommitEvidence(
+                    sha: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                    shortSHA: "7b3f4be",
+                    subject: "Merge console theme status",
+                    author: "ZIJIU522",
+                    authoredAt: now.addingTimeInterval(-2400)
+                )
+                var investigation = RegressionInvestigation(
+                    repositoryPath: rootURL.standardizedFileURL.path,
+                    repositoryName: rootURL.lastPathComponent,
+                    sourceBranch: "main",
+                    sourceHeadSHA: culprit.sha,
+                    goodRevision: "v0.18.8",
+                    badRevision: "HEAD",
+                    goodSHA: knownGood.sha,
+                    badSHA: culprit.sha,
+                    verificationCommand: "swift test --filter RepositorySwitchingTests",
+                    mode: .automatic,
+                    createdAt: now.addingTimeInterval(-340),
+                    updatedAt: now,
+                    status: .culpritFound,
+                    workspacePath: "/private/tmp/GitGatto-Regression-Preview",
+                    currentCommit: culprit,
+                    candidateCount: 19,
+                    probes: [
+                        RegressionProbe(
+                            commit: knownGood,
+                            verdict: .good,
+                            exitCode: 0,
+                            duration: 8.4,
+                            output: "Test Suite 'RepositorySwitchingTests' passed.",
+                            completedAt: now.addingTimeInterval(-220)
+                        ),
+                        RegressionProbe(
+                            commit: skipped,
+                            verdict: .good,
+                            exitCode: 0,
+                            duration: 7.9,
+                            output: "Test Suite 'RepositorySwitchingTests' passed.",
+                            completedAt: now.addingTimeInterval(-110)
+                        ),
+                        RegressionProbe(
+                            commit: culprit,
+                            verdict: .bad,
+                            exitCode: 1,
+                            duration: 8.1,
+                            output: "RepositorySwitchingTests.testRapidSelection failed.",
+                            completedAt: now
+                        ),
+                    ],
+                    culprit: culprit,
+                    culpritSummary: "3 files changed, 46 insertions(+), 18 deletions(-)",
+                    bisectLog: "git bisect bad \(culprit.sha)"
+                )
+                if regressionPreview == "running" {
+                    investigation.status = .running
+                    investigation.culprit = nil
+                    investigation.culpritSummary = nil
+                    investigation.probes.removeLast()
+                    investigation.currentCommit = culprit
+                } else if regressionPreview == "fix" {
+                    investigation.status = .fixVerified
+                    investigation.fixBranch = "gitgatto/regression-7b3f4be"
+                    investigation.agentSummary = "取消重复的仓库刷新，在选择变更后复用已加载快照。"
+                    investigation.fixVerification = RegressionFixVerification(
+                        passed: true,
+                        exitCode: 0,
+                        duration: 7.6,
+                        output: "Test Suite 'RepositorySwitchingTests' passed.",
+                        completedAt: now
+                    )
+                }
+                regressionInvestigations = [investigation]
+                selectedRegressionInvestigationID = investigation.id
+                configureRegressionFixDraft(for: investigation)
+            }
+
+            switch ProcessInfo.processInfo.environment["GITGATTO_ACTIVITY_PREVIEW"] {
+            case "stage":
+                activeOperation = .stage
+                pendingStagePaths = [unstagedChange.path]
+                applyOptimisticStaging(paths: [unstagedChange.path], stages: true)
+            case "commit":
+                activeOperation = .commit
+            case "pull":
+                activeOperation = .pull
+            case "push":
+                activeOperation = .push
+            case "clone":
+                activeGitHubOperation = .clone
+                githubActivity = L10n.text("github.status.cloning")
+            case "fork":
+                activeGitHubOperation = .fork
+                githubActivity = L10n.text("github.status.forking")
+            case "translation":
+                codexPrompt = "Review the latest repository changes"
+                isPromptTranslating = true
+            case "readme":
+                selectedSection = .github
+                githubProjectDetailTab = .overview
+                isBeautifyingReadme = true
+            case "draft":
+                isDraftingCommitMessage = true
+                isCodexRunning = true
+            case "unpushed":
+                notice = OperationNotice(
+                    message: L10n.text("notice.committed"),
+                    tone: .attention
                 )
             default:
                 break
             }
         }
 
-        if ProcessInfo.processInfo.environment["GITGATTO_LOADING_PREVIEW"] == "1" {
-            diffDocument = nil
+        private func loadErrorPreviewFixture() {
+            activeError = GlobalErrorHandler.report(
+                for: GitCommandError(
+                    arguments: ["commit", "-m", "preview"],
+                    exitCode: 128,
+                    message: "error: gpg failed to sign the data\nfatal: failed to write commit object\npre-commit hook exited before the commit was created"
+                ),
+                context: .git(.commit),
+                repositoryURL: snapshot?.rootURL
+            )
         }
-
-        if ProcessInfo.processInfo.environment["GITGATTO_GOALS_P3_PREVIEW"] == "candidate" {
-            selectedSection = .goals
-            projectGoalCustomIntent = "提交当前修改，创建 Pull Request，等待审查和 Actions 通过，但不要合并"
-            projectGoalCandidate = ProjectGoalCandidate(
-                title: "完成 Pull Request 验证",
-                intent: projectGoalCustomIntent,
-                commitMessage: "feat: complete custom delivery goal",
-                releaseVersion: nil,
-                releaseBuildNumber: nil,
-                stepKinds: Array(ProjectGoalPlanner.pullRequestSteps.prefix(through: 5))
-            )
-        } else if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] {
-            selectedSection = .goals
-            let now = Date()
-            let target = "9c5e78fd5ed55962f4e2ba63a866678997958145"
-            var goal = ProjectGoal(
-                kind: .completeRelease,
-                repositoryPath: rootURL.standardizedFileURL.path,
-                repositoryName: "GitGatto",
-                branchName: "main",
-                baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
-                commitMessage: "release: v0.19.0",
-                targetHeadSHA: target,
-                remoteFullName: "Lincb522/GitGatto",
-                releaseVersion: "0.19.0",
-                releaseBuildNumber: "19000",
-                releaseTag: "v0.19.0",
-                releaseApplicationName: "GitGatto",
-                releaseURL: URL(string: "https://github.com/Lincb522/GitGatto/releases/tag/v0.19.0"),
-                releaseAssetNames: ["GitGatto-0.19.0.dmg", "appcast.xml", "SHA256SUMS"],
-                installedApplicationPath: "/Applications/GitGatto.app",
-                installedApplicationVersion: "0.18.10",
-                installedApplicationBuild: "18010",
-                status: preview == "waiting" ? .waiting : .ready,
-                createdAt: now.addingTimeInterval(-980)
-            )
-            let completed: [(ProjectGoalStepKind, String)] = [
-                (.readme, "README.md"),
-                (.translation, "README.en.md"),
-                (.version, "0.19.0 (19000)"),
-                (.changelog, "CHANGELOG.md"),
-                (.releasePipeline, ".github/workflows/release-macos.yml"),
-                (.stageChanges, "5"),
-                (.commit, String(target.prefix(12))),
-                (.push, String(target.prefix(12))),
-                (.releaseTag, "v0.19.0")
-            ]
-            for (index, item) in completed.enumerated() {
-                goal.updateStep(
-                    item.0,
-                    status: .completed,
-                    evidence: item.1,
-                    at: now.addingTimeInterval(Double(-760 + index * 62))
-                )
-            }
-            if preview == "waiting" {
-                goal.releaseWorkflowRunNumber = 142
-                goal.updateStep(.githubRelease, status: .waiting, evidence: "#142", at: now)
-            } else {
-                goal.updateStep(.githubRelease, status: .completed, evidence: "v0.19.0", at: now.addingTimeInterval(-90))
-                goal.updateStep(.dmg, status: .completed, evidence: "GitGatto-0.19.0.dmg", at: now.addingTimeInterval(-60))
-                goal.updateStep(.updateFeed, status: .completed, evidence: "appcast.xml", at: now.addingTimeInterval(-30))
-                goal.updateStep(.localApplication, status: .pending, evidence: "0.18.10 (18010)", at: now)
-            }
-            projectGoals = [goal]
-            selectedProjectGoalID = goal.id
-        } else if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P1_PREVIEW"] {
-            selectedSection = .goals
-            let now = Date()
-            let target = "7b3f4be834ac9d10d7052856c34f574792706bf2"
-            var goal = ProjectGoal(
-                kind: .githubDelivery,
-                repositoryPath: rootURL.standardizedFileURL.path,
-                repositoryName: rootURL.lastPathComponent,
-                branchName: "feature/delivery-goal",
-                baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
-                commitMessage: "feat: add GitHub delivery convergence",
-                targetHeadSHA: target,
-                remoteFullName: "Lincb522/GitGatto",
-                baseBranch: "main",
-                pullRequestNumber: 184,
-                pullRequestTitle: "Add GitHub delivery convergence",
-                pullRequestURL: URL(string: "https://github.com/Lincb522/GitGatto/pull/184"),
-                status: preview == "failure" ? .blocked : .ready,
-                createdAt: now.addingTimeInterval(-720)
-            )
-            goal.updateStep(.stageChanges, status: .completed, evidence: "4", at: now.addingTimeInterval(-650))
-            goal.updateStep(.commit, status: .completed, evidence: String(target.prefix(12)), at: now.addingTimeInterval(-580))
-            goal.updateStep(.push, status: .completed, evidence: String(target.prefix(12)), at: now.addingTimeInterval(-510))
-            goal.updateStep(.pullRequest, status: .completed, evidence: "PR #184 → main", at: now.addingTimeInterval(-430))
-            goal.updateStep(.review, status: .completed, evidence: "2 项批准", at: now.addingTimeInterval(-320))
-            if preview == "failure" {
-                let failure = ProjectGoalActionFailure(
-                    runID: 618,
-                    runNumber: 126,
-                    workflowName: "macOS CI",
-                    conclusion: "failure",
-                    webURL: URL(string: "https://github.com/Lincb522/GitGatto/actions/runs/618")!,
-                    logExcerpt: "Test Suite 'GitGattoTests' failed\nProjectGoalTests.swift: expected merge state to be completed"
-                )
-                goal.lastActionFailure = failure
-                let explanation = L10n.text("goal.actions.conclusion.failure")
-                goal.lastError = explanation
-                goal.updateStep(.actions, status: .blocked, evidence: "#126 · macOS CI", error: explanation, at: now)
-            } else {
-                goal.artifactNames = ["GitGatto.dmg", "GitGatto-symbols.zip"]
-                goal.updateStep(.actions, status: .completed, evidence: "#126", at: now.addingTimeInterval(-210))
-                goal.updateStep(.artifact, status: .completed, evidence: goal.artifactNames.joined(separator: ", "), at: now.addingTimeInterval(-160))
-                goal.updateStep(.merge, status: .pending, at: now)
-            }
-            projectGoals = [goal]
-            selectedProjectGoalID = goal.id
-        } else if ProcessInfo.processInfo.environment["GITGATTO_GOALS_PREVIEW"] == "1" {
-            selectedSection = .goals
-            let now = Date()
-            var goal = ProjectGoal(
-                repositoryPath: rootURL.standardizedFileURL.path,
-                repositoryName: rootURL.lastPathComponent,
-                branchName: "main",
-                baselineHeadSHA: "551d203aac20284853e0317b03f40b248ab381ef",
-                commitMessage: "feat: refine repository sync feedback",
-                targetHeadSHA: "7b3f4be834ac9d10d7052856c34f574792706bf2",
-                remoteFullName: "Lincb522/GitGatto",
-                status: .waiting,
-                createdAt: now.addingTimeInterval(-420)
-            )
-            goal.updateStep(.stageChanges, status: .completed, evidence: "2", at: now.addingTimeInterval(-360))
-            goal.updateStep(.commit, status: .completed, evidence: "7b3f4be834ac", at: now.addingTimeInterval(-280))
-            goal.updateStep(.push, status: .completed, evidence: "7b3f4be834ac", at: now.addingTimeInterval(-190))
-            goal.updateStep(.actions, status: .waiting, evidence: "184", at: now)
-            goal.status = .waiting
-            projectGoals = [goal]
-            selectedProjectGoalID = goal.id
-        }
-
-        if let regressionPreview = ProcessInfo.processInfo.environment["GITGATTO_REGRESSION_PREVIEW"] {
-            selectedSection = .regression
-            let now = Date()
-            let knownGood = RegressionCommitEvidence(
-                sha: "01f47d7303c84b1e451edb8a0be601e9174f3ace",
-                shortSHA: "01f47d7",
-                subject: "Keep repository switching responsive",
-                author: "ZIJIU522",
-                authoredAt: now.addingTimeInterval(-12_000)
-            )
-            let skipped = RegressionCommitEvidence(
-                sha: "551d203aac20284853e0317b03f40b248ab381ef",
-                shortSHA: "551d203",
-                subject: "Refresh repository state after sync",
-                author: "ZIJIU522",
-                authoredAt: now.addingTimeInterval(-6_200)
-            )
-            let culprit = RegressionCommitEvidence(
-                sha: "7b3f4be834ac9d10d7052856c34f574792706bf2",
-                shortSHA: "7b3f4be",
-                subject: "Merge console theme status",
-                author: "ZIJIU522",
-                authoredAt: now.addingTimeInterval(-2_400)
-            )
-            var investigation = RegressionInvestigation(
-                repositoryPath: rootURL.standardizedFileURL.path,
-                repositoryName: rootURL.lastPathComponent,
-                sourceBranch: "main",
-                sourceHeadSHA: culprit.sha,
-                goodRevision: "v0.18.8",
-                badRevision: "HEAD",
-                goodSHA: knownGood.sha,
-                badSHA: culprit.sha,
-                verificationCommand: "swift test --filter RepositorySwitchingTests",
-                mode: .automatic,
-                createdAt: now.addingTimeInterval(-340),
-                updatedAt: now,
-                status: .culpritFound,
-                workspacePath: "/private/tmp/GitGatto-Regression-Preview",
-                currentCommit: culprit,
-                candidateCount: 19,
-                probes: [
-                    RegressionProbe(
-                        commit: knownGood,
-                        verdict: .good,
-                        exitCode: 0,
-                        duration: 8.4,
-                        output: "Test Suite 'RepositorySwitchingTests' passed.",
-                        completedAt: now.addingTimeInterval(-220)
-                    ),
-                    RegressionProbe(
-                        commit: skipped,
-                        verdict: .good,
-                        exitCode: 0,
-                        duration: 7.9,
-                        output: "Test Suite 'RepositorySwitchingTests' passed.",
-                        completedAt: now.addingTimeInterval(-110)
-                    ),
-                    RegressionProbe(
-                        commit: culprit,
-                        verdict: .bad,
-                        exitCode: 1,
-                        duration: 8.1,
-                        output: "RepositorySwitchingTests.testRapidSelection failed.",
-                        completedAt: now
-                    )
-                ],
-                culprit: culprit,
-                culpritSummary: "3 files changed, 46 insertions(+), 18 deletions(-)",
-                bisectLog: "git bisect bad \(culprit.sha)"
-            )
-            if regressionPreview == "running" {
-                investigation.status = .running
-                investigation.culprit = nil
-                investigation.culpritSummary = nil
-                investigation.probes.removeLast()
-                investigation.currentCommit = culprit
-            } else if regressionPreview == "fix" {
-                investigation.status = .fixVerified
-                investigation.fixBranch = "gitgatto/regression-7b3f4be"
-                investigation.agentSummary = "取消重复的仓库刷新，在选择变更后复用已加载快照。"
-                investigation.fixVerification = RegressionFixVerification(
-                    passed: true,
-                    exitCode: 0,
-                    duration: 7.6,
-                    output: "Test Suite 'RepositorySwitchingTests' passed.",
-                    completedAt: now
-                )
-            }
-            regressionInvestigations = [investigation]
-            selectedRegressionInvestigationID = investigation.id
-            configureRegressionFixDraft(for: investigation)
-        }
-
-        switch ProcessInfo.processInfo.environment["GITGATTO_ACTIVITY_PREVIEW"] {
-        case "stage":
-            activeOperation = .stage
-            pendingStagePaths = [unstagedChange.path]
-            applyOptimisticStaging(paths: [unstagedChange.path], stages: true)
-        case "commit":
-            activeOperation = .commit
-        case "pull":
-            activeOperation = .pull
-        case "push":
-            activeOperation = .push
-        case "clone":
-            activeGitHubOperation = .clone
-            githubActivity = L10n.text("github.status.cloning")
-        case "fork":
-            activeGitHubOperation = .fork
-            githubActivity = L10n.text("github.status.forking")
-        case "translation":
-            codexPrompt = "Review the latest repository changes"
-            isPromptTranslating = true
-        case "readme":
-            selectedSection = .github
-            githubProjectDetailTab = .overview
-            isBeautifyingReadme = true
-        case "draft":
-            isDraftingCommitMessage = true
-            isCodexRunning = true
-        case "unpushed":
-            notice = OperationNotice(
-                message: L10n.text("notice.committed"),
-                tone: .attention
-            )
-        default:
-            break
-        }
-    }
-
-    private func loadErrorPreviewFixture() {
-        activeError = GlobalErrorHandler.report(
-            for: GitCommandError(
-                arguments: ["commit", "-m", "preview"],
-                exitCode: 128,
-                message: "error: gpg failed to sign the data\nfatal: failed to write commit object\npre-commit hook exited before the commit was created"
-            ),
-            context: .git(.commit),
-            repositoryURL: snapshot?.rootURL
-        )
-    }
-#endif
+    #endif
 
     func chooseRepository() {
         let panel = NSOpenPanel()
@@ -1819,7 +1921,8 @@ final class WorkspaceViewModel: ObservableObject {
                 for await result in group {
                     guard !Task.isCancelled,
                           let self,
-                          self.snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else {
+                          self.snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL
+                    else {
                         group.cancelAll()
                         return
                     }
@@ -1835,13 +1938,15 @@ final class WorkspaceViewModel: ObservableObject {
                         }
                     case let .change(surface):
                         if self.diffDocument == nil,
-                           self.selectedChange?.id == surface?.changeID {
+                           self.selectedChange?.id == surface?.changeID
+                        {
                             self.diffDocument = surface?.document
                             self.selectedChangePreviewURL = surface?.previewURL
                         }
                     case let .commit(surface):
                         if self.commitDiffDocument == nil,
-                           self.selectedCommit?.id == surface?.commitID {
+                           self.selectedCommit?.id == surface?.commitID
+                        {
                             self.commitDiffDocument = surface?.document
                         }
                     }
@@ -1932,7 +2037,8 @@ final class WorkspaceViewModel: ObservableObject {
               activeProjectGoalID == nil,
               activeOperation == nil,
               codexAvailability.state == .available,
-              !isCodexRunning else {
+              !isCodexRunning
+        else {
             projectGoalPlanningError = L10n.text("goal.custom.error.unavailable")
             return
         }
@@ -2128,7 +2234,7 @@ final class WorkspaceViewModel: ObservableObject {
         }
 
         do {
-            for _ in 0..<8 {
+            for _ in 0 ..< 8 {
                 guard let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
                 var goal = try await reconciledProjectGoal(projectGoals[index])
                 projectGoals[index] = goal
@@ -2136,7 +2242,8 @@ final class WorkspaceViewModel: ObservableObject {
 
                 guard !goal.status.isTerminal,
                       goal.status != .waiting,
-                      let step = goal.nextStep else {
+                      let step = goal.nextStep
+                else {
                     startProjectGoalMonitorIfNeeded()
                     return
                 }
@@ -2154,9 +2261,10 @@ final class WorkspaceViewModel: ObservableObject {
                     .githubRelease,
                     .dmg,
                     .updateFeed,
-                    .localApplication
+                    .localApplication,
                 ].contains(step)
-                    || goal.step(step)?.status == .blocked {
+                    || goal.step(step)?.status == .blocked
+                {
                     startProjectGoalMonitorIfNeeded()
                     return
                 }
@@ -2276,7 +2384,8 @@ final class WorkspaceViewModel: ObservableObject {
             try await projectGoalStore.save(projectGoals)
             let result = try await projectGoalRuntime.execute(.localApplication, goal: goal)
             if case let .installed(path) = result,
-               let currentIndex = projectGoals.firstIndex(where: { $0.id == id }) {
+               let currentIndex = projectGoals.firstIndex(where: { $0.id == id })
+            {
                 projectGoals[currentIndex].installedApplicationPath = path
                 try await projectGoalStore.save(projectGoals)
             }
@@ -2431,7 +2540,8 @@ final class WorkspaceViewModel: ObservableObject {
                 await self.receiveRegressionUpdate(paused)
             } catch {
                 if let id = self.activeRegressionInvestigationID,
-                   let source = self.regressionInvestigations.first(where: { $0.id == id }) {
+                   let source = self.regressionInvestigations.first(where: { $0.id == id })
+                {
                     let failed = await runtime.markFailed(source, message: error.localizedDescription)
                     await self.receiveRegressionUpdate(failed)
                 }
@@ -2697,7 +2807,8 @@ final class WorkspaceViewModel: ObservableObject {
                     || investigation.status == .preparing
                     || investigation.status == .verifyingFix
                     || investigation.status == .publishing
-                    || investigation.status == .agentFixing {
+                    || investigation.status == .agentFixing
+                {
                     investigation.status = investigation.culprit == nil ? .paused : .fixReady
                     investigation.updatedAt = Date()
                 }
@@ -2872,6 +2983,325 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    func reloadRepositoryBackups() async {
+        guard !isLoadingRepositoryBackups else { return }
+        isLoadingRepositoryBackups = true
+        defer { isLoadingRepositoryBackups = false }
+        do {
+            try await repositoryBackupService.pruneBackups(
+                retainingPerRepository: appPreferences.repositoryBackupPolicy.retentionCount
+            )
+            async let backups = repositoryBackupService.loadBackups()
+            async let byteCount = repositoryBackupService.storageByteCount()
+            let directory = await repositoryBackupService.storageDirectory()
+            repositoryBackups = try await backups
+            repositoryBackupStorageBytes = try await byteCount
+            repositoryBackupDirectoryURL = directory
+            if let selectedRepositoryBackupID,
+               !repositoryBackups.contains(where: { $0.id == selectedRepositoryBackupID })
+            {
+                self.selectedRepositoryBackupID = nil
+            }
+            repositoryProtectionError = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+        }
+    }
+
+    func selectRepositoryBackup(_ backup: RepositoryBackup?) {
+        selectedRepositoryBackupID = backup?.id
+    }
+
+    func createManualRepositoryBackup() async {
+        guard let repositoryURL = snapshot?.rootURL,
+              activeRepositoryBackupPath == nil else { return }
+        let path = repositoryURL.standardizedFileURL.path
+        repositoryBackupTasks[path]?.cancel()
+        repositoryBackupTasks[path] = nil
+        activeRepositoryBackupPath = path
+        defer { activeRepositoryBackupPath = nil }
+        do {
+            let created = try await repositoryBackupService.createBackup(
+                for: repositoryURL,
+                reason: .manual,
+                policy: appPreferences.repositoryBackupPolicy
+            )
+            await refreshRepositoryBackupInventory(selecting: created?.id)
+            showNotice(.init(message: L10n.text("recovery.notice.created")))
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+        }
+    }
+
+    func restoreRepositoryBackup(_ backup: RepositoryBackup) {
+        let panel = NSSavePanel()
+        panel.title = L10n.text("recovery.restore.panel.title")
+        panel.prompt = L10n.text("recovery.action.restore")
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = "\(backup.repositoryName)-Recovered-\(Self.recoveryDateToken(backup.createdAt))"
+        guard panel.runModal() == .OK, let destinationURL = panel.url else { return }
+        activeRepositoryBackupPath = backup.repositoryPath
+        Task { [weak self] in
+            guard let self else { return }
+            defer { activeRepositoryBackupPath = nil }
+            do {
+                let restored = try await repositoryBackupService.restore(
+                    backup,
+                    to: destinationURL
+                )
+                repositoryProtectionError = nil
+                showNotice(.init(message: L10n.text("recovery.notice.restored")))
+                await openRepository(restored)
+                selectedSection = .changes
+            } catch {
+                repositoryProtectionError = error.localizedDescription
+            }
+        }
+    }
+
+    func deleteRepositoryBackup(_ backup: RepositoryBackup) async {
+        guard activeRepositoryBackupPath == nil else { return }
+        activeRepositoryBackupPath = backup.repositoryPath
+        defer { activeRepositoryBackupPath = nil }
+        do {
+            try await repositoryBackupService.delete(backup)
+            await refreshRepositoryBackupInventory(selecting: nil)
+            showNotice(.init(message: L10n.text("recovery.notice.deleted")))
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+        }
+    }
+
+    func deleteRepositoryBackups(for repositoryPath: String) async {
+        guard activeRepositoryBackupPath == nil else { return }
+        activeRepositoryBackupPath = repositoryPath
+        defer { activeRepositoryBackupPath = nil }
+        do {
+            try await repositoryBackupService.deleteBackups(forRepositoryPath: repositoryPath)
+            await refreshRepositoryBackupInventory(selecting: nil)
+            showNotice(.init(message: L10n.text("recovery.notice.repository_deleted")))
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+        }
+    }
+
+    func deleteAllRepositoryBackups() async {
+        guard activeRepositoryBackupPath == nil else { return }
+        activeRepositoryBackupPath = "*"
+        defer { activeRepositoryBackupPath = nil }
+        do {
+            try await repositoryBackupService.deleteBackups(forRepositoryPath: nil)
+            await refreshRepositoryBackupInventory(selecting: nil)
+            showNotice(.init(message: L10n.text("recovery.notice.all_deleted")))
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+        }
+    }
+
+    func revealRepositoryBackupStorage() {
+        Task {
+            let directory = await repositoryBackupService.storageDirectory()
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            NSWorkspace.shared.activateFileViewerSelecting([directory])
+        }
+    }
+
+    func revealRepositoryBackup(_ backup: RepositoryBackup) {
+        Task {
+            do {
+                let directory = try await repositoryBackupService.directory(for: backup)
+                NSWorkspace.shared.activateFileViewerSelecting([directory])
+                repositoryProtectionError = nil
+            } catch {
+                repositoryProtectionError = error.localizedDescription
+            }
+        }
+    }
+
+    func chooseRepositoryBackupDirectory() {
+        guard !isMigratingRepositoryBackupStorage else { return }
+        let panel = NSOpenPanel()
+        panel.title = L10n.text("settings.recovery.storage.choose_title")
+        panel.message = L10n.text("settings.recovery.storage.choose_message")
+        panel.prompt = L10n.text("settings.recovery.storage.choose")
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.resolvesAliases = true
+        guard panel.runModal() == .OK, let parent = panel.url else { return }
+        let destination = parent.lastPathComponent == "GitGatto Recovery"
+            ? parent
+            : parent.appendingPathComponent("GitGatto Recovery", isDirectory: true)
+        Task { await migrateRepositoryBackupStorage(to: destination) }
+    }
+
+    func resetRepositoryBackupDirectory() {
+        Task { await migrateRepositoryBackupStorage(to: RepositoryBackupService.defaultRootURL()) }
+    }
+
+    func migrateRepositoryBackupStorage(to destinationURL: URL) async {
+        guard !isMigratingRepositoryBackupStorage,
+              activeRepositoryBackupPath == nil
+        else {
+            repositoryProtectionError = L10n.text("recovery.error.storage_busy")
+            return
+        }
+        isMigratingRepositoryBackupStorage = true
+        stopRepositoryProtection()
+        defer {
+            isMigratingRepositoryBackupStorage = false
+            restartRepositoryProtection()
+        }
+        do {
+            let directory = try await repositoryBackupService.migrateStorage(to: destinationURL)
+            repositoryBackupDirectoryURL = directory
+            appPreferences.repositoryBackupDirectoryPath = directory == RepositoryBackupService.defaultRootURL()
+                ? nil
+                : directory.path
+            AppPreferencesStore.save(appPreferences)
+            await refreshRepositoryBackupInventory(selecting: selectedRepositoryBackupID)
+            repositoryProtectionError = nil
+            showNotice(.init(message: L10n.text("recovery.notice.storage_migrated")))
+        } catch is CancellationError {
+            return
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+        }
+    }
+
+    func restartRepositoryProtection() {
+        stopRepositoryProtection()
+        guard appPreferences.repositoryBackupEnabled,
+              !isMigratingRepositoryBackupStorage else { return }
+
+        for repositoryURL in localRepositories {
+            let repository = repositoryURL.standardizedFileURL
+            let path = repository.path
+            let monitor = RepositoryChangeMonitor(
+                repositoryURL: repository,
+                includesGitMetadata: false
+            ) { [weak self] in
+                Task { @MainActor in
+                    self?.scheduleMajorRepositoryBackup(for: repository)
+                }
+            }
+            repositoryBackupMonitors[path] = monitor
+            monitor.start()
+        }
+
+        let interval = max(1, appPreferences.repositoryBackupIntervalMinutes) * 60
+        repositoryBackupTimerTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .seconds(interval))
+                } catch {
+                    return
+                }
+                guard let self else { return }
+                await self.runScheduledRepositoryBackups()
+            }
+        }
+    }
+
+    private func stopRepositoryProtection() {
+        repositoryBackupTimerTask?.cancel()
+        repositoryBackupTimerTask = nil
+        for task in repositoryBackupTasks.values {
+            task.cancel()
+        }
+        repositoryBackupTasks = [:]
+        for monitor in repositoryBackupMonitors.values {
+            monitor.stop()
+        }
+        repositoryBackupMonitors = [:]
+    }
+
+    func scheduleMajorRepositoryBackup(for repositoryURL: URL) {
+        guard appPreferences.repositoryBackupEnabled else { return }
+        let path = repositoryURL.standardizedFileURL.path
+        guard repositoryBackupTasks[path] == nil else { return }
+        repositoryBackupTasks[path] = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(2))
+            } catch {
+                return
+            }
+            guard let self else { return }
+            await self.createBackgroundRepositoryBackup(
+                for: repositoryURL,
+                reason: .majorChange
+            )
+            self.repositoryBackupTasks[path] = nil
+        }
+    }
+
+    private func runScheduledRepositoryBackups() async {
+        for repositoryURL in localRepositories where !Task.isCancelled {
+            await createBackgroundRepositoryBackup(for: repositoryURL, reason: .scheduled)
+        }
+    }
+
+    private func createBackgroundRepositoryBackup(
+        for repositoryURL: URL,
+        reason: RepositoryBackupReason
+    ) async {
+        let path = repositoryURL.standardizedFileURL.path
+        activeRepositoryBackupPath = path
+        defer {
+            if activeRepositoryBackupPath == path {
+                activeRepositoryBackupPath = nil
+            }
+        }
+        do {
+            guard let backup = try await repositoryBackupService.createBackup(
+                for: repositoryURL,
+                reason: reason,
+                policy: appPreferences.repositoryBackupPolicy
+            ) else { return }
+            await refreshRepositoryBackupInventory(selecting: nil)
+            if backup.reason == .majorChange {
+                showNotice(.init(message: L10n.text("recovery.notice.major_created")))
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            repositoryProtectionError = L10n.format(
+                "recovery.error.monitoring",
+                repositoryURL.lastPathComponent,
+                error.localizedDescription
+            )
+        }
+    }
+
+    private func refreshRepositoryBackupInventory(selecting id: UUID?) async {
+        do {
+            try await repositoryBackupService.pruneBackups(
+                retainingPerRepository: appPreferences.repositoryBackupPolicy.retentionCount
+            )
+            async let backups = repositoryBackupService.loadBackups()
+            async let byteCount = repositoryBackupService.storageByteCount()
+            let directory = await repositoryBackupService.storageDirectory()
+            repositoryBackups = try await backups
+            repositoryBackupStorageBytes = try await byteCount
+            repositoryBackupDirectoryURL = directory
+            if let id {
+                selectedRepositoryBackupID = id
+            } else if let selectedRepositoryBackupID,
+                      !repositoryBackups.contains(where: { $0.id == selectedRepositoryBackupID })
+            {
+                self.selectedRepositoryBackupID = nil
+            }
+            repositoryProtectionError = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+        }
+    }
+
     func restartLiveRefreshLoop() {
         liveRefreshTask?.cancel()
         liveRefreshTask = nil
@@ -2936,7 +3366,9 @@ final class WorkspaceViewModel: ObservableObject {
         defer { isLiveRefreshing = false }
 
         do {
+            try Task.checkCancellation()
             let liveState = try await service.loadLiveState(at: repositoryURL)
+            try Task.checkCancellation()
             let operationState = try await service.repositoryOperationState(
                 in: repositoryURL,
                 changes: liveState.changes
@@ -2948,6 +3380,8 @@ final class WorkspaceViewModel: ObservableObject {
             if liveSyncError != nil {
                 liveSyncError = nil
             }
+        } catch is CancellationError {
+            return
         } catch {
             guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
                   repositoryMutationGeneration == mutationGeneration else { return }
@@ -2999,8 +3433,11 @@ final class WorkspaceViewModel: ObservableObject {
         defer { isLiveRefreshing = false }
 
         do {
+            try Task.checkCancellation()
             try await service.fetchRemoteTracking(in: repositoryURL)
+            try Task.checkCancellation()
             let liveState = try await service.loadLiveState(at: repositoryURL)
+            try Task.checkCancellation()
             let operationState = try await service.repositoryOperationState(
                 in: repositoryURL,
                 changes: liveState.changes
@@ -3012,6 +3449,8 @@ final class WorkspaceViewModel: ObservableObject {
             if liveSyncError != nil {
                 liveSyncError = nil
             }
+        } catch is CancellationError {
+            return
         } catch {
             guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
                   repositoryMutationGeneration == mutationGeneration else { return }
@@ -3365,7 +3804,8 @@ final class WorkspaceViewModel: ObservableObject {
             showNotice(.init(message: L10n.text(stages ? "notice.staged" : "notice.unstaged")))
         } catch {
             if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL,
-               let previousSnapshot {
+               let previousSnapshot
+            {
                 apply(previousSnapshot, preservingSelection: true)
             }
             presentError(error, context: .git(operation), repositoryURL: repositoryURL)
@@ -3403,7 +3843,7 @@ final class WorkspaceViewModel: ObservableObject {
     func openInXcode(_ change: WorkingTreeChange) {
         guard let url = existingFileURL(for: change.path),
               let applicationURL = NSWorkspace.shared.urlForApplication(
-                withBundleIdentifier: "com.apple.dt.Xcode"
+                  withBundleIdentifier: "com.apple.dt.Xcode"
               ) else { return }
         NSWorkspace.shared.open(
             [url],
@@ -3435,6 +3875,9 @@ final class WorkspaceViewModel: ObservableObject {
         repositoryCache[path] = nil
         repositoryCacheOrder.removeAll { $0 == path }
         persistRepositoryLists()
+        if hasStarted {
+            restartRepositoryProtection()
+        }
     }
 
     func scanForRepositories(in roots: [URL] = RepositoryDiscoveryService.defaultRoots()) {
@@ -3456,11 +3899,11 @@ final class WorkspaceViewModel: ObservableObject {
                     repositoryDiscoveryRunID = nil
                     repositoryDiscoveryTask = nil
                     isScanningRepositories = false
-#if DEBUG
-                    if ProcessInfo.processInfo.environment["GITGATTO_ADD_PREVIEW"] == "selected" {
-                        selectedRepositoryScanPaths = Set(repositoryScanResults.prefix(3).map(\.id))
-                    }
-#endif
+                    #if DEBUG
+                        if ProcessInfo.processInfo.environment["GITGATTO_ADD_PREVIEW"] == "selected" {
+                            selectedRepositoryScanPaths = Set(repositoryScanResults.prefix(3).map(\.id))
+                        }
+                    #endif
                 }
             }
 
@@ -3517,6 +3960,9 @@ final class WorkspaceViewModel: ObservableObject {
         selectedRepositoryScanPaths.subtract(addedPaths)
         normalizeRepositoryCatalog()
         persistRepositoryLists()
+        if hasStarted {
+            restartRepositoryProtection()
+        }
         repositoryAddCompletionID = UUID()
     }
 
@@ -4357,7 +4803,11 @@ final class WorkspaceViewModel: ObservableObject {
         isUpdatingGitHubStar = true
         githubStarTask?.cancel()
         githubStarTask = Task {
-            defer { if selectedGitHubRepository?.id == repository.id { isUpdatingGitHubStar = false } }
+            defer {
+                if selectedGitHubRepository?.id == repository.id {
+                    isUpdatingGitHubStar = false
+                }
+            }
             do {
                 try await githubService.setStarred(newValue, repository: repository)
                 guard !Task.isCancelled, selectedGitHubRepository?.id == repository.id else { return }
@@ -4493,7 +4943,8 @@ final class WorkspaceViewModel: ObservableObject {
                 return
             } catch {
                 if let repositoryError = error as? GitRepositoryServiceError,
-                   case .pushFailedAfterCommit = repositoryError {
+                   case .pushFailedAfterCommit = repositoryError
+                {
                     readmeRewriteCommitCreated = true
                 }
                 if snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL {
@@ -4525,7 +4976,8 @@ final class WorkspaceViewModel: ObservableObject {
             readmeRewriteTemporaryRoot = nil
         }
         if let repositoryURL = readmeRewriteRepositoryURL?.standardizedFileURL,
-           repositoryURL.path.hasPrefix(standardizedTarget.path + "/") {
+           repositoryURL.path.hasPrefix(standardizedTarget.path + "/")
+        {
             readmeRewritePreview = nil
             readmeRewriteRepositoryURL = nil
             readmeRewriteRelativePath = nil
@@ -4657,7 +5109,8 @@ final class WorkspaceViewModel: ObservableObject {
         githubReadmeTranslationTask = Task {
             defer {
                 if selectedGitHubRepository?.id == repository.id,
-                   githubReadme?.path == source.path {
+                   githubReadme?.path == source.path
+                {
                     isTranslatingGitHubReadme = false
                     githubReadmeTranslationProgress = nil
                     githubReadmeTranslationTask = nil
@@ -5132,7 +5585,8 @@ final class WorkspaceViewModel: ObservableObject {
             }
             let eligibleRuns = displayedGitHubActionRuns
             if let selectedRunID = selectedGitHubActionRun?.id,
-               let updated = eligibleRuns.first(where: { $0.id == selectedRunID }) {
+               let updated = eligibleRuns.first(where: { $0.id == selectedRunID })
+            {
                 selectedGitHubActionRun = updated
             } else if selectedGitHubActionRun == nil || !eligibleRuns.contains(where: { $0.id == selectedGitHubActionRun?.id }) {
                 selectGitHubActionRun(eligibleRuns.first)
@@ -5320,7 +5774,8 @@ final class WorkspaceViewModel: ObservableObject {
                       githubDirectoryPath == path else { return }
                 githubContents = items
                 if let selectedPath,
-                   let item = items.first(where: { $0.path == selectedPath }) {
+                   let item = items.first(where: { $0.path == selectedPath })
+                {
                     loadGitHubFile(item, repository: repository)
                 }
             } catch is CancellationError {
@@ -5446,22 +5901,34 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func saveSettings() {
+        appPreferences.repositoryBackupRetentionCount = RepositoryBackupPolicy.clampedRetentionCount(
+            appPreferences.repositoryBackupRetentionCount
+        )
         AppPreferencesStore.save(appPreferences)
         L10n.activate(appPreferences.language)
+        codexRunMode = appPreferences.defaultAgentRunMode
         codexTranslationTarget = appPreferences.defaultTranslationTarget
         objectWillChange.send()
         if let repository = selectedGitHubRepository,
-           let source = githubReadme {
+           let source = githubReadme
+        {
             restoreGitHubReadmeTranslations(for: repository, source: source)
         }
         AIProviderSettings.save(projectAIConfiguration, lane: .project)
         AIProviderSettings.save(translationAIConfiguration, lane: .translation)
         restartLiveRefreshLoop()
+        restartRepositoryProtection()
         retryCodexProbe()
         translationProbeTask?.cancel()
         translationAIAvailability = .checking
         translationProbeTask = Task {
             translationAIAvailability = await translationService.probe()
+        }
+        repositoryBackupLoadTask?.cancel()
+        repositoryBackupLoadTask = Task { [weak self] in
+            guard let self else { return }
+            await self.reloadRepositoryBackups()
+            self.repositoryBackupLoadTask = nil
         }
     }
 
@@ -5566,6 +6033,26 @@ final class WorkspaceViewModel: ObservableObject {
             automaticallyStagesChanges = false
         case .readme:
             promptKey = "codex.prompt.readme"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .branchMaintenance:
+            promptKey = "codex.prompt.branch_maintenance"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .historyRecovery:
+            promptKey = "codex.prompt.history_recovery"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .releaseReadiness:
+            promptKey = "codex.prompt.release_readiness"
+            includesStagedDiff = false
+            createsCommitDraft = false
+            automaticallyStagesChanges = false
+        case .repositoryHygiene:
+            promptKey = "codex.prompt.repository_hygiene"
             includesStagedDiff = false
             createsCommitDraft = false
             automaticallyStagesChanges = false
@@ -5738,7 +6225,7 @@ final class WorkspaceViewModel: ObservableObject {
               codexAvailability.state == .available,
               !isCodexRunning else { return }
 
-        let context = codexMessages
+        let context = Array(codexMessages.suffix(max(0, appPreferences.agentConversationHistoryLimit)))
         let runID = UUID()
         activeCodexRunID = runID
         codexCommitDraft = nil
@@ -5949,9 +6436,9 @@ final class WorkspaceViewModel: ObservableObject {
         }
         guard let state else {
             guard selectedConflictPath != nil
-                    || conflictDocument != nil
-                    || !conflictResolutionText.isEmpty
-                    || isLoadingConflictDocument else { return }
+                || conflictDocument != nil
+                || !conflictResolutionText.isEmpty
+                || isLoadingConflictDocument else { return }
             conflictDocumentTask?.cancel()
             selectedConflictPath = nil
             conflictDocument = nil
@@ -5986,7 +6473,8 @@ final class WorkspaceViewModel: ObservableObject {
         conflictResolutionText = ""
 
         guard let path = selectedConflictPath,
-              let repositoryURL = snapshot?.rootURL else {
+              let repositoryURL = snapshot?.rootURL
+        else {
             isLoadingConflictDocument = false
             return
         }
@@ -6036,7 +6524,9 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func cancelAllWorktreeAgents() {
         let ids = Array(worktreeAgentTasks.keys)
-        for task in worktreeAgentTasks.values { task.cancel() }
+        for task in worktreeAgentTasks.values {
+            task.cancel()
+        }
         worktreeAgentTasks = [:]
         Task {
             for id in ids {
@@ -6054,7 +6544,8 @@ final class WorkspaceViewModel: ObservableObject {
         stashes = loadedStashes
         selectedStash = nextSelection
         if selectedSection == .stash,
-           selectionChanged || (nextSelection != nil && stashDiffDocument == nil) {
+           selectionChanged || (nextSelection != nil && stashDiffDocument == nil)
+        {
             selectStash(nextSelection)
         } else if nextSelection == nil {
             selectStash(nil)
@@ -6153,6 +6644,12 @@ final class WorkspaceViewModel: ObservableObject {
         case .timeMachine:
             guard fileVersionDocument == nil else { return }
             selectRepositoryFile(selectedRepositoryFile ?? repositoryFiles.first)
+        case .recovery:
+            guard force || repositoryBackups.isEmpty else { return }
+            repositoryBackupLoadTask?.cancel()
+            repositoryBackupLoadTask = Task { [weak self] in
+                await self?.reloadRepositoryBackups()
+            }
         default:
             break
         }
@@ -6302,11 +6799,17 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func remember(_ url: URL) {
         let normalizedURL = url.standardizedFileURL
+        let protectedPathsBefore = Set(localRepositories.map { $0.standardizedFileURL.path })
         guard let record = repositoryDiscoveryService.record(for: normalizedURL) else {
             localRepositories.removeAll { $0.standardizedFileURL == normalizedURL }
             recentRepositories.removeAll { $0.standardizedFileURL == normalizedURL }
             repositoryRecordsByPath[normalizedURL.path] = nil
             persistRepositoryLists()
+            if hasStarted,
+               Set(localRepositories.map { $0.standardizedFileURL.path }) != protectedPathsBefore
+            {
+                restartRepositoryProtection()
+            }
             return
         }
         recentRepositories.removeAll { $0.standardizedFileURL == normalizedURL }
@@ -6319,6 +6822,11 @@ final class WorkspaceViewModel: ObservableObject {
         selectedRepositoryScanPaths.remove(normalizedURL.path)
         normalizeRepositoryCatalog()
         persistRepositoryLists()
+        if hasStarted,
+           Set(localRepositories.map { $0.standardizedFileURL.path }) != protectedPathsBefore
+        {
+            restartRepositoryProtection()
+        }
     }
 
     private func normalizeRepositoryCatalog() {
@@ -6415,14 +6923,21 @@ final class WorkspaceViewModel: ObservableObject {
         return WorkspaceSection(rawValue: arguments[flagIndex + 1])
     }
 
-#if DEBUG
-    private static func githubSearchScopeFromArguments() -> GitHubSearchScope? {
-        let arguments = ProcessInfo.processInfo.arguments
-        guard let flagIndex = arguments.firstIndex(of: "--github-search-scope"),
-              arguments.indices.contains(flagIndex + 1) else { return nil }
-        return GitHubSearchScope(rawValue: arguments[flagIndex + 1])
+    private static func recoveryDateToken(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        return formatter.string(from: date)
     }
-#endif
+
+    #if DEBUG
+        private static func githubSearchScopeFromArguments() -> GitHubSearchScope? {
+            let arguments = ProcessInfo.processInfo.arguments
+            guard let flagIndex = arguments.firstIndex(of: "--github-search-scope"),
+                  arguments.indices.contains(flagIndex + 1) else { return nil }
+            return GitHubSearchScope(rawValue: arguments[flagIndex + 1])
+        }
+    #endif
 }
 
 private struct RepositorySupplementalState: Sendable {

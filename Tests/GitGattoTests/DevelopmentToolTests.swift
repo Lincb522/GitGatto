@@ -78,7 +78,8 @@ struct DevelopmentToolTests {
             #expect(prompt.contains(catalogTool.packageHint))
             #expect(prompt.contains("Post-install configuration is a required phase for every tool"))
             #expect(prompt.contains("Run setup commands instead of returning them as instructions"))
-            #expect(prompt.contains("documented configuration or status check"))
+            #expect(prompt.contains("credential-free local configuration check"))
+            #expect(prompt.contains("These runtime states do not block installation"))
         }
 
         let upgradePrompt = CodexService.developmentToolUpgradePrompt(
@@ -113,14 +114,29 @@ struct DevelopmentToolTests {
         #expect(postUpgradePrompt.contains("GITGATTO_RESULT: COMPLETE"))
 
         let compose = try #require(DevelopmentTool.catalog.first { $0.id == "docker-compose" })
+        let postInstallPrompt = CodexService.developmentToolPostInstallPrompt(
+            compose,
+            packageName: "docker-compose"
+        )
+        #expect(postInstallPrompt.contains("already installed through its controlled Homebrew runner"))
+        #expect(postInstallPrompt.contains("Write only inside the controlled directories supplied by GitGatto"))
+        #expect(postInstallPrompt.contains("These runtime states do not block installation"))
+        #expect(postInstallPrompt.contains("GITGATTO_RESULT: ACTION_REQUIRED"))
         #expect(compose.packageHint.contains("~/.docker/cli-plugins/docker-compose"))
         #expect(compose.packageHint.contains("never read or modify ~/.docker/config.json"))
+
+        let githubCLI = try #require(DevelopmentTool.catalog.first { $0.id == "github-cli" })
+        #expect(githubCLI.packageHint.contains("without inspecting or changing GitHub authentication state"))
+        #expect(CodexService.developmentToolPostInstallPrompt(
+            githubCLI,
+            packageName: "gh"
+        ).contains("even if an account is signed out or an existing token is invalid"))
     }
 
     @Test("Agent configuration status is explicit and removed from the displayed result")
     func parsesAgentConfigurationStatus() {
         let complete = CodexService.developmentToolResult(CodexRunResult(
-            response: "Docker Compose configured and verified.\nGITGATTO_RESULT: COMPLETE",
+            response: "GitHub CLI verified. Existing account token is invalid.\nGITGATTO_RESULT: COMPLETE",
             commandCount: 2,
             fileChangeCount: 0
         ))
@@ -135,7 +151,7 @@ struct DevelopmentToolTests {
             fileChangeCount: 0
         ))
 
-        #expect(complete.response == "Docker Compose configured and verified.")
+        #expect(complete.response == "GitHub CLI verified. Existing account token is invalid.")
         #expect(!complete.requiresUserAction)
         #expect(blocked.response == "Plugin registration needs user action.")
         #expect(blocked.requiresUserAction)
@@ -177,6 +193,31 @@ struct DevelopmentToolTests {
         await #expect(throws: DevelopmentToolHomebrewError.invalidFormula) {
             try await service.run(.upgrade, formula: "node;rm")
         }
+    }
+
+    @Test("Homebrew installs run through the controlled package runner")
+    func homebrewInstallRunsOutsideAgentSandbox() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("gitgatto-homebrew-install-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let executable = directory.appendingPathComponent("brew")
+        let log = directory.appendingPathComponent("invocation.log")
+        let script = """
+        #!/bin/sh
+        printf '%s\n' "$*" > '\(log.path)'
+        """
+        try Data(script.utf8).write(to: executable)
+        #expect(chmod(executable.path, 0o755) == 0)
+
+        let service = DevelopmentToolHomebrewService(
+            homebrewURL: executable,
+            timeout: .seconds(5)
+        )
+        _ = try await service.run(.install, formula: "docker-compose")
+        let invocation = try String(contentsOf: log, encoding: .utf8)
+
+        #expect(invocation.trimmingCharacters(in: .whitespacesAndNewlines) == "install --formula docker-compose")
     }
 
     @Test("Homebrew mutations are serialized across Agent lanes")
@@ -241,6 +282,40 @@ struct DevelopmentToolTests {
             #expect(paths.contains("/usr/local/\(name)"))
             #expect(paths.contains("/opt/homebrew/\(name)"))
         }
+    }
+
+    @Test("Non-Codex Agent installers cannot write outside the controlled scope")
+    func externalAgentInstallerUsesControlledWriteScope() throws {
+        let fileManager = FileManager.default
+        let allowedDirectory = fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/share/GitGattoSandboxTest/\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: allowedDirectory, withIntermediateDirectories: true)
+        defer { try? fileManager.removeItem(at: allowedDirectory) }
+        let allowedFile = allowedDirectory.appendingPathComponent("allowed")
+        let deniedFile = fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent(".gitgatto-sandbox-denied-\(UUID().uuidString)")
+        defer { try? fileManager.removeItem(at: deniedFile) }
+        let profile = CodexService.installerSandboxProfile(
+            writableDirectories: [allowedDirectory]
+        )
+
+        let allowed = Process()
+        allowed.executableURL = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+        allowed.arguments = ["-p", profile, "/usr/bin/touch", allowedFile.path]
+        try allowed.run()
+        allowed.waitUntilExit()
+
+        let denied = Process()
+        denied.executableURL = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+        denied.arguments = ["-p", profile, "/usr/bin/touch", deniedFile.path]
+        denied.standardError = Pipe()
+        try denied.run()
+        denied.waitUntilExit()
+
+        #expect(allowed.terminationStatus == 0)
+        #expect(fileManager.fileExists(atPath: allowedFile.path))
+        #expect(denied.terminationStatus != 0)
+        #expect(!fileManager.fileExists(atPath: deniedFile.path))
     }
 
     @Test("Post-install setup persists a user-local executable directory once")

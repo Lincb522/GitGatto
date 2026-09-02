@@ -7,6 +7,7 @@ enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable, Codable {
     case stash
     case history
     case timeMachine
+    case recovery
     case branches
     case worktrees
     case diagnostics

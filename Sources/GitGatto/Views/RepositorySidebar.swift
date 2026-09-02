@@ -11,6 +11,7 @@ struct RepositorySidebar: View {
     @AppStorage("sidebar.agent.expanded") private var agentExpanded = true
     @AppStorage("sidebar.local.expanded") private var localRepositoriesExpanded = true
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
@@ -22,282 +23,272 @@ struct RepositorySidebar: View {
             if theme == .folio {
                 folioSidebar(palette: palette)
             } else if isCollapsed {
-                collapsedSidebar(palette: palette, isStandard: isStandard)
+                collapsedSidebar(
+                    palette: palette,
+                    clearsWindowControls: isStandard || theme == .emerald
+                )
             } else {
-                VStack(spacing: 0) {
-            HStack(spacing: 8) {
+                expandedSidebar(palette: palette, isStandard: isStandard)
+            }
+        }
+        .background(palette.sidebar)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.20), value: isCollapsed)
+    }
+
+    private func expandedSidebar(palette: AppPalette, isStandard: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
                 if isStandard {
-                    AppBrandLockup(iconSize: 38, wordmarkWidth: 100, spacing: 8)
+                    AppBrandLockup(iconSize: 35, wordmarkWidth: 92, spacing: 7)
                 } else {
                     Text(L10n.text("sidebar.navigation"))
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundStyle(palette.mutedInk)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(palette.ink)
                 }
-                Spacer(minLength: 4)
+                Spacer(minLength: 8)
                 sidebarCollapseButton(palette: palette, collapsed: false)
             }
-            .padding(.top, isStandard ? 24 : 8)
-            .padding(.horizontal, isStandard ? 16 : 12)
-            .frame(height: isStandard ? 72 : 48)
+            .padding(.top, isStandard ? 23 : 8)
+            .padding(.horizontal, 14)
+            .frame(height: isStandard ? 72 : 50)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(palette.divider)
+                    .frame(height: 1)
+            }
 
-            VStack(spacing: 4) {
-                sidebarSectionHeader(
-                    titleKey: "sidebar.section.projects",
-                    isExpanded: $projectsExpanded,
-                    palette: palette
-                )
-                if projectsExpanded {
-                SidebarNavigationButton(
-                    titleKey: "nav.github",
-                    systemImage: "square.grid.2x2",
-                    count: model.githubAccountRepositories.isEmpty ? nil : model.githubAccountRepositories.count,
-                    isSelected: model.selectedSection == .github
-                ) {
-                    model.selectedSection = .github
+            ScrollViewReader { proxy in
+                ScrollView(.vertical) {
+                    LazyVStack(alignment: .leading, spacing: 18) {
+                        projectNavigation(palette: palette)
+                        repositoryNavigation(palette: palette)
+                        agentNavigation(palette: palette)
+                        localRepositoryNavigation(palette: palette)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.top, 12)
+                    .padding(.bottom, 18)
                 }
-
-                SidebarNavigationButton(
-                    titleKey: "nav.marketplace",
-                    systemImage: "arrow.down.app",
-                    isSelected: model.selectedSection == .marketplace
-                ) {
-                    model.selectedSection = .marketplace
-                }
-
-                SidebarNavigationButton(
-                    titleKey: "nav.goals",
-                    systemImage: "checkmark.seal",
-                    count: model.activeProjectGoalCount == 0 ? nil : model.activeProjectGoalCount,
-                    isSelected: model.selectedSection == .goals
-                ) {
-                    model.selectedSection = .goals
-                }
-                }
-
-                sidebarSectionHeader(
-                    titleKey: "sidebar.section.repository",
-                    isExpanded: $repositoryToolsExpanded,
-                    palette: palette
-                )
-                if repositoryToolsExpanded {
-
-                SidebarNavigationButton(
-                    titleKey: "nav.changes",
-                    systemImage: "square.stack.3d.up",
-                    count: model.snapshot?.changes.count,
-                    isSelected: model.selectedSection == .changes
-                ) {
-                    model.selectedSection = .changes
-                }
-                SidebarNavigationButton(
-                    titleKey: "nav.stash",
-                    systemImage: "archivebox",
-                    count: model.stashes.isEmpty ? nil : model.stashes.count,
-                    isSelected: model.selectedSection == .stash
-                ) {
-                    model.selectedSection = .stash
-                }
-                SidebarNavigationButton(
-                    titleKey: "nav.history",
-                    systemImage: "clock.arrow.circlepath",
-                    count: model.commitGraph.nodes.isEmpty ? nil : model.commitGraph.nodes.count,
-                    isSelected: model.selectedSection == .history
-                ) {
-                    model.selectedSection = .history
-                }
-                SidebarNavigationButton(
-                    titleKey: "nav.timeMachine",
-                    systemImage: "history.file",
-                    count: model.repositoryFiles.isEmpty ? nil : model.repositoryFiles.count,
-                    isSelected: model.selectedSection == .timeMachine
-                ) {
-                    model.selectedSection = .timeMachine
-                }
-                SidebarNavigationButton(
-                    titleKey: "nav.branches",
-                    systemImage: "arrow.triangle.branch",
-                    count: model.snapshot?.branches.count,
-                    isSelected: model.selectedSection == .branches
-                ) {
-                    model.selectedSection = .branches
-                }
-                SidebarNavigationButton(
-                    titleKey: "nav.worktrees",
-                    systemImage: "rectangle.split.2x1",
-                    count: model.worktrees.isEmpty ? nil : model.worktrees.count,
-                    isSelected: model.selectedSection == .worktrees
-                ) {
-                    model.selectedSection = .worktrees
-                }
-                SidebarNavigationButton(
-                    titleKey: "nav.diagnostics",
-                    systemImage: "stethoscope",
-                    count: model.repositoryDiagnostics?.attentionCount,
-                    isSelected: model.selectedSection == .diagnostics
-                ) {
-                    model.selectedSection = .diagnostics
-                }
-                SidebarNavigationButton(
-                    titleKey: "nav.regression",
-                    systemImage: "record.circle",
-                    count: model.activeRegressionInvestigationCount == 0
-                        ? nil
-                        : model.activeRegressionInvestigationCount,
-                    isSelected: model.selectedSection == .regression
-                ) {
-                    model.selectedSection = .regression
-                }
-                }
-
-                sidebarSectionHeader(
-                    titleKey: "nav.codex",
-                    isExpanded: $agentExpanded,
-                    palette: palette
-                )
-                if agentExpanded {
-
-                SidebarNavigationButton(
-                    titleKey: "nav.codex",
-                    systemImage: "sparkles",
-                    isSelected: model.selectedSection == .codex
-                ) {
-                    model.selectedSection = .codex
-                }
+                .scrollIndicators(.visible)
+                .onChange(of: model.selectedSection) { _, section in
+                    let scroll = { proxy.scrollTo(navigationID(section), anchor: .center) }
+                    if reduceMotion {
+                        scroll()
+                    } else {
+                        withAnimation(.easeOut(duration: 0.20), scroll)
+                    }
                 }
             }
-            .padding(.horizontal, isStandard ? 10 : 12)
-            .padding(.top, isStandard ? 6 : 14)
 
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 7) {
-                    Button {
-                        localRepositoriesExpanded.toggle()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(gattoSymbol: localRepositoriesExpanded ? "chevron.down" : "chevron.right")
-                                .font(.system(size: 9, weight: .bold))
-                                .frame(width: 12)
-                            Text(L10n.text("sidebar.repositories"))
-                                .font(.system(size: 10.5, weight: .semibold))
-                        }
-                        .foregroundStyle(palette.subtleInk)
-                        .contentShape(Rectangle())
+            sidebarFooter(palette: palette, isStandard: isStandard)
+        }
+    }
+
+    private func projectNavigation(palette: AppPalette) -> some View {
+        VStack(spacing: 4) {
+            sidebarSectionHeader(
+                titleKey: "sidebar.section.projects",
+                isExpanded: $projectsExpanded,
+                palette: palette
+            )
+            if projectsExpanded {
+                navigationButton(
+                    .github,
+                    titleKey: "nav.github",
+                    systemImage: "square.grid.2x2",
+                    count: model.githubAccountRepositories.isEmpty ? nil : model.githubAccountRepositories.count
+                )
+                navigationButton(.marketplace, titleKey: "nav.marketplace", systemImage: "arrow.down.app")
+                navigationButton(
+                    .goals,
+                    titleKey: "nav.goals",
+                    systemImage: "checkmark.seal",
+                    count: model.activeProjectGoalCount == 0 ? nil : model.activeProjectGoalCount
+                )
+            }
+        }
+    }
+
+    private func repositoryNavigation(palette: AppPalette) -> some View {
+        VStack(spacing: 4) {
+            sidebarSectionHeader(
+                titleKey: "sidebar.section.repository",
+                isExpanded: $repositoryToolsExpanded,
+                palette: palette
+            )
+            if repositoryToolsExpanded {
+                navigationButton(.changes, titleKey: "nav.changes", systemImage: "square.stack.3d.up", count: model.snapshot?.changes.count)
+                navigationButton(.stash, titleKey: "nav.stash", systemImage: "archivebox", count: model.stashes.isEmpty ? nil : model.stashes.count)
+                navigationButton(.history, titleKey: "nav.history", systemImage: "clock.arrow.circlepath", count: model.commitGraph.nodes.isEmpty ? nil : model.commitGraph.nodes.count)
+                navigationButton(.timeMachine, titleKey: "nav.timeMachine", systemImage: "history.file", count: model.repositoryFiles.isEmpty ? nil : model.repositoryFiles.count)
+                navigationButton(.recovery, titleKey: "nav.recovery", systemImage: "clock.badge.checkmark", count: model.repositoryBackups.isEmpty ? nil : model.repositoryBackups.count)
+                navigationButton(.branches, titleKey: "nav.branches", systemImage: "arrow.triangle.branch", count: model.snapshot?.branches.count)
+                navigationButton(.worktrees, titleKey: "nav.worktrees", systemImage: "rectangle.split.2x1", count: model.worktrees.isEmpty ? nil : model.worktrees.count)
+                navigationButton(.diagnostics, titleKey: "nav.diagnostics", systemImage: "stethoscope", count: model.repositoryDiagnostics?.attentionCount)
+                navigationButton(
+                    .regression,
+                    titleKey: "nav.regression",
+                    systemImage: "record.circle",
+                    count: model.activeRegressionInvestigationCount == 0 ? nil : model.activeRegressionInvestigationCount
+                )
+            }
+        }
+    }
+
+    private func agentNavigation(palette: AppPalette) -> some View {
+        VStack(spacing: 4) {
+            sidebarSectionHeader(titleKey: "nav.codex", isExpanded: $agentExpanded, palette: palette)
+            if agentExpanded {
+                navigationButton(.codex, titleKey: "nav.codex", systemImage: "sparkles")
+            }
+        }
+    }
+
+    private func navigationButton(
+        _ section: WorkspaceSection,
+        titleKey: String,
+        systemImage: String,
+        count: Int? = nil
+    ) -> some View {
+        SidebarNavigationButton(
+            titleKey: titleKey,
+            systemImage: systemImage,
+            count: count,
+            isSelected: model.selectedSection == section
+        ) {
+            model.selectedSection = section
+        }
+        .id(navigationID(section))
+    }
+
+    private func navigationID(_ section: WorkspaceSection) -> String {
+        "sidebar-navigation-\(section.rawValue)"
+    }
+
+    private func localRepositoryNavigation(palette: AppPalette) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 7) {
+                Button {
+                    localRepositoriesExpanded.toggle()
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(gattoSymbol: localRepositoriesExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .frame(width: 12)
+                        Text(L10n.text("sidebar.repositories"))
+                            .font(.system(size: 10.5, weight: .semibold))
                     }
-                    .buttonStyle(.plain)
-                    if !model.localRepositories.isEmpty {
-                        CountBadge(count: model.localRepositories.count, emphasized: false)
-                    }
-                    Spacer()
-                    Menu {
-                        Button(L10n.text("action.open_repository")) {
-                            model.chooseRepository()
-                        }
-                        Button(L10n.text("repository.scan.open")) {
-                            openWindow(id: "repository-scanner")
-                        }
-                    } label: {
-                        Color.clear
-                            .frame(width: 34, height: 34)
-                        .contentShape(Rectangle())
-                    }
-                    .menuStyle(.borderlessButton)
-                    .menuIndicator(.hidden)
-                    .overlay {
-                        Group {
-                            if model.isScanningRepositories {
-                                GattoLoadingGlyph(size: 20)
-                            } else {
-                                GattoIcon(symbol: "folder.badge.plus", size: 22)
-                                    .foregroundStyle(palette.ink)
-                            }
-                        }
-                        .allowsHitTesting(false)
-                    }
-                    .fixedSize()
-                    .help(L10n.text("action.open_repository"))
+                    .foregroundStyle(palette.subtleInk)
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 10)
+                .buttonStyle(.plain)
 
-                if localRepositoriesExpanded {
+                if !model.localRepositories.isEmpty {
+                    CountBadge(count: model.localRepositories.count, emphasized: false)
+                }
+
+                Spacer(minLength: 4)
+                repositoryMenu(palette: palette)
+            }
+            .padding(.leading, 8)
+
+            if localRepositoriesExpanded {
                 if model.localRepositories.isEmpty {
                     Text(L10n.text("repository.scan.empty"))
                         .font(.system(size: 10.5))
                         .foregroundStyle(palette.subtleInk)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 10)
-                        .padding(.top, 3)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                 } else {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 12) {
-                            ForEach(model.repositoryCatalogSections) { section in
-                                VStack(alignment: .leading, spacing: 3) {
-                                    HStack(spacing: 6) {
-                                        Text(L10n.text(section.kind.titleKey))
-                                            .font(.system(size: 9.5, weight: .semibold))
-                                            .foregroundStyle(palette.subtleInk)
-                                        Spacer()
-                                        Text(String(section.repositories.count))
-                                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                                            .foregroundStyle(palette.subtleInk)
-                                    }
-                                    .padding(.horizontal, 10)
+                    LazyVStack(alignment: .leading, spacing: 13) {
+                        ForEach(model.repositoryCatalogSections) { section in
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 6) {
+                                    Text(L10n.text(section.kind.titleKey))
+                                        .font(.system(size: 9.5, weight: .semibold))
+                                        .foregroundStyle(palette.subtleInk)
+                                    Spacer()
+                                    Text(String(section.repositories.count))
+                                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                                        .foregroundStyle(palette.subtleInk)
+                                }
+                                .padding(.horizontal, 8)
 
-                                    ForEach(section.repositories) { record in
-                                        let url = record.url
-                                        RepositoryCatalogButton(
-                                            record: record,
-                                            isCurrent: model.snapshot?.rootURL.standardizedFileURL == url.standardizedFileURL,
-                                            reveal: {
-                                                NSWorkspace.shared.activateFileViewerSelecting([url])
-                                            },
-                                            copyPath: {
-                                                NSPasteboard.general.clearContents()
-                                                NSPasteboard.general.setString(url.path, forType: .string)
-                                            },
-                                            remove: {
-                                                model.removeLocalRepository(url)
-                                            }
-                                        ) {
-                                            Task { await model.openRepository(url) }
-                                        }
+                                ForEach(section.repositories) { record in
+                                    let url = record.url
+                                    RepositoryCatalogButton(
+                                        record: record,
+                                        isCurrent: model.snapshot?.rootURL.standardizedFileURL == url.standardizedFileURL,
+                                        reveal: { NSWorkspace.shared.activateFileViewerSelecting([url]) },
+                                        copyPath: {
+                                            NSPasteboard.general.clearContents()
+                                            NSPasteboard.general.setString(url.path, forType: .string)
+                                        },
+                                        remove: { model.removeLocalRepository(url) }
+                                    ) {
+                                        Task { await model.openRepository(url) }
                                     }
                                 }
                             }
                         }
                     }
                 }
-                }
-            }
-            .padding(.horizontal, isStandard ? 10 : 12)
-            .padding(.top, isStandard ? 24 : 16)
-            .frame(maxHeight: .infinity, alignment: .top)
-
-            HStack(spacing: 8) {
-                AppearanceControl(selection: $appearanceRaw)
-
-                Button {
-                    openSettings()
-                } label: {
-                    sidebarUtilityIcon("gearshape", palette: palette)
-                }
-                .buttonStyle(.plain)
-                .help(L10n.text("ai.settings.title"))
-
-                Button {
-                    openWindow(id: "about")
-                } label: {
-                    sidebarUtilityIcon("info.circle", palette: palette)
-                }
-                .buttonStyle(.plain)
-                .help(L10n.text("about.title"))
-            }
-            .padding(.horizontal, isStandard ? 12 : 14)
-            .padding(.bottom, isStandard ? 13 : 14)
-                }
             }
         }
+    }
+
+    private func repositoryMenu(palette: AppPalette) -> some View {
+        Menu {
+            Button(L10n.text("action.open_repository")) { model.chooseRepository() }
+            Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
+        } label: {
+            Color.clear
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .overlay {
+            Group {
+                if model.isScanningRepositories {
+                    GattoLoadingGlyph(size: 18)
+                } else {
+                    GattoIcon(symbol: "folder.badge.plus", size: 20)
+                        .foregroundStyle(palette.ink)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .fixedSize()
+        .help(L10n.text("action.open_repository"))
+    }
+
+    private func sidebarFooter(palette: AppPalette, isStandard: Bool) -> some View {
+        HStack(spacing: 8) {
+            AppearanceControl(selection: $appearanceRaw)
+
+            Button { openSettings() } label: {
+                sidebarUtilityIcon("gearshape", palette: palette)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text("ai.settings.title"))
+
+            Button { openWindow(id: "about") } label: {
+                sidebarUtilityIcon("info.circle", palette: palette)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text("about.title"))
+        }
+        .padding(.horizontal, isStandard ? 12 : 14)
+        .padding(.top, 9)
+        .padding(.bottom, isStandard ? 13 : 14)
         .background(palette.sidebar)
-        .animation(.easeInOut(duration: 0.18), value: isCollapsed)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(palette.divider)
+                .frame(height: 1)
+        }
     }
 
     private func folioSidebar(palette: AppPalette) -> some View {
@@ -394,21 +385,21 @@ struct RepositorySidebar: View {
         .buttonStyle(.plain)
     }
 
-    private func collapsedSidebar(palette: AppPalette, isStandard: Bool) -> some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 5) {
-                AppBrandIcon(size: 26)
+    private func collapsedSidebar(palette: AppPalette, clearsWindowControls: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer(minLength: 0)
                 sidebarCollapseButton(palette: palette, collapsed: true)
+                Spacer(minLength: 0)
             }
-            .padding(.top, isStandard ? 24 : 7)
-            .frame(height: isStandard ? 70 : 46)
+            .padding(.top, clearsWindowControls ? 23 : 8)
+            .frame(height: clearsWindowControls ? 72 : 50)
 
             Rectangle()
                 .fill(palette.divider)
                 .frame(height: 1)
-                .padding(.horizontal, 8)
 
-            ScrollView {
+            ScrollView(.vertical) {
                 VStack(spacing: 5) {
                     ForEach(collapsedSections) { section in
                         CollapsedSidebarNavigationButton(
@@ -420,52 +411,62 @@ struct RepositorySidebar: View {
                         }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 10)
             }
+            .scrollIndicators(.visible)
+            .frame(maxHeight: .infinity)
 
-            Menu {
-                ForEach(model.localRepositories, id: \.standardizedFileURL.path) { url in
-                    Button(url.lastPathComponent) {
-                        Task { await model.openRepository(url) }
+            VStack(spacing: 6) {
+                Menu {
+                    ForEach(model.localRepositories, id: \.standardizedFileURL.path) { url in
+                        Button(url.lastPathComponent) {
+                            Task { await model.openRepository(url) }
+                        }
                     }
+                    if !model.localRepositories.isEmpty {
+                        Divider()
+                    }
+                    Button(L10n.text("action.open_repository")) { model.chooseRepository() }
+                    Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
+                } label: {
+                    Color.clear
+                        .frame(width: 34, height: 34)
+                        .contentShape(Rectangle())
                 }
-                if !model.localRepositories.isEmpty {
-                    Divider()
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .overlay {
+                    sidebarUtilityIcon("folder.badge.plus", palette: palette)
+                        .allowsHitTesting(false)
                 }
-                Button(L10n.text("action.open_repository")) { model.chooseRepository() }
-                Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
-            } label: {
-                Color.clear
-                    .frame(width: 34, height: 34)
-                    .contentShape(Rectangle())
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .overlay {
-                sidebarUtilityIcon("folder.badge.plus", palette: palette)
-                    .allowsHitTesting(false)
-            }
-            .fixedSize()
-            .help(L10n.text("sidebar.repositories"))
+                .fixedSize()
+                .help(L10n.text("sidebar.repositories"))
 
-            Button { openSettings() } label: {
-                sidebarUtilityIcon("gearshape", palette: palette)
-            }
-            .buttonStyle(.plain)
-            .help(L10n.text("settings.title"))
+                Button { openSettings() } label: {
+                    sidebarUtilityIcon("gearshape", palette: palette)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.text("settings.title"))
 
-            Button { openWindow(id: "about") } label: {
-                sidebarUtilityIcon("info.circle", palette: palette)
+                Button { openWindow(id: "about") } label: {
+                    sidebarUtilityIcon("info.circle", palette: palette)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.text("about.title"))
             }
-            .buttonStyle(.plain)
-            .help(L10n.text("about.title"))
+            .padding(.top, 9)
+            .padding(.bottom, 12)
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(palette.divider)
+                    .frame(height: 1)
+            }
         }
         .padding(.horizontal, 8)
-        .padding(.bottom, 12)
     }
 
     private var collapsedSections: [WorkspaceSection] {
-        [.github, .marketplace, .goals, .changes, .stash, .history, .timeMachine, .branches, .worktrees, .diagnostics, .regression, .codex]
+        [.github, .marketplace, .goals, .changes, .stash, .history, .timeMachine, .recovery, .branches, .worktrees, .diagnostics, .regression, .codex]
     }
 
     private func count(for section: WorkspaceSection) -> Int? {
@@ -477,6 +478,7 @@ struct RepositorySidebar: View {
         case .stash: model.stashes.count
         case .history: model.commitGraph.nodes.count
         case .timeMachine: model.repositoryFiles.count
+        case .recovery: model.repositoryBackups.count
         case .branches: model.snapshot?.branches.count
         case .worktrees: model.worktrees.count
         case .diagnostics: model.repositoryDiagnostics?.attentionCount
@@ -567,6 +569,7 @@ private struct FolioRailNavigationButton: View {
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
         case .timeMachine: "history.file"
+        case .recovery: "clock.badge.checkmark"
         case .branches: "arrow.triangle.branch"
         case .worktrees: "rectangle.split.2x1"
         case .diagnostics: "stethoscope"
@@ -619,6 +622,7 @@ private struct CollapsedSidebarNavigationButton: View {
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
         case .timeMachine: "history.file"
+        case .recovery: "clock.badge.checkmark"
         case .branches: "arrow.triangle.branch"
         case .worktrees: "rectangle.split.2x1"
         case .diagnostics: "stethoscope"
@@ -642,20 +646,28 @@ private struct SidebarNavigationButton: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(gattoSymbol: systemImage)
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 18)
-                    .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(isSelected ? palette.primary.opacity(0.12) : palette.raisedSurface.opacity(0.72))
+                    Image(gattoSymbol: systemImage)
+                        .font(.system(size: 14.5, weight: .medium))
+                        .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
+                }
+                .frame(width: 28, height: 28)
                 Text(L10n.text(titleKey))
-                    .font(.system(size: 12.5, weight: isSelected ? .semibold : .medium))
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                     .foregroundStyle(isSelected ? palette.ink : palette.mutedInk)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .layoutPriority(1)
                 Spacer()
                 if let count, count > 0 {
                     CountBadge(count: count, emphasized: isSelected)
                 }
             }
-            .padding(.horizontal, 10)
-            .frame(height: 40)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 42)
             .contentShape(Rectangle())
             .background(isSelected ? palette.primarySoft : (isHovering ? palette.raisedSurface : Color.clear))
             .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
@@ -666,7 +678,6 @@ private struct SidebarNavigationButton: View {
                         lineWidth: 1
                     )
             }
-            .shadow(color: isSelected ? palette.primary.opacity(0.08) : .clear, radius: 5, y: 2)
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }

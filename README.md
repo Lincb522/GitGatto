@@ -10,6 +10,20 @@
 <p align="center">原生构建，由 Agent 驱动的 Git 管理工具。</p>
 
 <p align="center">
+  <a href="README.md">简体中文</a> ·
+  <a href="README.zh-Hant.md">繁體中文</a> ·
+  <a href="README.en.md">English</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.pt-BR.md">Português</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.ar.md">العربية</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Lincb522/GitGatto/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Lincb522/GitGatto?display_name=tag&style=flat-square&color=E85D24"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1F2328?style=flat-square&logo=apple&logoColor=white">
   <img alt="Apple Silicon and Intel" src="https://img.shields.io/badge/arch-Apple_Silicon_%2B_Intel-555555?style=flat-square&logo=apple&logoColor=white">
@@ -29,40 +43,70 @@
 
 ![GitGatto 工作区](docs/media/workspace.png)
 
-GitGatto 是面向 macOS 的 Git 与 GitHub 客户端。本地仓库状态直接来自 Git；GitHub 功能使用本机 GitHub CLI 的现有登录；Agent 始终在当前选择的仓库中运行。
+GitGatto 是面向 macOS 的原生 Git 与 GitHub 客户端。仓库状态来自系统 Git，远端操作使用 GitHub CLI，Agent 使用本机已经安装并登录的 CLI；应用负责把分散的状态、步骤和结果放回同一个项目界面。
 
-## Git 工作流
+## 为什么做 GitGatto
+
+一次完整的交付经常横跨终端、编辑器、GitHub、Actions 和发布页。中间任何一步失败，都要重新核对分支、暂存内容、运行记录和构建产物。Agent 加入之后，又多了工作目录、执行权限和上下文是否对应当前仓库的问题。
+
+GitGatto 从这些日常问题开始：保留真实的 Git 与现有工具，把仓库操作、GitHub 协作、Agent 处理和失败证据连成一条可以检查、暂停和继续的流程。
+
+## 特色功能
+
+### 项目目标
+
+“交付当前修改”“GitHub 交付”和“完整发布”会按依赖顺序检查暂存、提交、Push、Pull Request、Review、Actions、构建产物、Release、DMG、Appcast 与本机版本。也可以用自然语言描述结果，确认条件后再执行。
+
+每一步都读取 Git、GitHub 或本机的实际状态。任务中断时保留已完成步骤；Actions 失败可以连同运行证据交给 Agent。合并、发布标签和安装仍需单独确认。
+
+### 回归取证
+
+在独立 worktree 中运行 `git bisect`，不切换当前工作区。自动模式执行指定验证命令，手动模式逐个标记正常、故障或跳过；候选提交、退出码、耗时和输出会随任务保存。定位首个故障提交后，可以继续让 Agent 修复、复验并创建 Pull Request。
+
+### 仓库灾备
+
+灾备中心监控已加入 GitGatto 的本地仓库，按计划保存未提交代码，并在变更文件数或行数达到阈值时立即创建恢复点；也可以随时手动备份。没有新改动或内容指纹未变化时不会重复写入。
+
+备份包含仓库 Git bundle 与未提交文件副本，每个仓库最多保留三份滚动恢复点。可以查看占用、打开备份目录、删除单份或整仓备份，并将恢复点还原为新的仓库副本。更换备份位置时，GitGatto 会迁移现有内容并核对迁移结果。
+
+### 面向 Git 的 Agent
+
+支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义 CLI。仓库操作、翻译与软件安装使用独立执行通道，长任务不会占住文档翻译。
+
+Agent 可以根据完整错误输出处理 Git、Git LFS、Hook、签名、分支、同步、冲突、Pull Request 和 Actions 问题；暂存区为空时可先暂存再起草提交信息，随后直接提交或提交并推送。README 重写会先渲染完整结果，再由“提交应用”只提交对应文档。
+
+## Git 与 GitHub
 
 - 管理工作区、暂存区、提交、Pull、Push、分支、贮藏和工作树。
-- 查看逐行 Diff、提交图、单文件历史、Blame，以及历史版本中的图片、SVG 和视频。
-- 处理合并、变基与贮藏冲突，可编辑结果并继续、跳过或中止操作。
-- 检查 Git LFS、Hook、上游和仓库环境问题，并从错误报告直接交给 Agent 处理。
-- 将当前修改设为交付目标，持续核对暂存、提交、推送、Pull Request、审查意见、Actions、构建产物与合并状态；Actions 失败可在保留运行证据后交给 Agent 修复，中断后从已确认的步骤继续。
-- 将版本发布设为完整目标：统一 README 与译文、版本号、构建号、更新日志和发布工作流，明确确认后推送版本标签，并持续核对 GitHub Release、DMG、更新源与本机应用版本。
-- 可用自然语言定义当前仓库要达到的结果。Agent 只生成候选条件；确认后由应用按固定依赖顺序执行，并以 Git、GitHub 和本机状态判定完成。
-- 手动扫描指定目录，从当前用户可读写的 Git 仓库中选择要加入的项目。
-
-## GitHub
-
-- 加载当前账号可访问的仓库，搜索仓库与开发者，支持模糊检索、自然语言检索和继续加载。
-- 在应用内查看 README、目录、代码、Pull Request、Actions、Releases 和发行附件。
+- 查看逐行 Diff、提交图、Blame、单文件历史，以及历史版本中的图片、SVG 和视频。
+- 编辑合并、变基与贮藏冲突结果，并继续、跳过或中止当前操作。
+- 从当前 GitHub 账号加载可访问仓库，搜索仓库与开发者，并支持模糊检索、自然语言检索和继续加载。
+- 在应用内查看代码、README、Pull Request、Actions、Releases 和发行附件。
 - 审阅 Pull Request 文件、标记已查看、发布行评论、回复与 Review；重新运行或取消 Actions，并下载构建产物。
-- Star、Fork、克隆仓库，下载和管理发行附件。
+- Star、Fork、克隆仓库；本地项目通过手动扫描选择加入，不会整盘自动导入。
 
-## Agent
+## 文档、翻译与内容预览
 
-- 支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义 CLI；项目操作、翻译与安装使用独立执行通道。
-- 暂存区为空时可先暂存当前改动，再起草提交信息；结果可直接提交或提交并推送。
-- 根据仓库文件重写 README，先渲染结果，再通过“提交应用”暂存、提交并推送 README。
-- 翻译 README、应用介绍和发行说明，译文按内容版本保存在本机。
-- 安装命令行发行包与开发工具；安装后完成工具初始化、组件注册、配置迁移和环境设置，并重新验证配置与版本。
-- 对话与操作记录按仓库保存；修改和远端写入只在对应操作中执行。
+- 渲染仓库 Markdown、相对路径图片和应用内链接，不把文档阅读交给外部浏览器。
+- 自动识别文档语言并调用单独的 Agent 通道翻译；译文按原文版本保存在本机，可直接切换。
+- 预览源码、图片、SVG 源码与媒体文件；工作区、提交历史和文件历史使用同一套内容查看器。
+- README Agent 根据仓库文件、依赖与现有素材重组文档，而不是只替换措辞。
 
 ## 应用仓库与开发工具
 
-- 从 GitHub Releases 检索可安装应用，展示实际图标、介绍、截图、版本和安装包；DMG 与 ZIP 使用本机安装流程，其他格式由 Agent 处理。
-- 开发工具中心收录 63 种运行环境、构建工具、容器、云工具、数据库和命令行工具，可检测本机状态与 Homebrew 更新，并安装或升级指定软件包。
-- 下载、安装、工具配置和版本验证均保留进度与结果。
+- 从 GitHub Releases 检索可安装应用，读取实际图标、介绍、截图、版本和安装包；DMG 与 ZIP 使用本机安装流程，其他格式交给 Agent。
+- 开发工具中心收录 99 种运行环境、构建工具、容器、云工具、数据库和命令行工具，并检测本机版本与可用更新。
+- 安装与升级支持三路并发队列、多选和批量升级；Homebrew 变更使用单独串行队列，避免依赖同时写入 Cellar。
+- Agent 安装后继续完成当前用户所需的 PATH、组件注册、初始化与配置迁移，再重新检查可执行文件和版本。
+- 下载、安装、配置与验证过程保留阶段进度、原始输出和已知错误的本地化说明。
+
+## 项目文档
+
+- [路线图](docs/ROADMAP.md)：已实现阶段、下一步计划与边界。
+- [架构图](docs/ARCHITECTURE.md)：状态所有权、服务边界与关键数据流。
+- [更新曲线](docs/UPDATE_HISTORY.md)：按 CHANGELOG 实际日期生成的版本记录。
+
+![GitGatto 更新曲线](docs/media/update-curve.svg)
 
 ## 安装
 
@@ -79,7 +123,8 @@ GitGatto 是面向 macOS 的 Git 与 GitHub 客户端。本地仓库状态直接
 
 ## 本地数据与权限
 
-- 设置、仓库列表、项目目标、Agent 对话与操作记录、下载记录和译文保存在本机。
+- 设置、仓库列表、项目目标、回归取证记录、Agent 对话与操作记录、下载记录和译文保存在本机。
+- 开启灾备后，Git bundle 与未提交文件副本保存在应用支持目录或你选择的位置；每个仓库最多保留三份，可在灾备中心单独删除或全部清理。
 - Git、SSH、GitHub CLI 与 Agent CLI 继续使用各自的凭据来源；GitGatto 不保存令牌、密码或私钥。
 - Pull、Push、Fork、评论、Review、Actions 操作、应用安装和开发工具变更均由明确的应用操作触发。
 

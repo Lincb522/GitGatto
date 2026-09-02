@@ -11,7 +11,7 @@ struct RepositoryChangeMonitorTests {
         defer { try? FileManager.default.removeItem(at: root) }
 
         let counter = RepositoryMonitorEventCounter()
-        let monitor = RepositoryChangeMonitor(repositoryURL: root) {
+        let monitor = RepositoryChangeMonitor(repositoryURL: root, includesGitMetadata: false) {
             Task { await counter.increment() }
         }
         monitor.start()

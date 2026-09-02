@@ -79,6 +79,8 @@ struct WorkspaceView: View {
                 && !model.isLoadingFileTimeline
                 && model.selectedRepositoryFile != nil
                 && model.fileVersionDocument != nil
+        case .recovery:
+            !model.isLoadingRepositoryBackups
         case .diagnostics:
             model.activeDiagnosticOperation == nil && model.repositoryDiagnostics != nil
         case .regression:
@@ -139,8 +141,10 @@ struct WorkspaceView: View {
                 case .softGlass:
                     VStack(spacing: AppThemeLayout.panelSpacing) {
                         HStack(spacing: AppThemeLayout.panelSpacing) {
-                            WorkspaceBrandBar(compact: compactSidebar, collapsed: isSidebarCollapsed)
-                                .frame(width: activeSidebarWidth.wrappedValue)
+                            if !isSidebarCollapsed {
+                                WorkspaceBrandBar(compact: compactSidebar)
+                                    .frame(width: activeSidebarWidth.wrappedValue)
+                            }
 
                             RepositoryTopBar(model: model)
                         }
@@ -168,8 +172,10 @@ struct WorkspaceView: View {
                 case .emerald:
                     HStack(spacing: 12) {
                         VStack(spacing: 0) {
-                            WorkspaceBrandBar(compact: compactSidebar, collapsed: isSidebarCollapsed)
-                                .frame(height: 72)
+                            if !isSidebarCollapsed {
+                                WorkspaceBrandBar(compact: compactSidebar)
+                                    .frame(height: 72)
+                            }
                             RepositorySidebar(
                                 model: model,
                                 appearanceRaw: $appearanceRaw,
@@ -203,7 +209,7 @@ struct WorkspaceView: View {
 
                         VStack(spacing: 12) {
                             HStack(spacing: 0) {
-                                WorkspaceBrandBar(compact: compactSidebar, collapsed: false)
+                                WorkspaceBrandBar(compact: compactSidebar)
                                     .frame(width: 190)
 
                                 Rectangle()
@@ -295,6 +301,8 @@ struct WorkspaceView: View {
                 developerTools: developerToolsModel,
                 downloads: downloads
             )
+        } else if model.selectedSection == .recovery {
+            RepositoryRecoveryView(model: model)
         } else if model.snapshot == nil, model.isRefreshing {
             GattoLoadingState(text: L10n.text("loading.generic"))
         } else if model.snapshot == nil {
@@ -309,6 +317,8 @@ struct WorkspaceView: View {
                 HistoryWorkspaceView(model: model)
             case .timeMachine:
                 FileTimelineWorkspaceView(model: model)
+            case .recovery:
+                RepositoryRecoveryView(model: model)
             case .branches:
                 BranchesWorkspaceView(model: model)
             case .worktrees:
@@ -366,24 +376,16 @@ struct WorkspaceView: View {
 
 private struct WorkspaceBrandBar: View {
     let compact: Bool
-    let collapsed: Bool
 
     var body: some View {
-        Group {
-            if collapsed {
-                AppBrandIcon(size: 30)
-                    .frame(maxWidth: .infinity)
-            } else {
-                HStack(spacing: 0) {
-                    AppBrandLockup(
-                        iconSize: compact ? 34 : 38,
-                        wordmarkWidth: compact ? 82 : 96,
-                        spacing: 7
-                    )
-                    .padding(.leading, AppThemeLayout.titlebarBrandLeading)
-                    Spacer(minLength: 8)
-                }
-            }
+        HStack(spacing: 0) {
+            AppBrandLockup(
+                iconSize: compact ? 34 : 38,
+                wordmarkWidth: compact ? 82 : 96,
+                spacing: 7
+            )
+            .padding(.leading, AppThemeLayout.titlebarBrandLeading)
+            Spacer(minLength: 8)
         }
         .padding(.trailing, 12)
         .padding(.top, 18)
@@ -419,7 +421,7 @@ private struct ConsoleSectionRail: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private let sections: [WorkspaceSection] = [
-        .github, .marketplace, .goals, .changes, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex
+        .github, .marketplace, .goals, .changes, .history, .timeMachine, .recovery, .branches, .worktrees, .diagnostics, .codex
     ]
 
     var body: some View {
@@ -473,6 +475,7 @@ private struct ConsoleSectionRail: View {
         case .stash: model.stashes.count
         case .history: model.commitGraph.nodes.count
         case .timeMachine: model.repositoryFiles.count
+        case .recovery: model.repositoryBackups.count
         case .branches: model.snapshot?.branches.count
         case .worktrees: model.worktrees.count
         case .diagnostics: model.repositoryDiagnostics?.attentionCount
@@ -490,6 +493,7 @@ private struct ConsoleSectionRail: View {
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
         case .timeMachine: "clock.badge.checkmark"
+        case .recovery: "clock.badge.checkmark"
         case .branches: "arrow.triangle.branch"
         case .worktrees: "rectangle.split.2x1"
         case .diagnostics: "stethoscope"

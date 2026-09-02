@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="title desc">
+<title id="title">GitGatto release activity</title>
+<desc id="desc">Daily and cumulative dated version entries from the changelog.</desc>
+<style>
+            :root { color-scheme: light dark; }
+            .bg { fill: #ffffff; }
+            .grid { stroke: #dfe4e8; stroke-width: 1; }
+            .axis { fill: #66717d; font: 500 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            .title { fill: #17202a; font: 700 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            .subtitle { fill: #66717d; font: 500 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            .value { fill: #17202a; font: 700 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+            .bar { fill: #d8eee9; }
+            .area { fill: #e85d24; opacity: .08; }
+            .curve { fill: none; stroke: #e85d24; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+            .point { fill: #ffffff; stroke: #e85d24; stroke-width: 4; }
+            .legend-line { stroke: #e85d24; stroke-width: 4; stroke-linecap: round; }
+            .legend-bar { fill: #9bcfc3; }
+            @media (prefers-color-scheme: dark) {
+                .bg { fill: #101419; }
+                .grid { stroke: #2b333b; }
+                .axis, .subtitle { fill: #9ba7b3; }
+                .title, .value { fill: #f3f5f7; }
+                .bar { fill: #24483f; }
+                .area { opacity: .16; }
+                .point { fill: #101419; }
+                .legend-bar { fill: #62a897; }
+            }
+        </style>
+<rect class="bg" x="0" y="0" width="1280" height="560" rx="24"/>
+<text class="title" x="64" y="54">GitGatto release activity</text>
+<text class="subtitle" x="64" y="80">Dated CHANGELOG entries · 2026-08-27 — 2026-09-02</text>
+<line class="legend-line" x1="884" y1="52" x2="916" y2="52"/>
+<text class="subtitle" x="926" y="57">Cumulative</text>
+<rect class="legend-bar" x="1042" y="44" width="24" height="16" rx="4"/>
+<text class="subtitle" x="1076" y="57">Daily</text>
+<line class="grid" x1="92" y1="468.0" x2="1192" y2="468.0"/>
+<text class="axis" x="74" y="473.0" text-anchor="end">0</text>
+<line class="grid" x1="92" y1="378.0" x2="1192" y2="378.0"/>
+<text class="axis" x="74" y="383.0" text-anchor="end">5</text>
+<line class="grid" x1="92" y1="288.0" x2="1192" y2="288.0"/>
+<text class="axis" x="74" y="293.0" text-anchor="end">10</text>
+<line class="grid" x1="92" y1="198.0" x2="1192" y2="198.0"/>
+<text class="axis" x="74" y="203.0" text-anchor="end">15</text>
+<line class="grid" x1="92" y1="108.0" x2="1192" y2="108.0"/>
+<text class="axis" x="74" y="113.0" text-anchor="end">20</text>
+<rect class="bar" x="57.4" y="393.1" width="69.1" height="74.9" rx="8"><title>2026-08-27: 0.14.0, 0.14.2</title></rect>
+<text class="axis" x="92.0" y="498.0" text-anchor="middle">08-27</text>
+<text class="axis" x="92.0" y="458.0" text-anchor="middle">+2</text>
+<rect class="bar" x="240.8" y="355.7" width="69.1" height="112.3" rx="8"><title>2026-08-28: 0.15.0, 0.16.1, 0.16.2</title></rect>
+<text class="axis" x="275.3" y="498.0" text-anchor="middle">08-28</text>
+<text class="axis" x="275.3" y="458.0" text-anchor="middle">+3</text>
+<rect class="bar" x="424.1" y="280.8" width="69.1" height="187.2" rx="8"><title>2026-08-29: 0.17.0, 0.18.0, 0.18.1, 0.18.2, 0.18.3</title></rect>
+<text class="axis" x="458.7" y="498.0" text-anchor="middle">08-29</text>
+<text class="axis" x="458.7" y="458.0" text-anchor="middle">+5</text>
+<rect class="bar" x="607.4" y="355.7" width="69.1" height="112.3" rx="8"><title>2026-08-30: 0.18.4, 0.18.5, 0.18.6</title></rect>
+<text class="axis" x="642.0" y="498.0" text-anchor="middle">08-30</text>
+<text class="axis" x="642.0" y="458.0" text-anchor="middle">+3</text>
+<rect class="bar" x="790.8" y="393.1" width="69.1" height="74.9" rx="8"><title>2026-08-31: 0.18.8, 0.18.9</title></rect>
+<text class="axis" x="825.3" y="498.0" text-anchor="middle">08-31</text>
+<text class="axis" x="825.3" y="458.0" text-anchor="middle">+2</text>
+<rect class="bar" x="974.1" y="430.6" width="69.1" height="37.4" rx="8"><title>2026-09-01: 0.18.10</title></rect>
+<text class="axis" x="1008.7" y="498.0" text-anchor="middle">09-01</text>
+<text class="axis" x="1008.7" y="458.0" text-anchor="middle">+1</text>
+<rect class="bar" x="1157.4" y="393.1" width="69.1" height="74.9" rx="8"><title>2026-09-02: 0.18.11, 0.18.12</title></rect>
+<text class="axis" x="1192.0" y="498.0" text-anchor="middle">09-02</text>
+<text class="axis" x="1192.0" y="458.0" text-anchor="middle">+2</text>
+<polygon class="area" points="92.0,468.0 92.0,432.0 275.3,378.0 458.7,288.0 642.0,234.0 825.3,198.0 1008.7,180.0 1192.0,144.0 1192.0,468.0"/>
+<polyline class="curve" points="92.0,432.0 275.3,378.0 458.7,288.0 642.0,234.0 825.3,198.0 1008.7,180.0 1192.0,144.0"/>
+<circle class="point" cx="92.0" cy="432.0" r="7"/>
+<text class="value" x="92.0" y="417.0" text-anchor="middle">2</text>
+<circle class="point" cx="275.3" cy="378.0" r="7"/>
+<text class="value" x="275.3" y="363.0" text-anchor="middle">5</text>
+<circle class="point" cx="458.7" cy="288.0" r="7"/>
+<text class="value" x="458.7" y="273.0" text-anchor="middle">10</text>
+<circle class="point" cx="642.0" cy="234.0" r="7"/>
+<text class="value" x="642.0" y="219.0" text-anchor="middle">13</text>
+<circle class="point" cx="825.3" cy="198.0" r="7"/>
+<text class="value" x="825.3" y="183.0" text-anchor="middle">15</text>
+<circle class="point" cx="1008.7" cy="180.0" r="7"/>
+<text class="value" x="1008.7" y="165.0" text-anchor="middle">16</text>
+<circle class="point" cx="1192.0" cy="144.0" r="7"/>
+<text class="value" x="1192.0" y="129.0" text-anchor="middle">18</text>
+<text class="axis" x="92" y="532" text-anchor="start">Source: dated release headings in CHANGELOG.md</text>
+<text class="axis" x="1192" y="532" text-anchor="end">18 version entries</text>
+</svg>

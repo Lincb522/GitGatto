@@ -10,6 +10,10 @@ enum GitAgentSkill: String, CaseIterable, Identifiable, Sendable {
     case history
     case githubChecks
     case readme
+    case branchMaintenance
+    case historyRecovery
+    case releaseReadiness
+    case repositoryHygiene
 
     var id: String { rawValue }
 
@@ -26,6 +30,10 @@ enum GitAgentSkill: String, CaseIterable, Identifiable, Sendable {
         case .history: "clock.arrow.circlepath"
         case .githubChecks: "checkmark.circle"
         case .readme: "doc.richtext"
+        case .branchMaintenance: "arrow.triangle.branch"
+        case .historyRecovery: "lifepreserver"
+        case .releaseReadiness: "tag"
+        case .repositoryHygiene: "checkmark.shield"
         }
     }
 }
@@ -39,6 +47,8 @@ enum GitAgentRepairRoute: String, Sendable {
     case submodules
     case locksAndPermissions
     case worktrees
+    case references
+    case repositoryIntegrity
     case repositoryState
 }
 
@@ -57,8 +67,12 @@ enum GitAgentProfile {
     - History: trace regressions and ownership with log, show, diff, blame, reflog, branch, and merge-base evidence; never rewrite history unless an explicit app control owns that action.
     - GitHub: review pull requests and diagnose issues or GitHub Actions checks through read-only evidence without publishing or mutating remote state.
     - README: edit the primary project document from verified repository facts, preserve working links and assets, and apply the selected professional, minimal, open-source, or product structure without inventing claims.
+    - Branch maintenance: classify local and remote-tracking branches as active, merged, stale, protected, or occupied by a worktree, and produce a safe cleanup plan without deleting them.
+    - History recovery: recover reachable evidence for lost commits, detached work, resets, and deleted branches with reflog, fsck, stash, and object ancestry before proposing restoration commands.
+    - Release readiness: verify version owners, tags, changelog, upstream state, release workflow, artifacts, and pending changes without creating a tag or publishing a release.
+    - Repository hygiene: find oversized tracked files, ignored build output, accidental binaries, secret-risk paths, broken attributes, and object-store growth without exposing secret contents or rewriting history.
 
-    Local inspection tools include git status --porcelain=v2 --branch, git diff, git log, git show, git branch, git rev-parse, git merge-base, git reflog, git blame, git check-ignore, git submodule, git worktree, git lfs, rg, and focused file reads. When current GitHub evidence is required and gh is available, read-only gh repo, gh pr, gh issue, and gh run commands are allowed. Never inspect or expose tokens, credentials, cookies, signing keys, or secret values.
+    Local inspection tools include git status --porcelain=v2 --branch, git diff, git log, git show, git branch, git rev-parse, git merge-base, git reflog, git fsck, git count-objects, git blame, git check-ignore, git check-attr, git submodule, git worktree, git lfs, rg, and focused file reads. When current GitHub evidence is required and gh is available, read-only gh repo, gh pr, gh issue, gh release, and gh run commands are allowed. Never inspect or expose tokens, credentials, cookies, signing keys, or secret values.
     """
 
     static func permission(for mode: CodexRunMode) -> String {
@@ -201,6 +215,19 @@ enum GitAgentProfile {
             || evidence.contains("already checked out") {
             return .worktrees
         }
+        if evidence.contains("cannot lock ref")
+            || evidence.contains("broken ref")
+            || evidence.contains("reference is not a tree")
+            || evidence.contains("ambiguous argument") {
+            return .references
+        }
+        if evidence.contains("bad object")
+            || evidence.contains("corrupt")
+            || evidence.contains("object file") && evidence.contains("empty")
+            || evidence.contains("missing blob")
+            || evidence.contains("invalid sha1 pointer") {
+            return .repositoryIntegrity
+        }
         return .repositoryState
     }
 
@@ -268,6 +295,10 @@ enum GitAgentProfile {
             "verify active Git processes and ownership before touching any lock, then repair only the proven local permission boundary"
         case .worktrees:
             "inspect git worktree list and branch occupancy before changing local worktree metadata"
+        case .references:
+            "inspect show-ref, packed-refs, reflog, branch ancestry, and conflicting reference names before repairing a local ref"
+        case .repositoryIntegrity:
+            "run read-only object and reference integrity checks, identify the exact missing or damaged object, and prefer recovery from another local object store or verified remote evidence"
         case .repositoryState:
             "inspect status, branch, HEAD, repository root, operation markers, and recent local history before choosing a repair"
         }

@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import GitGatto
+import Testing
 
 @Suite("Persistent workspace stores")
 struct PersistenceStoreTests {
@@ -30,6 +30,15 @@ struct PersistenceStoreTests {
         #expect(preferences.windowCloseBehavior == .ask)
         #expect(preferences.confirmDiscardChanges)
         #expect(preferences.defaultTranslationTarget == .simplifiedChinese)
+        #expect(preferences.repositoryBackupEnabled)
+        #expect(preferences.repositoryBackupIntervalMinutes == 10)
+        #expect(preferences.majorBackupFileThreshold == 20)
+        #expect(preferences.majorBackupLineThreshold == 500)
+        #expect(preferences.repositoryBackupRetentionCount == 3)
+        #expect(preferences.repositoryBackupMaximumFileSizeMB == 50)
+        #expect(preferences.repositoryBackupDirectoryPath == nil)
+        #expect(preferences.agentConversationHistoryLimit == 24)
+        #expect(preferences.defaultAgentRunMode == .analyze)
 
         let encoded = try #require(String(data: JSONEncoder().encode(preferences), encoding: .utf8))
         #expect(!encoded.contains("autoDiscoverRepositories"))
@@ -44,6 +53,23 @@ struct PersistenceStoreTests {
         let restored = try JSONDecoder().decode(AppPreferences.self, from: data)
 
         #expect(restored.windowCloseBehavior == .quit)
+    }
+
+    @Test("Persists backup storage and Agent context settings")
+    func persistsRecoveryAndAgentSettings() throws {
+        var preferences = AppPreferences()
+        preferences.repositoryBackupDirectoryPath = "/Volumes/Backups/GitGatto Recovery"
+        preferences.repositoryBackupRetentionCount = 99
+        preferences.agentConversationHistoryLimit = 40
+        preferences.defaultAgentRunMode = .edit
+
+        let data = try JSONEncoder().encode(preferences)
+        let restored = try JSONDecoder().decode(AppPreferences.self, from: data)
+
+        #expect(restored.repositoryBackupDirectoryURL?.path == "/Volumes/Backups/GitGatto Recovery")
+        #expect(restored.repositoryBackupRetentionCount == 3)
+        #expect(restored.agentConversationHistoryLimit == 40)
+        #expect(restored.defaultAgentRunMode == .edit)
     }
 
     @Test("Restores Codex conversation text and operation records per repository")
@@ -63,10 +89,10 @@ struct PersistenceStoreTests {
                     fileChangeCount: 0,
                     completedAt: Date(timeIntervalSince1970: 1_788_000_000),
                     events: [
-                        CodexOperationEvent(kind: .command, summary: "git diff --cached")
+                        CodexOperationEvent(kind: .command, summary: "git diff --cached"),
                     ]
                 )
-            )
+            ),
         ]
 
         try await store.save(messages, for: repository)
@@ -101,7 +127,7 @@ struct PersistenceStoreTests {
         )
         let stale = try await store.load(
             repositoryName: "octocat/Hello-World",
-            source: try readme(html: "<h1>Changed</h1>"),
+            source: readme(html: "<h1>Changed</h1>"),
             target: .simplifiedChinese
         )
 

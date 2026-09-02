@@ -8,10 +8,16 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         qos: .utility
     )
     private let onChange: @Sendable () -> Void
+    private let includesGitMetadata: Bool
     private var stream: FSEventStreamRef?
 
-    init(repositoryURL: URL, onChange: @escaping @Sendable () -> Void) {
+    init(
+        repositoryURL: URL,
+        includesGitMetadata: Bool = true,
+        onChange: @escaping @Sendable () -> Void
+    ) {
         rootPath = repositoryURL.standardizedFileURL.path
+        self.includesGitMetadata = includesGitMetadata
         self.onChange = onChange
     }
 
@@ -87,6 +93,9 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
             ? String(path.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             : path
         guard !relativePath.isEmpty, relativePath != ".DS_Store" else { return false }
+        if relativePath == ".git" || relativePath.hasPrefix(".git/") {
+            guard includesGitMetadata else { return false }
+        }
         return !relativePath.hasPrefix(".git/objects/")
             && !relativePath.hasPrefix(".git/logs/")
             && relativePath != ".git/FETCH_HEAD"

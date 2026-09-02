@@ -1,40 +1,189 @@
-# 架构
+# GitGatto 架构
 
-## 运行边界
+## 系统图
 
-GitGatto 是 macOS 14 及以上版本的 SwiftUI 应用。界面状态由 `WorkspaceViewModel` 统一持有，Git、GitHub、Agent、项目扫描和应用更新通过独立服务执行。用户选择的仓库是所有本地操作的唯一工作目录。
+```mermaid
+flowchart TB
+    subgraph UI[macOS 应用]
+        App[SwiftUI / AppKit]
+        Workspace[WorkspaceViewModel<br/>仓库与导航状态]
+        Marketplace[GitHubMarketplaceViewModel<br/>应用仓库]
+        DevTools[DeveloperToolsViewModel<br/>开发工具与队列]
+        App --> Workspace
+        App --> Marketplace
+        App --> DevTools
+    end
 
-## 主要模块
+    subgraph Domain[任务与运行时]
+        Goals[ProjectGoalRuntime<br/>交付与发布目标]
+        Regression[RegressionInvestigationRuntime<br/>worktree + git bisect]
+        Recovery[RepositoryBackupService<br/>滚动恢复点与迁移]
+        Downloads[AppDownloadManager<br/>下载与安装]
+        Errors[GlobalErrorHandler<br/>错误归一与脱敏]
+    end
 
-- `GitRepositoryService`：通过参数数组调用本机 Git，读取状态、Diff、历史、分支和上游计数，并执行用户触发的写入。
-- `GitHubService`：通过 GitHub CLI 标准凭据调用 API、Fork 与克隆；令牌不进入应用进程的展示与持久层。
-- `CodexService`：项目 Agent 与翻译各有独立配置、进程和取消通道；自定义 CLI 模板只展开受支持的参数占位符。
-- `RepositoryDiscoveryService`：仅在用户手动发起后扫描；结果必须是当前用户可读写并可管理的 Git 仓库，添加由用户逐项确认。
-- `GitHubReleaseService`：通过 GitHub Releases API 读取正式版本、发布日期和 Markdown 更新日志，不接触 GitHub 凭据。
-- `AppUpdateManager`：合并 GitHub 发布记录与 Sparkle 安装状态。`SUFeedURL` 使用 HTTPS 时启动安装通道。
-- `GlobalErrorHandler`：把 Git、GitHub、Agent 与系统故障归一为稳定错误报告，并在显示前脱敏。
+    subgraph Adapters[外部能力适配]
+        Git[GitRepositoryService<br/>GitCommandRunner]
+        GitHub[GitHubService<br/>GitHubReleaseService]
+        Agent[CodexService<br/>多 CLI 独立通道]
+        Tools[DevelopmentTool services<br/>探测、Homebrew、配置与授权]
+        Update[AppUpdateManager<br/>Sparkle]
+        Content[WebKit / AVKit<br/>文档与媒体]
+    end
 
-## 状态与持久化
+    subgraph State[本机持久化]
+        Preferences[AppPreferences]
+        Catalog[LocalRepositoryCatalog]
+        Conversations[Agent 对话与操作记录]
+        GoalStore[目标与回归记录]
+        Translation[README 与应用介绍译文]
+        Backups[Recovery<br/>Git bundle + 工作区副本]
+    end
 
-- 仓库快照、暂存状态和同步计数由当前仓库的实时读取刷新。
-- 最近仓库、设置、Agent 对话、操作记录和文档译文保存在本机应用支持目录。
-- 移除侧边栏项目只移除目录记录，不删除磁盘仓库。
-- Agent 起草在暂存区为空时会暂存当前改动；已有暂存内容时保持原边界。提交、推送、Fork 和发布回复由用户再次触发。
+    subgraph External[系统与远端]
+        Repositories[本地 Git 仓库]
+        SystemGit[系统 Git / SSH]
+        GH[GitHub CLI / GitHub API]
+        CLIs[Codex、Claude、Gemini、OpenCode<br/>或自定义 CLI]
+        Brew[Homebrew 与本机工具]
+        Releases[GitHub Releases / Appcast]
+    end
 
-## 工程入口
+    Workspace --> Goals
+    Workspace --> Regression
+    Workspace --> Recovery
+    Workspace --> Git
+    Workspace --> GitHub
+    Workspace --> Agent
+    Workspace --> Content
+    Marketplace --> GitHub
+    Marketplace --> Downloads
+    Marketplace --> Agent
+    DevTools --> Tools
+    DevTools --> Agent
+    Downloads --> Errors
+    Goals --> Git
+    Goals --> GitHub
+    Goals --> Agent
+    Regression --> Git
+    Regression --> Agent
+    Recovery --> Git
+    Recovery --> Backups
+    Git --> Repositories
+    Git --> SystemGit
+    GitHub --> GH
+    Agent --> CLIs
+    Tools --> Brew
+    Update --> Releases
+    Workspace --> Preferences
+    Workspace --> Catalog
+    Workspace --> Conversations
+    Goals --> GoalStore
+    Regression --> GoalStore
+    Agent --> Translation
+```
 
-- `GitGatto.xcodeproj` 提供应用与测试目标、共享 scheme、Sparkle 依赖和资源构建设置。
-- `project.yml` 是 Xcode 工程结构的唯一编辑源，`scripts/generate-xcodeproj.sh` 负责生成工程文件。
-- `Package.swift` 保持同一源码与依赖的命令行构建入口；`AppResourceBundle` 统一解析 Xcode 主 Bundle、SwiftPM 资源 Bundle 与发行包资源。
-- `GattoIconAssets` 从应用资源 Bundle 加载 GitGatto 专属 PNG 图标，以模板色和目标点尺寸渲染；设计源、语义顺序与生成脚本位于 `docs/icon-system/image2-all-icons` 和 `scripts/build-image2-icons.py`。
+## 状态所有权
 
-## 更新流程
+- `WorkspaceViewModel` 在主线程持有当前仓库、工作区、GitHub、目标、回归取证与灾备界面状态。
+- `GitHubMarketplaceViewModel` 单独持有应用仓库搜索、详情、翻译与安装状态。
+- `DeveloperToolsViewModel` 持有工具探测、安装队列、升级队列和授权重试状态。
+- 服务对象执行 Git、网络、进程、文件与更新操作；SwiftUI `body` 不启动这些副作用。
+- 同一份可变状态只有一个所有者。长任务通过可取消的 `Task` 返回状态，不用任意延时作为同步条件。
 
-1. 更新中心从 `Lincb522/GitGatto` 的 GitHub Releases API 读取版本记录和更新日志。
-2. Sparkle 从 GitHub Release 的 `appcast.xml` 检查版本与构建号。
-3. GitHub Release 提供经 Developer ID 签名并完成 Apple 公证的 DMG。
-4. Sparkle 读取 DMG，并检查新旧应用的代码签名要求一致。
-5. 标准安装器显示同一版本的发布信息并请求用户确认。
-6. 安装完成后重新启动 GitGatto。
+## Git 与仓库边界
 
-发布配置见 [RELEASING.md](RELEASING.md)。
+`GitRepositoryService` 通过 `GitCommandRunner` 使用参数数组调用系统 Git。仓库读取和写入都绑定到明确的仓库 URL，不拼接 Shell 命令。暂存、提交、Pull、Push、冲突继续、分支和工作树操作均由用户操作或已确认的项目目标触发。
+
+`RepositoryDiscoveryService` 只在用户手动开始扫描后工作。结果必须是当前用户可读写的 Git 仓库，添加前逐项确认；依赖、构建、缓存和系统目录不进入仓库列表。
+
+## GitHub 与凭据
+
+`GitHubService` 使用 GitHub CLI 的标准登录状态调用 API、Fork 和远端操作。GitGatto 不从 CLI 输出中提取令牌，也不把令牌写入设置或日志。公开版本信息由 `GitHubReleaseService` 匿名读取。
+
+PR Review、评论、Fork、Actions 重试或取消等远端写入，必须来自明确的应用操作。搜索、推荐和详情视图只读取当前 API 响应与本机缓存。
+
+## Agent 执行
+
+`CodexService` 为仓库操作、翻译和安装维护独立配置、进程与取消通道。支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义参数模板。
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant V as GitGatto
+    participant G as Git / GitHub
+    participant A as Agent CLI
+
+    U->>V: 选择仓库与操作
+    V->>G: 读取状态和证据
+    G-->>V: 分支、Diff、错误或运行结果
+    V->>A: 传入限定任务与工作目录
+    A-->>V: 输出、命令记录与文件变更
+    V->>G: 重新读取真实状态
+    G-->>V: 验证结果
+    V-->>U: 显示结果；远端写入等待确认
+```
+
+Agent 结果不是成功依据。项目目标、错误修复、README 重写和安装配置都要回到 Git、GitHub、本机可执行文件或文件系统重新验证。
+
+## 项目目标与回归取证
+
+`ProjectGoalRuntime` 把交付拆成有依赖关系的条件：暂存、提交、Push、Pull Request、Review、Actions、产物与合并。`ProjectReleaseRuntime` 在此基础上核对 README、译文、版本、构建号、更新日志、标签、Release、DMG、Appcast 与本机应用。已完成步骤写入 `ProjectGoalStore`，中断后从未完成条件继续。
+
+`RegressionInvestigationRuntime` 使用 `GitWorktreeService` 创建独立 worktree，再运行 `git bisect`。自动验证以退出码判定，手动验证由用户标记；候选提交、判定、耗时和输出写入 `RegressionInvestigationStore`。当前工作区不会被切换。
+
+## 灾备与恢复
+
+```mermaid
+flowchart LR
+    Watch[RepositoryChangeMonitor<br/>文件系统事件] --> Decide{达到重大变更阈值?}
+    Timer[定时任务] --> Snapshot[读取 Git 状态]
+    Manual[手动创建] --> Snapshot
+    Decide -->|是| Snapshot
+    Snapshot --> Fingerprint{内容是否变化?}
+    Fingerprint -->|否| Skip[不重复写入]
+    Fingerprint -->|是| Stage[暂存目录写入]
+    Stage --> Bundle[创建 Git bundle]
+    Stage --> Files[复制未提交文件]
+    Bundle --> Manifest[写入清单与校验信息]
+    Files --> Manifest
+    Manifest --> Rotate[安装恢复点<br/>每仓库最多三份]
+    Rotate --> Restore[按需恢复为新仓库副本]
+```
+
+`RepositoryBackupService` 是备份目录的唯一写入者。创建、删除、裁剪与目录迁移在 actor 内串行执行；先写入暂存目录，清单完成后再移动到正式位置。定时与重大变更备份会跳过空工作区和相同内容。更换目录时先复制并比对清单，成功后才切换路径。
+
+## 应用仓库与开发工具
+
+应用仓库由 `GitHubMarketplaceViewModel`、`GitHubService`、`AppDownloadManager` 与 `MacApplicationInstaller` 组成。列表先返回仓库结果，再补齐 Release 与安装包；图片和详情使用有界缓存。DMG 与 ZIP 走本机安装流程，其他格式交给独立安装 Agent。
+
+开发工具由 `DeveloperToolsViewModel` 统一排队：最多三路不同工具任务并发，Homebrew 变更进入单独串行队列。安装后由 `DevelopmentToolEnvironmentConfigurator` 处理当前用户 PATH、组件注册与配置迁移，再由探测服务重新读取版本。需要系统目录修复时，由 `DevelopmentToolSystemAuthorizer` 请求 macOS 授权。
+
+## 持久化与本地数据
+
+- 仓库目录、设置、目标、回归记录、Agent 对话、操作记录、下载和译文保存在应用支持目录。
+- 灾备数据默认位于应用支持目录，也可以迁移到用户选择的位置；每个仓库最多保留三份。
+- 移除侧边栏仓库只删除目录记录，不删除磁盘仓库或现有恢复点。
+- Git、SSH、GitHub CLI 与 Agent CLI 继续使用各自的凭据存储。
+
+## 构建与发布
+
+- `project.yml` 是 Xcode 工程结构的编辑源，`scripts/generate-xcodeproj.sh` 生成 `GitGatto.xcodeproj`。
+- `Package.swift` 提供相同源码和依赖的命令行构建入口。
+- `AppResourceBundle` 解析 Xcode 主 Bundle、SwiftPM 资源 Bundle 与发行包资源。
+- `scripts/package-macos.sh` 构建 Apple Silicon 与 Intel 通用应用并处理嵌套组件签名。
+- `.github/workflows/release-macos.yml` 使用 Developer ID 签名、创建 DMG、生成 Appcast 并发布 GitHub Release。
+- `.github/workflows/notarize-macos.yml` 是独立的 Apple 公证流程；只有在 App Store Connect 凭据可用并且公证结果通过后，产物才可标记为已公证。
+
+```mermaid
+flowchart LR
+    Tag[版本标签] --> Test[测试与通用架构构建]
+    Test --> Sign[Developer ID 签名]
+    Sign --> DMG[创建 DMG]
+    DMG --> Feed[生成 Appcast 与 SHA-256]
+    Feed --> Release[GitHub Release]
+    Sign -.独立门禁.-> Notary[Apple 公证与 staple]
+    Release --> Sparkle[Sparkle 检查与安装]
+```
+
+发布命令、凭据边界和验证清单见 [RELEASING.md](RELEASING.md)。

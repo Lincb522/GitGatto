@@ -1,10 +1,10 @@
 # GitGatto Privacy Policy
 
-Effective: August 27, 2026
+Effective: September 2, 2026
 
 ## 1. Local-first storage
 
-Repository locations, settings, Agent conversations, operation records, and document translations are stored on your Mac by default. GitGatto includes no advertising, user profiling, or analytics service.
+Repository locations, settings, Agent conversations, operation records, and document translations are stored on your Mac by default. When repository protection is enabled, GitGatto also stores Git bundles and copies of uncommitted files in Application Support or a location you choose. GitGatto includes no advertising, user profiling, or analytics service.
 
 ## 2. Credentials
 
@@ -20,7 +20,7 @@ Update checks request the GitGatto update feed over HTTPS. System profiling is d
 
 ## 5. Local data management
 
-Removing a repository from the sidebar does not delete it from disk. To clear settings, conversations, or translations after uninstalling, remove GitGatto’s application-support data. This does not modify Git repositories.
+Removing a repository from the sidebar does not delete it from disk or automatically remove its recovery points. The Recovery Center can delete one backup, all backups for a repository, or every backup; no more than three are retained per repository. Changing the backup location migrates existing recovery points and verifies the result. To clear settings, conversations, translations, or backups in the default location after uninstalling, remove GitGatto’s application-support data. This does not modify Git repositories.
 
 ## 6. Sharing
 
