@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "Upgrade and configuration migration completed; new version verified.";
 "developer_tools.upgrade.configured" = "Upgrade completed with tool configuration and environment updated.";
 "developer_tools.upgrade.configuration_failed" = "The tool was upgraded, but environment setup failed: %@";
+"developer_tools.configuration.action_required" = "The tool is installed, but required current-user configuration is incomplete. Resolve the prerequisite in the full result, then retry.";
 "developer_tools.upgrade.action_required" = "Agent finished, but an update is still detected. Review the result and try again.";
 "developer_tools.authorization.requesting" = "Waiting for macOS administrator authorization";
 "developer_tools.authorization.repaired" = "System permissions repaired. Retrying automatically.";

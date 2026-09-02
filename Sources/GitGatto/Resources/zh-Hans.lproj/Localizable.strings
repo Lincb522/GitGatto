@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "升级与配置迁移完成，已验证新版本。";
 "developer_tools.upgrade.configured" = "升级完成，已更新工具配置与环境。";
 "developer_tools.upgrade.configuration_failed" = "工具已升级，但环境配置失败：%@";
+"developer_tools.configuration.action_required" = "工具已安装，但必需的当前用户配置尚未完成。请处理完整结果中的前置条件后重试。";
 "developer_tools.upgrade.action_required" = "Agent 已完成，但仍检测到可升级版本。请查看结果后重试。";
 "developer_tools.authorization.requesting" = "等待 macOS 管理员授权";
 "developer_tools.authorization.repaired" = "系统权限已修复，正在自动重试";

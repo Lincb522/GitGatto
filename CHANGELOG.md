@@ -23,6 +23,7 @@ GitGatto 的正式版本以 GitHub Release 为发布记录。应用内更新中�
 - Homebrew 公式没有兼容 bottle 时允许正常源码构建，公式声明的构建依赖不再被误判为无关升级。
 - Homebrew 升级改由 GitGatto 的受控通道执行，避免 Agent 沙箱与 Homebrew 构建沙箱嵌套导致 `sandbox-exec` 被 macOS 拒绝；Agent 继续完成升级后的用户配置与验证。
 - 多路升级任务共享同一个 Homebrew 变更队列，避免公式及其依赖同时写入 Cellar 时触发包锁冲突。
+- Docker Compose 通过 `~/.docker/cli-plugins` 完成当前用户注册，不读取或改写 Docker 凭据配置；配置未完成时保持“需要完成操作”并提供原操作重试。
 
 ## 0.18.10 — 2026-09-01
 

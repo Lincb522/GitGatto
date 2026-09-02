@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "업그레이드 및 구성 마이그레이션이 완료되었습니다. 새 버전이 확인되었습니다.";
 "developer_tools.upgrade.configured" = "도구 구성 및 환경 업데이트로 업그레이드가 완료되었습니다.";
 "developer_tools.upgrade.configuration_failed" = "도구가 업그레이드되었지만 환경 설정 실패: %@";
+"developer_tools.configuration.action_required" = "도구는 설치되었지만 필수 사용자 구성이 완료되지 않았습니다. 전체 결과의 필수 조건을 해결한 후 다시 시도하세요.";
 "developer_tools.upgrade.action_required" = "Agent이 완료되었지만 업데이트가 여전히 감지됩니다. 결과를 검토하고 다시 시도하세요.";
 "developer_tools.authorization.requesting" = "macOS 관리자 승인을 기다리는 중입니다.";
 "developer_tools.authorization.repaired" = "시스템 권한이 복구되었습니다. 자동으로 다시 시도하는 중입니다.";

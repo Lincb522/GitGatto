@@ -463,17 +463,20 @@ struct CodexRunResult: Sendable, Equatable {
     let commandCount: Int
     let fileChangeCount: Int
     let events: [CodexOperationEvent]
+    let requiresUserAction: Bool
 
     init(
         response: String,
         commandCount: Int,
         fileChangeCount: Int,
-        events: [CodexOperationEvent] = []
+        events: [CodexOperationEvent] = [],
+        requiresUserAction: Bool = false
     ) {
         self.response = response
         self.commandCount = commandCount
         self.fileChangeCount = fileChangeCount
         self.events = events
+        self.requiresUserAction = requiresUserAction
     }
 }
 

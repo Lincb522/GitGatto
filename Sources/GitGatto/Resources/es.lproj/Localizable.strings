@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "Actualización y migración de configuración completadas; Nueva versión verificada.";
 "developer_tools.upgrade.configured" = "Actualización completada con configuración de herramienta y entorno actualizados.";
 "developer_tools.upgrade.configuration_failed" = "La herramienta se actualizó, pero falló la configuración del entorno: %@";
+"developer_tools.configuration.action_required" = "La herramienta está instalada, pero falta configuración obligatoria del usuario actual. Resuelve el requisito indicado en el resultado completo y vuelve a intentarlo.";
 "developer_tools.upgrade.action_required" = "Agent finalizó, pero aún se detecta una actualización. Revise el resultado y vuelva a intentarlo.";
 "developer_tools.authorization.requesting" = "Esperando autorización de administrador macOS";
 "developer_tools.authorization.repaired" = "Permisos del sistema reparados. Reintentando automáticamente.";

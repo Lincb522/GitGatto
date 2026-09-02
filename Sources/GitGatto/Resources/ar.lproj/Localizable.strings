@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "اكتمل ترحيل الترقية والتكوين؛ تم التحقق من الإصدار الجديد.";
 "developer_tools.upgrade.configured" = "اكتملت الترقية مع تكوين الأداة وتحديث البيئة.";
 "developer_tools.upgrade.configuration_failed" = "تمت ترقية الأداة، ولكن فشل إعداد البيئة: %@";
+"developer_tools.configuration.action_required" = "تم تثبيت الأداة، لكن إعداد المستخدم الحالي المطلوب غير مكتمل. عالج المتطلب الموضح في النتيجة الكاملة ثم أعد المحاولة.";
 "developer_tools.upgrade.action_required" = "Agent انتهى، ولكن لا يزال يتم اكتشاف تحديث. قم بمراجعة النتيجة وحاول مرة أخرى.";
 "developer_tools.authorization.requesting" = "في انتظار إذن المسؤول macOS";
 "developer_tools.authorization.repaired" = "تم إصلاح أذونات النظام. إعادة المحاولة تلقائيًا.";

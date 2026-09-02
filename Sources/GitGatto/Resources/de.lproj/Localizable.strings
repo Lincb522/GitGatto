@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "Upgrade und Konfigurationsmigration abgeschlossen; neue Version verifiziert.";
 "developer_tools.upgrade.configured" = "Das Upgrade wurde mit aktualisierter Werkzeugkonfiguration und aktualisierter Umgebung abgeschlossen.";
 "developer_tools.upgrade.configuration_failed" = "Das Tool wurde aktualisiert, aber die Einrichtung der Umgebung ist fehlgeschlagen: %@";
+"developer_tools.configuration.action_required" = "Das Tool ist installiert, aber die erforderliche Benutzerkonfiguration ist unvollständig. Beheben Sie die im vollständigen Ergebnis genannte Voraussetzung und versuchen Sie es erneut.";
 "developer_tools.upgrade.action_required" = "Agent fertig, aber es wird immer noch ein Update erkannt. Überprüfen Sie das Ergebnis und versuchen Sie es erneut.";
 "developer_tools.authorization.requesting" = "Warten auf die Administratorautorisierung macOS";
 "developer_tools.authorization.repaired" = "Systemberechtigungen repariert. Automatischer Wiederholungsversuch.";

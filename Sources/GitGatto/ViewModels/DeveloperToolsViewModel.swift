@@ -312,6 +312,7 @@ final class DeveloperToolsViewModel: ObservableObject {
         status.operationStartedAt = nil
         status.detail = L10n.text("developer_tools.queue.waiting")
         status.result = nil
+        status.retryOperation = nil
         status.authorizationRequest = nil
         statuses[tool.id] = status
         selectedUpgradeToolIDs.remove(tool.id)
@@ -462,6 +463,7 @@ final class DeveloperToolsViewModel: ObservableObject {
             completed.isInstalled = verification.isInstalled
             completed.version = updateResult?.installedVersion ?? verification.version
             completed.result = result.response
+            completed.retryOperation = nil
             completed.authorizationRequest = nil
             if let updateResult {
                 applyUpdate(updateResult, to: &completed)
@@ -475,6 +477,10 @@ final class DeveloperToolsViewModel: ObservableObject {
                         "developer_tools.install.configuration_failed",
                         environmentConfigurationError.localizedDescription
                     )
+                } else if result.requiresUserAction {
+                    completed.state = .actionRequired
+                    completed.detail = L10n.text("developer_tools.configuration.action_required")
+                    completed.retryOperation = operation
                 } else {
                     completed.state = verification.isInstalled ? .installed : .actionRequired
                     completed.detail = verification.isInstalled
@@ -492,6 +498,10 @@ final class DeveloperToolsViewModel: ObservableObject {
                         "developer_tools.upgrade.configuration_failed",
                         environmentConfigurationError.localizedDescription
                     )
+                } else if result.requiresUserAction {
+                    completed.state = .actionRequired
+                    completed.detail = L10n.text("developer_tools.configuration.action_required")
+                    completed.retryOperation = operation
                 } else {
                     completed.state = upgraded ? .installed : .actionRequired
                     completed.detail = upgraded
@@ -514,6 +524,7 @@ final class DeveloperToolsViewModel: ObservableObject {
                 failed.phase = nil
                 failed.operationStartedAt = nil
                 failed.detail = error.localizedDescription
+                failed.retryOperation = operation
                 statuses[tool.id] = failed
             }
         }
@@ -528,7 +539,8 @@ final class DeveloperToolsViewModel: ObservableObject {
     }
 
     private func retryOperation(for status: DevelopmentToolStatus) -> DevelopmentToolOperation {
-        status.isInstalled && status.updateAvailability == .available ? .upgrade : .install
+        status.retryOperation
+            ?? (status.isInstalled && status.updateAvailability == .available ? .upgrade : .install)
     }
 
     private func runAgentOperation(

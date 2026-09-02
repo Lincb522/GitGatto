@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "Mise à niveau et migration de configuration terminées ; nouvelle version vérifiée.";
 "developer_tools.upgrade.configured" = "Mise à niveau terminée avec la configuration de l'outil et l'environnement mis à jour.";
 "developer_tools.upgrade.configuration_failed" = "L'outil a été mis à niveau, mais la configuration de l'environnement a échoué : %@";
+"developer_tools.configuration.action_required" = "L’outil est installé, mais la configuration requise pour l’utilisateur actuel est incomplète. Corrigez le prérequis indiqué dans le résultat complet, puis réessayez.";
 "developer_tools.upgrade.action_required" = "Agent terminé, mais une mise à jour est toujours détectée. Vérifiez le résultat et réessayez.";
 "developer_tools.authorization.requesting" = "En attente de l'autorisation de l'administrateur macOS";
 "developer_tools.authorization.repaired" = "Autorisations système réparées. Réessayer automatiquement.";

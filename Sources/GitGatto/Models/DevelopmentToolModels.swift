@@ -431,7 +431,8 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             icon: "square.stack.3d.up",
             formula: "docker-compose",
             executable: "docker-compose",
-            versionArguments: ["version"]
+            versionArguments: ["version"],
+            packageHint: "Homebrew formula: docker-compose. Register the Docker CLI plugin by linking the installed executable at ~/.docker/cli-plugins/docker-compose; never read or modify ~/.docker/config.json."
         ),
         brew(
             id: "colima",
@@ -1060,6 +1061,7 @@ struct DevelopmentToolStatus: Sendable, Equatable {
     var operationStartedAt: Date?
     var detail: String?
     var result: String?
+    var retryOperation: DevelopmentToolOperation?
     var authorizationRequest: DevelopmentToolSystemAuthorizationRequest?
     var updateAvailability: DevelopmentToolUpdateAvailability = .unknown
     var latestVersion: String?

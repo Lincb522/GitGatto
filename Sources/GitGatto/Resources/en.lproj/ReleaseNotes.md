@@ -13,3 +13,4 @@
 
 - Homebrew upgrades now run through GitGatto's controlled execution path so Homebrew's build sandbox is not nested inside the Agent sandbox.
 - Concurrent upgrade lanes serialize Homebrew mutations to prevent Cellar lock conflicts across shared dependencies.
+- Docker Compose registers through the current user's CLI plug-in directory without reading or changing Docker credential configuration; incomplete setup remains action required.

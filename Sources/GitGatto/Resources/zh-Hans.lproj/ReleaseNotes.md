@@ -13,3 +13,4 @@
 
 - Homebrew 升级使用 GitGatto 的受控执行通道，避免 Agent 与 Homebrew 的构建沙箱嵌套导致 `sandbox-exec` 启动失败。
 - 多路升级任务会依次执行 Homebrew 变更，避免共享依赖触发 Cellar 包锁冲突。
+- Docker Compose 使用当前用户的 CLI 插件目录完成注册，不读取或改写 Docker 凭据配置；配置未完成时保持“需要完成操作”。

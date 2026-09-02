@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "アップグレードと構成の移行が完了しました。新しいバージョンが確認されました。";
 "developer_tools.upgrade.configured" = "ツール構成と環境が更新され、アップグレードが完了しました。";
 "developer_tools.upgrade.configuration_failed" = "ツールはアップグレードされましたが、環境セットアップに失敗しました: %@";
+"developer_tools.configuration.action_required" = "ツールはインストール済みですが、必要なユーザー設定が完了していません。完全な結果に示された前提条件を解決してから再試行してください。";
 "developer_tools.upgrade.action_required" = "Agent は終了しましたが、更新がまだ検出されています。結果を確認して、再試行してください。";
 "developer_tools.authorization.requesting" = "macOS 管理者の承認を待っています";
 "developer_tools.authorization.repaired" = "システム権限が修復されました。自動的に再試行します。";

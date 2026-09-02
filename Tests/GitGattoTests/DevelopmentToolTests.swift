@@ -69,6 +69,7 @@ struct DevelopmentToolTests {
         #expect(installPrompt.contains("restore its original pinned state"))
         #expect(installPrompt.contains("otherwise allow Homebrew's normal source build"))
         #expect(installPrompt.contains("Formula-declared runtime and build dependencies are part of the requested installation"))
+        #expect(installPrompt.contains("GITGATTO_RESULT: ACTION_REQUIRED"))
         #expect(!installPrompt.contains("report a required PATH line"))
 
         for catalogTool in DevelopmentTool.catalog {
@@ -109,6 +110,36 @@ struct DevelopmentToolTests {
         #expect(postUpgradePrompt.contains(tool.packageHint))
         #expect(postUpgradePrompt.contains("Do not install, upgrade, reinstall, unlink, or remove any package"))
         #expect(postUpgradePrompt.contains("git lfs install"))
+        #expect(postUpgradePrompt.contains("GITGATTO_RESULT: COMPLETE"))
+
+        let compose = try #require(DevelopmentTool.catalog.first { $0.id == "docker-compose" })
+        #expect(compose.packageHint.contains("~/.docker/cli-plugins/docker-compose"))
+        #expect(compose.packageHint.contains("never read or modify ~/.docker/config.json"))
+    }
+
+    @Test("Agent configuration status is explicit and removed from the displayed result")
+    func parsesAgentConfigurationStatus() {
+        let complete = CodexService.developmentToolResult(CodexRunResult(
+            response: "Docker Compose configured and verified.\nGITGATTO_RESULT: COMPLETE",
+            commandCount: 2,
+            fileChangeCount: 0
+        ))
+        let blocked = CodexService.developmentToolResult(CodexRunResult(
+            response: "Plugin registration needs user action.\nGITGATTO_RESULT: ACTION_REQUIRED",
+            commandCount: 1,
+            fileChangeCount: 0
+        ))
+        let unstructured = CodexService.developmentToolResult(CodexRunResult(
+            response: "Installed",
+            commandCount: 1,
+            fileChangeCount: 0
+        ))
+
+        #expect(complete.response == "Docker Compose configured and verified.")
+        #expect(!complete.requiresUserAction)
+        #expect(blocked.response == "Plugin registration needs user action.")
+        #expect(blocked.requiresUserAction)
+        #expect(unstructured.requiresUserAction)
     }
 
     @Test("Homebrew upgrades run directly with bounded noninteractive environment")
@@ -190,6 +221,9 @@ struct DevelopmentToolTests {
     @Test("Installer sandbox includes every Homebrew managed directory")
     func includesHomebrewManagedDirectories() {
         let paths = Set(CodexService.developmentToolWritableDirectories().map(\.standardizedFileURL.path))
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
+        #expect(paths.contains("\(home)/.docker/cli-plugins"))
+        #expect(!paths.contains("\(home)/.docker"))
         for name in [
             "Homebrew",
             "Cellar",
@@ -477,6 +511,32 @@ struct DevelopmentToolTests {
         #expect(status.latestVersion == "3.8.0")
         #expect(!status.canUpgrade)
         #expect(await fixture.upgradedToolIDs == ["git-lfs"])
+    }
+
+    @Test("Incomplete Agent configuration remains actionable after a verified upgrade")
+    @MainActor
+    func keepsIncompleteConfigurationActionable() async throws {
+        let fixture = DevelopmentToolInstallFixture()
+        let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
+        await fixture.seedInstalled(tool.id)
+        await fixture.requireUserConfigurationAction()
+        let model = DeveloperToolsViewModel(
+            installer: fixture,
+            probe: fixture,
+            updateChecker: fixture,
+            environmentConfigurator: fixture
+        )
+
+        model.refresh()
+        try await waitUntil { model.status(for: tool).updateAvailability == .available }
+        model.upgrade(tool)
+        try await waitUntil { model.status(for: tool).state == .actionRequired }
+
+        let status = model.status(for: tool)
+        #expect(status.isInstalled)
+        #expect(status.updateAvailability == .current)
+        #expect(status.retryOperation == .upgrade)
+        #expect(status.detail == L10n.text("developer_tools.configuration.action_required"))
     }
 
     @Test("Agent operations run in bounded parallel lanes and continue the queue")
@@ -846,6 +906,7 @@ private actor DevelopmentToolInstallFixture:
     private var requiresSystemAuthorization = false
     private var isSystemAuthorized = false
     private var cancelsAuthorization = false
+    private var reportsUserConfigurationAction = false
 
     func seedInstalled(_ toolID: String) {
         installedToolIDs = [toolID]
@@ -858,6 +919,10 @@ private actor DevelopmentToolInstallFixture:
 
     func allowSystemAuthorization() {
         cancelsAuthorization = false
+    }
+
+    func requireUserConfigurationAction() {
+        reportsUserConfigurationAction = true
     }
 
     func probe() async -> CodexAvailability { .unavailable }
@@ -993,7 +1058,12 @@ private actor DevelopmentToolInstallFixture:
         await progress(AgentInstallProgress(.inspecting))
         await progress(AgentInstallProgress(.installing))
         upgradedToolIDs.append(tool.id)
-        return CodexRunResult(response: "Upgraded and verified", commandCount: 2, fileChangeCount: 0)
+        return CodexRunResult(
+            response: "Upgraded and verified",
+            commandCount: 2,
+            fileChangeCount: 0,
+            requiresUserAction: reportsUserConfigurationAction
+        )
     }
 
     func cancel() async {}

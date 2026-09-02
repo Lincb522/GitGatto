@@ -1251,6 +1251,7 @@
 "developer_tools.upgrade.verified" = "Обновление и перенос конфигурации завершены; новая версия проверена.";
 "developer_tools.upgrade.configured" = "Обновление завершено, конфигурация инструмента и среда обновлены.";
 "developer_tools.upgrade.configuration_failed" = "Инструмент был обновлен, но настройка среды не удалась: %@";
+"developer_tools.configuration.action_required" = "Инструмент установлен, но обязательная настройка текущего пользователя не завершена. Устраните условие из полного результата и повторите попытку.";
 "developer_tools.upgrade.action_required" = "Agent завершено, но обновление все еще обнаружено. Просмотрите результат и повторите попытку.";
 "developer_tools.authorization.requesting" = "Ожидание авторизации администратора macOS";
 "developer_tools.authorization.repaired" = "Системные разрешения восстановлены. Повторная попытка автоматически.";
