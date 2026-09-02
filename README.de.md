@@ -88,6 +88,10 @@ Ein Agent kann vollständige Fehlerausgaben zu Git, Git LFS, Hooks, Signaturen, 
 - [Architektur](docs/ARCHITECTURE.md): Zuständigkeit für Zustände, Servicegrenzen und zentrale Datenflüsse.
 - [Release-Kurve](docs/UPDATE_HISTORY.md): aus datierten CHANGELOG-Einträgen erzeugter Versionsverlauf.
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![GitGatto Release-Kurve](docs/media/update-curve.svg)
 
 ## Installation

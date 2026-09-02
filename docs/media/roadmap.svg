@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="560" viewBox="0 0 1520 560" role="img" aria-labelledby="title desc">
+<title id="title">GitGatto 路线图</title>
+<desc id="desc">已实现版本和下一阶段计划。</desc>
+<style>
+    :root { color-scheme: light dark; }
+    .bg { fill: #ffffff; }
+    .panel { fill: #f7f9fa; stroke: #dce2e6; stroke-width: 1.5; }
+    .panel-accent { fill: #fff5ef; stroke: #efb092; stroke-width: 1.5; }
+    .panel-green { fill: #edf8f4; stroke: #86c7b7; stroke-width: 1.5; }
+    .panel-blue { fill: #eef5fb; stroke: #91b9da; stroke-width: 1.5; }
+    .panel-purple { fill: #f5f0fb; stroke: #b7a0d4; stroke-width: 1.5; }
+    .panel-muted { fill: #f2f4f5; stroke: #bfc7cd; stroke-width: 1.5; stroke-dasharray: 7 6; }
+    .lane { fill: #fbfcfc; stroke: #e3e7ea; stroke-width: 1.5; }
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .title { fill: #17202a; font-size: 28px; font-weight: 700; }
+    .section { fill: #17202a; font-size: 17px; font-weight: 700; }
+    .label { fill: #25313b; font-size: 15px; font-weight: 650; }
+    .detail { fill: #687580; font-size: 13px; font-weight: 500; }
+    .badge { fill: #e85d24; font-size: 12px; font-weight: 700; }
+    .connector { fill: none; stroke: #8b979f; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .connector-accent { fill: none; stroke: #e85d24; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .dot { fill: #e85d24; }
+    @media (prefers-color-scheme: dark) {
+        .bg { fill: #101419; }
+        .panel, .lane { fill: #171d23; stroke: #303943; }
+        .panel-accent { fill: #2b1d17; stroke: #8f4d31; }
+        .panel-green { fill: #14251f; stroke: #397d6c; }
+        .panel-blue { fill: #16232e; stroke: #477da9; }
+        .panel-purple { fill: #211b2a; stroke: #72599a; }
+        .panel-muted { fill: #151a1f; stroke: #53606a; }
+        .title, .section, .label { fill: #f2f5f7; }
+        .detail { fill: #a2adb6; }
+        .connector { stroke: #66737d; }
+    }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b979f"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="1520" height="560" rx="24"/>
+<text class="title" x="64" y="58">GitGatto 路线图</text>
+<text class="detail" x="64" y="84">已实现版本按 CHANGELOG 记录；虚线阶段为下一步计划</text>
+<text class="section" x="64" y="138">已实现</text>
+<line class="connector-accent" x1="142" y1="222" x2="1378" y2="222"/>
+<rect class="panel-green" x="62" y="166" width="250" height="112" rx="16"/><text class="label" x="187.0" y="212.0" text-anchor="middle"><tspan x="187.0" dy="0">0.14</tspan></text><text class="detail" x="187.0" y="236.0" text-anchor="middle"><tspan x="187.0" dy="0">Git + GitHub</tspan><tspan x="187.0" dy="18">基础流程</tspan></text>
+<circle class="dot" cx="187.0" cy="222" r="6"/>
+<rect class="panel-green" x="350" y="166" width="250" height="112" rx="16"/><text class="label" x="475.0" y="212.0" text-anchor="middle"><tspan x="475.0" dy="0">0.15–0.16</tspan></text><text class="detail" x="475.0" y="236.0" text-anchor="middle"><tspan x="475.0" dy="0">专业工作区</tspan><tspan x="475.0" dy="18">更新链路</tspan></text>
+<circle class="dot" cx="475.0" cy="222" r="6"/>
+<rect class="panel-green" x="638" y="166" width="250" height="112" rx="16"/><text class="label" x="763.0" y="212.0" text-anchor="middle"><tspan x="763.0" dy="0">0.17–0.18.10</tspan></text><text class="detail" x="763.0" y="236.0" text-anchor="middle"><tspan x="763.0" dy="0">Agent · 内容预览</tspan><tspan x="763.0" dy="18">工具安装</tspan></text>
+<circle class="dot" cx="763.0" cy="222" r="6"/>
+<rect class="panel-green" x="926" y="166" width="250" height="112" rx="16"/><text class="label" x="1051.0" y="212.0" text-anchor="middle"><tspan x="1051.0" dy="0">0.18.11</tspan></text><text class="detail" x="1051.0" y="236.0" text-anchor="middle"><tspan x="1051.0" dy="0">目标驱动交付</tspan><tspan x="1051.0" dy="18">完整发布</tspan></text>
+<circle class="dot" cx="1051.0" cy="222" r="6"/>
+<rect class="panel-accent" x="1214" y="166" width="250" height="112" rx="16"/><text class="label" x="1339.0" y="212.0" text-anchor="middle"><tspan x="1339.0" dy="0">0.18.12</tspan></text><text class="detail" x="1339.0" y="236.0" text-anchor="middle"><tspan x="1339.0" dy="0">回归取证</tspan><tspan x="1339.0" dy="18">仓库灾备</tspan></text>
+<circle class="dot" cx="1339.0" cy="222" r="6"/>
+<text class="section" x="64" y="354">下一阶段</text>
+<rect class="panel-muted" x="62" y="386" width="390" height="108" rx="16"/><text class="label" x="257.0" y="430.0" text-anchor="middle"><tspan x="257.0" dy="0">恢复证据</tspan></text><text class="detail" x="257.0" y="454.0" text-anchor="middle"><tspan x="257.0" dy="0">多仓库值守</tspan></text>
+<text class="badge" x="80" y="410">NEXT 01</text>
+<path class="connector" d="M464 440 L518 440" marker-end="url(#arrow)"/>
+<rect class="panel-muted" x="530" y="386" width="390" height="108" rx="16"/><text class="label" x="725.0" y="430.0" text-anchor="middle"><tspan x="725.0" dy="0">可复用 Agent</tspan></text><text class="detail" x="725.0" y="454.0" text-anchor="middle"><tspan x="725.0" dy="0">处理方案</tspan></text>
+<text class="badge" x="548" y="410">NEXT 02</text>
+<path class="connector" d="M932 440 L986 440" marker-end="url(#arrow)"/>
+<rect class="panel-muted" x="998" y="386" width="390" height="108" rx="16"/><text class="label" x="1193.0" y="430.0" text-anchor="middle"><tspan x="1193.0" dy="0">签名 · 公证</tspan></text><text class="detail" x="1193.0" y="454.0" text-anchor="middle"><tspan x="1193.0" dy="0">更新闭环</tspan></text>
+<text class="badge" x="1016" y="410">NEXT 03</text>
+</svg>

@@ -106,6 +106,10 @@ An Agent can use complete error output to handle Git, Git LFS, hooks, signing, b
 - [Architecture](docs/ARCHITECTURE.md): state ownership, service boundaries, and key data flows.
 - [Release activity](docs/UPDATE_HISTORY.md): version history generated from dated CHANGELOG entries.
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![GitGatto release activity](docs/media/update-curve.svg)
 
 ## Installation

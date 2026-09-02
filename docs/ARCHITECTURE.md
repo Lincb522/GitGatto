@@ -2,86 +2,7 @@
 
 ## 系统图
 
-```mermaid
-flowchart TB
-    subgraph UI[macOS 应用]
-        App[SwiftUI / AppKit]
-        Workspace[WorkspaceViewModel<br/>仓库与导航状态]
-        Marketplace[GitHubMarketplaceViewModel<br/>应用仓库]
-        DevTools[DeveloperToolsViewModel<br/>开发工具与队列]
-        App --> Workspace
-        App --> Marketplace
-        App --> DevTools
-    end
-
-    subgraph Domain[任务与运行时]
-        Goals[ProjectGoalRuntime<br/>交付与发布目标]
-        Regression[RegressionInvestigationRuntime<br/>worktree + git bisect]
-        Recovery[RepositoryBackupService<br/>滚动恢复点与迁移]
-        Downloads[AppDownloadManager<br/>下载与安装]
-        Errors[GlobalErrorHandler<br/>错误归一与脱敏]
-    end
-
-    subgraph Adapters[外部能力适配]
-        Git[GitRepositoryService<br/>GitCommandRunner]
-        GitHub[GitHubService<br/>GitHubReleaseService]
-        Agent[CodexService<br/>多 CLI 独立通道]
-        Tools[DevelopmentTool services<br/>探测、Homebrew、配置与授权]
-        Update[AppUpdateManager<br/>Sparkle]
-        Content[WebKit / AVKit<br/>文档与媒体]
-    end
-
-    subgraph State[本机持久化]
-        Preferences[AppPreferences]
-        Catalog[LocalRepositoryCatalog]
-        Conversations[Agent 对话与操作记录]
-        GoalStore[目标与回归记录]
-        Translation[README 与应用介绍译文]
-        Backups[Recovery<br/>Git bundle + 工作区副本]
-    end
-
-    subgraph External[系统与远端]
-        Repositories[本地 Git 仓库]
-        SystemGit[系统 Git / SSH]
-        GH[GitHub CLI / GitHub API]
-        CLIs[Codex、Claude、Gemini、OpenCode<br/>或自定义 CLI]
-        Brew[Homebrew 与本机工具]
-        Releases[GitHub Releases / Appcast]
-    end
-
-    Workspace --> Goals
-    Workspace --> Regression
-    Workspace --> Recovery
-    Workspace --> Git
-    Workspace --> GitHub
-    Workspace --> Agent
-    Workspace --> Content
-    Marketplace --> GitHub
-    Marketplace --> Downloads
-    Marketplace --> Agent
-    DevTools --> Tools
-    DevTools --> Agent
-    Downloads --> Errors
-    Goals --> Git
-    Goals --> GitHub
-    Goals --> Agent
-    Regression --> Git
-    Regression --> Agent
-    Recovery --> Git
-    Recovery --> Backups
-    Git --> Repositories
-    Git --> SystemGit
-    GitHub --> GH
-    Agent --> CLIs
-    Tools --> Brew
-    Update --> Releases
-    Workspace --> Preferences
-    Workspace --> Catalog
-    Workspace --> Conversations
-    Goals --> GoalStore
-    Regression --> GoalStore
-    Agent --> Translation
-```
+![GitGatto 系统架构图](media/architecture-overview.svg)
 
 ## 状态所有权
 
@@ -107,22 +28,7 @@ PR Review、评论、Fork、Actions 重试或取消等远端写入，必须来�
 
 `CodexService` 为仓库操作、翻译和安装维护独立配置、进程与取消通道。支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义参数模板。
 
-```mermaid
-sequenceDiagram
-    participant U as 用户
-    participant V as GitGatto
-    participant G as Git / GitHub
-    participant A as Agent CLI
-
-    U->>V: 选择仓库与操作
-    V->>G: 读取状态和证据
-    G-->>V: 分支、Diff、错误或运行结果
-    V->>A: 传入限定任务与工作目录
-    A-->>V: 输出、命令记录与文件变更
-    V->>G: 重新读取真实状态
-    G-->>V: 验证结果
-    V-->>U: 显示结果；远端写入等待确认
-```
+![Agent 执行闭环](media/agent-flow.svg)
 
 Agent 结果不是成功依据。项目目标、错误修复、README 重写和安装配置都要回到 Git、GitHub、本机可执行文件或文件系统重新验证。
 
@@ -134,22 +40,7 @@ Agent 结果不是成功依据。项目目标、错误修复、README 重写和�
 
 ## 灾备与恢复
 
-```mermaid
-flowchart LR
-    Watch[RepositoryChangeMonitor<br/>文件系统事件] --> Decide{达到重大变更阈值?}
-    Timer[定时任务] --> Snapshot[读取 Git 状态]
-    Manual[手动创建] --> Snapshot
-    Decide -->|是| Snapshot
-    Snapshot --> Fingerprint{内容是否变化?}
-    Fingerprint -->|否| Skip[不重复写入]
-    Fingerprint -->|是| Stage[暂存目录写入]
-    Stage --> Bundle[创建 Git bundle]
-    Stage --> Files[复制未提交文件]
-    Bundle --> Manifest[写入清单与校验信息]
-    Files --> Manifest
-    Manifest --> Rotate[安装恢复点<br/>每仓库最多三份]
-    Rotate --> Restore[按需恢复为新仓库副本]
-```
+![灾备与恢复流程](media/recovery-flow.svg)
 
 `RepositoryBackupService` 是备份目录的唯一写入者。创建、删除、裁剪与目录迁移在 actor 内串行执行；先写入暂存目录，清单完成后再移动到正式位置。定时与重大变更备份会跳过空工作区和相同内容。更换目录时先复制并比对清单，成功后才切换路径。
 
@@ -175,15 +66,6 @@ flowchart LR
 - `.github/workflows/release-macos.yml` 使用 Developer ID 签名、创建 DMG、生成 Appcast 并发布 GitHub Release。
 - `.github/workflows/notarize-macos.yml` 是独立的 Apple 公证流程；只有在 App Store Connect 凭据可用并且公证结果通过后，产物才可标记为已公证。
 
-```mermaid
-flowchart LR
-    Tag[版本标签] --> Test[测试与通用架构构建]
-    Test --> Sign[Developer ID 签名]
-    Sign --> DMG[创建 DMG]
-    DMG --> Feed[生成 Appcast 与 SHA-256]
-    Feed --> Release[GitHub Release]
-    Sign -.独立门禁.-> Notary[Apple 公证与 staple]
-    Release --> Sparkle[Sparkle 检查与安装]
-```
+![构建与发布流程](media/release-flow.svg)
 
 发布命令、凭据边界和验证清单见 [RELEASING.md](RELEASING.md)。

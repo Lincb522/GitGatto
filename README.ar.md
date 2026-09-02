@@ -88,6 +88,10 @@ GitGatto عميل أصلي لـ Git وGitHub على macOS. يقرأ حالة ا�
 - [البنية](docs/ARCHITECTURE.md): ملكية الحالة وحدود الخدمات ومسارات البيانات الأساسية.
 - [منحنى التحديثات](docs/UPDATE_HISTORY.md): سجل مولد من التواريخ الفعلية في CHANGELOG.
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![منحنى تحديثات GitGatto](docs/media/update-curve.svg)
 
 ## التثبيت

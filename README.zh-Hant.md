@@ -106,6 +106,10 @@ Agent 可以根據完整錯誤輸出處理 Git、Git LFS、Hook、簽署、分�
 - [架構圖](docs/ARCHITECTURE.md)：狀態所有權、服務邊界和主要資料流。
 - [更新曲線](docs/UPDATE_HISTORY.md)：依 CHANGELOG 實際日期產生的版本記錄。
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![GitGatto 更新曲線](docs/media/update-curve.svg)
 
 ## 安裝

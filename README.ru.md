@@ -88,6 +88,10 @@ Agent может обрабатывать полный вывод ошибок G
 - [Архитектура](docs/ARCHITECTURE.md): владельцы состояний, границы сервисов и основные потоки данных.
 - [Кривая обновлений](docs/UPDATE_HISTORY.md): история, построенная по датированным записям CHANGELOG.
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![Кривая обновлений GitGatto](docs/media/update-curve.svg)
 
 ## Установка

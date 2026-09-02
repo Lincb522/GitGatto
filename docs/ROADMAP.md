@@ -2,21 +2,7 @@
 
 路线图只记录已经实现的能力和已进入计划的下一步。版本是否正式发布以 [CHANGELOG](../CHANGELOG.md) 与 [GitHub Releases](https://github.com/Lincb522/GitGatto/releases) 为准。
 
-```mermaid
-flowchart LR
-    A[0.14<br/>Git 与 GitHub 基础流程] --> B[0.15–0.16<br/>专业工作区与更新链路]
-    B --> C[0.17–0.18.10<br/>Agent、内容预览与工具安装]
-    C --> D[0.18.11<br/>目标驱动交付与完整发布]
-    D --> E[0.18.12<br/>回归取证与仓库灾备]
-    E -.计划.-> F[恢复证据与多仓库值守]
-    F -.计划.-> G[可复用 Agent 处理方案]
-    G -.计划.-> H[签名、公证与更新闭环]
-
-    classDef shipped fill:#EAF7F3,stroke:#258A73,color:#173C34,stroke-width:1.5px;
-    classDef planned fill:#FFF4EA,stroke:#E85D24,color:#5D2A16,stroke-width:1.5px,stroke-dasharray:5 4;
-    class A,B,C,D,E shipped;
-    class F,G,H planned;
-```
+![GitGatto 路线图](media/roadmap.svg)
 
 ## 已实现
 

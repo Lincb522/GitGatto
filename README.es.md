@@ -88,6 +88,10 @@ Un Agent puede usar la salida de error completa para tratar problemas de Git, Gi
 - [Arquitectura](docs/ARCHITECTURE.md): propiedad del estado, límites de servicios y flujos principales.
 - [Curva de versiones](docs/UPDATE_HISTORY.md): historial generado a partir de las fechas del CHANGELOG.
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![Curva de versiones de GitGatto](docs/media/update-curve.svg)
 
 ## Instalación

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="420" viewBox="0 0 1520 420" role="img" aria-labelledby="title desc">
+<title id="title">构建与发布流程</title>
+<desc id="desc">公证是独立门禁，只有验证通过后才标记为已公证</desc>
+<style>
+    :root { color-scheme: light dark; }
+    .bg { fill: #ffffff; }
+    .panel { fill: #f7f9fa; stroke: #dce2e6; stroke-width: 1.5; }
+    .panel-accent { fill: #fff5ef; stroke: #efb092; stroke-width: 1.5; }
+    .panel-green { fill: #edf8f4; stroke: #86c7b7; stroke-width: 1.5; }
+    .panel-blue { fill: #eef5fb; stroke: #91b9da; stroke-width: 1.5; }
+    .panel-purple { fill: #f5f0fb; stroke: #b7a0d4; stroke-width: 1.5; }
+    .panel-muted { fill: #f2f4f5; stroke: #bfc7cd; stroke-width: 1.5; stroke-dasharray: 7 6; }
+    .lane { fill: #fbfcfc; stroke: #e3e7ea; stroke-width: 1.5; }
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .title { fill: #17202a; font-size: 28px; font-weight: 700; }
+    .section { fill: #17202a; font-size: 17px; font-weight: 700; }
+    .label { fill: #25313b; font-size: 15px; font-weight: 650; }
+    .detail { fill: #687580; font-size: 13px; font-weight: 500; }
+    .badge { fill: #e85d24; font-size: 12px; font-weight: 700; }
+    .connector { fill: none; stroke: #8b979f; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .connector-accent { fill: none; stroke: #e85d24; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .dot { fill: #e85d24; }
+    @media (prefers-color-scheme: dark) {
+        .bg { fill: #101419; }
+        .panel, .lane { fill: #171d23; stroke: #303943; }
+        .panel-accent { fill: #2b1d17; stroke: #8f4d31; }
+        .panel-green { fill: #14251f; stroke: #397d6c; }
+        .panel-blue { fill: #16232e; stroke: #477da9; }
+        .panel-purple { fill: #211b2a; stroke: #72599a; }
+        .panel-muted { fill: #151a1f; stroke: #53606a; }
+        .title, .section, .label { fill: #f2f5f7; }
+        .detail { fill: #a2adb6; }
+        .connector { stroke: #66737d; }
+    }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b979f"/>
+  </marker>
+</defs>
+<rect class="bg" x="0" y="0" width="1520" height="420" rx="24"/>
+<text class="title" x="64" y="58">构建与发布流程</text>
+<text class="detail" x="64" y="84">公证是独立门禁，只有验证通过后才标记为已公证</text>
+<rect class="panel" x="64.0" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="160.83333333333331" y="206.0" text-anchor="middle"><tspan x="160.83333333333331" dy="0">版本标签</tspan></text><text class="detail" x="160.83333333333331" y="230.0" text-anchor="middle"><tspan x="160.83333333333331" dy="0">版本与构建号</tspan></text>
+<text class="badge" x="80.0" y="174">01</text>
+<path class="connector-accent" d="M266.66666666666663 216.0 L294.66666666666663 216.0" marker-end="url(#arrow)"/>
+<rect class="panel" x="303.66666666666663" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="400.49999999999994" y="206.0" text-anchor="middle"><tspan x="400.49999999999994" dy="0">测试构建</tspan></text><text class="detail" x="400.49999999999994" y="230.0" text-anchor="middle"><tspan x="400.49999999999994" dy="0">通用架构应用</tspan></text>
+<text class="badge" x="319.66666666666663" y="174">02</text>
+<path class="connector-accent" d="M506.33333333333326 216.0 L534.3333333333333 216.0" marker-end="url(#arrow)"/>
+<rect class="panel" x="543.3333333333333" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="640.1666666666666" y="206.0" text-anchor="middle"><tspan x="640.1666666666666" dy="0">Developer ID</tspan></text><text class="detail" x="640.1666666666666" y="230.0" text-anchor="middle"><tspan x="640.1666666666666" dy="0">签名与嵌套组件</tspan></text>
+<text class="badge" x="559.3333333333333" y="174">03</text>
+<path class="connector-accent" d="M745.9999999999999 216.0 L773.9999999999999 216.0" marker-end="url(#arrow)"/>
+<rect class="panel" x="783.0" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="879.8333333333334" y="206.0" text-anchor="middle"><tspan x="879.8333333333334" dy="0">DMG + Appcast</tspan></text><text class="detail" x="879.8333333333334" y="230.0" text-anchor="middle"><tspan x="879.8333333333334" dy="0">校验值与更新源</tspan></text>
+<text class="badge" x="799.0" y="174">04</text>
+<path class="connector-accent" d="M985.6666666666666 216.0 L1013.6666666666666 216.0" marker-end="url(#arrow)"/>
+<rect class="panel" x="1022.6666666666666" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="1119.5" y="206.0" text-anchor="middle"><tspan x="1119.5" dy="0">GitHub Release</tspan></text><text class="detail" x="1119.5" y="230.0" text-anchor="middle"><tspan x="1119.5" dy="0">安装包与版本说明</tspan></text>
+<text class="badge" x="1038.6666666666665" y="174">05</text>
+<path class="connector-accent" d="M1225.3333333333333 216.0 L1253.3333333333333 216.0" marker-end="url(#arrow)"/>
+<rect class="panel-accent" x="1262.3333333333333" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="1359.1666666666665" y="206.0" text-anchor="middle"><tspan x="1359.1666666666665" dy="0">独立公证</tspan></text><text class="detail" x="1359.1666666666665" y="230.0" text-anchor="middle"><tspan x="1359.1666666666665" dy="0">Notary · Staple · Gatekeeper</tspan></text>
+<text class="badge" x="1278.3333333333333" y="174">06</text>
+</svg>

@@ -23,7 +23,7 @@
 - 行为、设置、快捷键或错误恢复变化：更新 README 或应用内帮助。
 - README 的事实变化：同步检查 `README.*.md`，并保留各语言之间可直接切换的入口。
 - CHANGELOG 增加带日期的版本标题：运行 `./scripts/generate-update-curve.py`，同步检查更新曲线和版本表格。
-- 架构边界变化：更新 `docs/ARCHITECTURE.md`。
+- 路线或架构边界变化：更新对应文档和 `scripts/generate-document-diagrams.py`，运行脚本重新生成文档内嵌 SVG。
 - 依赖、签名、版本或发布流程变化：更新 `docs/RELEASING.md` 和第三方许可。
 - 数据发送、保存或删除方式变化：复核隐私政策、用户协议和免责声明。
 - 所有 Markdown 链接必须可解析；示例命令至少完成语法检查。

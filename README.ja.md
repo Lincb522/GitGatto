@@ -106,6 +106,10 @@ Agent は完全なエラー出力を使って、Git、Git LFS、Hook、署名、
 - [アーキテクチャ](docs/ARCHITECTURE.md)：状態の所有者、サービス境界、主要なデータフロー。
 - [更新曲線](docs/UPDATE_HISTORY.md)：CHANGELOG の実日付から生成したバージョン記録。
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![GitGatto 更新曲線](docs/media/update-curve.svg)
 
 ## インストール

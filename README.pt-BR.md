@@ -88,6 +88,10 @@ Um Agent pode usar a saída completa de erros para tratar Git, Git LFS, hooks, a
 - [Arquitetura](docs/ARCHITECTURE.md): propriedade de estado, limites de serviços e fluxos principais.
 - [Curva de versões](docs/UPDATE_HISTORY.md): histórico gerado a partir das datas do CHANGELOG.
 
+![GitGatto roadmap](docs/media/roadmap.svg)
+
+![GitGatto architecture](docs/media/architecture-overview.svg)
+
 ![Curva de versões do GitGatto](docs/media/update-curve.svg)
 
 ## Instalação
