@@ -30,7 +30,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="Centro de recuperación"><br><sub><b>Centro de recuperación</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="Historial de archivos en modo oscuro"><br><sub><b>Historial de archivos en modo oscuro</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="Máquina del tiempo de archivos"><br><sub><b>Máquina del tiempo de archivos</b></sub></td>
   </tr>
 </table>
 

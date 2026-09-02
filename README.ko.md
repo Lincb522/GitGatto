@@ -48,7 +48,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="재해 복구 센터"><br><sub><b>재해 복구 센터</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="다크 모드 파일 기록"><br><sub><b>다크 모드 파일 기록</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="파일 타임머신"><br><sub><b>파일 타임머신</b></sub></td>
   </tr>
 </table>
 

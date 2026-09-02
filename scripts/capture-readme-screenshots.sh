@@ -32,7 +32,7 @@ GITGATTO_WORKSPACE_PREVIEW=1 GITGATTO_RECOVERY_PREVIEW=1 "$BIN" \
   -visualTheme softGlass
 
 GITGATTO_WORKSPACE_PREVIEW=1 "$BIN" \
-  --snapshot "$ROOT/docs/media/file-history-dark.png" \
+  --snapshot "$ROOT/docs/media/file-time-machine.png" \
   --snapshot-size "$SIZE" \
   --section timeMachine \
   -appearance dark \

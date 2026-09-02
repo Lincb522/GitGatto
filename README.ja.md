@@ -48,7 +48,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="リカバリーセンター"><br><sub><b>リカバリーセンター</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="ダークモードのファイル履歴"><br><sub><b>ダークモードのファイル履歴</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="ファイルタイムマシン"><br><sub><b>ファイルタイムマシン</b></sub></td>
   </tr>
 </table>
 

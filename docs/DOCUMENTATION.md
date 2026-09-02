@@ -24,7 +24,7 @@
 - README 的事实变化：同步检查 `README.*.md`，并保留各语言之间可直接切换的入口。
 - CHANGELOG 增加带日期的版本标题：运行 `./scripts/generate-update-curve.py`，同步检查更新曲线和版本表格。
 - 路线或架构边界变化：更新对应文档和 `scripts/generate-document-diagrams.py`，运行脚本重新生成文档内嵌 SVG。
-- 主界面或 README 展示的功能变化：运行 `./scripts/capture-readme-screenshots.sh`，检查浅色工作区、GitHub 项目、灾备中心和深色文件历史四张截图。
+- 主界面或 README 展示的功能变化：运行 `./scripts/capture-readme-screenshots.sh`，检查浅色工作区、GitHub 项目、灾备中心和文件时间机器四张截图。
 - 依赖、签名、版本或发布流程变化：更新 `docs/RELEASING.md` 和第三方许可。
 - 数据发送、保存或删除方式变化：复核隐私政策、用户协议和免责声明。
 - 所有 Markdown 链接必须可解析；示例命令至少完成语法检查。

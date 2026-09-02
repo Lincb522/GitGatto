@@ -30,7 +30,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="مركز الاستعادة"><br><sub><b>مركز الاستعادة</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="سجل الملفات في الوضع الداكن"><br><sub><b>سجل الملفات في الوضع الداكن</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="آلة الزمن للملفات"><br><sub><b>آلة الزمن للملفات</b></sub></td>
   </tr>
 </table>
 

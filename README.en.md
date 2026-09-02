@@ -48,7 +48,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="Recovery Center"><br><sub><b>Recovery Center</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="File history in dark mode"><br><sub><b>File history in dark mode</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="File Time Machine"><br><sub><b>File Time Machine</b></sub></td>
   </tr>
 </table>
 

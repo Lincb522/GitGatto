@@ -30,7 +30,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="Центр восстановления"><br><sub><b>Центр восстановления</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="История файлов в тёмной теме"><br><sub><b>История файлов в тёмной теме</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="Машина времени для файлов"><br><sub><b>Машина времени для файлов</b></sub></td>
   </tr>
 </table>
 

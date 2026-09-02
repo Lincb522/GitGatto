@@ -30,7 +30,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="Centre de récupération"><br><sub><b>Centre de récupération</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="Historique des fichiers en mode sombre"><br><sub><b>Historique des fichiers en mode sombre</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="Fichier Time Machine"><br><sub><b>Fichier Time Machine</b></sub></td>
   </tr>
 </table>
 

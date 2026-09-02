@@ -48,7 +48,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="災備中心"><br><sub><b>災備中心</b></sub></td>
-    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="深色檔案歷史"><br><sub><b>深色檔案歷史</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-time-machine.png" alt="文件時間機器"><br><sub><b>文件時間機器</b></sub></td>
   </tr>
 </table>
 
