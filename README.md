@@ -41,7 +41,16 @@
   <a href="https://github.com/Lincb522/GitGatto/issues">Issues</a>
 </p>
 
-![GitGatto 工作区](docs/media/workspace.png)
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/github-project.png" alt="GitHub 项目"><br><sub><b>GitHub 项目</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/workspace.png" alt="工作区与 Diff"><br><sub><b>工作区与 Diff</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="灾备中心"><br><sub><b>灾备中心</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="深色文件历史"><br><sub><b>深色文件历史</b></sub></td>
+  </tr>
+</table>
 
 GitGatto 是面向 macOS 的原生 Git 与 GitHub 客户端。仓库状态来自系统 Git，远端操作使用 GitHub CLI，Agent 使用本机已经安装并登录的 CLI；应用负责把分散的状态、步骤和结果放回同一个项目界面。
 

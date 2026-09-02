@@ -41,7 +41,16 @@
   <a href="https://github.com/Lincb522/GitGatto/issues">Issues</a>
 </p>
 
-![GitGatto ワークスペース](docs/media/workspace.png)
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/github-project.png" alt="GitHub プロジェクト"><br><sub><b>GitHub プロジェクト</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/workspace.png" alt="ワークツリーと Diff"><br><sub><b>ワークツリーと Diff</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="リカバリーセンター"><br><sub><b>リカバリーセンター</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="ダークモードのファイル履歴"><br><sub><b>ダークモードのファイル履歴</b></sub></td>
+  </tr>
+</table>
 
 GitGatto は macOS 向けのネイティブ Git／GitHub クライアントです。リポジトリの状態はシステムの Git から取得し、リモート操作には GitHub CLI、Agent には Mac にインストール済みでログイン済みの CLI を使います。それぞれの状態、手順、結果を一つのプロジェクト画面にまとめます。
 

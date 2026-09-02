@@ -23,7 +23,16 @@
 
 <p align="center"><a href="https://gatto.zijiu522.cn">Sitio web</a> · <a href="https://github.com/Lincb522/GitGatto/releases/latest">Descargar</a> · <a href="CHANGELOG.md">Historial de cambios</a> · <a href="https://github.com/Lincb522/GitGatto/issues">Issues</a></p>
 
-![Área de trabajo de GitGatto](docs/media/workspace.png)
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/github-project.png" alt="Proyecto de GitHub"><br><sub><b>Proyecto de GitHub</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/workspace.png" alt="Árbol de trabajo y diff"><br><sub><b>Árbol de trabajo y diff</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="Centro de recuperación"><br><sub><b>Centro de recuperación</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="Historial de archivos en modo oscuro"><br><sub><b>Historial de archivos en modo oscuro</b></sub></td>
+  </tr>
+</table>
 
 GitGatto es un cliente nativo de Git y GitHub para macOS. El estado de los repositorios procede del Git del sistema, las operaciones remotas usan GitHub CLI y los Agents trabajan con las CLI ya instaladas y autenticadas en el Mac. GitGatto reúne sus estados, pasos y resultados en una sola vista de proyecto.
 

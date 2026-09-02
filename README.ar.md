@@ -23,7 +23,16 @@
 
 <p align="center"><a href="https://gatto.zijiu522.cn">الموقع</a> · <a href="https://github.com/Lincb522/GitGatto/releases/latest">التنزيل</a> · <a href="CHANGELOG.md">سجل الإصدارات</a> · <a href="https://github.com/Lincb522/GitGatto/issues">Issues</a></p>
 
-![مساحة عمل GitGatto](docs/media/workspace.png)
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/github-project.png" alt="مشروع GitHub"><br><sub><b>مشروع GitHub</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/workspace.png" alt="شجرة العمل والفروقات"><br><sub><b>شجرة العمل والفروقات</b></sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="docs/media/recovery-center.png" alt="مركز الاستعادة"><br><sub><b>مركز الاستعادة</b></sub></td>
+    <td width="50%" align="center"><img src="docs/media/file-history-dark.png" alt="سجل الملفات في الوضع الداكن"><br><sub><b>سجل الملفات في الوضع الداكن</b></sub></td>
+  </tr>
+</table>
 
 GitGatto عميل أصلي لـ Git وGitHub على macOS. يقرأ حالة المستودع من Git المثبت في النظام، وينفذ العمليات البعيدة عبر GitHub CLI، ويستخدم Agents أدوات CLI المثبتة والمسجل الدخول إليها على الـ Mac. يجمع التطبيق حالاتها وخطواتها ونتائجها في شاشة مشروع واحدة.
 
