@@ -198,7 +198,7 @@ struct IndependentAILaneTests {
         configuration.translationArguments = ""
         AIProviderSettings.save(configuration, lane: .translation)
 
-        let service = CodexService(lane: .translation, translationRunTimeout: .seconds(5))
+        let service = CodexService(lane: .translation, translationRunTimeout: .seconds(10))
         let source = "<article><p>\(String(repeating: "a", count: 36_000))</p></article>"
         let translated = try await service.translateHTML(source, target: .simplifiedChinese)
 

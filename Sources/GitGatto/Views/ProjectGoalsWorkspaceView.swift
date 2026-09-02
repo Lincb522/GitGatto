@@ -7,6 +7,7 @@ struct ProjectGoalsWorkspaceView: View {
     @State private var showsMergeConfirmation = false
     @State private var showsReleasePublishConfirmation = false
     @State private var showsReleaseInstallConfirmation = false
+    @State private var showsQuickGuide = false
     @State private var inAppBrowserPage: InAppBrowserPage?
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
@@ -37,6 +38,10 @@ struct ProjectGoalsWorkspaceView: View {
             await model.prepareProjectReleaseDraftIfNeeded()
 #if DEBUG
             if ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1" {
+                if ProcessInfo.processInfo.environment["GITGATTO_QUICK_GUIDE_PREVIEW"] == "goals" {
+                    try? await Task.sleep(for: .milliseconds(250))
+                    showsQuickGuide = true
+                }
                 return
             }
 #endif
@@ -86,6 +91,7 @@ struct ProjectGoalsWorkspaceView: View {
             DebugSnapshotCapture(
                 isReady: ProcessInfo.processInfo.environment["GITGATTO_GOALS_P1_PREVIEW"] != nil
                     || ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] != nil
+                    || ProcessInfo.processInfo.environment["GITGATTO_GOALS_P3_PREVIEW"] != nil
             )
         )
 #endif
@@ -100,6 +106,15 @@ struct ProjectGoalsWorkspaceView: View {
                 CountBadge(count: model.activeProjectGoalCount, emphasized: false)
             }
             Spacer()
+            Button {
+                showsQuickGuide = true
+            } label: {
+                GattoLabel(L10n.text("workspace.guide.open"), systemImage: "info.circle")
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .sheet(isPresented: $showsQuickGuide) {
+                WorkspaceQuickGuideSheet(guide: .goals)
+            }
             Button {
                 model.projectGoalCommitMessage = ""
             } label: {
@@ -207,8 +222,57 @@ struct ProjectGoalsWorkspaceView: View {
     }
 
     private func goalComposer(_ palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text(L10n.text("goal.delivery.title"))
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L10n.text("goal.custom.title"))
+                .font(font(11.5, weight: .semibold))
+                .foregroundStyle(palette.ink)
+            TextField(
+                L10n.text("goal.custom.placeholder"),
+                text: $model.projectGoalCustomIntent,
+                axis: .vertical
+            )
+            .textFieldStyle(.plain)
+            .font(font(11, weight: .regular))
+            .lineLimit(2...4)
+            .padding(10)
+            .background(palette.raisedSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(palette.divider, lineWidth: 1)
+            }
+            Button {
+                Task { await model.proposeCustomProjectGoal() }
+            } label: {
+                HStack(spacing: 7) {
+                    if model.isPlanningProjectGoal {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(gattoSymbol: "sparkles")
+                    }
+                    Text(L10n.text(
+                        model.isPlanningProjectGoal
+                            ? "goal.custom.planning"
+                            : "goal.custom.action.generate"
+                    ))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(customGoalPlanningDisabled)
+
+            if let candidate = model.projectGoalCandidate {
+                candidateCard(candidate, palette: palette)
+            } else if let error = model.projectGoalPlanningError, !error.isEmpty {
+                Text(error)
+                    .font(font(10, weight: .regular))
+                    .foregroundStyle(palette.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Rectangle().fill(palette.divider).frame(height: 1)
+            Text(L10n.text("goal.quick.title"))
                 .font(font(11.5, weight: .semibold))
                 .foregroundStyle(palette.ink)
             TextField(
@@ -282,6 +346,49 @@ struct ProjectGoalsWorkspaceView: View {
         }
     }
 
+    private func candidateCard(_ candidate: ProjectGoalCandidate, palette: AppPalette) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 7) {
+                Image(gattoSymbol: "checkmark.square.fill")
+                    .foregroundStyle(palette.accent)
+                Text(candidate.title)
+                    .font(font(11.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                    .lineLimit(2)
+            }
+            Text(
+                candidate.stepKinds
+                    .map { L10n.text("goal.step.\($0.rawValue)") }
+                    .joined(separator: " → ")
+            )
+            .font(font(9.5, weight: .medium))
+            .foregroundStyle(palette.subtleInk)
+            .fixedSize(horizontal: false, vertical: true)
+            if let version = candidate.releaseVersion {
+                Text("v\(version) · \(candidate.releaseBuildNumber ?? "")")
+                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(palette.subtleInk)
+            }
+            HStack(spacing: 8) {
+                Button(L10n.text("goal.custom.action.confirm")) {
+                    Task { await model.confirmCustomProjectGoalCandidate() }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                Button(L10n.text("action.cancel")) {
+                    model.cancelCustomProjectGoalCandidate()
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
+        }
+        .padding(10)
+        .background(palette.accentSoft.opacity(0.72))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(palette.accent.opacity(0.28), lineWidth: 1)
+        }
+    }
+
     private func goalDetail(_ goal: ProjectGoal, palette: AppPalette) -> some View {
         ScrollView {
             VStack(spacing: 14) {
@@ -332,6 +439,13 @@ struct ProjectGoalsWorkspaceView: View {
             }
             ProgressView(value: goal.progress)
                 .tint(statusColor(goal.status, palette: palette))
+
+            if let intent = goal.intent, !intent.isEmpty {
+                Text(intent)
+                    .font(font(10.5, weight: .regular))
+                    .foregroundStyle(palette.subtleInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             if goal.targetHeadSHA == nil {
                 TextField(
@@ -477,7 +591,7 @@ struct ProjectGoalsWorkspaceView: View {
                 Rectangle().fill(palette.divider).frame(height: 1)
                 metadataRow("goal.remote", value: remote, palette: palette)
             }
-            if let baseBranch = goal.baseBranch, goal.kind == .githubDelivery {
+            if let baseBranch = goal.baseBranch, goal.usesPullRequestFlow {
                 Rectangle().fill(palette.divider).frame(height: 1)
                 metadataRow("goal.base_branch", value: baseBranch, palette: palette)
             }
@@ -581,11 +695,21 @@ struct ProjectGoalsWorkspaceView: View {
                 && model.projectGoalCommitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 
+    private var customGoalPlanningDisabled: Bool {
+        model.projectGoalCustomIntent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || model.isPlanningProjectGoal
+            || model.isCodexRunning
+            || model.activeOperation != nil
+            || model.currentRepositoryGoals.contains { !$0.status.isTerminal }
+            || model.codexAvailability.state != .available
+    }
+
     private func goalTitle(_ goal: ProjectGoal) -> String {
         switch goal.kind {
         case .deliverChanges: L10n.text("goal.delivery.title")
         case .githubDelivery: L10n.text("goal.github_delivery.title")
         case .completeRelease: L10n.text("goal.complete_release.title")
+        case .custom: goal.title ?? L10n.text("goal.custom.title")
         }
     }
 

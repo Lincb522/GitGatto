@@ -101,9 +101,51 @@ protocol GitHubServing: Sendable {
 
 protocol MarketplaceGitHubServing: Sendable {
     func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository]
+    func searchRepositories(
+        query: String,
+        page: Int,
+        sort: GitHubRepositorySearchSort
+    ) async throws -> [GitHubRepository]
+    func repository(named fullName: String) async throws -> GitHubRepository
+    func starredRepositories(page: Int) async throws -> [GitHubRepository]
+    func isStarred(_ repository: GitHubRepository) async throws -> Bool
+    func setStarred(_ starred: Bool, repository: GitHubRepository) async throws
     func marketplaceRelease(for repository: GitHubRepository) async throws -> GitHubRelease?
     func releases(for repository: GitHubRepository) async throws -> [GitHubRelease]
     func readme(for repository: GitHubRepository) async throws -> GitHubReadmeDocument?
+}
+
+extension MarketplaceGitHubServing {
+    func searchRepositories(
+        query: String,
+        page: Int,
+        sort: GitHubRepositorySearchSort
+    ) async throws -> [GitHubRepository] {
+        try await searchRepositories(query: query, page: page)
+    }
+
+    func repository(named fullName: String) async throws -> GitHubRepository {
+        let components = fullName.split(separator: "/", maxSplits: 1).map(String.init)
+        guard components.count == 2 else { throw GitHubServiceError.resourceNotFound }
+        let candidates = try await searchRepositories(
+            query: "\(components[1]) user:\(components[0]) in:name",
+            page: 1
+        )
+        guard let repository = candidates.first(where: {
+            $0.fullName.caseInsensitiveCompare(fullName) == .orderedSame
+        }) else {
+            throw GitHubServiceError.resourceNotFound
+        }
+        return repository
+    }
+
+    func starredRepositories(page: Int) async throws -> [GitHubRepository] { [] }
+
+    func isStarred(_ repository: GitHubRepository) async throws -> Bool { false }
+
+    func setStarred(_ starred: Bool, repository: GitHubRepository) async throws {
+        throw GitHubServiceError.invalidResponse
+    }
 }
 
 extension GitHubServing {
@@ -336,16 +378,41 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
     }
 
     func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository] {
+        try await searchRepositories(query: query, page: page, sort: .stars)
+    }
+
+    func searchRepositories(
+        query: String,
+        page: Int,
+        sort: GitHubRepositorySearchSort
+    ) async throws -> [GitHubRepository] {
         let response = try await api([
             "-X", "GET",
             "search/repositories",
             "-f", "q=\(query) archived:false",
-            "-f", "sort=stars",
+            "-f", "sort=\(sort.rawValue)",
             "-f", "order=desc",
             "-f", "per_page=30",
             "-f", "page=\(max(1, page))"
         ])
         return try GitHubAPIParser.repositories(from: response)
+    }
+
+    func repository(named fullName: String) async throws -> GitHubRepository {
+        let response = try await api(["-X", "GET", "repos/\(fullName)"])
+        return try GitHubAPIParser.repository(from: response)
+    }
+
+    func starredRepositories(page: Int) async throws -> [GitHubRepository] {
+        let response = try await api([
+            "-X", "GET",
+            "user/starred",
+            "-f", "sort=updated",
+            "-f", "direction=desc",
+            "-f", "per_page=30",
+            "-f", "page=\(max(1, page))"
+        ])
+        return try GitHubAPIParser.repositoryList(from: response)
     }
 
     func searchDevelopers(query: String, page: Int) async throws -> [GitHubDeveloperSummary] {
@@ -1079,6 +1146,10 @@ enum GitHubAPIParser {
 
     static func repositories(from data: Data) throws -> [GitHubRepository] {
         try decode(SearchResponse.self, from: data).items.map(\.model)
+    }
+
+    static func repository(from data: Data) throws -> GitHubRepository {
+        try decode(RepositoryPayload.self, from: data).model
     }
 
     static func developers(from data: Data) throws -> [GitHubDeveloperSummary] {

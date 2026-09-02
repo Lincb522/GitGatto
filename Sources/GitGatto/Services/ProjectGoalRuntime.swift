@@ -67,7 +67,7 @@ actor ProjectGoalRuntime {
         }
 
         let actions: ProjectGoalActionsState
-        if goal.kind != .completeRelease,
+        if goal.observesActions,
            let target = goal.targetHeadSHA,
            let remote,
            remote.isGitHub {
@@ -82,7 +82,7 @@ actor ProjectGoalRuntime {
 
         let pullRequest: ProjectGoalPullRequestState
         var observedBaseBranch = goal.baseBranch
-        if goal.kind == .githubDelivery,
+        if goal.usesPullRequestFlow,
            targetPublished,
            let target = goal.targetHeadSHA,
            let remote,
@@ -99,7 +99,7 @@ actor ProjectGoalRuntime {
         }
 
         let release: ProjectGoalReleaseState?
-        if goal.kind == .completeRelease {
+        if goal.usesReleaseFlow {
             release = try await releaseService.state(goal: goal, remote: remote)
         } else {
             release = nil

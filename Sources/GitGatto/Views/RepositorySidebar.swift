@@ -137,6 +137,16 @@ struct RepositorySidebar: View {
                 ) {
                     model.selectedSection = .diagnostics
                 }
+                SidebarNavigationButton(
+                    titleKey: "nav.regression",
+                    systemImage: "record.circle",
+                    count: model.activeRegressionInvestigationCount == 0
+                        ? nil
+                        : model.activeRegressionInvestigationCount,
+                    isSelected: model.selectedSection == .regression
+                ) {
+                    model.selectedSection = .regression
+                }
                 }
 
                 sidebarSectionHeader(
@@ -455,7 +465,7 @@ struct RepositorySidebar: View {
     }
 
     private var collapsedSections: [WorkspaceSection] {
-        [.github, .marketplace, .goals, .changes, .stash, .history, .timeMachine, .branches, .worktrees, .diagnostics, .codex]
+        [.github, .marketplace, .goals, .changes, .stash, .history, .timeMachine, .branches, .worktrees, .diagnostics, .regression, .codex]
     }
 
     private func count(for section: WorkspaceSection) -> Int? {
@@ -470,6 +480,7 @@ struct RepositorySidebar: View {
         case .branches: model.snapshot?.branches.count
         case .worktrees: model.worktrees.count
         case .diagnostics: model.repositoryDiagnostics?.attentionCount
+        case .regression: model.activeRegressionInvestigationCount
         case .codex: nil
         }
     }
@@ -559,6 +570,7 @@ private struct FolioRailNavigationButton: View {
         case .branches: "arrow.triangle.branch"
         case .worktrees: "rectangle.split.2x1"
         case .diagnostics: "stethoscope"
+        case .regression: "record.circle"
         case .codex: "sparkles"
         }
     }
@@ -610,6 +622,7 @@ private struct CollapsedSidebarNavigationButton: View {
         case .branches: "arrow.triangle.branch"
         case .worktrees: "rectangle.split.2x1"
         case .diagnostics: "stethoscope"
+        case .regression: "record.circle"
         case .codex: "sparkles"
         }
     }

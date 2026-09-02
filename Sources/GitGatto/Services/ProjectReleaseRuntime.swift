@@ -118,7 +118,6 @@ actor ProjectGoalReleaseService: ProjectGoalReleaseServing {
                 .appendingPathComponent("Applications", isDirectory: true)
         }
         let installer = MacApplicationInstaller(
-            fileManager: fileManager,
             applicationsDirectory: destinationDirectory
         )
         return try await installer.install(archive, replacingExisting: true)
@@ -267,6 +266,7 @@ enum ProjectReleaseInspector {
         let pipelinePath = releasePipeline(root: root, fileManager: fileManager)
         let installed = installedApplication(
             name: goal.releaseApplicationName ?? goal.repositoryName,
+            preferredPath: goal.installedApplicationPath,
             fileManager: fileManager
         )
         return ProjectGoalReleaseLocalState(
@@ -431,14 +431,20 @@ enum ProjectReleaseInspector {
         return nil
     }
 
-    private static func installedApplication(name: String, fileManager: FileManager) -> ProjectGoalInstalledApplication? {
+    private static func installedApplication(
+        name: String,
+        preferredPath: String?,
+        fileManager: FileManager
+    ) -> ProjectGoalInstalledApplication? {
         let appName = name.hasSuffix(".app") ? name : "\(name).app"
-        let candidates = [
+        let standardCandidates = [
             URL(fileURLWithPath: "/Applications", isDirectory: true).appendingPathComponent(appName),
             fileManager.homeDirectoryForCurrentUser
                 .appendingPathComponent("Applications", isDirectory: true)
                 .appendingPathComponent(appName)
         ]
+        let candidates = preferredPath.map { [URL(fileURLWithPath: $0, isDirectory: true)] + standardCandidates }
+            ?? standardCandidates
         for app in candidates where fileManager.fileExists(atPath: app.path) {
             let infoURL = app.appendingPathComponent("Contents/Info.plist")
             guard let data = try? Data(contentsOf: infoURL),

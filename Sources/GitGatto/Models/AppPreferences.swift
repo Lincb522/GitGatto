@@ -4,6 +4,15 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable, Sendable {
     case system
     case english = "en"
     case simplifiedChinese = "zh-Hans"
+    case traditionalChinese = "zh-Hant"
+    case japanese = "ja"
+    case korean = "ko"
+    case french = "fr"
+    case german = "de"
+    case spanish = "es"
+    case portugueseBrazil = "pt-BR"
+    case russian = "ru"
+    case arabic = "ar"
 
     var id: String { rawValue }
 
@@ -12,7 +21,86 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable, Sendable {
         case .system: Locale.preferredLanguages
         case .english: ["en"]
         case .simplifiedChinese: ["zh-Hans"]
+        case .traditionalChinese: ["zh-Hant"]
+        case .japanese: ["ja"]
+        case .korean: ["ko"]
+        case .french: ["fr"]
+        case .german: ["de"]
+        case .spanish: ["es"]
+        case .portugueseBrazil: ["pt-BR"]
+        case .russian: ["ru"]
+        case .arabic: ["ar"]
         }
+    }
+
+    var locale: Locale {
+        switch self {
+        case .system:
+            .autoupdatingCurrent
+        default:
+            Locale(identifier: rawValue)
+        }
+    }
+
+    var translationTarget: CodexTranslationTarget {
+        switch self {
+        case .system:
+            Self.translationTarget(for: Locale.preferredLanguages.first ?? "en")
+        case .english:
+            .english
+        case .simplifiedChinese:
+            .simplifiedChinese
+        case .traditionalChinese:
+            .traditionalChinese
+        case .japanese:
+            .japanese
+        case .korean:
+            .korean
+        case .french:
+            .french
+        case .german:
+            .german
+        case .spanish:
+            .spanish
+        case .portugueseBrazil:
+            .portuguese
+        case .russian:
+            .russian
+        case .arabic:
+            .arabic
+        }
+    }
+
+    var usesRightToLeftLayout: Bool {
+        let identifier = self == .system
+            ? (Locale.preferredLanguages.first ?? "en")
+            : rawValue
+        let language = identifier
+            .replacingOccurrences(of: "_", with: "-")
+            .split(separator: "-")
+            .first?
+            .lowercased()
+        return language.map { ["ar", "fa", "he", "ur"].contains($0) } ?? false
+    }
+
+    private static func translationTarget(for identifier: String) -> CodexTranslationTarget {
+        let normalized = identifier.replacingOccurrences(of: "_", with: "-").lowercased()
+        if normalized.hasPrefix("zh-hant")
+            || normalized.hasPrefix("zh-tw")
+            || normalized.hasPrefix("zh-hk")
+            || normalized.hasPrefix("zh-mo") {
+            return .traditionalChinese
+        }
+        if normalized.hasPrefix("zh") { return .simplifiedChinese }
+        if normalized.hasPrefix("ja") { return .japanese }
+        if normalized.hasPrefix("ko") { return .korean }
+        if normalized.hasPrefix("fr") { return .french }
+        if normalized.hasPrefix("de") { return .german }
+        if normalized.hasPrefix("es") { return .spanish }
+        if normalized.hasPrefix("pt") { return .portuguese }
+        if normalized.hasPrefix("ru") { return .russian }
+        if normalized.hasPrefix("ar") { return .arabic }
+        return .english
     }
 }
 
@@ -144,5 +232,11 @@ enum AppPreferencesStore {
     static func save(_ preferences: AppPreferences) {
         guard let data = try? JSONEncoder().encode(preferences) else { return }
         UserDefaults.standard.set(data, forKey: key)
+    }
+
+    static func saveLanguage(_ language: AppLanguage) {
+        var preferences = load()
+        preferences.language = language
+        save(preferences)
     }
 }

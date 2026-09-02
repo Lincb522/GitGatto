@@ -1281,22 +1281,16 @@ struct MotionLabelMenu<Content: View, Label: View>: View {
     @ViewBuilder let label: () -> Label
 
     var body: some View {
-        label()
-            .fixedSize()
-            .overlay {
-                GeometryReader { geometry in
-                    Menu {
-                        content()
-                    } label: {
-                        Color.clear
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .contentShape(Rectangle())
-                    }
-                    .menuStyle(.borderlessButton)
-                    .menuIndicator(.hidden)
-                    .accessibilityLabel(accessibilityLabel)
-                }
-            }
-            .disabled(isDisabled)
+        Menu {
+            content()
+        } label: {
+            label()
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .disabled(isDisabled)
+        .accessibilityLabel(accessibilityLabel)
     }
 }

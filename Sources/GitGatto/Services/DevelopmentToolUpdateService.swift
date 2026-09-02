@@ -29,17 +29,16 @@ actor DevelopmentToolUpdateService: DevelopmentToolUpdateChecking {
             return results
         }
 
-        let formulae = Array(Set(installedTools.compactMap(\.homebrewFormula))).sorted()
         do {
             let installedOutput = try await run(
                 brewURL,
-                arguments: ["list", "--formula", "--versions"] + formulae,
-                acceptsNonzeroExit: true
+                arguments: ["list", "--formula", "--versions"],
+                acceptsNonzeroExit: false
             )
             let installed = Self.parseInstalledFormulae(installedOutput)
             let outdatedOutput = try await run(
                 brewURL,
-                arguments: ["outdated", "--json=v2"] + formulae,
+                arguments: ["outdated", "--json=v2"],
                 acceptsNonzeroExit: false
             )
             let outdated = try JSONDecoder().decode(HomebrewOutdatedPayload.self, from: outdatedOutput)
@@ -241,6 +240,7 @@ private final class DevelopmentToolUpdateCommand: @unchecked Sendable {
         process.standardError = error
         var environment = ProcessInfo.processInfo.environment
         environment["HOMEBREW_NO_ANALYTICS"] = "1"
+        environment["HOMEBREW_NO_ENV_HINTS"] = "1"
         environment["NO_COLOR"] = "1"
         process.environment = environment
 

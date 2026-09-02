@@ -1,14 +1,15 @@
 ## Added
 
-- Added quick installation to the app catalog. DMG and ZIP releases use the native installer, while Agent inspects and installs other release artifacts with visible phase progress.
-- Added a 63-item developer tool catalog with local installation detection, Homebrew upgrade checks, and Agent installation or exact-package upgrades.
+- Expanded the developer tool catalog to 99 tools with bundled brand icons.
+- Added separate install and upgrade queues with three concurrent lanes, queue positions, per-tool cancellation, multi-selection, select all, and batch upgrades.
+- Added complete release goals and natural-language custom goal conditions.
 
 ## Improved
 
-- Extended text, Markdown, and HTML translation runs to three minutes and gave each HTML batch its own timeout.
-- Scans developer tools in bounded batches and detects Homebrew keg-only executable paths.
-- Updated Sparkle to 2.9.6 and preserved underlying update failures, error domains, and error codes.
+- After an install or upgrade, Agent completes current-user setup, component registration, environment migration, and version verification.
+- Formulae without a compatible bottle may use Homebrew's normal source build and declared build dependencies.
 
 ## Fixed
 
-- Removed the compatibility path that force-restarted Sparkle's progress process and could interrupt the installation connection after download.
+- Homebrew upgrades now run through GitGatto's controlled execution path so Homebrew's build sandbox is not nested inside the Agent sandbox.
+- Concurrent upgrade lanes serialize Homebrew mutations to prevent Cellar lock conflicts across shared dependencies.

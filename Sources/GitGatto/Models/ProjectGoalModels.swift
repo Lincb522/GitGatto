@@ -4,6 +4,7 @@ enum ProjectGoalKind: String, Codable, Sendable {
     case deliverChanges
     case githubDelivery
     case completeRelease
+    case custom
 
     var stepKinds: [ProjectGoalStepKind] {
         switch self {
@@ -27,6 +28,8 @@ enum ProjectGoalKind: String, Codable, Sendable {
                 .updateFeed,
                 .localApplication
             ]
+        case .custom:
+            []
         }
     }
 }
@@ -121,6 +124,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
     let repositoryName: String
     let branchName: String
     let baselineHeadSHA: String
+    var title: String?
+    var intent: String?
     var commitMessage: String
     var targetHeadSHA: String?
     var remoteFullName: String?
@@ -154,7 +159,10 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         repositoryName: String,
         branchName: String,
         baselineHeadSHA: String,
+        title: String? = nil,
+        intent: String? = nil,
         commitMessage: String,
+        stepKinds: [ProjectGoalStepKind]? = nil,
         targetHeadSHA: String? = nil,
         remoteFullName: String? = nil,
         baseBranch: String? = nil,
@@ -183,6 +191,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         self.repositoryName = repositoryName
         self.branchName = branchName
         self.baselineHeadSHA = baselineHeadSHA
+        self.title = title
+        self.intent = intent
         self.commitMessage = commitMessage
         self.targetHeadSHA = targetHeadSHA
         self.remoteFullName = remoteFullName
@@ -204,7 +214,7 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         self.installedApplicationVersion = installedApplicationVersion
         self.installedApplicationBuild = installedApplicationBuild
         self.status = status
-        self.steps = kind.stepKinds.map {
+        self.steps = (stepKinds ?? kind.stepKinds).map {
             ProjectGoalStep(kind: $0, status: .pending, updatedAt: createdAt)
         }
         self.createdAt = createdAt
@@ -220,6 +230,39 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
 
     var nextStep: ProjectGoalStepKind? {
         steps.first { !$0.status.isSatisfied }?.kind
+    }
+
+    var usesPullRequestFlow: Bool {
+        steps.contains { [.pullRequest, .review, .artifact, .merge].contains($0.kind) }
+    }
+
+    var usesReleaseFlow: Bool {
+        steps.contains {
+            [
+                .readme,
+                .translation,
+                .version,
+                .changelog,
+                .releasePipeline,
+                .releaseTag,
+                .githubRelease,
+                .dmg,
+                .updateFeed,
+                .localApplication
+            ].contains($0.kind)
+        }
+    }
+
+    var observesActions: Bool {
+        !usesReleaseFlow && steps.contains { [.actions, .artifact].contains($0.kind) }
+    }
+
+    var monitorsRemoteState: Bool {
+        observesActions
+            || usesPullRequestFlow
+            || steps.contains {
+                [.releaseTag, .githubRelease, .dmg, .updateFeed, .localApplication].contains($0.kind)
+            }
     }
 
     func step(_ kind: ProjectGoalStepKind) -> ProjectGoalStep? {
@@ -266,6 +309,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         case repositoryName
         case branchName
         case baselineHeadSHA
+        case title
+        case intent
         case commitMessage
         case targetHeadSHA
         case remoteFullName
@@ -301,6 +346,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         repositoryName = try container.decode(String.self, forKey: .repositoryName)
         branchName = try container.decode(String.self, forKey: .branchName)
         baselineHeadSHA = try container.decode(String.self, forKey: .baselineHeadSHA)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        intent = try container.decodeIfPresent(String.self, forKey: .intent)
         commitMessage = try container.decode(String.self, forKey: .commitMessage)
         targetHeadSHA = try container.decodeIfPresent(String.self, forKey: .targetHeadSHA)
         remoteFullName = try container.decodeIfPresent(String.self, forKey: .remoteFullName)
@@ -323,10 +370,15 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         installedApplicationBuild = try container.decodeIfPresent(String.self, forKey: .installedApplicationBuild)
         status = try container.decode(ProjectGoalStatus.self, forKey: .status)
         let storedSteps = try container.decode([ProjectGoalStep].self, forKey: .steps)
-        let storedByKind = Dictionary(uniqueKeysWithValues: storedSteps.map { ($0.kind, $0) })
         let fallbackDate = try container.decode(Date.self, forKey: .updatedAt)
-        steps = kind.stepKinds.map {
-            storedByKind[$0] ?? ProjectGoalStep(kind: $0, status: .pending, updatedAt: fallbackDate)
+        if kind == .custom {
+            var seen = Set<ProjectGoalStepKind>()
+            steps = storedSteps.filter { seen.insert($0.kind).inserted }
+        } else {
+            let storedByKind = Dictionary(uniqueKeysWithValues: storedSteps.map { ($0.kind, $0) })
+            steps = kind.stepKinds.map {
+                storedByKind[$0] ?? ProjectGoalStep(kind: $0, status: .pending, updatedAt: fallbackDate)
+            }
         }
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = fallbackDate
@@ -567,7 +619,7 @@ enum ProjectGoalReconciler {
             return goal
         }
 
-        if goal.kind == .completeRelease {
+        if goal.usesReleaseFlow {
             reconcileCompleteRelease(&goal, observation: observation, at: now)
             finalize(&goal, at: now)
             return goal
@@ -615,15 +667,13 @@ enum ProjectGoalReconciler {
         }
 
         if goal.step(.push)?.status == .completed {
-            if goal.kind == .githubDelivery {
+            if goal.usesPullRequestFlow {
                 reconcileGitHubDelivery(&goal, observation: observation, at: now)
             } else {
                 reconcileActions(&goal, state: observation.actions, at: now)
             }
         } else {
-            for kind in goal.kind.stepKinds.dropFirst(3) {
-                goal.updateStep(kind, status: .pending, at: now)
-            }
+            resetSteps(after: .push, in: &goal, at: now)
         }
 
         finalize(&goal, at: now)
@@ -685,7 +735,7 @@ enum ProjectGoalReconciler {
             goal.updateStep(
                 .version,
                 status: .completed,
-                evidence: "(version) ((buildNumber))",
+                evidence: "\(version) (\(buildNumber))",
                 at: date
             )
         } else {
@@ -908,6 +958,14 @@ enum ProjectGoalReconciler {
     }
 
     private static func resetReleaseSteps(
+        after step: ProjectGoalStepKind,
+        in goal: inout ProjectGoal,
+        at date: Date
+    ) {
+        resetSteps(after: step, in: &goal, at: date)
+    }
+
+    private static func resetSteps(
         after step: ProjectGoalStepKind,
         in goal: inout ProjectGoal,
         at date: Date

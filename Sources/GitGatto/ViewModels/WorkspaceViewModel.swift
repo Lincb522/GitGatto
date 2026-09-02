@@ -177,8 +177,22 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var projectGoalCommitMessage = ""
     @Published var projectGoalReleaseVersion = ""
     @Published var projectGoalReleaseBuildNumber = ""
+    @Published var projectGoalCustomIntent = ""
+    @Published private(set) var projectGoalCandidate: ProjectGoalCandidate?
+    @Published private(set) var isPlanningProjectGoal = false
+    @Published private(set) var projectGoalPlanningError: String?
     @Published private(set) var activeProjectGoalID: UUID?
     @Published private(set) var isRefreshingProjectGoals = false
+    @Published private(set) var regressionInvestigations: [RegressionInvestigation] = []
+    @Published var selectedRegressionInvestigationID: UUID?
+    @Published var regressionGoodRevision = "HEAD~20"
+    @Published var regressionBadRevision = "HEAD"
+    @Published var regressionVerificationCommand = ""
+    @Published var regressionMode: RegressionInvestigationMode = .automatic
+    @Published var regressionFixTitle = ""
+    @Published var regressionFixBody = ""
+    @Published private(set) var activeRegressionInvestigationID: UUID?
+    @Published private(set) var regressionAgentIsRunning = false
 
     private let service: any GitRepositoryServing
     private let codexService: any CodexServing
@@ -194,6 +208,8 @@ final class WorkspaceViewModel: ObservableObject {
     private let diagnosticService: any GitEnvironmentDiagnosticServing
     private let projectGoalStore: any ProjectGoalStoring
     private let projectGoalRuntime: ProjectGoalRuntime
+    private let regressionInvestigationStore: any RegressionInvestigationStoring
+    private let regressionInvestigationRuntime: RegressionInvestigationRuntime
     private var hasStarted = false
     private var diffTask: Task<Void, Never>?
     private var selectedSectionDetailsTask: Task<Void, Never>?
@@ -249,6 +265,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryDiscoveryTask: Task<Void, Never>?
     private var repositoryDiscoveryRunID: UUID?
     private var projectGoalMonitorTask: Task<Void, Never>?
+    private var regressionInvestigationTask: Task<Void, Never>?
     private let recentRepositoriesKey = "recentRepositories"
     private let localRepositoriesKey = "managedLocalRepositories"
     private let legacyLocalRepositoriesKey = "localRepositories"
@@ -275,7 +292,9 @@ final class WorkspaceViewModel: ObservableObject {
         worktreeAgentCoordinator: any GitWorktreeAgentCoordinating = GitWorktreeAgentCoordinator(),
         fileHistoryService: any GitFileHistoryServing = GitFileHistoryService(),
         diagnosticService: any GitEnvironmentDiagnosticServing = GitEnvironmentDiagnosticService(),
-        projectGoalStore: any ProjectGoalStoring = ProjectGoalStore()
+        projectGoalStore: any ProjectGoalStoring = ProjectGoalStore(),
+        regressionInvestigationStore: any RegressionInvestigationStoring = RegressionInvestigationStore(),
+        regressionInvestigationRuntime: RegressionInvestigationRuntime = RegressionInvestigationRuntime()
     ) {
         self.service = service
         self.codexService = codexService
@@ -290,6 +309,8 @@ final class WorkspaceViewModel: ObservableObject {
         self.fileHistoryService = fileHistoryService
         self.diagnosticService = diagnosticService
         self.projectGoalStore = projectGoalStore
+        self.regressionInvestigationStore = regressionInvestigationStore
+        self.regressionInvestigationRuntime = regressionInvestigationRuntime
         self.projectGoalRuntime = ProjectGoalRuntime(
             repositoryService: service,
             githubService: githubService
@@ -336,8 +357,29 @@ final class WorkspaceViewModel: ObservableObject {
         projectGoals.filter { !$0.status.isTerminal }.count
     }
 
+    var currentRepositoryRegressionInvestigations: [RegressionInvestigation] {
+        guard let path = snapshot?.rootURL.standardizedFileURL.path else { return [] }
+        return regressionInvestigations
+            .filter { $0.repositoryPath == path }
+            .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    var selectedRegressionInvestigation: RegressionInvestigation? {
+        if let selectedRegressionInvestigationID,
+           let selected = currentRepositoryRegressionInvestigations.first(where: {
+               $0.id == selectedRegressionInvestigationID
+           }) {
+            return selected
+        }
+        return currentRepositoryRegressionInvestigations.first
+    }
+
+    var activeRegressionInvestigationCount: Int {
+        regressionInvestigations.filter { !$0.status.isTerminal && $0.workspacePath != nil }.count
+    }
+
     var canRepairSelectedProjectGoalWithAgent: Bool {
-        selectedProjectGoal?.kind == .githubDelivery
+        selectedProjectGoal?.monitorsRemoteState == true
             && selectedProjectGoal?.lastActionFailure != nil
             && codexAvailability.state == .available
             && activeProjectGoalID == nil
@@ -347,7 +389,7 @@ final class WorkspaceViewModel: ObservableObject {
 
     var canPrepareSelectedReleaseWithAgent: Bool {
         guard let goal = selectedProjectGoal,
-              goal.kind == .completeRelease else { return false }
+              goal.usesReleaseFlow else { return false }
         let preparation: Set<ProjectGoalStepKind> = [
             .readme, .translation, .version, .changelog, .releasePipeline
         ]
@@ -360,7 +402,7 @@ final class WorkspaceViewModel: ObservableObject {
 
     var canPublishSelectedProjectRelease: Bool {
         guard let goal = selectedProjectGoal,
-              goal.kind == .completeRelease,
+              goal.usesReleaseFlow,
               goal.nextStep == .releaseTag else { return false }
         return goal.step(.releaseTag)?.status == .pending
             && activeProjectGoalID == nil
@@ -369,7 +411,7 @@ final class WorkspaceViewModel: ObservableObject {
 
     var canInstallSelectedProjectRelease: Bool {
         guard let goal = selectedProjectGoal,
-              goal.kind == .completeRelease,
+              goal.usesReleaseFlow,
               goal.step(.githubRelease)?.status == .completed,
               goal.step(.dmg)?.status == .completed,
               goal.step(.updateFeed)?.status == .completed else { return false }
@@ -380,7 +422,7 @@ final class WorkspaceViewModel: ObservableObject {
 
     var canMergeSelectedProjectGoal: Bool {
         guard let goal = selectedProjectGoal,
-              goal.kind == .githubDelivery,
+              goal.usesPullRequestFlow,
               goal.pullRequestNumber != nil,
               goal.step(.merge)?.status == .pending else { return false }
         return goal.steps
@@ -586,6 +628,7 @@ final class WorkspaceViewModel: ObservableObject {
         githubSearchScope = Self.githubSearchScopeFromArguments() ?? githubSearchScope
 #endif
         await loadProjectGoals()
+        await loadRegressionInvestigations()
         startAvailabilityProbes()
         if let argumentURL = Self.repositoryURLFromArguments() {
             await openRepository(argumentURL)
@@ -1328,7 +1371,18 @@ final class WorkspaceViewModel: ObservableObject {
             diffDocument = nil
         }
 
-        if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] {
+        if ProcessInfo.processInfo.environment["GITGATTO_GOALS_P3_PREVIEW"] == "candidate" {
+            selectedSection = .goals
+            projectGoalCustomIntent = "提交当前修改，创建 Pull Request，等待审查和 Actions 通过，但不要合并"
+            projectGoalCandidate = ProjectGoalCandidate(
+                title: "完成 Pull Request 验证",
+                intent: projectGoalCustomIntent,
+                commitMessage: "feat: complete custom delivery goal",
+                releaseVersion: nil,
+                releaseBuildNumber: nil,
+                stepKinds: Array(ProjectGoalPlanner.pullRequestSteps.prefix(through: 5))
+            )
+        } else if let preview = ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] {
             selectedSection = .goals
             let now = Date()
             let target = "9c5e78fd5ed55962f4e2ba63a866678997958145"
@@ -1452,6 +1506,100 @@ final class WorkspaceViewModel: ObservableObject {
             selectedProjectGoalID = goal.id
         }
 
+        if let regressionPreview = ProcessInfo.processInfo.environment["GITGATTO_REGRESSION_PREVIEW"] {
+            selectedSection = .regression
+            let now = Date()
+            let knownGood = RegressionCommitEvidence(
+                sha: "01f47d7303c84b1e451edb8a0be601e9174f3ace",
+                shortSHA: "01f47d7",
+                subject: "Keep repository switching responsive",
+                author: "ZIJIU522",
+                authoredAt: now.addingTimeInterval(-12_000)
+            )
+            let skipped = RegressionCommitEvidence(
+                sha: "551d203aac20284853e0317b03f40b248ab381ef",
+                shortSHA: "551d203",
+                subject: "Refresh repository state after sync",
+                author: "ZIJIU522",
+                authoredAt: now.addingTimeInterval(-6_200)
+            )
+            let culprit = RegressionCommitEvidence(
+                sha: "7b3f4be834ac9d10d7052856c34f574792706bf2",
+                shortSHA: "7b3f4be",
+                subject: "Merge console theme status",
+                author: "ZIJIU522",
+                authoredAt: now.addingTimeInterval(-2_400)
+            )
+            var investigation = RegressionInvestigation(
+                repositoryPath: rootURL.standardizedFileURL.path,
+                repositoryName: rootURL.lastPathComponent,
+                sourceBranch: "main",
+                sourceHeadSHA: culprit.sha,
+                goodRevision: "v0.18.8",
+                badRevision: "HEAD",
+                goodSHA: knownGood.sha,
+                badSHA: culprit.sha,
+                verificationCommand: "swift test --filter RepositorySwitchingTests",
+                mode: .automatic,
+                createdAt: now.addingTimeInterval(-340),
+                updatedAt: now,
+                status: .culpritFound,
+                workspacePath: "/private/tmp/GitGatto-Regression-Preview",
+                currentCommit: culprit,
+                candidateCount: 19,
+                probes: [
+                    RegressionProbe(
+                        commit: knownGood,
+                        verdict: .good,
+                        exitCode: 0,
+                        duration: 8.4,
+                        output: "Test Suite 'RepositorySwitchingTests' passed.",
+                        completedAt: now.addingTimeInterval(-220)
+                    ),
+                    RegressionProbe(
+                        commit: skipped,
+                        verdict: .good,
+                        exitCode: 0,
+                        duration: 7.9,
+                        output: "Test Suite 'RepositorySwitchingTests' passed.",
+                        completedAt: now.addingTimeInterval(-110)
+                    ),
+                    RegressionProbe(
+                        commit: culprit,
+                        verdict: .bad,
+                        exitCode: 1,
+                        duration: 8.1,
+                        output: "RepositorySwitchingTests.testRapidSelection failed.",
+                        completedAt: now
+                    )
+                ],
+                culprit: culprit,
+                culpritSummary: "3 files changed, 46 insertions(+), 18 deletions(-)",
+                bisectLog: "git bisect bad \(culprit.sha)"
+            )
+            if regressionPreview == "running" {
+                investigation.status = .running
+                investigation.culprit = nil
+                investigation.culpritSummary = nil
+                investigation.probes.removeLast()
+                investigation.currentCommit = culprit
+            } else if regressionPreview == "fix" {
+                investigation.status = .fixVerified
+                investigation.fixBranch = "gitgatto/regression-7b3f4be"
+                investigation.agentSummary = "取消重复的仓库刷新，在选择变更后复用已加载快照。"
+                investigation.fixVerification = RegressionFixVerification(
+                    passed: true,
+                    exitCode: 0,
+                    duration: 7.6,
+                    output: "Test Suite 'RepositorySwitchingTests' passed.",
+                    completedAt: now
+                )
+            }
+            regressionInvestigations = [investigation]
+            selectedRegressionInvestigationID = investigation.id
+            configureRegressionFixDraft(for: investigation)
+        }
+
         switch ProcessInfo.processInfo.environment["GITGATTO_ACTIVITY_PREVIEW"] {
         case "stage":
             activeOperation = .stage
@@ -1541,6 +1689,7 @@ final class WorkspaceViewModel: ObservableObject {
                 prepareForRepositoryChange()
             }
             apply(loaded, preservingSelection: !repositoryChanged)
+            configureRegressionDefaults(for: loaded.rootURL)
             preloadRepositorySurfaces(for: loaded)
             remember(loaded.rootURL)
             isRefreshing = false
@@ -1772,6 +1921,97 @@ final class WorkspaceViewModel: ObservableObject {
         await createProjectGoal(kind: .githubDelivery)
     }
 
+    func proposeCustomProjectGoal() async {
+        let intent = projectGoalCustomIntent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !intent.isEmpty else {
+            projectGoalPlanningError = ProjectGoalPlanningError.emptyIntent.localizedDescription
+            return
+        }
+        guard let snapshot,
+              currentRepositoryGoals.allSatisfy(\.status.isTerminal),
+              activeProjectGoalID == nil,
+              activeOperation == nil,
+              codexAvailability.state == .available,
+              !isCodexRunning else {
+            projectGoalPlanningError = L10n.text("goal.custom.error.unavailable")
+            return
+        }
+
+        let repositoryURL = snapshot.rootURL.standardizedFileURL
+        let releaseSuggestion = await Task.detached(priority: .utility) {
+            ProjectReleaseInspector.suggestedVersion(at: repositoryURL)
+        }.value
+        let context = ProjectGoalPlanningContext(
+            repositoryName: snapshot.rootURL.lastPathComponent,
+            branchName: snapshot.branchName,
+            changeCount: snapshot.changes.count,
+            suggestedReleaseVersion: releaseSuggestion,
+            suggestedReleaseBuildNumber: releaseSuggestion.flatMap(ProjectReleaseInspector.buildNumber(for:))
+        )
+        let runID = UUID()
+        activeCodexRunID = runID
+        isCodexRunning = true
+        isPlanningProjectGoal = true
+        projectGoalCandidate = nil
+        projectGoalPlanningError = nil
+        defer {
+            if activeCodexRunID == runID {
+                activeCodexRunID = nil
+                isCodexRunning = false
+                isPlanningProjectGoal = false
+            }
+        }
+
+        do {
+            let result = try await codexService.run(
+                prompt: ProjectGoalPlanner.prompt(intent: intent, context: context),
+                context: [],
+                in: repositoryURL,
+                mode: .analyze
+            )
+            guard !Task.isCancelled,
+                  activeCodexRunID == runID,
+                  self.snapshot?.rootURL.standardizedFileURL == repositoryURL else { return }
+            projectGoalCandidate = try ProjectGoalPlanner.candidate(
+                from: result.response,
+                intent: intent
+            )
+        } catch is CancellationError {
+            return
+        } catch let error as ProjectGoalPlanningError {
+            guard activeCodexRunID == runID else { return }
+            projectGoalPlanningError = error.localizedDescription
+        } catch {
+            guard activeCodexRunID == runID else { return }
+            projectGoalPlanningError = error.localizedDescription
+            presentError(error, context: .goal, repositoryURL: repositoryURL)
+        }
+    }
+
+    func cancelCustomProjectGoalCandidate() {
+        guard !isPlanningProjectGoal else { return }
+        projectGoalCandidate = nil
+        projectGoalPlanningError = nil
+    }
+
+    func confirmCustomProjectGoalCandidate() async {
+        guard let candidate = projectGoalCandidate else { return }
+        let created = await createProjectGoal(
+            kind: .custom,
+            title: candidate.title,
+            intent: candidate.intent,
+            commitMessage: candidate.commitMessage,
+            stepKinds: candidate.stepKinds,
+            releaseVersion: candidate.releaseVersion,
+            releaseBuildNumber: candidate.releaseBuildNumber
+        )
+        if created {
+            projectGoalCandidate = nil
+            projectGoalPlanningError = nil
+            projectGoalCustomIntent = ""
+        }
+    }
+
     func prepareProjectReleaseDraftIfNeeded() async {
         guard projectGoalReleaseVersion.isEmpty,
               let repositoryURL = snapshot?.rootURL else { return }
@@ -1818,15 +2058,20 @@ final class WorkspaceViewModel: ObservableObject {
         )
     }
 
+    @discardableResult
     private func createProjectGoal(
         kind: ProjectGoalKind,
+        title: String? = nil,
+        intent: String? = nil,
+        commitMessage: String? = nil,
+        stepKinds: [ProjectGoalStepKind]? = nil,
         releaseVersion: String? = nil,
         releaseBuildNumber: String? = nil
-    ) async {
-        guard let snapshot else { return }
+    ) async -> Bool {
+        guard let snapshot else { return false }
         if let existing = currentRepositoryGoals.first(where: { !$0.status.isTerminal }) {
             selectProjectGoal(existing)
-            return
+            return false
         }
         let baseline = snapshot.commits.first?.hash ?? ""
         guard !baseline.isEmpty || !snapshot.changes.isEmpty else {
@@ -1835,24 +2080,27 @@ final class WorkspaceViewModel: ObservableObject {
                 context: .goal,
                 repositoryURL: snapshot.rootURL
             )
-            return
+            return false
         }
-        let message = kind == .completeRelease
+        let message = commitMessage ?? (kind == .completeRelease
             ? releaseVersion.map { "release: v\($0)" } ?? ""
-            : projectGoalCommitMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+            : projectGoalCommitMessage.trimmingCharacters(in: .whitespacesAndNewlines))
         var goal = ProjectGoal(
             kind: kind,
             repositoryPath: snapshot.rootURL.standardizedFileURL.path,
             repositoryName: snapshot.rootURL.lastPathComponent,
             branchName: snapshot.branchName,
             baselineHeadSHA: baseline,
+            title: title,
+            intent: intent,
             commitMessage: message,
+            stepKinds: stepKinds,
             releaseVersion: releaseVersion,
             releaseBuildNumber: releaseBuildNumber,
             releaseTag: releaseVersion.map { "v\($0)" },
             releaseApplicationName: snapshot.rootURL.lastPathComponent
         )
-        if snapshot.changes.isEmpty, kind != .completeRelease {
+        if snapshot.changes.isEmpty, !goal.usesReleaseFlow {
             goal.targetHeadSHA = baseline
         }
         projectGoals.insert(goal, at: 0)
@@ -1860,9 +2108,11 @@ final class WorkspaceViewModel: ObservableObject {
         do {
             try await projectGoalStore.save(projectGoals)
             await refreshProjectGoal(id: goal.id, showErrors: true)
+            return true
         } catch {
             projectGoals.removeAll { $0.id == goal.id }
             presentError(error, context: .goal, repositoryURL: snapshot.rootURL)
+            return false
         }
     }
 
@@ -2098,8 +2348,7 @@ final class WorkspaceViewModel: ObservableObject {
         let ids = currentRepositoryGoals
             .filter {
                 !$0.status.isTerminal
-                    || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
-                        && $0.status == .completed)
+                    || ($0.monitorsRemoteState && $0.status == .completed)
             }
             .map(\.id)
         for id in ids {
@@ -2135,6 +2384,371 @@ final class WorkspaceViewModel: ObservableObject {
             startProjectGoalMonitorIfNeeded()
         } catch {
             presentError(error, context: .goal, repositoryURL: snapshot?.rootURL)
+        }
+    }
+
+    func selectRegressionInvestigation(_ investigation: RegressionInvestigation) {
+        selectedRegressionInvestigationID = investigation.id
+        configureRegressionFixDraft(for: investigation)
+    }
+
+    func startRegressionInvestigation() {
+        guard regressionInvestigationTask == nil,
+              let repositoryURL = snapshot?.rootURL else { return }
+        let goodRevision = regressionGoodRevision
+        let badRevision = regressionBadRevision
+        let verificationCommand = regressionVerificationCommand
+        let mode = regressionMode
+        activeRegressionInvestigationID = UUID()
+        let runtime = regressionInvestigationRuntime
+        regressionInvestigationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.regressionInvestigationTask = nil
+                self.activeRegressionInvestigationID = nil
+            }
+            do {
+                let prepared = try await runtime.prepare(
+                    repositoryURL: repositoryURL,
+                    goodRevision: goodRevision,
+                    badRevision: badRevision,
+                    verificationCommand: verificationCommand,
+                    mode: mode
+                )
+                self.activeRegressionInvestigationID = prepared.id
+                await self.receiveRegressionUpdate(prepared)
+                if prepared.mode == .automatic, prepared.status == .running {
+                    let completed = try await runtime.runAutomatic(prepared) { [weak self] update in
+                        await self?.receiveRegressionUpdate(update)
+                    }
+                    await self.receiveRegressionUpdate(completed)
+                }
+            } catch is CancellationError {
+                guard let source = self.regressionInvestigations.first(where: {
+                    $0.id == self.activeRegressionInvestigationID
+                }) else { return }
+                let paused = await runtime.pause(source)
+                await self.receiveRegressionUpdate(paused)
+            } catch {
+                if let id = self.activeRegressionInvestigationID,
+                   let source = self.regressionInvestigations.first(where: { $0.id == id }) {
+                    let failed = await runtime.markFailed(source, message: error.localizedDescription)
+                    await self.receiveRegressionUpdate(failed)
+                }
+                self.presentError(error, context: .regression, repositoryURL: repositoryURL)
+            }
+        }
+    }
+
+    func pauseRegressionInvestigation() {
+        guard let source = selectedRegressionInvestigation,
+              source.status == .running else { return }
+        regressionInvestigationTask?.cancel()
+        regressionInvestigationTask = nil
+        activeRegressionInvestigationID = nil
+        let runtime = regressionInvestigationRuntime
+        Task { [weak self] in
+            let paused = await runtime.pause(source)
+            await self?.receiveRegressionUpdate(paused)
+        }
+    }
+
+    func resumeRegressionInvestigation() {
+        guard regressionInvestigationTask == nil,
+              let source = selectedRegressionInvestigation,
+              source.status.canResume else { return }
+        let runtime = regressionInvestigationRuntime
+        activeRegressionInvestigationID = source.id
+        regressionInvestigationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.regressionInvestigationTask = nil
+                self.activeRegressionInvestigationID = nil
+            }
+            do {
+                let resumed = try await runtime.resume(source)
+                await self.receiveRegressionUpdate(resumed)
+                if resumed.mode == .automatic {
+                    let completed = try await runtime.runAutomatic(resumed) { [weak self] update in
+                        await self?.receiveRegressionUpdate(update)
+                    }
+                    await self.receiveRegressionUpdate(completed)
+                }
+            } catch is CancellationError {
+                let paused = await runtime.pause(
+                    self.regressionInvestigations.first(where: { $0.id == source.id }) ?? source
+                )
+                await self.receiveRegressionUpdate(paused)
+            } catch {
+                let failed = await runtime.markFailed(source, message: error.localizedDescription)
+                await self.receiveRegressionUpdate(failed)
+                self.presentError(error, context: .regression, repositoryURL: source.repositoryURL)
+            }
+        }
+    }
+
+    func recordRegressionVerdict(_ verdict: RegressionVerdict) {
+        guard regressionInvestigationTask == nil,
+              let source = selectedRegressionInvestigation,
+              source.status == .awaitingManualVerdict else { return }
+        let runtime = regressionInvestigationRuntime
+        activeRegressionInvestigationID = source.id
+        regressionInvestigationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.regressionInvestigationTask = nil
+                self.activeRegressionInvestigationID = nil
+            }
+            do {
+                let updated = try await runtime.recordManual(verdict, in: source)
+                await self.receiveRegressionUpdate(updated)
+            } catch {
+                let failed = await runtime.markFailed(source, message: error.localizedDescription)
+                await self.receiveRegressionUpdate(failed)
+                self.presentError(error, context: .regression, repositoryURL: source.repositoryURL)
+            }
+        }
+    }
+
+    func repairRegressionWithAgent() {
+        guard regressionInvestigationTask == nil,
+              !regressionAgentIsRunning,
+              !isCodexRunning,
+              codexAvailability.state == .available,
+              let source = selectedRegressionInvestigation,
+              source.culprit != nil,
+              source.status == .culpritFound || source.status == .fixReady,
+              source.workspaceURL != nil else { return }
+        let runtime = regressionInvestigationRuntime
+        let coordinator = worktreeAgentCoordinator
+        regressionAgentIsRunning = true
+        activeRegressionInvestigationID = source.id
+        regressionInvestigationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.regressionAgentIsRunning = false
+                self.activeRegressionInvestigationID = nil
+                self.regressionInvestigationTask = nil
+            }
+            do {
+                var working = source
+                if working.fixBranch == nil {
+                    working = try await runtime.prepareFix(working)
+                } else {
+                    working.status = .agentFixing
+                    working.errorMessage = nil
+                    working.updatedAt = Date()
+                }
+                await self.receiveRegressionUpdate(working)
+                guard let workspace = working.workspaceURL else {
+                    throw RegressionInvestigationError.workspaceMissing
+                }
+                let result = try await coordinator.run(
+                    worktreeID: "regression-\(working.id.uuidString)",
+                    prompt: RegressionInvestigationRuntime.agentPrompt(for: working),
+                    repositoryURL: workspace,
+                    mode: .edit
+                )
+                var ready = await runtime.markAgentFixCompleted(working, summary: result.response)
+                await self.receiveRegressionUpdate(ready)
+                guard ready.mode == .automatic else { return }
+                ready.status = .verifyingFix
+                ready.updatedAt = Date()
+                await self.receiveRegressionUpdate(ready)
+                let verified = try await runtime.verifyFix(ready)
+                await self.receiveRegressionUpdate(verified)
+            } catch is CancellationError {
+                var cancelled = self.regressionInvestigations.first(where: { $0.id == source.id }) ?? source
+                cancelled.status = cancelled.fixBranch == nil ? .culpritFound : .fixReady
+                cancelled.updatedAt = Date()
+                await self.receiveRegressionUpdate(cancelled)
+            } catch {
+                var failed = self.regressionInvestigations.first(where: { $0.id == source.id }) ?? source
+                failed.status = failed.fixBranch == nil ? .culpritFound : .fixReady
+                failed.errorMessage = error.localizedDescription
+                failed.updatedAt = Date()
+                await self.receiveRegressionUpdate(failed)
+                self.presentError(error, context: .regression, repositoryURL: source.repositoryURL)
+            }
+        }
+    }
+
+    func cancelRegressionAgent() {
+        guard regressionAgentIsRunning,
+              let source = selectedRegressionInvestigation else { return }
+        regressionInvestigationTask?.cancel()
+        Task {
+            await worktreeAgentCoordinator.cancel(worktreeID: "regression-\(source.id.uuidString)")
+        }
+    }
+
+    func verifyRegressionFix() {
+        guard regressionInvestigationTask == nil,
+              let source = selectedRegressionInvestigation,
+              source.fixBranch != nil else { return }
+        let runtime = regressionInvestigationRuntime
+        activeRegressionInvestigationID = source.id
+        regressionInvestigationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.regressionInvestigationTask = nil
+                self.activeRegressionInvestigationID = nil
+            }
+            do {
+                var verifying = source
+                verifying.status = .verifyingFix
+                verifying.updatedAt = Date()
+                await self.receiveRegressionUpdate(verifying)
+                let verified = try await runtime.verifyFix(verifying)
+                await self.receiveRegressionUpdate(verified)
+            } catch {
+                var failed = source
+                failed.status = .fixReady
+                failed.errorMessage = error.localizedDescription
+                failed.updatedAt = Date()
+                await self.receiveRegressionUpdate(failed)
+                self.presentError(error, context: .regression, repositoryURL: source.repositoryURL)
+            }
+        }
+    }
+
+    func recordManualRegressionFixVerification(passed: Bool) {
+        guard let source = selectedRegressionInvestigation,
+              source.mode == .manual,
+              source.fixBranch != nil,
+              source.status == .fixReady || source.status == .fixVerified else { return }
+        let runtime = regressionInvestigationRuntime
+        Task { [weak self] in
+            let updated = await runtime.recordManualFixVerification(source, passed: passed)
+            await self?.receiveRegressionUpdate(updated)
+        }
+    }
+
+    func publishRegressionFix() {
+        guard regressionInvestigationTask == nil,
+              let source = selectedRegressionInvestigation,
+              source.fixVerification?.passed == true else { return }
+        let runtime = regressionInvestigationRuntime
+        let title = regressionFixTitle
+        let body = regressionFixBody
+        activeRegressionInvestigationID = source.id
+        regressionInvestigationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.regressionInvestigationTask = nil
+                self.activeRegressionInvestigationID = nil
+            }
+            do {
+                var publishing = source
+                publishing.status = .publishing
+                publishing.updatedAt = Date()
+                await self.receiveRegressionUpdate(publishing)
+                let completed = try await runtime.publishFix(source, title: title, body: body)
+                await self.receiveRegressionUpdate(completed)
+            } catch {
+                var failed = source
+                failed.status = .fixVerified
+                failed.errorMessage = error.localizedDescription
+                failed.updatedAt = Date()
+                await self.receiveRegressionUpdate(failed)
+                self.presentError(error, context: .regression, repositoryURL: source.repositoryURL)
+            }
+        }
+    }
+
+    func cleanupRegressionInvestigation() {
+        guard regressionInvestigationTask == nil,
+              let source = selectedRegressionInvestigation else { return }
+        let runtime = regressionInvestigationRuntime
+        activeRegressionInvestigationID = source.id
+        regressionInvestigationTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.regressionInvestigationTask = nil
+                self.activeRegressionInvestigationID = nil
+            }
+            do {
+                let cleaned = try await runtime.cleanup(source)
+                await self.receiveRegressionUpdate(cleaned)
+            } catch {
+                self.presentError(error, context: .regression, repositoryURL: source.repositoryURL)
+            }
+        }
+    }
+
+    func deleteRegressionInvestigationEvidence() {
+        guard let source = selectedRegressionInvestigation,
+              source.workspacePath == nil else { return }
+        regressionInvestigations.removeAll { $0.id == source.id }
+        selectedRegressionInvestigationID = currentRepositoryRegressionInvestigations.first?.id
+        Task { try? await regressionInvestigationStore.save(regressionInvestigations) }
+    }
+
+    func revealRegressionWorkspace() {
+        guard let workspace = selectedRegressionInvestigation?.workspaceURL else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([workspace])
+    }
+
+    private func loadRegressionInvestigations() async {
+        do {
+            regressionInvestigations = try await regressionInvestigationStore.load().map { source in
+                var investigation = source
+                if investigation.status == .running
+                    || investigation.status == .preparing
+                    || investigation.status == .verifyingFix
+                    || investigation.status == .publishing
+                    || investigation.status == .agentFixing {
+                    investigation.status = investigation.culprit == nil ? .paused : .fixReady
+                    investigation.updatedAt = Date()
+                }
+                return investigation
+            }
+            selectedRegressionInvestigationID = regressionInvestigations.first?.id
+            try? await regressionInvestigationStore.save(regressionInvestigations)
+        } catch {
+            presentError(error, context: .regression, repositoryURL: snapshot?.rootURL)
+        }
+    }
+
+    private func receiveRegressionUpdate(_ investigation: RegressionInvestigation) async {
+        if let index = regressionInvestigations.firstIndex(where: { $0.id == investigation.id }) {
+            regressionInvestigations[index] = investigation
+        } else {
+            regressionInvestigations.append(investigation)
+        }
+        selectedRegressionInvestigationID = investigation.id
+        configureRegressionFixDraft(for: investigation)
+        try? await regressionInvestigationStore.save(regressionInvestigations)
+    }
+
+    private func configureRegressionFixDraft(for investigation: RegressionInvestigation) {
+        guard let culprit = investigation.culprit else { return }
+        if regressionFixTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            regressionFixTitle = "fix: \(culprit.subject)"
+        }
+        if regressionFixBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            regressionFixBody = """
+            First bad commit: \(culprit.sha)
+            Verification: `\(investigation.verificationCommand)`
+            """
+        }
+    }
+
+    private func configureRegressionDefaults(for repositoryURL: URL) {
+        guard regressionVerificationCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+        let files = FileManager.default
+        if files.fileExists(atPath: repositoryURL.appendingPathComponent("Package.swift").path) {
+            regressionVerificationCommand = "swift test"
+        } else if files.fileExists(atPath: repositoryURL.appendingPathComponent("Cargo.toml").path) {
+            regressionVerificationCommand = "cargo test"
+        } else if files.fileExists(atPath: repositoryURL.appendingPathComponent("go.mod").path) {
+            regressionVerificationCommand = "go test ./..."
+        } else if files.fileExists(atPath: repositoryURL.appendingPathComponent("pyproject.toml").path) {
+            regressionVerificationCommand = "python -m pytest"
+        } else if files.fileExists(atPath: repositoryURL.appendingPathComponent("package.json").path) {
+            regressionVerificationCommand = "npm test"
         }
     }
 
@@ -2176,10 +2790,8 @@ final class WorkspaceViewModel: ObservableObject {
         let ids = projectGoals
             .filter {
                 $0.status == .waiting
-                    || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
-                        && $0.status == .ready)
-                    || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
-                        && $0.status == .completed)
+                    || ($0.monitorsRemoteState && $0.status == .ready)
+                    || ($0.monitorsRemoteState && $0.status == .completed)
             }
             .map(\.id)
         guard !ids.isEmpty else {
@@ -2194,7 +2806,7 @@ final class WorkspaceViewModel: ObservableObject {
                     }) == true
                     let hasReady = self?.projectGoals.contains(where: {
                         ids.contains($0.id)
-                            && [ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
+                            && $0.monitorsRemoteState
                             && $0.status == .ready
                     }) == true
                     let delay = hasWaiting ? 8 : (hasReady ? 20 : 60)
@@ -2209,10 +2821,8 @@ final class WorkspaceViewModel: ObservableObject {
                 if !self.projectGoals.contains(where: {
                     ids.contains($0.id)
                         && ($0.status == .waiting
-                            || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
-                                && $0.status == .ready)
-                            || ([ProjectGoalKind.githubDelivery, .completeRelease].contains($0.kind)
-                                && $0.status == .completed))
+                            || ($0.monitorsRemoteState && $0.status == .ready)
+                            || ($0.monitorsRemoteState && $0.status == .completed))
                 }) {
                     self.startProjectGoalMonitorIfNeeded()
                     return
@@ -4735,6 +5345,10 @@ final class WorkspaceViewModel: ObservableObject {
         source: GitHubReadmeDocument
     ) {
         clearGitHubReadmeTranslations()
+        let automaticTarget = AutomaticTranslationPolicy.target(
+            forHTML: source.html,
+            preferredTarget: appPreferences.language.translationTarget
+        )
         let store = githubReadmeTranslationStore
         githubReadmeTranslationCacheTask = Task {
             var cached: [CodexTranslationTarget: GitHubReadmeDocument] = [:]
@@ -4753,6 +5367,13 @@ final class WorkspaceViewModel: ObservableObject {
                   githubReadme?.html == source.html else { return }
             githubReadmeTranslations = cached
             githubReadmeTranslationCacheTask = nil
+            guard let automaticTarget else { return }
+            if let document = cached[automaticTarget] {
+                translatedGitHubReadme = document
+                githubReadmeTranslationTarget = automaticTarget
+            } else {
+                translateGitHubReadme(to: automaticTarget)
+            }
         }
     }
 
@@ -4826,7 +5447,13 @@ final class WorkspaceViewModel: ObservableObject {
 
     func saveSettings() {
         AppPreferencesStore.save(appPreferences)
+        L10n.activate(appPreferences.language)
         codexTranslationTarget = appPreferences.defaultTranslationTarget
+        objectWillChange.send()
+        if let repository = selectedGitHubRepository,
+           let source = githubReadme {
+            restoreGitHubReadmeTranslations(for: repository, source: source)
+        }
         AIProviderSettings.save(projectAIConfiguration, lane: .project)
         AIProviderSettings.save(translationAIConfiguration, lane: .translation)
         restartLiveRefreshLoop()
@@ -5082,6 +5709,7 @@ final class WorkspaceViewModel: ObservableObject {
         codexTask = nil
         isCodexRunning = false
         isDraftingCommitMessage = false
+        isPlanningProjectGoal = false
         codexActivity = L10n.text("codex.status.cancelled")
         Task { await codexService.cancel() }
     }
@@ -5599,6 +6227,9 @@ final class WorkspaceViewModel: ObservableObject {
         codexCommitDraft = nil
         codexActivity = nil
         codexError = nil
+        projectGoalCandidate = nil
+        projectGoalPlanningError = nil
+        projectGoalCustomIntent = ""
         repositoryOperationState = nil
         selectedConflictPath = nil
         conflictDocument = nil

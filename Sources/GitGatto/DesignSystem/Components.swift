@@ -727,6 +727,142 @@ struct GattoProgressViewStyle: ProgressViewStyle {
     }
 }
 
+struct AgentInstallationProgressView: View {
+    let phase: AgentInstallPhase
+    let detail: String
+    let startedAt: Date?
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(spacing: 8) {
+                Text(L10n.text("installer.stage.\(phase.rawValue)"))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                Text(L10n.format("installer.progress.step", phase.stepNumber, AgentInstallPhase.allCases.count))
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(palette.subtleInk)
+                Spacer(minLength: 8)
+                if let startedAt {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text(L10n.format(
+                            "installer.progress.elapsed",
+                            elapsedText(from: startedAt, to: context.date)
+                        ))
+                        .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                        .foregroundStyle(palette.subtleInk)
+                        .monospacedDigit()
+                    }
+                }
+            }
+
+            HStack(alignment: .top, spacing: 5) {
+                ForEach(AgentInstallPhase.allCases, id: \.self) { item in
+                    installationStage(item, palette: palette)
+                    if item != AgentInstallPhase.allCases.last {
+                        Capsule()
+                            .fill(item.stepNumber < phase.stepNumber ? palette.success : palette.divider)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 2)
+                            .padding(.top, 11)
+                    }
+                }
+            }
+
+            HStack(alignment: .top, spacing: 9) {
+                GattoLoadingGlyph(size: 22)
+                Text(detail)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(palette.mutedInk)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(10)
+            .background(palette.raisedSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(L10n.text("installer.stage.\(phase.rawValue)"))
+        .accessibilityValue(detail)
+    }
+
+    private func installationStage(_ item: AgentInstallPhase, palette: AppPalette) -> some View {
+        let isCompleted = item.stepNumber < phase.stepNumber
+        let isCurrent = item == phase
+        return VStack(spacing: 5) {
+            ZStack {
+                Circle()
+                    .fill(isCompleted ? palette.success : isCurrent ? palette.primarySoft : palette.raisedSurface)
+                if isCompleted {
+                    Image(gattoSymbol: "checkmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.white)
+                } else if isCurrent {
+                    AgentInstallationStageRing(color: palette.primary)
+                } else {
+                    Text("\(item.stepNumber)")
+                        .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        .foregroundStyle(palette.subtleInk)
+                }
+            }
+            .frame(width: 24, height: 24)
+            .overlay {
+                if !isCompleted {
+                    Circle()
+                        .stroke(isCurrent ? palette.primary.opacity(0.45) : palette.divider, lineWidth: 1)
+                }
+            }
+
+            Text(L10n.text("installer.stage.\(item.rawValue)"))
+                .font(.system(size: 9.5, weight: isCurrent ? .semibold : .medium))
+                .foregroundStyle(isCurrent ? palette.primary : isCompleted ? palette.ink : palette.subtleInk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(minWidth: 42)
+    }
+
+    private func elapsedText(from start: Date, to end: Date) -> String {
+        let seconds = max(0, Int(end.timeIntervalSince(start)))
+        let hours = seconds / 3_600
+        let minutes = (seconds % 3_600) / 60
+        let remainder = seconds % 60
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, remainder)
+        }
+        return String(format: "%02d:%02d", minutes, remainder)
+    }
+}
+
+private struct AgentInstallationStageRing: View {
+    let color: Color
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isRotating = false
+
+    var body: some View {
+        Circle()
+            .trim(from: 0.08, to: 0.76)
+            .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            .frame(width: 13, height: 13)
+            .rotationEffect(.degrees(reduceMotion ? 0 : isRotating ? 360 : 0))
+            .onAppear { updateAnimation() }
+            .onChange(of: reduceMotion) { _, _ in updateAnimation() }
+            .accessibilityHidden(true)
+    }
+
+    private func updateAnimation() {
+        isRotating = false
+        guard !reduceMotion else { return }
+        withAnimation(.linear(duration: 1.05).repeatForever(autoreverses: false)) {
+            isRotating = true
+        }
+    }
+}
+
 struct SectionLabel: View {
     let titleKey: String
     var count: Int?

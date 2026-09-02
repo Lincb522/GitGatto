@@ -14,6 +14,7 @@ struct GitHubMarketplaceView: View {
     @State private var pendingQuickInstallAsset: GitHubReleaseAsset?
     @State private var pendingToolInstall: DevelopmentTool?
     @State private var pendingToolUpgrade: DevelopmentTool?
+    @State private var showsBatchUpgradeConfirmation = false
 
     init(
         model: GitHubMarketplaceViewModel,
@@ -29,6 +30,19 @@ struct GitHubMarketplaceView: View {
         )
     }
 
+    private var installedRepositoryNames: [String] {
+        var seen = Set<String>()
+        return downloads.records
+            .filter { $0.state == .installed }
+            .sorted { $0.updatedAt > $1.updatedAt }
+            .map(\.repositoryName)
+            .filter { seen.insert($0.lowercased()).inserted }
+    }
+
+    private var installedRepositoryNameSet: Set<String> {
+        Set(installedRepositoryNames.map { $0.lowercased() })
+    }
+
     var body: some View {
         let palette = AppPalette(colorScheme)
         let theme = AppVisualTheme.resolved(themeRaw)
@@ -39,10 +53,10 @@ struct GitHubMarketplaceView: View {
                         .emeraldSurface(.elevated, cornerRadius: 16)
                     HStack(spacing: 10) {
                         catalogResultPane(palette)
-                            .frame(minWidth: 260, idealWidth: 310, maxWidth: 380)
+                            .frame(minWidth: 220, idealWidth: 280, maxWidth: 380)
                             .emeraldSurface(.elevated, cornerRadius: 16)
                         catalogDetailPane(palette)
-                            .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(minWidth: 430, maxWidth: .infinity, maxHeight: .infinity)
                             .emeraldSurface(.panel, cornerRadius: 16)
                     }
                 }
@@ -53,10 +67,10 @@ struct GitHubMarketplaceView: View {
                         .folioSurface(.elevated, cornerRadius: 16)
                     HStack(spacing: 10) {
                         catalogResultPane(palette)
-                            .frame(minWidth: 260, idealWidth: 310, maxWidth: 380)
+                            .frame(minWidth: 220, idealWidth: 280, maxWidth: 380)
                             .folioSurface(.elevated, cornerRadius: 16)
                         catalogDetailPane(palette)
-                            .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(minWidth: 430, maxWidth: .infinity, maxHeight: .infinity)
                             .folioSurface(.panel, cornerRadius: 16)
                     }
                 }
@@ -67,9 +81,9 @@ struct GitHubMarketplaceView: View {
                     Rectangle().fill(palette.divider).frame(height: 1)
                     HSplitView {
                         catalogResultPane(palette)
-                            .frame(minWidth: 260, idealWidth: 310, maxWidth: 380)
+                            .frame(minWidth: 220, idealWidth: 280, maxWidth: 380)
                         catalogDetailPane(palette)
-                            .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(minWidth: 430, maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
             }
@@ -87,6 +101,10 @@ struct GitHubMarketplaceView: View {
             if section == .developerTools {
                 developerTools.loadIfNeeded()
             }
+        }
+        .onChange(of: installedRepositoryNames) { _, names in
+            guard model.collection == .installed else { return }
+            model.changeCollection(.installed, installedRepositoryNames: names)
         }
         .onChange(of: model.selectedApplication?.id) { _, _ in
             selectedDetailTab = .overview
@@ -164,16 +182,50 @@ struct GitHubMarketplaceView: View {
         } message: {
             Text(L10n.text("developer_tools.upgrade.confirm.body"))
         }
+        .confirmationDialog(
+            L10n.text("developer_tools.batch.confirm.title"),
+            isPresented: $showsBatchUpgradeConfirmation
+        ) {
+            Button(L10n.format(
+                "developer_tools.action.batch_upgrade",
+                developerTools.selectedUpgradeCount
+            )) {
+                developerTools.upgradeSelectedTools()
+            }
+            Button(L10n.text("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(L10n.format(
+                "developer_tools.batch.confirm.body",
+                developerTools.selectedUpgradeCount
+            ))
+        }
     }
 
     private func marketplaceHeader(_ palette: AppPalette) -> some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 8) {
+        GeometryReader { proxy in
+            marketplaceHeaderRow(palette, compact: proxy.size.width < 860)
+        }
+        .frame(height: 62)
+        .background(palette.surface)
+    }
+
+    private func marketplaceHeaderRow(_ palette: AppPalette, compact: Bool) -> some View {
+        HStack(spacing: compact ? 8 : 10) {
+            if compact {
                 Image(gattoSymbol: catalogSection == .applications ? "arrow.down.app" : "hammer")
                     .foregroundStyle(palette.primary)
-                Text(L10n.text("marketplace.title"))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(palette.ink)
+                    .frame(width: 22, height: 32)
+                    .help(L10n.text("marketplace.title"))
+                    .accessibilityLabel(L10n.text("marketplace.title"))
+            } else {
+                HStack(spacing: 8) {
+                    Image(gattoSymbol: catalogSection == .applications ? "arrow.down.app" : "hammer")
+                        .foregroundStyle(palette.primary)
+                    Text(L10n.text("marketplace.title"))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                }
+                .fixedSize()
             }
 
             Picker("", selection: $catalogSection) {
@@ -184,7 +236,7 @@ struct GitHubMarketplaceView: View {
             }
             .labelsHidden()
             .pickerStyle(.segmented)
-            .frame(width: 196)
+            .frame(width: compact ? 146 : 196)
 
             if catalogSection == .applications {
                 Picker("", selection: Binding(
@@ -197,13 +249,23 @@ struct GitHubMarketplaceView: View {
                     }
                 }
                 .labelsHidden()
-                .frame(width: 124)
+                .frame(width: compact ? 96 : 124)
 
                 marketplaceSearchField(palette)
+                    .frame(minWidth: compact ? 110 : 180)
+                    .layoutPriority(1)
 
-                Button(L10n.text("github.action.search")) { model.search() }
+                Button { model.search() } label: {
+                    if compact {
+                        Image(gattoSymbol: "magnifyingglass")
+                            .frame(width: 16, height: 16)
+                    } else {
+                        Text(L10n.text("github.action.search"))
+                    }
+                }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(model.isLoading || model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .help(L10n.text("github.action.search"))
             } else {
                 Picker("", selection: Binding(
                     get: { developerTools.category },
@@ -215,9 +277,11 @@ struct GitHubMarketplaceView: View {
                     }
                 }
                 .labelsHidden()
-                .frame(width: 170)
+                .frame(width: compact ? 132 : 170)
 
                 developerToolSearchField(palette)
+                    .frame(minWidth: compact ? 110 : 180)
+                    .layoutPriority(1)
 
                 Button {
                     developerTools.refresh()
@@ -240,7 +304,9 @@ struct GitHubMarketplaceView: View {
             } label: {
                 HStack(spacing: 7) {
                     Image(gattoSymbol: "tray.and.arrow.down")
-                    Text(L10n.text("downloads.title"))
+                    if !compact {
+                        Text(L10n.text("downloads.title"))
+                    }
                     if downloads.activeCount > 0 {
                         Text("\(downloads.activeCount)")
                             .font(.system(size: 9.5, weight: .bold))
@@ -252,10 +318,10 @@ struct GitHubMarketplaceView: View {
                 }
             }
             .buttonStyle(SecondaryButtonStyle())
+            .help(L10n.text("downloads.title"))
         }
-        .padding(.horizontal, 18)
-        .frame(height: 62)
-        .background(palette.surface)
+        .padding(.horizontal, compact ? 12 : 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func marketplaceSearchField(_ palette: AppPalette) -> some View {
@@ -325,8 +391,11 @@ struct GitHubMarketplaceView: View {
 
     private func resultPane(_ palette: AppPalette) -> some View {
         VStack(spacing: 0) {
+            applicationCollectionBar(palette)
+            Rectangle().fill(palette.divider).frame(height: 1)
+
             HStack {
-                Text(L10n.text("marketplace.results"))
+                Text(applicationResultTitle)
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(palette.mutedInk)
                 if !model.applications.isEmpty {
@@ -345,10 +414,10 @@ struct GitHubMarketplaceView: View {
                 GattoLoadingState(text: L10n.text("marketplace.loading"))
             } else if model.applications.isEmpty {
                 VStack(spacing: 9) {
-                    Image(gattoSymbol: "shippingbox")
+                    Image(gattoSymbol: applicationEmptyIcon)
                         .font(.system(size: 22))
                         .foregroundStyle(palette.subtleInk)
-                    Text(L10n.text("marketplace.empty"))
+                    Text(L10n.text(applicationEmptyKey))
                         .font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(palette.mutedInk)
                 }
@@ -359,7 +428,11 @@ struct GitHubMarketplaceView: View {
                         ForEach(model.applications) { application in
                             MarketplaceApplicationRow(
                                 application: application,
-                                selected: model.selectedApplication?.id == application.id
+                                selected: model.selectedApplication?.id == application.id,
+                                isFavorite: model.collection == .favorites,
+                                isInstalled: installedRepositoryNameSet.contains(
+                                    application.repository.fullName.lowercased()
+                                )
                             ) {
                                 model.select(application)
                             }
@@ -384,6 +457,88 @@ struct GitHubMarketplaceView: View {
             }
         }
         .background(palette.sidebar)
+    }
+
+    private func applicationCollectionBar(_ palette: AppPalette) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 5) {
+                ForEach(MarketplaceCollection.allCases) { collection in
+                    Button {
+                        model.changeCollection(
+                            collection,
+                            installedRepositoryNames: installedRepositoryNames
+                        )
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(gattoSymbol: collection.symbolName)
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(L10n.text("marketplace.collection.\(collection.rawValue)"))
+                                .font(.system(size: 10, weight: .semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                        }
+                        .foregroundStyle(model.collection == collection ? palette.primary : palette.mutedInk)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 30)
+                        .background(model.collection == collection ? palette.primarySoft : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if model.collection == .discover, !model.isShowingSearchResults {
+                HStack(spacing: 5) {
+                    ForEach(MarketplaceFeed.allCases) { feed in
+                        Button {
+                            model.changeFeed(feed)
+                        } label: {
+                            Text(L10n.text("marketplace.feed.\(feed.rawValue)"))
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 27)
+                                .foregroundStyle(model.feed == feed ? palette.primary : palette.mutedInk)
+                                .background(model.feed == feed ? palette.primarySoft : Color.clear)
+                                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(model.isLoading && model.feed == feed)
+                    }
+                }
+            }
+        }
+        .padding(8)
+        .background(palette.surface)
+    }
+
+    private var applicationResultTitle: String {
+        if model.isShowingSearchResults {
+            return L10n.text("marketplace.results.search")
+        }
+        if model.collection == .discover {
+            return L10n.text("marketplace.feed.\(model.feed.rawValue)")
+        }
+        return L10n.text("marketplace.collection.\(model.collection.rawValue)")
+    }
+
+    private var applicationEmptyKey: String {
+        switch model.collection {
+        case .discover: "marketplace.empty"
+        case .favorites: "marketplace.favorites.empty"
+        case .installed: "marketplace.installed.empty"
+        case .recent: "marketplace.recent.empty"
+        }
+    }
+
+    private var applicationEmptyIcon: String {
+        switch model.collection {
+        case .discover: "shippingbox"
+        case .favorites: "star"
+        case .installed: "checkmark.seal"
+        case .recent: "clock.arrow.circlepath"
+        }
     }
 
     private func developerToolResultPane(_ palette: AppPalette) -> some View {
@@ -413,6 +568,16 @@ struct GitHubMarketplaceView: View {
             .frame(height: 43)
             Rectangle().fill(palette.divider).frame(height: 1)
 
+            if developerTools.installQueueCount > 0 || developerTools.upgradeQueueCount > 0 {
+                developerToolQueueBar(palette)
+                Rectangle().fill(palette.divider).frame(height: 1)
+            }
+
+            if developerTools.category == .updates, !developerTools.filteredTools.isEmpty {
+                developerToolUpgradeSelectionBar(palette)
+                Rectangle().fill(palette.divider).frame(height: 1)
+            }
+
             if developerTools.filteredTools.isEmpty {
                 ProjectEmptyState(systemImage: "hammer", titleKey: "developer_tools.empty")
             } else {
@@ -429,19 +594,129 @@ struct GitHubMarketplaceView: View {
         .background(palette.sidebar)
     }
 
+    private func developerToolQueueBar(_ palette: AppPalette) -> some View {
+        HStack(spacing: 7) {
+            if developerTools.installQueueCount > 0 {
+                developerToolQueueBadge(
+                    title: L10n.text("developer_tools.queue.install"),
+                    count: developerTools.installQueueCount,
+                    systemImage: "arrow.down.app",
+                    palette: palette
+                )
+            }
+            if developerTools.upgradeQueueCount > 0 {
+                developerToolQueueBadge(
+                    title: L10n.text("developer_tools.queue.upgrade"),
+                    count: developerTools.upgradeQueueCount,
+                    systemImage: "arrow.up.circle",
+                    palette: palette
+                )
+            }
+            Spacer(minLength: 4)
+            Text(L10n.format(
+                "developer_tools.queue.running",
+                developerTools.activeOperationCount
+            ))
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundStyle(palette.subtleInk)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 38)
+        .background(palette.surface)
+    }
+
+    private func developerToolQueueBadge(
+        title: String,
+        count: Int,
+        systemImage: String,
+        palette: AppPalette
+    ) -> some View {
+        HStack(spacing: 5) {
+            Image(gattoSymbol: systemImage)
+                .font(.system(size: 10, weight: .semibold))
+            Text(title)
+            Text("\(count)")
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .padding(.horizontal, 5)
+                .frame(height: 17)
+                .background(palette.primary.opacity(0.12))
+                .clipShape(Capsule())
+        }
+        .font(.system(size: 10, weight: .semibold))
+        .foregroundStyle(palette.primary)
+    }
+
+    private func developerToolUpgradeSelectionBar(_ palette: AppPalette) -> some View {
+        HStack(spacing: 8) {
+            Button {
+                developerTools.selectAllVisibleUpgrades()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(gattoSymbol: developerTools.isAllVisibleUpgradesSelected
+                        ? "checkmark.circle.fill"
+                        : "record.circle")
+                    Text(L10n.text(developerTools.isAllVisibleUpgradesSelected
+                        ? "developer_tools.selection.clear"
+                        : "developer_tools.selection.select_all"))
+                }
+                .font(.system(size: 10.5, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(palette.mutedInk)
+
+            Spacer(minLength: 4)
+
+            Button {
+                showsBatchUpgradeConfirmation = true
+            } label: {
+                Text(L10n.format(
+                    "developer_tools.action.batch_upgrade",
+                    developerTools.selectedUpgradeCount
+                ))
+                    .font(.system(size: 10.5, weight: .semibold))
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(developerTools.selectedUpgradeCount == 0)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 42)
+        .background(palette.surface)
+    }
+
     private func developerToolRow(_ tool: DevelopmentTool, palette: AppPalette) -> some View {
         let status = developerTools.status(for: tool)
         let isSelected = developerTools.selectedTool?.id == tool.id
-        return Button {
-            developerTools.select(tool)
-        } label: {
-            HStack(spacing: 11) {
+        return HStack(spacing: 4) {
+            if developerTools.category == .updates {
+                Button {
+                    developerTools.toggleUpgradeSelection(tool)
+                } label: {
+                    Image(gattoSymbol: developerTools.isUpgradeSelected(tool)
+                        ? "checkmark.circle.fill"
+                        : "record.circle")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(developerTools.isUpgradeSelected(tool)
+                            ? palette.primary
+                            : palette.subtleInk)
+                        .frame(width: 25, height: 40)
+                }
+                .buttonStyle(.plain)
+                .disabled(!status.canUpgrade)
+                .accessibilityLabel(L10n.text("developer_tools.selection.item"))
+            }
+
+            Button {
+                developerTools.select(tool)
+            } label: {
+                HStack(spacing: 11) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(isSelected ? palette.primary.opacity(0.16) : palette.raisedSurface)
-                    Image(gattoSymbol: tool.icon)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(isSelected ? palette.primary : palette.ink)
+                    DevelopmentToolLogoView(
+                        tool: tool,
+                        size: 31,
+                        fallbackColor: isSelected ? palette.primary : palette.ink
+                    )
                 }
                 .frame(width: 40, height: 40)
 
@@ -461,7 +736,13 @@ struct GitHubMarketplaceView: View {
                     }
                 }
                 Spacer(minLength: 4)
-                if status.state == .installing {
+                if status.state == .queued {
+                    if let position = developerTools.queuePosition(for: tool) {
+                        Text("#\(position)")
+                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                            .foregroundStyle(palette.primary)
+                    }
+                } else if status.state == .installing {
                     ProgressView().controlSize(.small)
                 } else if status.updateAvailability == .available {
                     Image(gattoSymbol: "arrow.up.circle.fill")
@@ -470,14 +751,16 @@ struct GitHubMarketplaceView: View {
                     Image(gattoSymbol: "checkmark.circle.fill")
                         .foregroundStyle(palette.success)
                 }
+                }
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity)
+                .frame(height: 66)
+                .background(isSelected ? palette.primarySoft : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 10)
-            .frame(height: 66)
-            .background(isSelected ? palette.primarySoft : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -489,9 +772,11 @@ struct GitHubMarketplaceView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 15, style: .continuous)
                             .fill(palette.primarySoft)
-                        Image(gattoSymbol: tool.icon)
-                            .font(.system(size: 25, weight: .semibold))
-                            .foregroundStyle(palette.primary)
+                        DevelopmentToolLogoView(
+                            tool: tool,
+                            size: 46,
+                            fallbackColor: palette.primary
+                        )
                     }
                     .frame(width: 64, height: 64)
 
@@ -512,20 +797,39 @@ struct GitHubMarketplaceView: View {
 
                     Spacer()
 
-                    if status.state == .installing {
+                    if status.state == .queued || status.state == .installing {
                         Button(L10n.text("action.cancel")) {
-                            developerTools.cancelInstallation()
+                            developerTools.cancel(tool)
                         }
                         .buttonStyle(SecondaryButtonStyle())
+                    } else if status.authorizationRequest != nil {
+                        Button {
+                            developerTools.authorizeAndRetry(tool)
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(gattoSymbol: "lock.open")
+                                Text(L10n.text("developer_tools.action.authorize_retry"))
+                            }
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(developerTools.isQueuedOrRunning(tool))
+                    } else if status.state == .actionRequired {
+                        Button {
+                            developerTools.retry(tool)
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(gattoSymbol: "arrow.clockwise")
+                                Text(L10n.text("developer_tools.action.retry"))
+                            }
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(developerTools.isQueuedOrRunning(tool))
                     } else if status.canUpgrade {
                         Button(L10n.text("developer_tools.action.upgrade")) {
                             pendingToolUpgrade = tool
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .disabled(
-                            developerTools.activeInstallationToolID != nil
-                                && developerTools.activeInstallationToolID != tool.id
-                        )
+                        .disabled(developerTools.isQueuedOrRunning(tool))
                     } else if status.updateAvailability == .available && status.isUpdatePinned {
                         Button(L10n.text("developer_tools.action.pinned")) {}
                             .buttonStyle(SecondaryButtonStyle())
@@ -537,10 +841,7 @@ struct GitHubMarketplaceView: View {
                             pendingToolInstall = tool
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .disabled(
-                            developerTools.activeInstallationToolID != nil
-                                && developerTools.activeInstallationToolID != tool.id
-                        )
+                        .disabled(developerTools.isQueuedOrRunning(tool))
                     }
                 }
                 .padding(20)
@@ -633,7 +934,7 @@ struct GitHubMarketplaceView: View {
 
     private func updateStatusIcon(_ availability: DevelopmentToolUpdateAvailability) -> String {
         switch availability {
-        case .unknown: "clock"
+        case .unknown: "clock.arrow.circlepath"
         case .checking: "arrow.triangle.2.circlepath"
         case .current: "checkmark.circle.fill"
         case .available: "arrow.up.circle.fill"
@@ -664,21 +965,23 @@ struct GitHubMarketplaceView: View {
             HStack(spacing: 8) {
                 Image(gattoSymbol: developerToolStatusIcon(status))
                     .foregroundStyle(developerToolStatusColor(status, palette: palette))
-                Text(L10n.text(status.operation == .upgrade
-                    ? "developer_tools.state.upgrading"
-                    : "developer_tools.state.\(status.state.rawValue)"))
+                Text(L10n.text(status.state == .queued
+                    ? "developer_tools.state.queued"
+                    : status.operation == .upgrade
+                        ? "developer_tools.state.upgrading"
+                        : "developer_tools.state.\(status.state.rawValue)"))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(palette.ink)
                 Spacer()
             }
 
-            if status.state == .installing {
-                ProgressView()
-                    .progressViewStyle(.linear)
-                    .tint(palette.primary)
-            }
-
-            if let detail = status.detail, !detail.isEmpty {
+            if status.state == .installing, let phase = status.phase {
+                AgentInstallationProgressView(
+                    phase: phase,
+                    detail: status.detail ?? L10n.text("installer.phase.\(phase.rawValue)"),
+                    startedAt: status.operationStartedAt
+                )
+            } else if let detail = status.detail, !detail.isEmpty {
                 Text(detail)
                     .font(.system(size: 11.5))
                     .foregroundStyle(status.state == .failed ? palette.danger : palette.mutedInk)
@@ -710,6 +1013,7 @@ struct GitHubMarketplaceView: View {
     private func developerToolStatusIcon(_ status: DevelopmentToolStatus) -> String {
         switch status.state {
         case .idle: "arrow.down.app"
+        case .queued: "clock.arrow.circlepath"
         case .installing: "arrow.triangle.2.circlepath"
         case .installed: "checkmark.circle.fill"
         case .actionRequired: "exclamationmark.triangle.fill"
@@ -720,6 +1024,7 @@ struct GitHubMarketplaceView: View {
     private func developerToolStatusColor(_ status: DevelopmentToolStatus, palette: AppPalette) -> Color {
         switch status.state {
         case .installed: palette.success
+        case .queued: palette.warning
         case .actionRequired: palette.warning
         case .failed: palette.danger
         default: palette.primary
@@ -775,19 +1080,49 @@ struct GitHubMarketplaceView: View {
         _ application: MarketplaceApplication,
         palette: AppPalette
     ) -> some View {
-        HStack(alignment: .top, spacing: 16) {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 16) {
+                applicationIdentity(application, logoSize: 72, palette: palette)
+                    .frame(minWidth: 340, maxWidth: .infinity, alignment: .leading)
+                Spacer(minLength: 12)
+                VStack(alignment: .trailing, spacing: 8) {
+                    applicationActionButtons(application)
+                    applicationMetadata(application, compact: false, palette: palette)
+                }
+            }
+            .frame(minWidth: 600)
+
+            VStack(alignment: .leading, spacing: 12) {
+                applicationIdentity(application, logoSize: 58, palette: palette)
+                applicationActionButtons(application)
+                applicationMetadata(application, compact: true, palette: palette)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(palette.surface)
+    }
+
+    private func applicationIdentity(
+        _ application: MarketplaceApplication,
+        logoSize: CGFloat,
+        palette: AppPalette
+    ) -> some View {
+        HStack(alignment: .top, spacing: logoSize >= 70 ? 16 : 12) {
             MarketplaceLogoView(
                 url: model.selectedLogoURL,
                 language: application.repository.language,
-                size: 72
+                size: logoSize
             )
             VStack(alignment: .leading, spacing: 7) {
                 Text(application.repository.name)
-                    .font(.system(size: 23, weight: .bold))
+                    .font(.system(size: logoSize >= 70 ? 23 : 19, weight: .bold))
                     .foregroundStyle(palette.ink)
+                    .lineLimit(1)
                 Text(application.repository.fullName)
                     .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(palette.subtleInk)
+                    .lineLimit(1)
                 if let description = model.displayedDescription(for: application), !description.isEmpty {
                     Text(description)
                         .font(.system(size: 12.5))
@@ -805,22 +1140,70 @@ struct GitHubMarketplaceView: View {
                         .padding(.horizontal, 7)
                         .frame(height: 20)
                         .background(palette.primarySoft)
-                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
                 }
             }
-            Spacer(minLength: 12)
-            VStack(alignment: .trailing, spacing: 8) {
-                if let asset = preferredInstallAsset(for: application) {
-                    Button {
-                        pendingQuickInstallAsset = asset
-                    } label: {
-                        GattoLabel(
-                            L10n.text("marketplace.quick_install.action"),
-                            systemImage: "arrow.down.app"
-                        )
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
+        }
+    }
+
+    private func applicationActionButtons(_ application: MarketplaceApplication) -> some View {
+        HStack(spacing: 8) {
+            Button {
+                model.toggleStar()
+            } label: {
+                if model.isUpdatingStar {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 16, height: 16)
+                } else {
+                    GattoLabel(
+                        L10n.text(model.isStarred
+                            ? "marketplace.favorite.remove"
+                            : "marketplace.favorite.add"),
+                        systemImage: model.isStarred ? "star.fill" : "star"
+                    )
                 }
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(model.isUpdatingStar)
+
+            if let asset = preferredInstallAsset(for: application) {
+                Button {
+                    pendingQuickInstallAsset = asset
+                } label: {
+                    GattoLabel(
+                        L10n.text("marketplace.quick_install.action"),
+                        systemImage: "arrow.down.app"
+                    )
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func applicationMetadata(
+        _ application: MarketplaceApplication,
+        compact: Bool,
+        palette: AppPalette
+    ) -> some View {
+        if compact {
+            HStack(spacing: 12) {
+                GattoLabel(
+                    GitHubNumberFormatter.string(application.repository.stars),
+                    systemImage: "star"
+                )
+                GattoLabel(
+                    GitHubNumberFormatter.string(application.repository.forks),
+                    systemImage: "arrow.triangle.branch"
+                )
+                Text(application.repository.updatedAt.formatted(date: .abbreviated, time: .omitted))
+                    .font(.system(size: 9.5, weight: .medium))
+            }
+            .font(.system(size: 10.5, weight: .semibold))
+            .foregroundStyle(palette.subtleInk)
+        } else {
+            VStack(alignment: .trailing, spacing: 8) {
                 GattoLabel(
                     GitHubNumberFormatter.string(application.repository.stars),
                     systemImage: "star"
@@ -835,9 +1218,6 @@ struct GitHubMarketplaceView: View {
             .font(.system(size: 10.5, weight: .semibold))
             .foregroundStyle(palette.subtleInk)
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.surface)
     }
 
     @ViewBuilder
@@ -852,6 +1232,12 @@ struct GitHubMarketplaceView: View {
             let screenshotURLs = details.screenshots.filter { !unavailableScreenshotURLs.contains($0) }
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    if let error = model.starError {
+                        Text(error)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(palette.danger)
+                            .textSelection(.enabled)
+                    }
                     if let error = model.translationError {
                         Text(error)
                             .font(.system(size: 11.5))
@@ -1350,11 +1736,72 @@ private enum MarketplaceCatalogSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+private extension MarketplaceCollection {
+    var symbolName: String {
+        switch self {
+        case .discover: "square.grid.2x2"
+        case .favorites: "star"
+        case .installed: "checkmark.seal"
+        case .recent: "clock.arrow.circlepath"
+        }
+    }
+}
+
 private enum MarketplaceDetailTab: String, CaseIterable, Identifiable {
     case overview
     case releases
 
     var id: String { rawValue }
+}
+
+private struct DevelopmentToolLogoView: View {
+    let tool: DevelopmentTool
+    let size: CGFloat
+    let fallbackColor: Color
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Group {
+            if let logoName = tool.brandLogoName,
+               let image = DevelopmentToolLogoAssets.image(named: logoName) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .antialiased(true)
+                    .scaledToFit()
+                    .padding(colorScheme == .dark ? size * 0.08 : 0)
+                    .background(colorScheme == .dark ? Color.white.opacity(0.94) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous))
+            } else {
+                GattoIcon(symbol: tool.icon, size: size * 0.68)
+                    .foregroundStyle(fallbackColor)
+            }
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+private enum DevelopmentToolLogoAssets {
+    nonisolated(unsafe) private static let cache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 96
+        cache.totalCostLimit = 12 * 1_024 * 1_024
+        return cache
+    }()
+
+    static func image(named name: String) -> NSImage? {
+        let key = name as NSString
+        if let cached = cache.object(forKey: key) {
+            return cached
+        }
+        let bundle = AppResourceBundle.current
+        let url = bundle.url(forResource: name, withExtension: "png", subdirectory: "ToolLogos")
+            ?? bundle.url(forResource: name, withExtension: "png")
+        guard let url, let image = NSImage(contentsOf: url) else { return nil }
+        image.isTemplate = false
+        cache.setObject(image, forKey: key, cost: 256 * 256 * 4)
+        return image
+    }
 }
 
 private struct MarketplaceLogoView: View {
@@ -1382,7 +1829,7 @@ private struct MarketplaceLogoView: View {
                 fallback
             }
         }
-        .padding(7)
+        .padding(size >= 60 ? 7 : 4)
         .frame(width: size, height: size)
         .background(palette.raisedSurface)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
@@ -1425,6 +1872,8 @@ private struct MarketplaceLogoView: View {
 private struct MarketplaceApplicationRow: View {
     let application: MarketplaceApplication
     let selected: Bool
+    let isFavorite: Bool
+    let isInstalled: Bool
     let action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     @State private var hovering = false
@@ -1432,37 +1881,51 @@ private struct MarketplaceApplicationRow: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            HStack(spacing: 11) {
-                GitHubLanguageIcon(
+            HStack(alignment: .top, spacing: 11) {
+                MarketplaceLogoView(
+                    url: application.ownerAvatarURL,
                     language: application.repository.language,
-                    isPrivate: false,
-                    size: 40
+                    size: 44
                 )
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(application.repository.name)
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                    Text(application.repository.owner)
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(palette.subtleInk)
+                VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 8) {
+                        Text(application.repository.name)
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        if isInstalled {
+                            Image(gattoSymbol: "checkmark.seal.fill")
+                                .foregroundStyle(palette.success)
+                                .help(L10n.text("marketplace.collection.installed"))
+                        }
+                        if isFavorite {
+                            Image(gattoSymbol: "star.fill")
+                                .foregroundStyle(palette.warning)
+                                .help(L10n.text("marketplace.collection.favorites"))
+                        }
+                    }
+                    if let description = application.repository.description, !description.isEmpty {
+                        Text(description)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(palette.mutedInk)
+                            .lineLimit(2)
+                    }
+                    HStack(spacing: 7) {
+                        Text(application.repository.owner)
                         GattoLabel(
                             GitHubNumberFormatter.string(application.repository.stars),
                             systemImage: "star"
                         )
                         Text(application.latestRelease.tagName)
+                            .lineLimit(1)
                     }
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(palette.subtleInk)
                 }
-                Spacer(minLength: 4)
-                Image(gattoSymbol: "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(palette.subtleInk)
             }
-            .padding(.horizontal, 10)
-            .frame(height: 64)
+            .padding(10)
+            .frame(minHeight: 84)
             .background(selected ? palette.primarySoft : (hovering ? palette.raisedSurface : Color.clear))
             .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
             .contentShape(Rectangle())

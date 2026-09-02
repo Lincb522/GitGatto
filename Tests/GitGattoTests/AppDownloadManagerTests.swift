@@ -58,6 +58,7 @@ struct AppDownloadManagerTests {
             "installAfterDownload",
             "installationMethod",
             "installationPhase",
+            "installationStartedAt",
             "installationMessage",
             "agentResult"
         ] {
@@ -70,6 +71,7 @@ struct AppDownloadManagerTests {
         #expect(decoded.id == record.id)
         #expect(decoded.installAfterDownload == nil)
         #expect(decoded.installationMethod == nil)
+        #expect(decoded.installationStartedAt == nil)
         #expect(decoded.agentResult == nil)
     }
 

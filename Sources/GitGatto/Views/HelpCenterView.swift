@@ -2,7 +2,11 @@ import SwiftUI
 
 struct HelpCenterView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @State private var selectedTopic: HelpTopic = .gettingStarted
+    @AppStorage("help.selectedTopic") private var selectedTopicRaw = HelpTopic.gettingStarted.rawValue
+
+    private var selectedTopic: HelpTopic {
+        HelpTopic(rawValue: selectedTopicRaw) ?? .gettingStarted
+    }
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -27,7 +31,7 @@ struct HelpCenterView: View {
                                 topic: topic,
                                 isSelected: selectedTopic == topic
                             ) {
-                                selectedTopic = topic
+                                selectedTopicRaw = topic.rawValue
                             }
                         }
                     }
@@ -45,6 +49,12 @@ struct HelpCenterView: View {
         .frame(minWidth: 820, minHeight: 600)
         .background(Color.clear)
 #if DEBUG
+        .task {
+            if let topic = ProcessInfo.processInfo.environment["GITGATTO_HELP_TOPIC_PREVIEW"],
+               HelpTopic(rawValue: topic) != nil {
+                selectedTopicRaw = topic
+            }
+        }
         .background(
             DebugSnapshotCapture(
                 isReady: ProcessInfo.processInfo.environment["GITGATTO_HELP_PREVIEW"] == "1"
@@ -58,6 +68,8 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
     case gettingStarted
     case changes
     case sync
+    case goals
+    case regression
     case github
     case agent
     case translation
@@ -74,6 +86,8 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
         case .gettingStarted: "play.circle"
         case .changes: "square.stack.3d.up"
         case .sync: "arrow.up.arrow.down"
+        case .goals: "checkmark.seal"
+        case .regression: "record.circle"
         case .github: "shippingbox"
         case .agent: "sparkles"
         case .translation: "ai.translation"
@@ -122,6 +136,46 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
                     "help.sync.remote.1",
                     "help.sync.remote.2",
                     "help.sync.remote.3"
+                ])
+            ]
+        case .goals:
+            [
+                .init("help.goals.create.title", bullets: [
+                    "help.goals.create.1",
+                    "help.goals.create.2",
+                    "help.goals.create.3",
+                    "help.goals.create.4"
+                ]),
+                .init("help.goals.execute.title", bullets: [
+                    "help.goals.execute.1",
+                    "help.goals.execute.2",
+                    "help.goals.execute.3",
+                    "help.goals.execute.4"
+                ]),
+                .init("help.goals.release.title", bullets: [
+                    "help.goals.release.1",
+                    "help.goals.release.2",
+                    "help.goals.release.3"
+                ])
+            ]
+        case .regression:
+            [
+                .init("help.regression.start.title", bullets: [
+                    "help.regression.start.1",
+                    "help.regression.start.2",
+                    "help.regression.start.3",
+                    "help.regression.start.4"
+                ]),
+                .init("help.regression.verdict.title", bullets: [
+                    "help.regression.verdict.1",
+                    "help.regression.verdict.2",
+                    "help.regression.verdict.3"
+                ]),
+                .init("help.regression.fix.title", bullets: [
+                    "help.regression.fix.1",
+                    "help.regression.fix.2",
+                    "help.regression.fix.3",
+                    "help.regression.fix.4"
                 ])
             ]
         case .github:
@@ -210,6 +264,188 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
                     "help.troubleshooting.operations.5"
                 ])
             ]
+        }
+    }
+}
+
+enum WorkspaceQuickGuideKind {
+    case goals
+    case regression
+
+    var titleKey: String {
+        switch self {
+        case .goals: "goal.guide.title"
+        case .regression: "regression.guide.title"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .goals: "checkmark.seal"
+        case .regression: "record.circle"
+        }
+    }
+
+    var helpTopicRawValue: String {
+        switch self {
+        case .goals: HelpTopic.goals.rawValue
+        case .regression: HelpTopic.regression.rawValue
+        }
+    }
+
+    var featureKeys: [String] {
+        switch self {
+        case .goals:
+            (1...4).map { "goal.guide.feature.\($0)" }
+        case .regression:
+            (1...4).map { "regression.guide.feature.\($0)" }
+        }
+    }
+
+    var stepKeys: [String] {
+        switch self {
+        case .goals:
+            (1...4).map { "goal.guide.step.\($0)" }
+        case .regression:
+            (1...4).map { "regression.guide.step.\($0)" }
+        }
+    }
+
+    var noteKey: String {
+        switch self {
+        case .goals: "goal.guide.note"
+        case .regression: "regression.guide.note"
+        }
+    }
+}
+
+struct WorkspaceQuickGuideSheet: View {
+    let guide: WorkspaceQuickGuideKind
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        VStack(spacing: 0) {
+            HStack(spacing: 11) {
+                GattoIcon(symbol: guide.icon, size: 20)
+                    .foregroundStyle(palette.accent)
+                    .frame(width: 38, height: 38)
+                    .background(palette.accentSoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                Text(L10n.text(guide.titleKey))
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(palette.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(gattoSymbol: "xmark")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(palette.mutedInk)
+                .help(L10n.text("action.close"))
+            }
+            .padding(18)
+
+            Rectangle().fill(palette.divider).frame(height: 1)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    guideSection(
+                        titleKey: "workspace.guide.features",
+                        icon: "info.circle",
+                        keys: guide.featureKeys,
+                        numbered: false,
+                        palette: palette
+                    )
+                    guideSection(
+                        titleKey: "workspace.guide.steps",
+                        icon: "play.circle",
+                        keys: guide.stepKeys,
+                        numbered: true,
+                        palette: palette
+                    )
+                    HStack(alignment: .top, spacing: 9) {
+                        GattoIcon(symbol: "exclamationmark", size: 15)
+                            .foregroundStyle(palette.warning)
+                        Text(L10n.text(guide.noteKey))
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(palette.mutedInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(12)
+                    .background(palette.warning.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+                .padding(18)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Rectangle().fill(palette.divider).frame(height: 1)
+            HStack {
+                Spacer()
+                Button {
+                    UserDefaults.standard.set(guide.helpTopicRawValue, forKey: "help.selectedTopic")
+                    openWindow(id: "help")
+                    dismiss()
+                } label: {
+                    GattoLabel(L10n.text("workspace.guide.open_full"), systemImage: "doc.text")
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
+            .padding(14)
+            .layoutPriority(1)
+        }
+        .frame(width: 470, height: 540)
+        .background(palette.background)
+    }
+
+    private func guideSection(
+        titleKey: String,
+        icon: String,
+        keys: [String],
+        numbered: Bool,
+        palette: AppPalette
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                GattoIcon(symbol: icon, size: 15)
+                    .foregroundStyle(palette.accent)
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+            }
+            VStack(alignment: .leading, spacing: 11) {
+                ForEach(Array(keys.enumerated()), id: \.offset) { index, key in
+                    HStack(alignment: .top, spacing: 10) {
+                        if numbered {
+                            Text("\(index + 1)")
+                                .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                                .foregroundStyle(palette.accent)
+                                .frame(width: 20, height: 20)
+                                .background(palette.accentSoft)
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .fill(palette.accent)
+                                .frame(width: 5, height: 5)
+                                .padding(.top, 6)
+                                .frame(width: 20)
+                        }
+                        Text(L10n.text(key))
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(palette.mutedInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
         }
     }
 }

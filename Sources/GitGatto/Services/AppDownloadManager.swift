@@ -65,7 +65,7 @@ final class AppDownloadManager: ObservableObject {
             ("GitGatto-Tools.pkg", .installing, 1, 12_400_000)
         ]
         return samples.enumerated().map { index, sample in
-            AppDownloadRecord(
+            var record = AppDownloadRecord(
                 id: UUID(),
                 repositoryName: "Lincb522/GitGatto",
                 assetID: Int64(index + 1),
@@ -82,6 +82,13 @@ final class AppDownloadManager: ObservableObject {
                 createdAt: now.addingTimeInterval(Double(-index * 900)),
                 updatedAt: now
             )
+            if sample.1 == .installing {
+                record.installationMethod = .agent
+                record.installationPhase = .configuring
+                record.installationStartedAt = now.addingTimeInterval(-67)
+                record.installationMessage = L10n.text("installer.phase.configuring")
+            }
+            return record
         }
     }
 #endif
@@ -230,6 +237,7 @@ final class AppDownloadManager: ObservableObject {
             $0.state = .installing
             $0.installationMethod = .agent
             $0.installationPhase = .preparing
+            $0.installationStartedAt = Date()
             $0.installationMessage = L10n.text("installer.phase.preparing")
             $0.agentResult = nil
             $0.errorMessage = nil
@@ -250,6 +258,7 @@ final class AppDownloadManager: ObservableObject {
                 update(id) {
                     $0.state = .installed
                     $0.installationPhase = nil
+                    $0.installationStartedAt = nil
                     $0.installationMessage = nil
                     $0.agentResult = result.response
                     $0.updatedAt = Date()
@@ -258,6 +267,7 @@ final class AppDownloadManager: ObservableObject {
                 update(id) {
                     $0.state = .completed
                     $0.installationPhase = nil
+                    $0.installationStartedAt = nil
                     $0.installationMessage = nil
                     $0.errorMessage = L10n.text("installer.error.cancelled")
                     $0.updatedAt = Date()
@@ -266,6 +276,7 @@ final class AppDownloadManager: ObservableObject {
                 update(id) {
                     $0.state = .completed
                     $0.installationPhase = nil
+                    $0.installationStartedAt = nil
                     $0.installationMessage = nil
                     $0.errorMessage = error.localizedDescription
                     $0.updatedAt = Date()
@@ -284,6 +295,7 @@ final class AppDownloadManager: ObservableObject {
         update(id) {
             $0.state = .completed
             $0.installationPhase = nil
+            $0.installationStartedAt = nil
             $0.installationMessage = nil
             $0.errorMessage = L10n.text("installer.error.cancelled")
             $0.updatedAt = Date()
@@ -371,6 +383,7 @@ final class AppDownloadManager: ObservableObject {
                 saved[index].state = .completed
                 saved[index].errorMessage = L10n.text("installer.error.interrupted")
                 saved[index].installationPhase = nil
+                saved[index].installationStartedAt = nil
                 saved[index].installationMessage = nil
             } else {
                 saved[index].state = fileManager.fileExists(atPath: resumeURL(for: saved[index].id).path) ? .paused : .failed
@@ -386,6 +399,7 @@ final class AppDownloadManager: ObservableObject {
             $0.state = .installing
             $0.installationMethod = .native
             $0.installationPhase = .preparing
+            $0.installationStartedAt = Date()
             $0.installationMessage = L10n.text("installer.phase.preparing")
             $0.agentResult = nil
             $0.errorMessage = nil
@@ -402,6 +416,7 @@ final class AppDownloadManager: ObservableObject {
                 update(id) {
                     $0.state = .installed
                     $0.installationPhase = nil
+                    $0.installationStartedAt = nil
                     $0.installationMessage = nil
                     $0.updatedAt = Date()
                 }
@@ -409,6 +424,7 @@ final class AppDownloadManager: ObservableObject {
                 update(id) {
                     $0.state = .completed
                     $0.installationPhase = nil
+                    $0.installationStartedAt = nil
                     $0.installationMessage = nil
                     $0.errorMessage = L10n.text("installer.error.cancelled")
                 }
@@ -417,6 +433,7 @@ final class AppDownloadManager: ObservableObject {
                     update(id) {
                         $0.state = .completed
                         $0.installationPhase = nil
+                        $0.installationStartedAt = nil
                         $0.installationMessage = nil
                     }
                     installationTasks[id] = nil
@@ -428,6 +445,7 @@ final class AppDownloadManager: ObservableObject {
                 update(id) {
                     $0.state = .completed
                     $0.installationPhase = nil
+                    $0.installationStartedAt = nil
                     $0.installationMessage = nil
                     $0.errorMessage = error.localizedDescription
                     $0.updatedAt = Date()

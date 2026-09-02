@@ -1082,6 +1082,11 @@ private struct GeneralSettingsPage: View {
                 }
                 .labelsHidden()
                 .frame(width: 190)
+                .onChange(of: preferences.language) { _, language in
+                    L10n.activate(language)
+                    AppPreferencesStore.saveLanguage(language)
+                    MenuTitleLocalizer.localizeMainMenu()
+                }
             }
         }
 

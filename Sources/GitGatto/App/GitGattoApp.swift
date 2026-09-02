@@ -55,6 +55,7 @@ struct GitGattoApp: App {
                     .frame(width: 0, height: 0)
                 }
             }
+            .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 1416, height: 878)
         .windowStyle(.hiddenTitleBar)
@@ -70,6 +71,7 @@ struct GitGattoApp: App {
                     updateManager: updateManager
                 )
             }
+            .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 660, height: 361)
         .windowResizability(.contentSize)
@@ -77,30 +79,35 @@ struct GitGattoApp: App {
 
         Window(L10n.text("update.title"), id: "updates") {
             AppThemeRoot { UpdateCenterView(manager: updateManager) }
+                .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 760, height: 720)
         .windowStyle(.hiddenTitleBar)
 
         Window(L10n.text("release_history.title"), id: "release-history") {
             AppThemeRoot { ReleaseHistoryView(manager: updateManager) }
+                .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 900, height: 640)
         .windowStyle(.hiddenTitleBar)
 
         Window(L10n.text("legal.title"), id: "legal-documents") {
             AppThemeRoot { LegalDocumentsView(navigation: appNavigation) }
+                .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 920, height: 680)
         .windowStyle(.hiddenTitleBar)
 
         Window(L10n.text("help.title"), id: "help") {
             AppThemeRoot { HelpCenterView() }
+                .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 900, height: 650)
         .windowStyle(.hiddenTitleBar)
 
         Window(L10n.text("repository.scan.title"), id: "repository-scanner") {
             AppThemeRoot { RepositoryScannerView(model: model) }
+                .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 760, height: 620)
         .windowStyle(.hiddenTitleBar)
@@ -109,6 +116,7 @@ struct GitGattoApp: App {
             AppThemeRoot(resetsContentOnStyleChange: false) {
                 AppSettingsView(model: model, updateManager: updateManager)
             }
+            .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 900, height: 700)
         .windowStyle(.hiddenTitleBar)
@@ -132,6 +140,13 @@ struct GitGattoApp: App {
                     updateManager.startIfConfigured()
 #endif
                 }
+    }
+}
+
+private extension View {
+    func appLocalization(_ language: AppLanguage) -> some View {
+        environment(\.locale, language.locale)
+            .environment(\.layoutDirection, language.usesRightToLeftLayout ? .rightToLeft : .leftToRight)
     }
 }
 

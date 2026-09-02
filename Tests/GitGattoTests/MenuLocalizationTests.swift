@@ -22,4 +22,15 @@ struct MenuLocalizationTests {
         #expect(MenuTitleLocalizer.key(for: "窗口") == "menu.window")
         #expect(MenuTitleLocalizer.key(for: "帮助") == "menu.help")
     }
+
+    @Test("Recognizes menu titles from every shipped language")
+    func recognizesShippedLanguageTitles() {
+        for language in AppLanguage.allCases where language != .system {
+            let bundle = L10n.bundle(preferredLanguages: language.preferredLanguages)
+            for key in ["menu.file", "menu.edit", "menu.view", "menu.repository", "menu.window", "menu.help"] {
+                let title = bundle.localizedString(forKey: key, value: nil, table: nil)
+                #expect(MenuTitleLocalizer.key(for: title) == key)
+            }
+        }
+    }
 }

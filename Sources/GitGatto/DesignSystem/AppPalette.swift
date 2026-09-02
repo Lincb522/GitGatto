@@ -454,7 +454,7 @@ struct AppThemeBackdrop: View {
     }
 }
 
-private struct WindowThemeSurface: NSViewRepresentable {
+struct WindowThemeSurface: NSViewRepresentable {
     let theme: AppVisualTheme
     let colorScheme: ColorScheme
 
@@ -478,11 +478,19 @@ private struct WindowThemeSurface: NSViewRepresentable {
 
 private final class GlassEffectView: NSVisualEffectView {
     var usesGlass = true {
-        didSet { configureWindow() }
+        didSet {
+            guard oldValue != usesGlass else { return }
+            scheduleWindowConfiguration()
+        }
     }
     var opaqueBackgroundColor = NSColor.white {
-        didSet { configureWindow() }
+        didSet {
+            guard !oldValue.isEqual(opaqueBackgroundColor) else { return }
+            scheduleWindowConfiguration()
+        }
     }
+
+    private var isWindowConfigurationScheduled = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -497,18 +505,46 @@ private final class GlassEffectView: NSVisualEffectView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        configureWindow()
+        scheduleWindowConfiguration()
+    }
+
+    private func scheduleWindowConfiguration() {
+        guard window != nil, !isWindowConfigurationScheduled else { return }
+        isWindowConfigurationScheduled = true
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.isWindowConfigurationScheduled = false
+            self.configureWindow()
+        }
     }
 
     private func configureWindow() {
         guard let window else { return }
-        window.isOpaque = !usesGlass
-        window.backgroundColor = usesGlass ? .clear : opaqueBackgroundColor
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
-        window.titlebarSeparatorStyle = .none
-        window.styleMask.insert(.fullSizeContentView)
-        window.isMovableByWindowBackground = true
+        let shouldBeOpaque = !usesGlass
+        let backgroundColor = usesGlass ? NSColor.clear : opaqueBackgroundColor
+
+        if window.isOpaque != shouldBeOpaque {
+            window.isOpaque = shouldBeOpaque
+        }
+        if !window.backgroundColor.isEqual(backgroundColor) {
+            window.backgroundColor = backgroundColor
+        }
+        if !window.titlebarAppearsTransparent {
+            window.titlebarAppearsTransparent = true
+        }
+        if window.titleVisibility != .hidden {
+            window.titleVisibility = .hidden
+        }
+        if window.titlebarSeparatorStyle != .none {
+            window.titlebarSeparatorStyle = .none
+        }
+        if !window.styleMask.contains(.fullSizeContentView) {
+            window.styleMask.insert(.fullSizeContentView)
+        }
+        if !window.isMovableByWindowBackground {
+            window.isMovableByWindowBackground = true
+        }
     }
 }
 

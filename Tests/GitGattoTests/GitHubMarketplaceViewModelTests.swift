@@ -12,7 +12,11 @@ struct GitHubMarketplaceViewModelTests {
     @MainActor
     func findsExactApplicationProgressively() async throws {
         let fixture = try MarketplaceGitHubFixture()
-        let model = GitHubMarketplaceViewModel(github: fixture)
+        let model = GitHubMarketplaceViewModel(
+            github: fixture,
+            automaticTranslationTarget: nil,
+            automaticallyTranslates: false
+        )
         model.query = "GitGatto"
         model.search()
 
@@ -53,7 +57,11 @@ struct GitHubMarketplaceViewModelTests {
     @MainActor
     func continuesSearchBeyondFirstPage() async throws {
         let fixture = try PaginatedMarketplaceGitHubFixture()
-        let model = GitHubMarketplaceViewModel(github: fixture)
+        let model = GitHubMarketplaceViewModel(
+            github: fixture,
+            automaticTranslationTarget: nil,
+            automaticallyTranslates: false
+        )
         var resultPublicationCount = 0
         let observation = model.$applications.dropFirst().sink { _ in
             resultPublicationCount += 1
@@ -135,7 +143,7 @@ struct GitHubMarketplaceViewModelTests {
         #expect(translated.features == ["检查改动", "下载发行版"])
     }
 
-    @Test("Translates the app header, detailed introduction, features, and release notes together")
+    @Test("Detects the source language and translates the complete application automatically")
     @MainActor
     func translatesCompleteApplicationDetails() async throws {
         let fixture = try MarketplaceGitHubFixture()
@@ -146,7 +154,8 @@ struct GitHubMarketplaceViewModelTests {
         let model = GitHubMarketplaceViewModel(
             github: fixture,
             translationAI: translator,
-            translationStore: MarketplaceTranslationStore(directoryURL: directory)
+            translationStore: MarketplaceTranslationStore(directoryURL: directory),
+            automaticTranslationTarget: .simplifiedChinese
         )
         model.query = "GitGatto"
         model.search()
@@ -158,7 +167,6 @@ struct GitHubMarketplaceViewModelTests {
         for await isLoading in model.$isLoading.values {
             if !isLoading { break }
         }
-        model.translateSelected(to: .simplifiedChinese)
         for await target in model.$activeTranslationTarget.values {
             if target == .simplifiedChinese { break }
         }
@@ -170,6 +178,79 @@ struct GitHubMarketplaceViewModelTests {
         #expect(details.paragraphs == ["用于仓库管理、审查与协作的原生 Git 客户端。"])
         #expect(details.features == ["提交前检查改动"])
         #expect(model.displayedReleaseNotes(for: release) == "已翻译：Release notes")
+    }
+
+    @Test("Loads each discovery feed with its own GitHub ordering")
+    @MainActor
+    func loadsDiscoveryFeedsWithExpectedOrdering() async throws {
+        let fixture = try MarketplaceCollectionsGitHubFixture()
+        let model = GitHubMarketplaceViewModel(
+            github: fixture,
+            automaticTranslationTarget: nil,
+            automaticallyTranslates: false
+        )
+
+        model.loadIfNeeded()
+        for await isLoading in model.$isLoading.values where !isLoading { break }
+
+        var requests = await fixture.searchRequests
+        #expect(requests.last?.sort == .updated)
+        #expect(requests.last?.query.contains("pushed:>=") == true)
+
+        model.changeFeed(.popular)
+        for await isLoading in model.$isLoading.values where !isLoading { break }
+
+        requests = await fixture.searchRequests
+        #expect(requests.last?.sort == .stars)
+        #expect(requests.last?.query.contains("stars:>=100") == true)
+    }
+
+    @Test("Lists GitHub Stars and removes an app after unstar")
+    @MainActor
+    func managesFavoriteApplications() async throws {
+        let fixture = try MarketplaceCollectionsGitHubFixture()
+        let model = GitHubMarketplaceViewModel(
+            github: fixture,
+            automaticTranslationTarget: nil,
+            automaticallyTranslates: false
+        )
+
+        model.changeCollection(.favorites)
+        for await isLoading in model.$isLoading.values where !isLoading { break }
+        for await isStarred in model.$isStarred.values where isStarred { break }
+
+        #expect(model.applications.map(\.repository.fullName) == ["example/Alpha"])
+        model.toggleStar()
+        for await applications in model.$applications.values where applications.isEmpty { break }
+
+        #expect(await fixture.starChanges == [false])
+        #expect(model.selectedApplication == nil)
+    }
+
+    @Test("Restores installed and recently viewed application collections")
+    @MainActor
+    func restoresLocalApplicationCollections() async throws {
+        let fixture = try MarketplaceCollectionsGitHubFixture()
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoMarketplaceHistory-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let history = MarketplaceHistoryStore(directoryURL: directory)
+        await history.record("example/Alpha")
+        await history.record("example/Beta")
+        let model = GitHubMarketplaceViewModel(
+            github: fixture,
+            historyStore: history,
+            automaticTranslationTarget: nil,
+            automaticallyTranslates: false
+        )
+
+        model.changeCollection(.recent)
+        for await isLoading in model.$isLoading.values where !isLoading { break }
+        #expect(model.applications.map(\.repository.fullName) == ["example/Beta", "example/Alpha"])
+
+        model.changeCollection(.installed, installedRepositoryNames: ["example/Alpha"])
+        for await isLoading in model.$isLoading.values where !isLoading { break }
+        #expect(model.applications.map(\.repository.fullName) == ["example/Alpha"])
     }
 
 }
@@ -395,6 +476,118 @@ private actor PaginatedMarketplaceGitHubFixture: MarketplaceGitHubServing {
     func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository] {
         requestedPages.append(page)
         return pages[page] ?? []
+    }
+
+    func marketplaceRelease(for repository: GitHubRepository) async throws -> GitHubRelease? {
+        release
+    }
+
+    func releases(for repository: GitHubRepository) async throws -> [GitHubRelease] {
+        [release]
+    }
+
+    func readme(for repository: GitHubRepository) async throws -> GitHubReadmeDocument? {
+        nil
+    }
+}
+
+private actor MarketplaceCollectionsGitHubFixture: MarketplaceGitHubServing {
+    struct SearchRequest: Sendable {
+        let query: String
+        let page: Int
+        let sort: GitHubRepositorySearchSort
+    }
+
+    private let repositories: [String: GitHubRepository]
+    private let release: GitHubRelease
+    private(set) var searchRequests: [SearchRequest] = []
+    private(set) var starChanges: [Bool] = []
+
+    init() throws {
+        let alphaURL = try #require(URL(string: "https://github.com/example/Alpha"))
+        let betaURL = try #require(URL(string: "https://github.com/example/Beta"))
+        let alpha = GitHubRepository(
+            fullName: "example/Alpha",
+            name: "Alpha",
+            owner: "example",
+            description: "Alpha app",
+            webURL: alphaURL,
+            stars: 120,
+            forks: 2,
+            openIssues: 0,
+            language: "Swift",
+            updatedAt: Date(),
+            isPrivate: false,
+            defaultBranch: "main"
+        )
+        let beta = GitHubRepository(
+            fullName: "example/Beta",
+            name: "Beta",
+            owner: "example",
+            description: "Beta app",
+            webURL: betaURL,
+            stars: 80,
+            forks: 1,
+            openIssues: 0,
+            language: "Swift",
+            updatedAt: Date(),
+            isPrivate: false,
+            defaultBranch: "main"
+        )
+        repositories = [alpha.fullName: alpha, beta.fullName: beta]
+        let assetURL = try #require(URL(string: "https://github.com/example/Alpha/releases/download/v1/Alpha.dmg"))
+        release = GitHubRelease(
+            id: 1,
+            tagName: "v1",
+            name: "Version 1",
+            body: "",
+            publishedAt: Date(),
+            webURL: alphaURL,
+            isPrerelease: false,
+            assets: [
+                GitHubReleaseAsset(
+                    id: 1,
+                    name: "Alpha.dmg",
+                    size: 1,
+                    downloadCount: 0,
+                    contentType: "application/x-apple-diskimage",
+                    downloadURL: assetURL,
+                    createdAt: Date()
+                )
+            ]
+        )
+    }
+
+    func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository] {
+        Array(repositories.values)
+    }
+
+    func searchRepositories(
+        query: String,
+        page: Int,
+        sort: GitHubRepositorySearchSort
+    ) async throws -> [GitHubRepository] {
+        searchRequests.append(SearchRequest(query: query, page: page, sort: sort))
+        return Array(repositories.values)
+    }
+
+    func repository(named fullName: String) async throws -> GitHubRepository {
+        guard let repository = repositories[fullName] else {
+            throw GitHubServiceError.resourceNotFound
+        }
+        return repository
+    }
+
+    func starredRepositories(page: Int) async throws -> [GitHubRepository] {
+        repositories["example/Alpha"].map { [$0] } ?? []
+    }
+
+    func isStarred(_ repository: GitHubRepository) async throws -> Bool {
+        repository.fullName == "example/Alpha" && starChanges.last != false
+    }
+
+    func setStarred(_ starred: Bool, repository: GitHubRepository) async throws {
+        starChanges.append(starred)
     }
 
     func marketplaceRelease(for repository: GitHubRepository) async throws -> GitHubRelease? {

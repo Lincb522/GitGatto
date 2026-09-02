@@ -5,6 +5,8 @@ import Foundation
 final class GitHubMarketplaceViewModel: ObservableObject {
     @Published var query = ""
     @Published var platform: MarketplacePlatform = .macOS
+    @Published var collection: MarketplaceCollection = .discover
+    @Published var feed: MarketplaceFeed = .hotReleases
     @Published private(set) var applications: [MarketplaceApplication] = []
     @Published var selectedApplication: MarketplaceApplication?
     @Published private(set) var releases: [GitHubRelease] = []
@@ -26,33 +28,49 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published private(set) var translationError: String?
     @Published private(set) var error: String?
     @Published private(set) var hasCompletedInitialLoad = false
+    @Published private(set) var isShowingSearchResults = false
+    @Published private(set) var isStarred = false
+    @Published private(set) var isUpdatingStar = false
+    @Published private(set) var starError: String?
 
     private let github: any MarketplaceGitHubServing
     private let searchAI: any CodexServing
     private let translationAI: any CodexServing
     private let translationStore: any MarketplaceTranslationStoring
+    private let historyStore: any MarketplaceHistoryStoring
+    private let automaticTranslationTarget: CodexTranslationTarget?
+    private let automaticallyTranslates: Bool
     private var searchTask: Task<Void, Never>?
     private var loadMoreTask: Task<Void, Never>?
     private var detailTask: Task<Void, Never>?
     private var detailsTask: Task<Void, Never>?
     private var translationTask: Task<Void, Never>?
     private var translationCacheTask: Task<Void, Never>?
+    private var starTask: Task<Void, Never>?
     private var activeSearchID: UUID?
     private var hasLoaded = false
     private var searchInput = ""
     private var resolvedSearchQueries: [String] = []
+    private var activeSearchSort: GitHubRepositorySearchSort = .stars
+    private var installedRepositoryNames: [String] = []
     private var loadedReleaseApplicationID: String?
 
     init(
         github: any MarketplaceGitHubServing = GitHubService(),
         searchAI: any CodexServing = CodexService(lane: .search),
         translationAI: any CodexServing = CodexService(lane: .translation),
-        translationStore: any MarketplaceTranslationStoring = MarketplaceTranslationStore()
+        translationStore: any MarketplaceTranslationStoring = MarketplaceTranslationStore(),
+        historyStore: any MarketplaceHistoryStoring = MarketplaceHistoryStore(),
+        automaticTranslationTarget: CodexTranslationTarget? = nil,
+        automaticallyTranslates: Bool = true
     ) {
         self.github = github
         self.searchAI = searchAI
         self.translationAI = translationAI
         self.translationStore = translationStore
+        self.historyStore = historyStore
+        self.automaticTranslationTarget = automaticTranslationTarget
+        self.automaticallyTranslates = automaticallyTranslates
     }
 
     var availableTranslationTargets: [CodexTranslationTarget] {
@@ -74,37 +92,18 @@ final class GitHubMarketplaceViewModel: ObservableObject {
 
     func search(defaultQuery: Bool = false) {
         let input = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if defaultQuery, input.isEmpty, collection != .discover {
+            reloadCurrentCollection()
+            return
+        }
         let request = defaultQuery && input.isEmpty ? defaultSearchQuery : input
         guard !request.isEmpty else { return }
-        searchTask?.cancel()
-        loadMoreTask?.cancel()
-        detailTask?.cancel()
-        detailsTask?.cancel()
-        translationTask?.cancel()
-        translationCacheTask?.cancel()
-        isLoading = true
-        isLoadingMore = false
-        canLoadMore = false
-        isTranslating = false
-        error = nil
-        translationError = nil
-        translations = [:]
-        activeTranslationTarget = nil
-        applications = []
-        selectedApplication = nil
-        releases = []
-        selectedReleaseID = nil
-        selectedDetails = nil
-        selectedLogoURL = nil
-        isLoadingDetails = false
-        isLoadingReleases = false
-        detailError = nil
-        searchPage = 0
-        searchInput = ""
-        resolvedSearchQueries = []
+        prepareForNewResults()
+        isShowingSearchResults = !defaultQuery
 
         let github = self.github
         let platform = self.platform
+        let sort = defaultQuery ? feed.searchSort : .stars
         let searchID = UUID()
         activeSearchID = searchID
         searchTask = Task {
@@ -136,12 +135,16 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 let batch = try await Self.searchRepositories(
                     queries: queries,
                     page: 1,
+                    sort: sort,
                     github: github
                 )
-                let candidates = GitHubFuzzySearch.sorted(batch.repositories, query: request)
+                let candidates = defaultQuery
+                    ? batch.repositories
+                    : GitHubFuzzySearch.sorted(batch.repositories, query: request)
                 guard !Task.isCancelled, activeSearchID == searchID else { return }
                 searchInput = request
                 resolvedSearchQueries = queries
+                activeSearchSort = sort
                 searchPage = 1
                 canLoadMore = batch.hasMore
                 await loadMarketplaceApplications(
@@ -159,6 +162,10 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     }
 
     func loadMore() {
+        if collection == .favorites, !isShowingSearchResults {
+            loadMoreFavorites()
+            return
+        }
         guard canLoadMore,
               !isLoading,
               !isLoadingMore,
@@ -166,6 +173,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         let nextPage = searchPage + 1
         let request = searchInput
         let queries = resolvedSearchQueries
+        let sort = activeSearchSort
         let platform = platform
         let github = github
         loadMoreTask?.cancel()
@@ -179,6 +187,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 let batch = try await Self.searchRepositories(
                     queries: queries,
                     page: nextPage,
+                    sort: sort,
                     github: github
                 )
                 let candidates = GitHubFuzzySearch.sorted(batch.repositories, query: request)
@@ -203,7 +212,11 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         detailsTask?.cancel()
         translationTask?.cancel()
         translationCacheTask?.cancel()
+        starTask?.cancel()
         isTranslating = false
+        isStarred = false
+        isUpdatingStar = false
+        starError = nil
         selectedApplication = application
         releases = application.map { [$0.latestRelease] } ?? []
         selectedReleaseID = application?.latestRelease.id
@@ -220,6 +233,29 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         detailError = nil
         guard let application else { return }
         let github = self.github
+        let historyStore = self.historyStore
+        Task {
+            await historyStore.record(application.repository.fullName)
+        }
+        isUpdatingStar = true
+        starTask = Task {
+            defer {
+                if selectedApplication?.id == application.id {
+                    isUpdatingStar = false
+                    starTask = nil
+                }
+            }
+            do {
+                let starred = try await github.isStarred(application.repository)
+                guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
+                isStarred = starred
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedApplication?.id == application.id else { return }
+                starError = L10n.format("marketplace.error.favorite", error.localizedDescription)
+            }
+        }
         detailsTask = Task {
             defer {
                 if selectedApplication?.id == application.id {
@@ -439,18 +475,277 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         return releases.first ?? selectedApplication?.latestRelease
     }
 
+    func toggleStar() {
+        guard let application = selectedApplication, !isUpdatingStar else { return }
+        let target = !isStarred
+        let github = self.github
+        starTask?.cancel()
+        isUpdatingStar = true
+        starError = nil
+        starTask = Task {
+            defer {
+                if selectedApplication?.id == application.id {
+                    isUpdatingStar = false
+                    starTask = nil
+                }
+            }
+            do {
+                try await github.setStarred(target, repository: application.repository)
+                guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
+                isStarred = target
+                if !target, collection == .favorites, !isShowingSearchResults {
+                    applications.removeAll { $0.id == application.id }
+                    select(applications.first)
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedApplication?.id == application.id else { return }
+                starError = L10n.format("marketplace.error.favorite", error.localizedDescription)
+            }
+        }
+    }
+
+    func changeFeed(_ newValue: MarketplaceFeed) {
+        guard feed != newValue || collection != .discover || isShowingSearchResults else { return }
+        feed = newValue
+        collection = .discover
+        query = ""
+        search(defaultQuery: true)
+    }
+
+    func changeCollection(
+        _ newValue: MarketplaceCollection,
+        installedRepositoryNames: [String] = []
+    ) {
+        let normalizedInstalled = Self.uniqueRepositoryNames(installedRepositoryNames)
+        guard collection != newValue
+                || (newValue == .installed && normalizedInstalled != self.installedRepositoryNames)
+                || isShowingSearchResults else { return }
+        collection = newValue
+        self.installedRepositoryNames = normalizedInstalled
+        query = ""
+        isShowingSearchResults = false
+        reloadCurrentCollection()
+    }
+
     func changePlatform(_ newValue: MarketplacePlatform) {
         guard platform != newValue else { return }
         platform = newValue
-        search(defaultQuery: query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            reloadCurrentCollection()
+        } else {
+            search()
+        }
+    }
+
+    func refreshAutomaticTranslation(to target: CodexTranslationTarget) {
+        guard let application = selectedApplication,
+              let release = selectedRelease,
+              let details = selectedDetails else { return }
+        restoreTranslations(
+            for: application,
+            release: release,
+            details: details,
+            preferredTarget: target
+        )
+    }
+
+    private func reloadCurrentCollection() {
+        switch collection {
+        case .discover:
+            search(defaultQuery: true)
+        case .favorites:
+            loadFavorites()
+        case .installed:
+            loadNamedRepositories(installedRepositoryNames)
+        case .recent:
+            loadRecentRepositories()
+        }
+    }
+
+    private func loadFavorites() {
+        prepareForNewResults()
+        isShowingSearchResults = false
+        let github = self.github
+        let platform = self.platform
+        let searchID = UUID()
+        activeSearchID = searchID
+        searchTask = Task {
+            defer {
+                hasCompletedInitialLoad = true
+                if activeSearchID == searchID {
+                    isLoading = false
+                    searchTask = nil
+                    activeSearchID = nil
+                }
+            }
+            do {
+                let repositories = try await github.starredRepositories(page: 1)
+                guard !Task.isCancelled, activeSearchID == searchID else { return }
+                searchPage = 1
+                canLoadMore = repositories.count == 30
+                await loadMarketplaceApplications(
+                    from: repositories,
+                    platform: platform,
+                    replacingCurrentResults: true
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                guard activeSearchID == searchID else { return }
+                self.error = L10n.format("marketplace.error.search", error.localizedDescription)
+            }
+        }
+    }
+
+    private func loadMoreFavorites() {
+        guard canLoadMore, !isLoading, !isLoadingMore else { return }
+        let nextPage = searchPage + 1
+        let github = self.github
+        let platform = self.platform
+        loadMoreTask?.cancel()
+        loadMoreTask = Task {
+            isLoadingMore = true
+            defer {
+                isLoadingMore = false
+                loadMoreTask = nil
+            }
+            do {
+                let repositories = try await github.starredRepositories(page: nextPage)
+                guard !Task.isCancelled,
+                      collection == .favorites,
+                      !isShowingSearchResults,
+                      self.platform == platform else { return }
+                searchPage = nextPage
+                canLoadMore = repositories.count == 30
+                await loadMarketplaceApplications(
+                    from: repositories,
+                    platform: platform,
+                    replacingCurrentResults: false
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                self.error = L10n.format("marketplace.error.search", error.localizedDescription)
+            }
+        }
+    }
+
+    private func loadRecentRepositories() {
+        prepareForNewResults()
+        isShowingSearchResults = false
+        let historyStore = self.historyStore
+        let searchID = UUID()
+        activeSearchID = searchID
+        searchTask = Task {
+            let names = await historyStore.repositoryNames()
+            await loadNamedRepositories(names, searchID: searchID)
+        }
+    }
+
+    private func loadNamedRepositories(_ names: [String]) {
+        prepareForNewResults()
+        isShowingSearchResults = false
+        let searchID = UUID()
+        activeSearchID = searchID
+        searchTask = Task {
+            await loadNamedRepositories(names, searchID: searchID)
+        }
+    }
+
+    private func loadNamedRepositories(_ names: [String], searchID: UUID) async {
+        defer {
+            hasCompletedInitialLoad = true
+            if activeSearchID == searchID {
+                isLoading = false
+                searchTask = nil
+                activeSearchID = nil
+            }
+        }
+        let names = Self.uniqueRepositoryNames(names)
+        guard !names.isEmpty, activeSearchID == searchID else { return }
+        let github = self.github
+        let platform = self.platform
+        let results = await withTaskGroup(of: (Int, GitHubRepository?).self) { group in
+            for (index, name) in names.enumerated() {
+                group.addTask {
+                    (index, try? await github.repository(named: name))
+                }
+            }
+            var repositories: [(Int, GitHubRepository)] = []
+            for await (index, repository) in group {
+                if let repository { repositories.append((index, repository)) }
+            }
+            return repositories.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+        guard !Task.isCancelled, activeSearchID == searchID else { return }
+        canLoadMore = false
+        await loadMarketplaceApplications(
+            from: results,
+            platform: platform,
+            replacingCurrentResults: true
+        )
+    }
+
+    private func prepareForNewResults() {
+        searchTask?.cancel()
+        loadMoreTask?.cancel()
+        detailTask?.cancel()
+        detailsTask?.cancel()
+        translationTask?.cancel()
+        translationCacheTask?.cancel()
+        starTask?.cancel()
+        activeSearchID = nil
+        isLoading = true
+        isLoadingMore = false
+        canLoadMore = false
+        isUsingAgent = false
+        isTranslating = false
+        isUpdatingStar = false
+        isStarred = false
+        error = nil
+        detailError = nil
+        translationError = nil
+        starError = nil
+        translations = [:]
+        activeTranslationTarget = nil
+        applications = []
+        selectedApplication = nil
+        releases = []
+        selectedReleaseID = nil
+        selectedDetails = nil
+        selectedLogoURL = nil
+        isLoadingDetails = false
+        isLoadingReleases = false
+        searchPage = 0
+        searchInput = ""
+        resolvedSearchQueries = []
+        activeSearchSort = .stars
+        loadedReleaseApplicationID = nil
+    }
+
+    private static func uniqueRepositoryNames(_ names: [String]) -> [String] {
+        var seen = Set<String>()
+        return names.filter { seen.insert($0.lowercased()).inserted }
     }
 
     private func restoreTranslations(
         for application: MarketplaceApplication,
         release: GitHubRelease,
-        details: MarketplaceApplicationDetails
+        details: MarketplaceApplicationDetails,
+        preferredTarget targetOverride: CodexTranslationTarget? = nil
     ) {
         translationCacheTask?.cancel()
+        let preferredTarget = targetOverride
+            ?? automaticTranslationTarget
+            ?? AppPreferencesStore.load().language.translationTarget
+        let automaticTarget = automaticallyTranslates ? AutomaticTranslationPolicy.target(
+            for: ([application.repository.description, release.body]
+                .compactMap { $0 } + details.paragraphs + details.features)
+                .joined(separator: "\n"),
+            preferredTarget: preferredTarget
+        ) : nil
         let store = translationStore
         translationCacheTask = Task {
             var cached: [CodexTranslationTarget: MarketplaceTranslationDocument] = [:]
@@ -471,6 +766,12 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                   selectedReleaseID == release.id else { return }
             translations = cached
             translationCacheTask = nil
+            guard let automaticTarget else { return }
+            if cached[automaticTarget] != nil {
+                activeTranslationTarget = automaticTarget
+            } else {
+                translateSelected(to: automaticTarget)
+            }
         }
     }
 
@@ -488,6 +789,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     private static func searchRepositories(
         queries: [String],
         page: Int,
+        sort: GitHubRepositorySearchSort,
         github: any MarketplaceGitHubServing
     ) async throws -> RepositorySearchBatch {
         let results = await withTaskGroup(of: RepositoryQueryResult.self) { group in
@@ -496,7 +798,11 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                     do {
                         return RepositoryQueryResult(
                             index: index,
-                            repositories: try await github.searchRepositories(query: query, page: page),
+                            repositories: try await github.searchRepositories(
+                                query: query,
+                                page: page,
+                                sort: sort
+                            ),
                             errorDescription: nil
                         )
                     } catch {
@@ -610,13 +916,28 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     }
 
     private var defaultSearchQuery: String {
-        switch platform {
+        let platformQuery = switch platform {
         case .all: "topic:desktop-app"
         case .macOS: "topic:macos-app"
         case .windows: "topic:windows-app"
         case .linux: "topic:linux-app"
         case .iOS: "topic:ios-app"
         case .android: "topic:android-app"
+        }
+        let calendar = Calendar(identifier: .gregorian)
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        switch feed {
+        case .hotReleases:
+            let date = calendar.date(byAdding: .day, value: -45, to: Date()) ?? Date()
+            return "\(platformQuery) pushed:>=\(formatter.string(from: date))"
+        case .trending:
+            let date = calendar.date(byAdding: .day, value: -365, to: Date()) ?? Date()
+            return "\(platformQuery) created:>=\(formatter.string(from: date)) stars:>=25"
+        case .popular:
+            return "\(platformQuery) stars:>=100"
         }
     }
 
@@ -670,6 +991,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         selectedApplication = application
         releases = [release]
         selectedLogoURL = appIconURL
+        isStarred = true
         let previewScreenshots: [URL]
         if ProcessInfo.processInfo.environment["GITGATTO_MARKETPLACE_CAROUSEL_PREVIEW"] == "1" {
             let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
@@ -697,4 +1019,63 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         isLoadingDetails = false
     }
 #endif
+}
+
+private extension MarketplaceFeed {
+    var searchSort: GitHubRepositorySearchSort {
+        switch self {
+        case .hotReleases: .updated
+        case .trending, .popular: .stars
+        }
+    }
+}
+
+protocol MarketplaceHistoryStoring: Sendable {
+    func repositoryNames() async -> [String]
+    func record(_ repositoryName: String) async
+}
+
+actor MarketplaceHistoryStore: MarketplaceHistoryStoring {
+    private let fileURL: URL
+    private let maximumCount: Int
+
+    init(directoryURL: URL? = nil, maximumCount: Int = 40) {
+        let directory = directoryURL
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("GitGatto/Marketplace", isDirectory: true)
+        fileURL = directory.appendingPathComponent("recent-repositories.json")
+        self.maximumCount = maximumCount
+    }
+
+    func repositoryNames() async -> [String] {
+        load()
+    }
+
+    func record(_ repositoryName: String) async {
+        let normalized = repositoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return }
+        var names = load().filter {
+            $0.caseInsensitiveCompare(normalized) != .orderedSame
+        }
+        names.insert(normalized, at: 0)
+        if names.count > maximumCount {
+            names.removeSubrange(maximumCount...)
+        }
+        do {
+            try FileManager.default.createDirectory(
+                at: fileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            let data = try JSONEncoder().encode(names)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            return
+        }
+    }
+
+    private func load() -> [String] {
+        guard let data = try? Data(contentsOf: fileURL),
+              let names = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+        return Array(names.prefix(maximumCount))
+    }
 }

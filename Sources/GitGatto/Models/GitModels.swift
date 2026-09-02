@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 import SwiftUI
 
 enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable, Codable {
@@ -9,6 +10,7 @@ enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable, Codable {
     case branches
     case worktrees
     case diagnostics
+    case regression
     case github
     case marketplace
     case goals
@@ -485,14 +487,48 @@ enum CodexQuickAction: String, CaseIterable, Identifiable, Sendable {
 
 enum CodexTranslationTarget: String, CaseIterable, Identifiable, Sendable, Hashable, Codable {
     case simplifiedChinese
+    case traditionalChinese
     case english
+    case japanese
+    case korean
+    case french
+    case german
+    case spanish
+    case portuguese
+    case russian
+    case arabic
 
     var id: String { rawValue }
 
     var promptName: String {
         switch self {
         case .simplifiedChinese: "Simplified Chinese"
+        case .traditionalChinese: "Traditional Chinese"
         case .english: "English"
+        case .japanese: "Japanese"
+        case .korean: "Korean"
+        case .french: "French"
+        case .german: "German"
+        case .spanish: "Spanish"
+        case .portuguese: "Brazilian Portuguese"
+        case .russian: "Russian"
+        case .arabic: "Arabic"
+        }
+    }
+
+    var naturalLanguage: NLLanguage {
+        switch self {
+        case .simplifiedChinese: .simplifiedChinese
+        case .traditionalChinese: .traditionalChinese
+        case .english: .english
+        case .japanese: .japanese
+        case .korean: .korean
+        case .french: .french
+        case .german: .german
+        case .spanish: .spanish
+        case .portuguese: .portuguese
+        case .russian: .russian
+        case .arabic: .arabic
         }
     }
 }
@@ -844,6 +880,28 @@ enum MarketplacePlatform: String, CaseIterable, Identifiable, Sendable, Codable 
         case .android: ["apk", "aab"].contains(asset.fileExtension)
         }
     }
+}
+
+enum MarketplaceCollection: String, CaseIterable, Identifiable, Sendable, Codable {
+    case discover
+    case favorites
+    case installed
+    case recent
+
+    var id: String { rawValue }
+}
+
+enum MarketplaceFeed: String, CaseIterable, Identifiable, Sendable, Codable {
+    case hotReleases
+    case trending
+    case popular
+
+    var id: String { rawValue }
+}
+
+enum GitHubRepositorySearchSort: String, Sendable {
+    case stars
+    case updated
 }
 
 struct MarketplaceApplication: Identifiable, Sendable, Hashable {

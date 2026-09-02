@@ -12,9 +12,14 @@ protocol DevelopmentToolProbing: Sendable {
 
 actor DevelopmentToolProbe: DevelopmentToolProbing {
     private let fileManager: FileManager
+    private let additionalSearchDirectories: [String]
 
-    init(fileManager: FileManager = .default) {
+    init(
+        fileManager: FileManager = .default,
+        additionalSearchDirectories: [String] = []
+    ) {
         self.fileManager = fileManager
+        self.additionalSearchDirectories = additionalSearchDirectories
     }
 
     func probe(_ tool: DevelopmentTool) async -> DevelopmentToolProbeResult {
@@ -35,7 +40,7 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
 
     private func locate(_ commands: [String], homebrewFormula: String?) -> URL? {
         let home = fileManager.homeDirectoryForCurrentUser
-        var directories = [
+        var directories = additionalSearchDirectories + [
             "/opt/homebrew/bin",
             "/opt/homebrew/sbin",
             "/usr/local/bin",
@@ -94,6 +99,13 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
                 let text = String(decoding: stdout.isEmpty ? stderr : stdout, as: UTF8.self)
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 let firstLine = text.split(whereSeparator: \Character.isNewline).first.map(String.init)
+                guard let firstLine, !firstLine.isEmpty else {
+                    return DevelopmentToolProbeResult(
+                        isInstalled: false,
+                        version: nil,
+                        executableURL: executableURL
+                    )
+                }
                 return DevelopmentToolProbeResult(
                     isInstalled: true,
                     version: firstLine,

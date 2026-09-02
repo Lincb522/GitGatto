@@ -81,6 +81,8 @@ struct WorkspaceView: View {
                 && model.fileVersionDocument != nil
         case .diagnostics:
             model.activeDiagnosticOperation == nil && model.repositoryDiagnostics != nil
+        case .regression:
+            model.activeRegressionInvestigationID == nil
         default:
             true
         }
@@ -262,6 +264,9 @@ struct WorkspaceView: View {
             DownloadCenterView(manager: downloads)
             .frame(minWidth: 620, minHeight: 520)
         }
+        .onChange(of: model.appPreferences.language) { _, language in
+            marketplaceModel.refreshAutomaticTranslation(to: language.translationTarget)
+        }
 #if DEBUG
         .background(
             DebugSnapshotCapture(
@@ -310,6 +315,8 @@ struct WorkspaceView: View {
                 WorktreeWorkspaceView(model: model)
             case .diagnostics:
                 RepositoryDiagnosticsView(model: model)
+            case .regression:
+                RegressionInvestigationWorkspaceView(model: model)
             case .goals:
                 ProjectGoalsWorkspaceView(model: model)
             case .github:
@@ -469,6 +476,7 @@ private struct ConsoleSectionRail: View {
         case .branches: model.snapshot?.branches.count
         case .worktrees: model.worktrees.count
         case .diagnostics: model.repositoryDiagnostics?.attentionCount
+        case .regression: model.activeRegressionInvestigationCount
         case .codex: nil
         }
     }
@@ -485,6 +493,7 @@ private struct ConsoleSectionRail: View {
         case .branches: "arrow.triangle.branch"
         case .worktrees: "rectangle.split.2x1"
         case .diagnostics: "stethoscope"
+        case .regression: "record.circle"
         case .codex: "sparkles"
         }
     }

@@ -1030,11 +1030,10 @@ struct GitHubWorkspaceView: View {
                     accessibilityLabel: L10n.text("codex.action.translate"),
                     isDisabled: !model.canTranslateGitHubReadme
                 ) {
-                    Button(L10n.text("codex.translate.simplifiedChinese")) {
-                        model.translateGitHubReadme(to: .simplifiedChinese)
-                    }
-                    Button(L10n.text("codex.translate.english")) {
-                        model.translateGitHubReadme(to: .english)
+                    ForEach(CodexTranslationTarget.allCases) { target in
+                        Button(L10n.text("codex.translate.\(target.rawValue)")) {
+                            model.translateGitHubReadme(to: target)
+                        }
                     }
                 } label: {
                     DocumentTranslationActionLabel(

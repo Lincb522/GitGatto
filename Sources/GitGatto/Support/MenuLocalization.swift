@@ -21,11 +21,7 @@ final class GitGattoAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func localizeMainMenu() {
-        guard let menu = NSApp.mainMenu else { return }
-        for item in menu.items {
-            guard let key = MenuTitleLocalizer.key(for: item.title) else { continue }
-            item.title = L10n.text(key)
-        }
+        MenuTitleLocalizer.localizeMainMenu()
     }
 
 #if DEBUG
@@ -74,22 +70,51 @@ enum WindowCloseRuntime {
 }
 
 enum MenuTitleLocalizer {
-    private static let recognizedTitles: [String: String] = [
+    private static let baseTitles: [String: String] = [
         "File": "menu.file",
         "文件": "menu.file",
+        "檔案": "menu.file",
+        "Ablage": "menu.file",
         "Edit": "menu.edit",
         "编辑": "menu.edit",
+        "編輯": "menu.edit",
         "View": "menu.view",
         "显示": "menu.view",
+        "顯示": "menu.view",
         "Repository": "menu.repository",
         "仓库": "menu.repository",
+        "倉庫": "menu.repository",
         "Window": "menu.window",
         "窗口": "menu.window",
+        "視窗": "menu.window",
         "Help": "menu.help",
-        "帮助": "menu.help"
+        "帮助": "menu.help",
+        "輔助說明": "menu.help"
     ]
+
+    private static let recognizedTitles: [String: String] = {
+        let keys = ["menu.file", "menu.edit", "menu.view", "menu.repository", "menu.window", "menu.help"]
+        var titles = baseTitles
+        for language in AppLanguage.allCases where language != .system {
+            let bundle = L10n.bundle(preferredLanguages: language.preferredLanguages)
+            for key in keys {
+                let title = bundle.localizedString(forKey: key, value: nil, table: nil)
+                if title != key { titles[title] = key }
+            }
+        }
+        return titles
+    }()
 
     static func key(for title: String) -> String? {
         recognizedTitles[title]
+    }
+
+    @MainActor
+    static func localizeMainMenu() {
+        guard let menu = NSApp.mainMenu else { return }
+        for item in menu.items {
+            guard let key = key(for: item.title) else { continue }
+            item.title = L10n.text(key)
+        }
     }
 }

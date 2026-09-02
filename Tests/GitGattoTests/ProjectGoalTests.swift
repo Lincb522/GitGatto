@@ -269,6 +269,380 @@ struct ProjectGoalTests {
         #expect(abs(value.updatedAt.timeIntervalSince(goal.updatedAt)) < 0.001)
     }
 
+    @Test("Inspects the complete local release contract")
+    func inspectsReleaseContract() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoReleaseInspectorTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent("scripts", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: root.appendingPathComponent(".github/workflows", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        let installedApplication = root.appendingPathComponent("Installed/GitGatto Preview.app", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: installedApplication.appendingPathComponent("Contents", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        let installedInfo: [String: Any] = [
+            "CFBundleShortVersionString": "0.19.0",
+            "CFBundleVersion": "19000"
+        ]
+        let installedInfoData = try PropertyListSerialization.data(
+            fromPropertyList: installedInfo,
+            format: .xml,
+            options: 0
+        )
+        try installedInfoData.write(
+            to: installedApplication.appendingPathComponent("Contents/Info.plist")
+        )
+        try "# GitGatto\n\nA factual repository guide with enough content for release validation.\n".write(
+            to: root.appendingPathComponent("README.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "# GitGatto\n\n用于发布校验的完整中文项目说明，内容长度满足文档检查要求。\n".write(
+            to: root.appendingPathComponent("README.zh-Hans.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try """
+        settings:
+          base:
+            MARKETING_VERSION: 0.19.0
+            CURRENT_PROJECT_VERSION: 19000
+        """.write(
+            to: root.appendingPathComponent("project.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try """
+        VERSION="${GITGATTO_VERSION:-0.19.0}"
+        BUILD_NUMBER="${GITGATTO_BUILD_NUMBER:-19000}"
+        """.write(
+            to: root.appendingPathComponent("scripts/package-macos.sh"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "## 0.19.0\n\n- Complete release target.\n".write(
+            to: root.appendingPathComponent("CHANGELOG.md"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try """
+        on:
+          push:
+            tags: ["v*"]
+        jobs:
+          release:
+            steps:
+              - run: ./scripts/package-macos.sh --output GitGatto.dmg
+              - run: ./scripts/generate-appcast.sh > appcast.xml
+              - uses: softprops/action-gh-release@v2
+        """.write(
+            to: root.appendingPathComponent(".github/workflows/release.yml"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        var goal = makeReleaseGoal(repositoryPath: root.path)
+        goal.installedApplicationPath = installedApplication.path
+        let state = ProjectReleaseInspector.inspect(goal: goal)
+
+        #expect(state.readmePath == "README.md")
+        #expect(state.translationPaths == ["README.zh-Hans.md"])
+        #expect(Set(state.versionEvidence.map(\.value)) == ["0.19.0"])
+        #expect(Set(state.buildEvidence.map(\.value)) == ["19000"])
+        #expect(state.changelogPath == "CHANGELOG.md")
+        #expect(state.releasePipelinePath == ".github/workflows/release.yml")
+        #expect(state.installedApplication?.path == installedApplication.path)
+        #expect(state.installedApplication?.version == "0.19.0")
+        #expect(state.installedApplication?.buildNumber == "19000")
+        #expect(ProjectReleaseInspector.suggestedVersion(at: root) == "0.19.1")
+        #expect(ProjectReleaseInspector.buildNumber(for: "0.19.1") == "19001")
+    }
+
+    @Test("Reconciles a complete release through tag, GitHub assets, update feed, and local app")
+    func reconcilesCompleteRelease() throws {
+        var goal = makeReleaseGoal(targetHeadSHA: "target")
+        let local = releaseLocalState()
+
+        goal = ProjectGoalReconciler.reconcile(
+            goal,
+            with: releaseObservation(local: local, tag: .absent, remote: .absent)
+        )
+        #expect(goal.nextStep == .releaseTag)
+        #expect(goal.status == .ready)
+        #expect(goal.step(.version)?.evidence == "0.19.0 (19000)")
+
+        goal = ProjectGoalReconciler.reconcile(
+            goal,
+            with: releaseObservation(local: local, tag: .published, remote: .waiting(runNumber: 142))
+        )
+        #expect(goal.status == .waiting)
+        #expect(goal.step(.githubRelease)?.evidence == "#142")
+
+        let release = try releaseFixture()
+        goal = ProjectGoalReconciler.reconcile(
+            goal,
+            with: releaseObservation(
+                local: local,
+                tag: .published,
+                remote: .published(release, updateFeedVerified: true)
+            )
+        )
+        #expect(goal.releaseAssetNames == ["GitGatto-0.19.0.dmg", "appcast.xml"])
+        #expect(goal.step(.dmg)?.status == .completed)
+        #expect(goal.step(.updateFeed)?.status == .completed)
+        #expect(goal.nextStep == .localApplication)
+
+        let installed = ProjectGoalReleaseLocalState(
+            readmePath: local.readmePath,
+            translationPaths: local.translationPaths,
+            versionEvidence: local.versionEvidence,
+            buildEvidence: local.buildEvidence,
+            changelogPath: local.changelogPath,
+            releasePipelinePath: local.releasePipelinePath,
+            installedApplication: ProjectGoalInstalledApplication(
+                path: "/Applications/GitGatto.app",
+                version: "0.19.0",
+                buildNumber: "19000"
+            )
+        )
+        goal = ProjectGoalReconciler.reconcile(
+            goal,
+            with: releaseObservation(
+                local: installed,
+                tag: .published,
+                remote: .published(release, updateFeedVerified: true)
+            )
+        )
+        #expect(goal.status == .completed)
+        #expect(goal.progress == 1)
+        #expect(goal.installedApplicationPath == "/Applications/GitGatto.app")
+    }
+
+    @Test("Validates the release update feed against version, build, and DMG")
+    func validatesReleaseUpdateFeed() {
+        let valid = Data("""
+        <item><sparkle:shortVersionString>0.19.0</sparkle:shortVersionString>
+        <sparkle:version>19000</sparkle:version>
+        <enclosure url="https://example.invalid/GitGatto-0.19.0.dmg" /></item>
+        """.utf8)
+        let wrongBuild = Data("""
+        <item><sparkle:shortVersionString>0.19.0</sparkle:shortVersionString>
+        <sparkle:version>18999</sparkle:version>
+        <enclosure url="https://example.invalid/GitGatto-0.19.0.dmg" /></item>
+        """.utf8)
+
+        #expect(ProjectGoalReleaseService.verifyUpdateFeed(valid, version: "0.19.0", buildNumber: "19000"))
+        #expect(!ProjectGoalReleaseService.verifyUpdateFeed(wrongBuild, version: "0.19.0", buildNumber: "19000"))
+    }
+
+    @Test("Builds a deterministic custom goal from Agent JSON")
+    func buildsCustomGoalCandidate() throws {
+        let response = """
+        ```json
+        {
+          "title": "Verify the pull request",
+          "commit_message": "feat: verify custom delivery",
+          "release_version": null,
+          "release_build_number": null,
+          "conditions": ["pullRequest", "actions"]
+        }
+        ```
+        """
+
+        let candidate = try ProjectGoalPlanner.candidate(
+            from: response,
+            intent: "创建 PR 并等待 Actions 通过，但不要合并"
+        )
+
+        #expect(candidate.title == "Verify the pull request")
+        #expect(candidate.stepKinds == [
+            .stageChanges, .commit, .push, .pullRequest, .review, .actions
+        ])
+        #expect(candidate.releaseVersion == nil)
+        #expect(candidate.commitMessage == "feat: verify custom delivery")
+    }
+
+    @Test("Normalizes a custom release target and derives its build number")
+    func buildsCustomReleaseCandidate() throws {
+        let response = """
+        {
+          "title": "Publish 0.19.0",
+          "commit_message": "release: v0.19.0",
+          "release_version": "0.19.0",
+          "release_build_number": null,
+          "conditions": ["updateFeed"]
+        }
+        """
+
+        let candidate = try ProjectGoalPlanner.candidate(
+            from: response,
+            intent: "发布 0.19.0 并验证更新源，不替换本机应用"
+        )
+
+        #expect(candidate.stepKinds == Array(ProjectGoalPlanner.releaseSteps.prefix(through: 11)))
+        #expect(candidate.releaseVersion == "0.19.0")
+        #expect(candidate.releaseBuildNumber == "19000")
+        #expect(!candidate.stepKinds.contains(.localApplication))
+    }
+
+    @Test("Rejects unknown, duplicate, and mixed custom goal conditions")
+    func rejectsInvalidCustomConditions() {
+        #expect(throws: ProjectGoalPlanningError.unsupportedCondition("deployProduction")) {
+            _ = try ProjectGoalPlanner.candidate(
+                from: """
+                {"title":"Deploy","commit_message":"feat: deploy","release_version":null,
+                "release_build_number":null,"conditions":["deployProduction"]}
+                """,
+                intent: "部署"
+            )
+        }
+        #expect(throws: ProjectGoalPlanningError.duplicateCondition("push")) {
+            _ = try ProjectGoalPlanner.candidate(
+                from: """
+                {"title":"Push","commit_message":"feat: push","release_version":null,
+                "release_build_number":null,"conditions":["push","push"]}
+                """,
+                intent: "推送"
+            )
+        }
+        #expect(throws: ProjectGoalPlanningError.incompatibleConditions) {
+            _ = try ProjectGoalPlanner.normalizedSteps(for: [.releaseTag, .merge])
+        }
+    }
+
+    @Test("Persists a custom goal title, intent, and condition order")
+    func persistsCustomGoalContract() throws {
+        let source = ProjectGoal(
+            kind: .custom,
+            repositoryPath: "/tmp/GitGatto",
+            repositoryName: "GitGatto",
+            branchName: "main",
+            baselineHeadSHA: "base",
+            title: "Push verified changes",
+            intent: "提交并推送当前修改",
+            commitMessage: "feat: deliver custom goal",
+            stepKinds: [.stageChanges, .commit, .push]
+        )
+
+        let restored = try JSONDecoder().decode(
+            ProjectGoal.self,
+            from: JSONEncoder().encode(source)
+        )
+
+        #expect(restored.kind == .custom)
+        #expect(restored.title == source.title)
+        #expect(restored.intent == source.intent)
+        #expect(restored.steps.map(\.kind) == [.stageChanges, .commit, .push])
+    }
+
+    @Test("Reconciles a custom pull request goal without merging")
+    func reconcilesCustomPullRequestGoal() {
+        var goal = ProjectGoal(
+            kind: .custom,
+            repositoryPath: "/tmp/GitGatto",
+            repositoryName: "GitGatto",
+            branchName: "feature/custom-goal",
+            baselineHeadSHA: "base",
+            title: "Verify pull request",
+            intent: "创建 PR 并等待检查，但不要合并",
+            commitMessage: "feat: verify custom goal",
+            stepKinds: [.stageChanges, .commit, .push, .pullRequest, .review, .actions],
+            targetHeadSHA: "target"
+        )
+        let pullRequest = GitHubDeliveryPullRequest(
+            number: 28,
+            title: "Verify custom goal",
+            webURL: URL(string: "https://github.com/Lincb522/GitGatto/pull/28")!,
+            headBranch: "feature/custom-goal",
+            headSHA: "target",
+            baseBranch: "main",
+            isDraft: false,
+            isMerged: false,
+            isClosed: false,
+            mergeable: true,
+            reviewDecision: "APPROVED",
+            approvalCount: 1,
+            changesRequestedCount: 0,
+            requestedReviewerCount: 0,
+            unresolvedThreadCount: 0,
+            hasUnscannedReviewThreads: false
+        )
+
+        goal = ProjectGoalReconciler.reconcile(
+            goal,
+            with: observation(
+                branch: "feature/custom-goal",
+                head: "target",
+                published: true,
+                actions: .passed(runNumbers: [28], artifacts: [], artifactsVerified: true),
+                pullRequest: .open(pullRequest),
+                baseBranch: "main"
+            )
+        )
+
+        #expect(goal.status == .completed)
+        #expect(goal.step(.actions)?.status == .completed)
+        #expect(goal.step(.merge) == nil)
+    }
+
+    @Test("Completes a custom release after update feed verification without local installation")
+    func reconcilesCustomReleaseWithoutInstall() throws {
+        var goal = ProjectGoal(
+            kind: .custom,
+            repositoryPath: "/tmp/GitGatto",
+            repositoryName: "GitGatto",
+            branchName: "main",
+            baselineHeadSHA: "base",
+            title: "Publish 0.19.0",
+            intent: "发布 0.19.0，但不要替换本机应用",
+            commitMessage: "release: v0.19.0",
+            stepKinds: Array(ProjectGoalPlanner.releaseSteps.prefix(through: 11)),
+            targetHeadSHA: "target",
+            releaseVersion: "0.19.0",
+            releaseBuildNumber: "19000",
+            releaseTag: "v0.19.0",
+            releaseApplicationName: "GitGatto"
+        )
+
+        goal = ProjectGoalReconciler.reconcile(
+            goal,
+            with: releaseObservation(
+                local: releaseLocalState(),
+                tag: .published,
+                remote: .published(try releaseFixture(), updateFeedVerified: true)
+            )
+        )
+
+        #expect(goal.status == .completed)
+        #expect(goal.step(.updateFeed)?.status == .completed)
+        #expect(goal.step(.localApplication) == nil)
+    }
+
+    @Test("Keeps custom goal planning read-only and confirmation-based")
+    func customGoalPromptContract() {
+        let prompt = ProjectGoalPlanner.prompt(
+            intent: "提交并推送",
+            context: ProjectGoalPlanningContext(
+                repositoryName: "GitGatto",
+                branchName: "main",
+                changeCount: 2,
+                suggestedReleaseVersion: "0.19.0",
+                suggestedReleaseBuildNumber: "19000"
+            )
+        )
+
+        #expect(prompt.contains("This is planning only"))
+        #expect(prompt.contains("Do not edit files"))
+        #expect(prompt.contains("GitGatto will add its prerequisites deterministically"))
+    }
+
     @Test("Runs a delivery goal through a real repository and remote")
     func deliversRealRepository() async throws {
         let root = FileManager.default.temporaryDirectory
@@ -415,6 +789,107 @@ struct ProjectGoalTests {
             baselineHeadSHA: "base",
             commitMessage: "feat: deliver GitHub goal",
             targetHeadSHA: "target"
+        )
+    }
+
+    private func makeReleaseGoal(
+        repositoryPath: String = "/tmp/GitGatto",
+        targetHeadSHA: String? = nil
+    ) -> ProjectGoal {
+        ProjectGoal(
+            kind: .completeRelease,
+            repositoryPath: repositoryPath,
+            repositoryName: "GitGatto",
+            branchName: "main",
+            baselineHeadSHA: "base",
+            commitMessage: "release: v0.19.0",
+            targetHeadSHA: targetHeadSHA,
+            releaseVersion: "0.19.0",
+            releaseBuildNumber: "19000",
+            releaseTag: "v0.19.0",
+            releaseApplicationName: "GitGatto"
+        )
+    }
+
+    private func releaseLocalState() -> ProjectGoalReleaseLocalState {
+        ProjectGoalReleaseLocalState(
+            readmePath: "README.md",
+            translationPaths: ["README.en.md"],
+            versionEvidence: [
+                ProjectGoalReleaseValueEvidence(path: "project.yml", value: "0.19.0"),
+                ProjectGoalReleaseValueEvidence(path: "scripts/package-macos.sh", value: "0.19.0")
+            ],
+            buildEvidence: [
+                ProjectGoalReleaseValueEvidence(path: "project.yml", value: "19000"),
+                ProjectGoalReleaseValueEvidence(path: "scripts/package-macos.sh", value: "19000")
+            ],
+            changelogPath: "CHANGELOG.md",
+            releasePipelinePath: ".github/workflows/release.yml",
+            installedApplication: ProjectGoalInstalledApplication(
+                path: "/Applications/GitGatto.app",
+                version: "0.18.10",
+                buildNumber: "18010"
+            )
+        )
+    }
+
+    private func releaseObservation(
+        local: ProjectGoalReleaseLocalState,
+        tag: ProjectGoalReleaseTagState,
+        remote: ProjectGoalReleaseRemoteState
+    ) -> ProjectGoalObservation {
+        ProjectGoalObservation(
+            branchName: "main",
+            upstreamName: "origin/main",
+            aheadCount: 0,
+            changes: [],
+            headSHA: "target",
+            targetPublished: true,
+            remoteIdentity: RepositoryRemoteIdentity(
+                remoteName: "origin",
+                host: "github.com",
+                fullName: "Lincb522/GitGatto"
+            ),
+            actions: .unavailable,
+            pullRequest: .unavailable,
+            baseBranch: nil,
+            release: ProjectGoalReleaseState(local: local, tag: tag, remote: remote)
+        )
+    }
+
+    private func releaseFixture() throws -> GitHubRelease {
+        let webURL = try #require(URL(string: "https://github.com/Lincb522/GitGatto/releases/tag/v0.19.0"))
+        let downloadRoot = try #require(
+            URL(string: "https://github.com/Lincb522/GitGatto/releases/download/v0.19.0/")
+        )
+        return GitHubRelease(
+            id: 19,
+            tagName: "v0.19.0",
+            name: "GitGatto 0.19.0",
+            body: "Release notes",
+            publishedAt: Date(),
+            webURL: webURL,
+            isPrerelease: false,
+            assets: [
+                GitHubReleaseAsset(
+                    id: 1,
+                    name: "GitGatto-0.19.0.dmg",
+                    size: 4096,
+                    downloadCount: 0,
+                    contentType: "application/x-apple-diskimage",
+                    downloadURL: downloadRoot.appendingPathComponent("GitGatto-0.19.0.dmg"),
+                    createdAt: Date()
+                ),
+                GitHubReleaseAsset(
+                    id: 2,
+                    name: "appcast.xml",
+                    size: 512,
+                    downloadCount: 0,
+                    contentType: "application/xml",
+                    downloadURL: downloadRoot.appendingPathComponent("appcast.xml"),
+                    createdAt: Date()
+                )
+            ]
         )
     }
 

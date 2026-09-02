@@ -1,11 +1,21 @@
 import Foundation
 
-enum AgentInstallPhase: String, Sendable, Codable {
+enum AgentInstallPhase: String, CaseIterable, Sendable, Codable, Hashable {
     case preparing
     case inspecting
     case installing
     case configuring
     case verifying
+
+    var stepNumber: Int {
+        switch self {
+        case .preparing: 1
+        case .inspecting: 2
+        case .installing: 3
+        case .configuring: 4
+        case .verifying: 5
+        }
+    }
 }
 
 struct AgentInstallProgress: Sendable, Equatable {
@@ -44,6 +54,8 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
     let versionArguments: [String]
 
     var summaryKey: String { "developer_tools.tool.\(id).summary" }
+
+    var brandLogoName: String? { Self.brandLogoNames[id] }
 
     static let catalog: [DevelopmentTool] = [
         DevelopmentTool(
@@ -115,6 +127,23 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             icon: "history.file",
             formula: "tig",
             executable: "tig"
+        ),
+        brew(
+            id: "pre-commit",
+            name: "pre-commit",
+            category: .essentials,
+            icon: "checkmark.seal",
+            formula: "pre-commit",
+            executable: "pre-commit"
+        ),
+        brew(
+            id: "act",
+            name: "act",
+            category: .essentials,
+            icon: "play.circle",
+            formula: "act",
+            executable: "act",
+            packageHint: "Homebrew formula: act. Install only; do not execute repository workflows automatically."
         ),
 
         brew(
@@ -214,6 +243,22 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             executable: "zig",
             versionArguments: ["version"]
         ),
+        brew(
+            id: "bun",
+            name: "Bun",
+            category: .runtimes,
+            icon: "chevron.left.forwardslash.chevron.right",
+            formula: "bun",
+            executable: "bun"
+        ),
+        brew(
+            id: "uv",
+            name: "uv",
+            category: .runtimes,
+            icon: "arrow.triangle.2.circlepath",
+            formula: "uv",
+            executable: "uv"
+        ),
 
         brew(
             id: "cmake",
@@ -297,6 +342,78 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             formula: "protobuf",
             executable: "protoc"
         ),
+        brew(
+            id: "just",
+            name: "just",
+            category: .build,
+            icon: "terminal",
+            formula: "just",
+            executable: "just"
+        ),
+        brew(
+            id: "make",
+            name: "GNU Make",
+            category: .build,
+            icon: "hammer",
+            formula: "make",
+            executable: "gmake"
+        ),
+        brew(
+            id: "pkg-config",
+            name: "pkg-config",
+            category: .build,
+            icon: "square.stack.3d.up",
+            formula: "pkgconf",
+            executable: "pkg-config"
+        ),
+        brew(
+            id: "ccache",
+            name: "ccache",
+            category: .build,
+            icon: "hammer",
+            formula: "ccache",
+            executable: "ccache"
+        ),
+        brew(
+            id: "sccache",
+            name: "sccache",
+            category: .build,
+            icon: "hammer",
+            formula: "sccache",
+            executable: "sccache"
+        ),
+        brew(
+            id: "bazelisk",
+            name: "Bazelisk",
+            category: .build,
+            icon: "hammer",
+            formula: "bazelisk",
+            executable: "bazelisk"
+        ),
+        brew(
+            id: "vcpkg",
+            name: "vcpkg",
+            category: .build,
+            icon: "shippingbox",
+            formula: "vcpkg",
+            executable: "vcpkg"
+        ),
+        brew(
+            id: "autoconf",
+            name: "Autoconf",
+            category: .build,
+            icon: "gearshape",
+            formula: "autoconf",
+            executable: "autoconf"
+        ),
+        brew(
+            id: "automake",
+            name: "Automake",
+            category: .build,
+            icon: "gearshape",
+            formula: "automake",
+            executable: "automake"
+        ),
 
         brew(
             id: "docker",
@@ -372,6 +489,46 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             versionArguments: ["version", "--short"],
             packageHint: "Homebrew formula: minikube. Install only; do not create or start a cluster automatically."
         ),
+        brew(
+            id: "k9s",
+            name: "K9s",
+            category: .containers,
+            icon: "terminal",
+            formula: "k9s",
+            executable: "k9s"
+        ),
+        brew(
+            id: "stern",
+            name: "stern",
+            category: .containers,
+            icon: "doc.text",
+            formula: "stern",
+            executable: "stern"
+        ),
+        brew(
+            id: "dive",
+            name: "dive",
+            category: .containers,
+            icon: "shippingbox",
+            formula: "dive",
+            executable: "dive"
+        ),
+        brew(
+            id: "skopeo",
+            name: "Skopeo",
+            category: .containers,
+            icon: "shippingbox",
+            formula: "skopeo",
+            executable: "skopeo"
+        ),
+        brew(
+            id: "buildkit",
+            name: "BuildKit",
+            category: .containers,
+            icon: "hammer",
+            formula: "buildkit",
+            executable: "buildctl"
+        ),
 
         brew(
             id: "awscli",
@@ -417,6 +574,33 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             executable: "pulumi",
             versionArguments: ["version"],
             packageHint: "Homebrew formula: pulumi. Do not sign in, select a stack, or change cloud resources."
+        ),
+        brew(
+            id: "flyctl",
+            name: "Fly.io CLI",
+            category: .cloud,
+            icon: "globe",
+            formula: "flyctl",
+            executable: "flyctl",
+            packageHint: "Homebrew formula: flyctl. Do not sign in, deploy, or change remote applications."
+        ),
+        brew(
+            id: "cloudflared",
+            name: "cloudflared",
+            category: .cloud,
+            icon: "globe",
+            formula: "cloudflared",
+            executable: "cloudflared",
+            packageHint: "Homebrew formula: cloudflared. Do not authenticate or create a tunnel."
+        ),
+        brew(
+            id: "doctl",
+            name: "DigitalOcean CLI",
+            category: .cloud,
+            icon: "globe",
+            formula: "doctl",
+            executable: "doctl",
+            packageHint: "Homebrew formula: doctl. Do not sign in or change cloud resources."
         ),
 
         brew(
@@ -594,7 +778,183 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
             icon: "globe",
             formula: "httpie",
             executable: "http"
+        ),
+        brew(
+            id: "wget",
+            name: "Wget",
+            category: .utilities,
+            icon: "arrow.down.circle",
+            formula: "wget",
+            executable: "wget"
+        ),
+        brew(
+            id: "aria2",
+            name: "aria2",
+            category: .utilities,
+            icon: "arrow.down.circle",
+            formula: "aria2",
+            executable: "aria2c"
+        ),
+        brew(
+            id: "rclone",
+            name: "Rclone",
+            category: .utilities,
+            icon: "arrow.triangle.2.circlepath",
+            formula: "rclone",
+            executable: "rclone",
+            packageHint: "Homebrew formula: rclone. Install only; do not read or create remote storage configuration."
+        ),
+        brew(
+            id: "watchman",
+            name: "Watchman",
+            category: .utilities,
+            icon: "eye",
+            formula: "watchman",
+            executable: "watchman"
+        ),
+        brew(
+            id: "direnv",
+            name: "direnv",
+            category: .utilities,
+            icon: "terminal",
+            formula: "direnv",
+            executable: "direnv",
+            packageHint: "Homebrew formula: direnv. Configure its shell hook for the current user without approving any project .envrc file."
+        ),
+        brew(
+            id: "zoxide",
+            name: "zoxide",
+            category: .utilities,
+            icon: "folder",
+            formula: "zoxide",
+            executable: "zoxide"
+        ),
+        brew(
+            id: "dust",
+            name: "dust",
+            category: .utilities,
+            icon: "internaldrive",
+            formula: "dust",
+            executable: "dust"
+        ),
+        brew(
+            id: "duf",
+            name: "duf",
+            category: .utilities,
+            icon: "internaldrive",
+            formula: "duf",
+            executable: "duf"
+        ),
+        brew(
+            id: "btop",
+            name: "btop",
+            category: .utilities,
+            icon: "terminal",
+            formula: "btop",
+            executable: "btop"
+        ),
+        brew(
+            id: "hyperfine",
+            name: "hyperfine",
+            category: .utilities,
+            icon: "clock.arrow.circlepath",
+            formula: "hyperfine",
+            executable: "hyperfine"
+        ),
+        brew(
+            id: "tokei",
+            name: "Tokei",
+            category: .utilities,
+            icon: "code",
+            formula: "tokei",
+            executable: "tokei"
+        ),
+        brew(
+            id: "watchexec",
+            name: "watchexec",
+            category: .utilities,
+            icon: "eye",
+            formula: "watchexec",
+            executable: "watchexec"
+        ),
+        brew(
+            id: "entr",
+            name: "entr",
+            category: .utilities,
+            icon: "eye",
+            formula: "entr",
+            executable: "entr"
+        ),
+        brew(
+            id: "xh",
+            name: "xh",
+            category: .utilities,
+            icon: "globe",
+            formula: "xh",
+            executable: "xh"
+        ),
+        brew(
+            id: "glow",
+            name: "Glow",
+            category: .utilities,
+            icon: "doc.text",
+            formula: "glow",
+            executable: "glow"
         )
+    ]
+
+    private static let brandLogoNames: [String: String] = [
+        "xcode-command-line-tools": "xcode",
+        "homebrew": "homebrew",
+        "git": "git",
+        "github-cli": "github",
+        "git-lfs": "gitlfs",
+        "node": "nodedotjs",
+        "python": "python",
+        "go": "go",
+        "rust": "rust",
+        "openjdk": "openjdk",
+        "ruby": "ruby",
+        "php": "php",
+        "deno": "deno",
+        "lua": "lua",
+        "kotlin": "kotlin",
+        "zig": "zig",
+        "bun": "bun",
+        "uv": "uv",
+        "cmake": "cmake",
+        "cocoapods": "cocoapods",
+        "swiftlint": "swift",
+        "swiftformat": "swift",
+        "gradle": "gradle",
+        "maven": "apachemaven",
+        "bazelisk": "bazel",
+        "docker": "docker",
+        "docker-compose": "docker",
+        "podman": "podman",
+        "kubernetes-cli": "kubernetes",
+        "helm": "helm",
+        "opentofu": "opentofu",
+        "ansible": "ansible",
+        "pulumi": "pulumi",
+        "flyctl": "flydotio",
+        "cloudflared": "cloudflare",
+        "doctl": "digitalocean",
+        "postgresql": "postgresql",
+        "mysql": "mysql",
+        "redis": "redis",
+        "sqlite": "sqlite",
+        "mariadb": "mariadb",
+        "duckdb": "duckdb",
+        "mongosh": "mongodb",
+        "pnpm": "pnpm",
+        "ffmpeg": "ffmpeg",
+        "tmux": "tmux",
+        "httpie": "httpie",
+        "pre-commit": "precommit",
+        "act": "githubactions",
+        "watchman": "meta",
+        "rclone": "rclone"
     ]
 
     private static func brew(
@@ -622,6 +982,7 @@ struct DevelopmentTool: Identifiable, Sendable, Hashable {
 
 enum DevelopmentToolInstallState: String, Sendable, Equatable {
     case idle
+    case queued
     case installing
     case installed
     case actionRequired
@@ -631,6 +992,34 @@ enum DevelopmentToolInstallState: String, Sendable, Equatable {
 enum DevelopmentToolOperation: String, Sendable, Equatable {
     case install
     case upgrade
+}
+
+struct DevelopmentToolQueueItem: Identifiable, Sendable, Equatable {
+    let id: UUID
+    let toolID: String
+    let operation: DevelopmentToolOperation
+    let enqueuedAt: Date
+    let authorizationRequest: DevelopmentToolSystemAuthorizationRequest?
+
+    init(
+        id: UUID = UUID(),
+        toolID: String,
+        operation: DevelopmentToolOperation,
+        enqueuedAt: Date = Date(),
+        authorizationRequest: DevelopmentToolSystemAuthorizationRequest? = nil
+    ) {
+        self.id = id
+        self.toolID = toolID
+        self.operation = operation
+        self.enqueuedAt = enqueuedAt
+        self.authorizationRequest = authorizationRequest
+    }
+}
+
+struct DevelopmentToolSystemAuthorizationRequest: Sendable, Equatable {
+    let toolName: String
+    let homebrewPrefix: URL
+    let repairDirectories: [URL]
 }
 
 enum DevelopmentToolUpdateAvailability: String, Sendable, Equatable {
@@ -668,8 +1057,10 @@ struct DevelopmentToolStatus: Sendable, Equatable {
     var state: DevelopmentToolInstallState = .idle
     var operation: DevelopmentToolOperation?
     var phase: AgentInstallPhase?
+    var operationStartedAt: Date?
     var detail: String?
     var result: String?
+    var authorizationRequest: DevelopmentToolSystemAuthorizationRequest?
     var updateAvailability: DevelopmentToolUpdateAvailability = .unknown
     var latestVersion: String?
     var updatePackageName: String?
@@ -677,6 +1068,10 @@ struct DevelopmentToolStatus: Sendable, Equatable {
     var updateDetail: String?
 
     var canUpgrade: Bool {
-        isInstalled && updateAvailability == .available && !isUpdatePinned
+        isInstalled
+            && updateAvailability == .available
+            && !isUpdatePinned
+            && state != .queued
+            && state != .installing
     }
 }

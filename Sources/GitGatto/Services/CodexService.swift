@@ -125,13 +125,16 @@ actor CodexService: CodexServing {
     private let gitRunner = GitCommandRunner()
     private let lane: AIExecutionLane
     private let translationRunTimeout: Duration
+    private let homebrewManager: any DevelopmentToolHomebrewManaging
 
     init(
         lane: AIExecutionLane = .project,
-        translationRunTimeout: Duration = CodexService.defaultTranslationRunTimeout
+        translationRunTimeout: Duration = CodexService.defaultTranslationRunTimeout,
+        homebrewManager: any DevelopmentToolHomebrewManaging = DevelopmentToolHomebrewService()
     ) {
         self.lane = lane
         self.translationRunTimeout = translationRunTimeout
+        self.homebrewManager = homebrewManager
     }
 
     func probe() async -> CodexAvailability {
@@ -378,7 +381,7 @@ actor CodexService: CodexServing {
         }
         let workingDirectory = url.deletingLastPathComponent()
         let prompt = Self.downloadedArtifactInstallPrompt(url: url, displayName: displayName)
-        return try await runInstaller(
+        let result = try await runInstaller(
             executableURL: executableURL,
             configuration: configuration,
             prompt: prompt,
@@ -387,6 +390,8 @@ actor CodexService: CodexServing {
             additionalWritableDirectories: Self.userInstallWritableDirectories(),
             progress: progress
         )
+        await progress(AgentInstallProgress(.verifying))
+        return result
     }
 
     func installDevelopmentTool(
@@ -433,6 +438,46 @@ actor CodexService: CodexServing {
         try FileManager.default.createDirectory(at: workingDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: workingDirectory) }
 
+        if let formula = tool.homebrewFormula {
+            guard Self.matchesHomebrewFormula(packageName, expected: formula) else {
+                throw DevelopmentToolHomebrewError.invalidFormula
+            }
+            await progress(AgentInstallProgress(.inspecting))
+            await progress(AgentInstallProgress(.installing))
+            do {
+                _ = try await homebrewManager.run(.upgrade, formula: packageName)
+            } catch let error as DevelopmentToolHomebrewError {
+                if let output = error.commandOutput {
+                    return CodexRunResult(
+                        response: output.isEmpty ? error.localizedDescription : output,
+                        commandCount: 1,
+                        fileChangeCount: 0
+                    )
+                }
+                throw error
+            }
+
+            await progress(AgentInstallProgress(.configuring))
+            return try await runInstaller(
+                executableURL: executableURL,
+                configuration: configuration,
+                prompt: Self.developmentToolPostUpgradePrompt(
+                    tool,
+                    packageName: packageName,
+                    installedVersion: installedVersion,
+                    latestVersion: latestVersion
+                ),
+                workingDirectory: workingDirectory,
+                allowsNetwork: false,
+                additionalWritableDirectories: Self.developmentToolWritableDirectories()
+            ) { update in
+                await progress(AgentInstallProgress(
+                    update.phase == .verifying ? .verifying : .configuring,
+                    detail: update.detail
+                ))
+            }
+        }
+
         return try await runInstaller(
             executableURL: executableURL,
             configuration: configuration,
@@ -469,7 +514,6 @@ actor CodexService: CodexServing {
                 currentDirectoryURL: workingDirectory,
                 timeout: .seconds(900)
             )
-            await progress(AgentInstallProgress(.verifying))
             return result
         }
 
@@ -512,18 +556,38 @@ actor CodexService: CodexServing {
             invocation.cancel()
         }
         guard output.exitCode == 0 else { throw CodexServiceError.executionFailed(output.exitCode) }
-        await progress(AgentInstallProgress(.verifying))
         return try CodexJSONLParser.parse(output.standardOutput)
     }
 
-    private static func developmentToolWritableDirectories() -> [URL] {
-        let brewDirectories = [
-            URL(fileURLWithPath: "/opt/homebrew", isDirectory: true),
-            URL(fileURLWithPath: "/usr/local/Homebrew", isDirectory: true),
-            URL(fileURLWithPath: "/usr/local/Cellar", isDirectory: true),
-            URL(fileURLWithPath: "/usr/local/Caskroom", isDirectory: true),
-            URL(fileURLWithPath: "/usr/local/bin", isDirectory: true)
+    static func developmentToolWritableDirectories() -> [URL] {
+        let fileManager = FileManager.default
+        let managedDirectoryNames = [
+            "Homebrew",
+            "Cellar",
+            "Caskroom",
+            "Frameworks",
+            "bin",
+            "etc",
+            "include",
+            "lib",
+            "opt",
+            "sbin",
+            "share",
+            "var"
         ]
+        let prefixes = [
+            URL(fileURLWithPath: "/opt/homebrew", isDirectory: true),
+            URL(fileURLWithPath: "/usr/local", isDirectory: true)
+        ]
+        let brewDirectories = prefixes.flatMap { prefix in
+            var directories = managedDirectoryNames.map {
+                prefix.appendingPathComponent($0, isDirectory: true)
+            }
+            if fileManager.isWritableFile(atPath: prefix.path) {
+                directories.append(prefix)
+            }
+            return directories
+        }
         return userInstallWritableDirectories() + brewDirectories
     }
 
@@ -555,6 +619,29 @@ actor CodexService: CodexServing {
         """
     }
 
+    static func developmentToolPostUpgradePrompt(
+        _ tool: DevelopmentTool,
+        packageName: String,
+        installedVersion: String?,
+        latestVersion: String?
+    ) -> String {
+        """
+        Complete the current-user configuration and verification for a development tool that GitGatto has already upgraded through Homebrew outside this Agent sandbox.
+
+        Tool: \(tool.name)
+        Exact Homebrew formula: \(packageName)
+        Package guidance: \(tool.packageHint)
+        Previous version: \(installedVersion ?? "unknown")
+        Requested version: \(latestVersion ?? "unknown")
+
+        Do not install, upgrade, reinstall, unlink, or remove any package, and do not run a Homebrew command that changes state. Inspect the installed executable and read-only formula caveats, preserve existing current-user configuration, and perform every documented non-secret current-user migration, component registration, environment change, or configuration update required by the new version. Run required setup commands instead of returning them as instructions. Do not modify system-wide configuration, a project, credentials, accounts, daemons, virtual machines, databases, or clusters. Verify the executable and version from a fresh process, then run the tool's documented configuration or status check. Return only a concise plain-text result without Markdown; report a remaining prerequisite only when it requires the user's account, system approval, project, or runtime resource.
+        """
+    }
+
+    private static func matchesHomebrewFormula(_ packageName: String, expected formula: String) -> Bool {
+        packageName == formula || packageName.hasPrefix("\(formula)@")
+    }
+
     static func developmentToolInstallPrompt(_ tool: DevelopmentTool) -> String {
         """
         Install and configure this development tool for the current macOS user.
@@ -564,7 +651,7 @@ actor CodexService: CodexServing {
         Verification executable candidates: \(tool.executableCandidates.joined(separator: ", "))
         Verification arguments: \(tool.versionArguments.joined(separator: " "))
 
-        Inspect the current installation first and do nothing destructive when a working version already exists. Use the official source or the exact package guidance above. Prefer an existing Homebrew installation when the guidance names a formula. Post-install configuration is a required phase for every tool: inspect the installer output, the exact package-manager caveats, and the tool's current-user state, then complete every documented non-secret initialization, component registration, required directory or default configuration, environment setting, and configuration migration needed for normal CLI use. Run setup commands instead of returning them as instructions. Do not invent optional preferences or aliases, sign in, create credentials, initialize a project, use sudo, read credentials, remove another version, start a daemon or virtual machine, or create a database or cluster. Keep files in the standard Homebrew prefix or current-user directories. GitGatto persists the verified executable directory to the login shell PATH after this task, so do not return manual PATH instructions as unfinished work. Verify the executable and version from a fresh process, then run the tool's documented configuration or status check. Return only a concise plain-text result without Markdown, naming any remaining prerequisite only when it requires the user's account, system approval, project, or runtime resource.
+        Inspect the current installation first and do nothing destructive when a working version already exists. Use the official source or the exact package guidance above. Prefer an existing Homebrew installation when the guidance names a formula. When Homebrew is used, follow this policy exactly: inspect the exact formula metadata first; disable Homebrew auto-update for this operation; use a compatible bottle when Homebrew publishes one for this machine; otherwise allow Homebrew's normal source build. Formula-declared runtime and build dependencies are part of the requested installation and must not be treated as unrelated packages or as a reason to stop. Never request a source build when a compatible bottle exists, and never manually upgrade packages outside Homebrew's dependency resolution for the exact formula. Test the actual Homebrew-managed directories before reporting a permissions problem; ownership of the Homebrew prefix alone is not proof that installation needs administrator access. If the exact formula is pinned and its verified executable is missing, empty, or unusable, temporarily unpin only that formula, repair or upgrade it, and restore its original pinned state before returning. Post-install configuration is a required phase for every tool: inspect the installer output, the exact package-manager caveats, and the tool's current-user state, then complete every documented non-secret initialization, component registration, required directory or default configuration, environment setting, and configuration migration needed for normal CLI use. Run setup commands instead of returning them as instructions. Do not invent optional preferences or aliases, sign in, create credentials, initialize a project, use sudo, read credentials, remove another version, start a daemon or virtual machine, or create a database or cluster. Keep files in the standard Homebrew prefix or current-user directories. GitGatto persists the verified executable directory to the login shell PATH after this task, so do not return manual PATH instructions as unfinished work. Verify the executable and version from a fresh process, then run the tool's documented configuration or status check. Return only a concise plain-text result without Markdown, naming any remaining prerequisite only when it requires the user's account, system approval, project, or runtime resource.
         """
     }
 
@@ -579,10 +666,11 @@ actor CodexService: CodexServing {
 
         Tool: \(tool.name)
         Exact Homebrew formula: \(packageName)
+        Package guidance: \(tool.packageHint)
         Detected installed version: \(installedVersion ?? "unknown")
         Detected available version: \(latestVersion ?? "unknown")
 
-        Inspect the exact formula first, then upgrade only that formula. Post-upgrade configuration is a required phase: inspect the formula caveats and tool state, preserve the existing current-user configuration, and apply every documented non-secret migration, component registration, environment change, or configuration update needed by the new version. Run required setup commands instead of returning them as instructions. Do not upgrade unrelated formulae, unpin a pinned formula, use sudo, read credentials, remove another version, modify a project, sign in, create credentials, start a daemon or virtual machine, or create a database or cluster. GitGatto persists the verified executable directory to the login shell PATH after this task. Verify the executable and final version from a fresh process, then run the tool's documented configuration or status check. Return only a concise plain-text result without Markdown, naming any remaining prerequisite only when it requires the user's account, system approval, project, or runtime resource.
+        Inspect the exact formula metadata first, then upgrade only that formula with Homebrew auto-update disabled. If Homebrew publishes a compatible bottle for this machine, run `HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade --formula --force-bottle \(packageName)` and do not request a source build. If no compatible bottle exists, run `HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade --formula \(packageName)`; Homebrew's normal source build is allowed and must continue. Formula-declared runtime and build dependencies are part of this exact upgrade; do not classify them as unrelated packages, manually upgrade them, or stop merely because Homebrew must install or build them. Post-upgrade configuration is a required phase: inspect the formula caveats and tool state, preserve the existing current-user configuration, and apply every documented non-secret migration, component registration, environment change, or configuration update needed by the new version. Run required setup commands instead of returning them as instructions. Do not upgrade formulae outside Homebrew's dependency resolution for the exact formula, unpin a pinned formula, use sudo, read credentials, remove another version, modify a project, sign in, create credentials, start a daemon or virtual machine, or create a database or cluster. GitGatto persists the verified executable directory to the login shell PATH after this task. Verify the executable and final version from a fresh process, then run the tool's documented configuration or status check. Return only a concise plain-text result without Markdown, naming any remaining prerequisite only when it requires the user's account, system approval, project, or runtime resource.
         """
     }
 
@@ -778,8 +866,9 @@ actor CodexService: CodexServing {
         }
     }
 
-    func cancel() {
+    func cancel() async {
         currentInvocation?.cancel()
+        await homebrewManager.cancel()
     }
 
     private static func instruction(

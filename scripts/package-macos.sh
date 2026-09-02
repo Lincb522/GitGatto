@@ -6,8 +6,8 @@ OUTPUT_DIR="${1:-$ROOT/dist}"
 FINAL_APP="$OUTPUT_DIR/GitGatto.app"
 STAGE_ROOT=""
 BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
-VERSION="${GITGATTO_VERSION:-0.18.10}"
-BUILD="${GITGATTO_BUILD_NUMBER:-18010}"
+VERSION="${GITGATTO_VERSION:-0.18.11}"
+BUILD="${GITGATTO_BUILD_NUMBER:-18011}"
 FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
 CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 SIGNING_KEYCHAIN="${GITGATTO_SIGNING_KEYCHAIN:-}"
@@ -78,7 +78,10 @@ info = {
     "CFBundleDisplayName": "GitGatto",
     "CFBundlePackageType": "APPL",
     "CFBundleDevelopmentRegion": "en",
-    "CFBundleLocalizations": ["en", "zh-Hans"],
+    "CFBundleLocalizations": [
+        "en", "zh-Hans", "zh-Hant", "ja", "ko", "fr",
+        "de", "es", "pt-BR", "ru", "ar",
+    ],
     "CFBundleShortVersionString": version,
     "CFBundleVersion": build,
     "CFBundleIconFile": "AppIcon",

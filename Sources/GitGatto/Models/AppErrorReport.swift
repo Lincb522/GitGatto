@@ -10,6 +10,7 @@ enum AppErrorContext: Sendable, Equatable {
     case git(OperationKind)
     case agent
     case worktree
+    case regression
     case github
     case goal
 
@@ -23,6 +24,7 @@ enum AppErrorContext: Sendable, Equatable {
         case let .git(operation): "GIT-\(operation.errorCodeComponent)"
         case .agent: "AGENT-RUN"
         case .worktree: "WORKTREE"
+        case .regression: "REGRESSION"
         case .github: "GITHUB"
         case .goal: "PROJECT-GOAL"
         }
@@ -38,6 +40,7 @@ enum AppErrorContext: Sendable, Equatable {
         case let .git(operation): L10n.text(operation.errorOperationKey)
         case .agent: L10n.text("error.operation.agent")
         case .worktree: L10n.text("error.operation.worktree")
+        case .regression: L10n.text("error.operation.regression")
         case .github: L10n.text("error.operation.github")
         case .goal: L10n.text("error.operation.goal")
         }
@@ -61,6 +64,8 @@ enum AppErrorContext: Sendable, Equatable {
             L10n.text("error.recovery.agent")
         case .worktree:
             L10n.text("error.recovery.worktree")
+        case .regression:
+            L10n.text("error.recovery.regression")
         case .github:
             L10n.text("error.recovery.github")
         case .goal:
@@ -283,6 +288,7 @@ private enum AppErrorCatalog {
         case .diagnostics: "error.explanation.diagnostics"
         case .agent: "error.explanation.agent_unknown"
         case .worktree: "error.explanation.worktree_unknown"
+        case .regression: "error.explanation.regression_unknown"
         case .github: "error.explanation.github_unknown"
         case .goal: "error.explanation.goal_unknown"
         case .git: exitCode == 128 ? "error.explanation.git_fatal" : "error.explanation.git_unknown"

@@ -126,13 +126,22 @@ struct DownloadCenterView: View {
                     .progressViewStyle(.linear)
                     .tint(palette.primary)
             } else if record.state == .installing {
-                HStack(spacing: 9) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text(record.installationMessage ?? L10n.text("installer.phase.installing"))
-                        .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(palette.mutedInk)
-                    Spacer()
+                if record.installationMethod == .agent,
+                   let phase = agentPhase(for: record.installationPhase) {
+                    AgentInstallationProgressView(
+                        phase: phase,
+                        detail: record.installationMessage ?? L10n.text("installer.phase.\(phase.rawValue)"),
+                        startedAt: record.installationStartedAt
+                    )
+                } else {
+                    HStack(spacing: 9) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(record.installationMessage ?? L10n.text("installer.phase.installing"))
+                            .font(.system(size: 10.5, weight: .medium))
+                            .foregroundStyle(palette.mutedInk)
+                        Spacer()
+                    }
                 }
             }
 
@@ -153,6 +162,17 @@ struct DownloadCenterView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .stroke(palette.divider, lineWidth: 1)
+        }
+    }
+
+    private func agentPhase(for phase: AppInstallationPhase?) -> AgentInstallPhase? {
+        switch phase {
+        case .preparing: .preparing
+        case .inspecting: .inspecting
+        case .installing: .installing
+        case .configuring: .configuring
+        case .verifying: .verifying
+        case nil: nil
         }
     }
 

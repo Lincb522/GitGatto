@@ -39,6 +39,7 @@ struct AppDownloadRecord: Identifiable, Codable, Sendable, Equatable {
     var installAfterDownload: Bool? = nil
     var installationMethod: AppInstallationMethod? = nil
     var installationPhase: AppInstallationPhase? = nil
+    var installationStartedAt: Date? = nil
     var installationMessage: String? = nil
     var agentResult: String? = nil
     let createdAt: Date
