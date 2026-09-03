@@ -3,7 +3,7 @@ import SwiftUI
 
 extension Image {
     init(gattoSymbol: String) {
-        self.init(nsImage: GattoIconAssets.image(for: gattoSymbol, pointSize: 18))
+        self.init(nsImage: GattoIconAssets.image(for: gattoSymbol, pointSize: GattoIconAssets.defaultPointSize))
     }
 }
 
@@ -22,7 +22,11 @@ struct GattoIcon: View {
 }
 
 enum GattoIconAssets {
-    private static let opticalScale: CGFloat = 1.16
+    static let defaultPointSize: CGFloat = 20
+
+    // Reicon masters already use the complete 24 pt design canvas. Enlarging
+    // them inside an equally sized bitmap cuts paths that sit near the edge.
+    private static let opticalScale: CGFloat = 1
 
     nonisolated(unsafe) private static let sourceCache: NSCache<NSString, NSImage> = {
         let cache = NSCache<NSString, NSImage>()
@@ -38,7 +42,7 @@ enum GattoIconAssets {
     }()
 
     static func image(for symbol: String) -> NSImage {
-        image(for: symbol, pointSize: 18)
+        image(for: symbol, pointSize: defaultPointSize)
     }
 
     static func image(for symbol: String, pointSize: CGFloat) -> NSImage {
@@ -66,7 +70,9 @@ enum GattoIconAssets {
             return cached
         }
         let bundle = AppResourceBundle.current
-        let url = bundle.url(forResource: name, withExtension: "png", subdirectory: "UIIcons")
+        let url = bundle.url(forResource: name, withExtension: "svg", subdirectory: "UIIcons")
+            ?? bundle.url(forResource: name, withExtension: "svg")
+            ?? bundle.url(forResource: name, withExtension: "png", subdirectory: "UIIcons")
             ?? bundle.url(forResource: name, withExtension: "png")
         let image = url.flatMap(NSImage.init(contentsOf:)) ?? NSImage(size: NSSize(width: 18, height: 18))
         sourceCache.setObject(image, forKey: name as NSString, cost: 64 * 1_024)
@@ -122,13 +128,13 @@ enum PixelAlignedImageRenderer {
             context.shouldAntialias = true
 
             let base = NSRect(origin: .zero, size: logicalSize)
-            let opticalSize = NSSize(
-                width: logicalSize.width * contentScale,
-                height: logicalSize.height * contentScale
-            )
+            let pixelScale = CGFloat(scale)
+            let opticalWidth = (logicalSize.width * contentScale * pixelScale).rounded() / pixelScale
+            let opticalHeight = (logicalSize.height * contentScale * pixelScale).rounded() / pixelScale
+            let opticalSize = NSSize(width: opticalWidth, height: opticalHeight)
             let opticalRect = NSRect(
-                x: (base.width - opticalSize.width) / 2,
-                y: (base.height - opticalSize.height) / 2,
+                x: (((base.width - opticalSize.width) / 2) * pixelScale).rounded() / pixelScale,
+                y: (((base.height - opticalSize.height) / 2) * pixelScale).rounded() / pixelScale,
                 width: opticalSize.width,
                 height: opticalSize.height
             )

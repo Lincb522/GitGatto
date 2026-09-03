@@ -1877,3 +1877,8 @@
 "developer_tools.upgrade.update_check_failed" = "Agent 已結束，但無法確認已升級至最新版本：%@。未判定為升級成功。";
 "developer_tools.result.agent_log" = "Agent 操作記錄";
 "developer_tools.result.unverified_agent_log" = "Agent 操作記錄（未通過本機驗證）";
+
+"monitoring.repository.all" = "所有倉庫";
+"monitoring.repository.all.detail" = "彙總 %d 個本機倉庫的活動";
+"monitoring.detail.all_repositories" = "彙總所有已加入倉庫";
+"monitoring.detail.selected_repository" = "目前查看倉庫的活動";

@@ -1141,34 +1141,16 @@ struct ConnectivityMotionGlyph: View {
         TimelineView(.animation(minimumInterval: 1.0 / 24.0, paused: state != .checking || reduceMotion)) { context in
             let elapsed = reduceMotion ? 0 : context.date.timeIntervalSince(startedAt)
             ZStack {
-                ForEach(0..<3, id: \.self) { level in
-                    ConnectivityArc(level: level)
-                        .stroke(
-                            signalColor(palette),
-                            style: StrokeStyle(
-                                lineWidth: max(1.15, size * 0.095),
-                                lineCap: .round
-                            )
-                        )
-                        .offset(y: searchingOffset(level: level, elapsed: elapsed))
-                        .opacity(state == .unavailable ? 0.48 : 1)
-                }
-
-                Circle()
-                    .fill(signalColor(palette))
-                    .frame(width: max(2.4, size * 0.18), height: max(2.4, size * 0.18))
-                    .offset(y: size * 0.31 + searchingOffset(level: 3, elapsed: elapsed))
+                GattoIcon(symbol: iconName, size: size)
+                    .foregroundStyle(signalColor(palette))
+                    .rotationEffect(.degrees(state == .checking ? elapsed * 90 : 0))
+                    .opacity(state == .unavailable ? 0.58 : 1)
 
                 if state == .available {
                     Circle()
                         .stroke(palette.success.opacity((2 - connectionPulse) * 0.48), lineWidth: 1)
                         .frame(width: size, height: size)
                         .scaleEffect(connectionPulse)
-                } else if state == .unavailable {
-                    Capsule()
-                        .fill(palette.subtleInk)
-                        .frame(width: size * 0.82, height: max(1.2, size * 0.09))
-                        .rotationEffect(.degrees(-44))
                 }
             }
         }
@@ -1195,27 +1177,12 @@ struct ConnectivityMotionGlyph: View {
         }
     }
 
-    private func searchingOffset(level: Int, elapsed: TimeInterval) -> CGFloat {
-        guard state == .checking, !reduceMotion else { return 0 }
-        return sin(elapsed * 8.2 - Double(level) * 0.82) * min(1.45, size * 0.09)
-    }
-}
-
-private struct ConnectivityArc: Shape {
-    let level: Int
-
-    func path(in rect: CGRect) -> Path {
-        let radius = rect.width * (0.24 + CGFloat(level) * 0.16)
-        let center = CGPoint(x: rect.midX, y: rect.maxY * 0.84)
-        var path = Path()
-        path.addArc(
-            center: center,
-            radius: radius,
-            startAngle: .degrees(218),
-            endAngle: .degrees(322),
-            clockwise: false
-        )
-        return path
+    private var iconName: String {
+        switch state {
+        case .checking: "arrow.clockwise"
+        case .available: "checkmark.circle.fill"
+        case .unavailable: "xmark.circle.fill"
+        }
     }
 }
 

@@ -8,29 +8,40 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "Sources" / "GitGatto"
-DESIGN_ROOT = ROOT / "docs" / "icon-system" / "image2-all-icons"
+MAP_PATH = ROOT / "docs" / "icon-system" / "reicon-icon-map.json"
 ASSET_ROOT = SOURCE_ROOT / "Resources" / "UIIcons"
-OUTPUT = ROOT / "docs" / "icon-system" / "image2-icon-manifest.json"
+OUTPUT = ROOT / "docs" / "icon-system" / "reicon-icon-manifest.json"
 
 DIRECT_ICON_ARGUMENT = re.compile(
     r"(?:gattoSymbol|systemImage|systemName|symbol)\s*:\s*\"([^\"]+)\""
 )
-CORE_OVERRIDES = {
-    "ai.translation",
-    "archivebox",
-    "arrow.down.app",
-    "arrow.triangle.branch",
-    "clock.arrow.circlepath",
-    "gearshape",
-    "history.file",
-    "rectangle.split.2x1",
-    "sparkles",
-    "square.grid.2x2",
-    "square.stack.3d.up",
-    "stethoscope",
-}
+ICON_PROPERTY = re.compile(r"\bvar\s+(?:systemImage|icon)\s*:\s*String\s*\{")
+ICON_PROPERTY_VALUE = re.compile(r":\s*\"([^\"]+)\"")
 
 
+def matching_brace(text: str, opening_brace: int) -> int:
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(opening_brace, len(text)):
+        character = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+            continue
+        if character == '"':
+            in_string = True
+        elif character == "{":
+            depth += 1
+        elif character == "}":
+            depth -= 1
+            if depth == 0:
+                return index
+    raise RuntimeError("Unbalanced icon property")
 def source_references(symbol: str) -> list[str]:
     token = f'"{symbol}"'
     references = []
@@ -48,40 +59,51 @@ def source_references(symbol: str) -> list[str]:
 def direct_symbols() -> set[str]:
     symbols = set()
     for path in SOURCE_ROOT.rglob("*.swift"):
-        symbols.update(DIRECT_ICON_ARGUMENT.findall(path.read_text(encoding="utf-8")))
+        source = path.read_text(encoding="utf-8")
+        symbols.update(DIRECT_ICON_ARGUMENT.findall(source))
+        for match in ICON_PROPERTY.finditer(source):
+            opening_brace = match.end() - 1
+            body = source[opening_brace + 1 : matching_brace(source, opening_brace)]
+            symbols.update(ICON_PROPERTY_VALUE.findall(body))
     return symbols
 
 
 def main() -> None:
-    groups = json.loads((DESIGN_ROOT / "manifest.json").read_text(encoding="utf-8"))
-    supplemental = json.loads(
-        (DESIGN_ROOT / "supplemental.json").read_text(encoding="utf-8")
-    )
-    design_sources = {
-        name.replace("-", "."): f"batch-{group['batch']}-sheet.png"
-        for group in groups
-        for name in group["icons"]
-    }
-    design_sources.update(
-        {item["symbol"]: item["source"] for item in supplemental}
-    )
-    design_sources.update(
-        {symbol: "core-agent-monochrome.png" for symbol in CORE_OVERRIDES}
-    )
+    mapping = json.loads(MAP_PATH.read_text(encoding="utf-8"))
+    icon_sources = mapping["icons"]
 
     entries = []
-    for symbol in sorted(design_sources):
-        asset_name = f"gatto-{symbol.replace('.', '-')}.png"
+    for symbol in sorted(icon_sources):
+        asset_name = f"gatto-{symbol.replace('.', '-')}.svg"
         asset_path = ASSET_ROOT / asset_name
         if not asset_path.is_file():
             raise SystemExit(f"Missing GitGatto icon asset: {asset_name}")
+        source = icon_sources[symbol]
+        provenance = {
+            "repository": mapping["source"]["repository"],
+            "revision": mapping["source"]["revision"],
+            "name": source["name"],
+        }
+        if "sourceFile" in source:
+            provenance.update(
+                {
+                    "sourceFile": source["sourceFile"],
+                    "sourceURL": source["sourceURL"],
+                    "sourceSHA256": source["sha256"],
+                }
+            )
+        else:
+            provenance.update(
+                {
+                    "category": source["category"],
+                    "weight": source.get("weight", "Outline"),
+                }
+            )
         entries.append(
             {
                 "symbol": symbol,
                 "asset": asset_path.relative_to(ROOT).as_posix(),
-                "designSource": (
-                    DESIGN_ROOT / design_sources[symbol]
-                ).relative_to(ROOT).as_posix(),
+                "source": provenance,
                 "sha256": hashlib.sha256(asset_path.read_bytes()).hexdigest(),
                 "sourceRefs": source_references(symbol),
             }
@@ -104,10 +126,10 @@ def main() -> None:
     payload = {
         "schemaVersion": 1,
         "generator": "scripts/inventory-icons.py",
-        "designTool": "Infinite Canvas / Image 2",
+        "source": mapping["source"],
         "style": {
-            "canvas": "256x256 RGBA",
-            "rendering": "template tint with point-size 1x/2x/3x raster representations",
+            "source": "SVG with a transparent canvas",
+            "rendering": "template tint with pixel-aligned point-size 1x/2x/3x representations",
         },
         "count": len(entries),
         "icons": entries,

@@ -165,6 +165,8 @@ actor GitRepositoryService: GitRepositoryServing {
     private let runner: GitCommandRunner
     private var gitDirectoriesByRepositoryPath: [String: URL] = [:]
 
+    private static let staleIndexLockAge: TimeInterval = 120
+
     init(runner: GitCommandRunner = GitCommandRunner()) {
         self.runner = runner
     }
@@ -446,6 +448,20 @@ actor GitRepositoryService: GitRepositoryServing {
     }
 
     func stage(paths: [String], in repositoryURL: URL) async throws {
+        try await stage(
+            paths: paths,
+            in: repositoryURL,
+            canRecoverIndexLock: true,
+            canRefreshPathspec: true
+        )
+    }
+
+    private func stage(
+        paths: [String],
+        in repositoryURL: URL,
+        canRecoverIndexLock: Bool,
+        canRefreshPathspec: Bool
+    ) async throws {
         guard !paths.isEmpty else { return }
         let currentChanges = try await changes(at: paths, in: repositoryURL)
         let unstagedPaths = Set(
@@ -455,7 +471,32 @@ actor GitRepositoryService: GitRepositoryServing {
         )
         let pathsToStage = paths.filter { unstagedPaths.contains($0) }
         guard !pathsToStage.isEmpty else { return }
-        _ = try await runner.run(at: repositoryURL, arguments: ["add", "--"] + pathsToStage)
+        do {
+            _ = try await runner.run(at: repositoryURL, arguments: ["add", "--"] + pathsToStage)
+        } catch let error as GitCommandError {
+            if canRecoverIndexLock,
+               await recoverStaleIndexLockIfSafe(after: error, in: repositoryURL) {
+                try await stage(
+                    paths: paths,
+                    in: repositoryURL,
+                    canRecoverIndexLock: false,
+                    canRefreshPathspec: canRefreshPathspec
+                )
+                return
+            }
+
+            if canRefreshPathspec, Self.isPathspecFailure(error) {
+                try await stage(
+                    paths: paths,
+                    in: repositoryURL,
+                    canRecoverIndexLock: canRecoverIndexLock,
+                    canRefreshPathspec: false
+                )
+                return
+            }
+
+            throw error
+        }
     }
 
     func unstage(paths: [String], in repositoryURL: URL) async throws {
@@ -881,6 +922,73 @@ actor GitRepositoryService: GitRepositoryServing {
             arguments: ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--"] + paths
         )
         return GitParsers.status(from: status.output)
+    }
+
+    private func recoverStaleIndexLockIfSafe(
+        after error: GitCommandError,
+        in repositoryURL: URL
+    ) async -> Bool {
+        guard Self.isIndexLockFailure(error),
+              let directory = try? await gitDirectory(in: repositoryURL) else {
+            return false
+        }
+        let lockURL = directory.appendingPathComponent("index.lock", isDirectory: false)
+        return await Task.detached(priority: .utility) {
+            Self.removeStaleIndexLockIfSafe(at: lockURL)
+        }.value
+    }
+
+    private static func isIndexLockFailure(_ error: GitCommandError) -> Bool {
+        let message = error.message.lowercased()
+        return message.contains("index.lock") && (
+            message.contains("file exists")
+                || message.contains("already exists")
+                || message.contains("another git process")
+        )
+    }
+
+    private static func isPathspecFailure(_ error: GitCommandError) -> Bool {
+        let message = error.message.lowercased()
+        return message.contains("pathspec") && message.contains("did not match any file")
+    }
+
+    private nonisolated static func removeStaleIndexLockIfSafe(at lockURL: URL) -> Bool {
+        let fileManager = FileManager.default
+        guard let attributes = try? fileManager.attributesOfItem(atPath: lockURL.path),
+              attributes[.type] as? FileAttributeType == .typeRegular,
+              let modificationDate = attributes[.modificationDate] as? Date,
+              Date().timeIntervalSince(modificationDate) >= staleIndexLockAge,
+              !isFileOpen(lockURL) else {
+            return false
+        }
+
+        guard let currentAttributes = try? fileManager.attributesOfItem(atPath: lockURL.path),
+              currentAttributes[.systemFileNumber] as? NSNumber == attributes[.systemFileNumber] as? NSNumber,
+              currentAttributes[.modificationDate] as? Date == modificationDate else {
+            return false
+        }
+
+        do {
+            try fileManager.removeItem(at: lockURL)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private nonisolated static func isFileOpen(_ fileURL: URL) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
+        process.arguments = ["--", fileURL.path]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            return true
+        }
     }
 
     private func stashHead(in repositoryURL: URL) async throws -> String? {

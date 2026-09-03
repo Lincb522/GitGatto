@@ -286,6 +286,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryProtectionArmingTask: Task<Void, Never>?
     private var repositoryProtectionAuditTasks: [String: Task<Void, Never>] = [:]
     private var repositoryProtectionBaselines: [String: RepositoryBackup] = [:]
+    private var repositoryProtectionBaselineCreations = Set<String>()
     private var repositoryProtectionGeneration = UUID()
     private var repositoryProtectionSuppressedUntil: [String: Date] = [:]
     private var agentProtectedRepositoryPaths = Set<String>()
@@ -366,8 +367,7 @@ final class WorkspaceViewModel: ObservableObject {
         persistRepositoryLists()
         monitoringEngine.configure(
             preferences: appPreferences,
-            repositories: localRepositories,
-            selectedRepositoryURL: snapshot?.rootURL
+            repositories: localRepositories
         )
     }
 
@@ -3076,6 +3076,7 @@ final class WorkspaceViewModel: ObservableObject {
             repositoryBackups = try await backups
             repositoryBackupStorageBytes = try await byteCount
             repositoryBackupDirectoryURL = directory
+            reconcileRepositoryProtectionBaselines()
             if let selectedRepositoryBackupID,
                !repositoryBackups.contains(where: { $0.id == selectedRepositoryBackupID })
             {
@@ -3107,6 +3108,9 @@ final class WorkspaceViewModel: ObservableObject {
                 reason: .manual,
                 policy: appPreferences.repositoryBackupPolicy
             )
+            if let created, appPreferences.externalRepositoryProtectionEnabled {
+                repositoryProtectionBaselines[path] = created
+            }
             await refreshRepositoryBackupInventory(selecting: created?.id)
             showNotice(.init(message: L10n.text("recovery.notice.created")))
         } catch {
@@ -3386,7 +3390,8 @@ final class WorkspaceViewModel: ObservableObject {
         let repository = repositoryURL.standardizedFileURL
         let path = repository.path
         guard !agentProtectedRepositoryPaths.contains(path),
-              !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path })
+              !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path }),
+              !repositoryProtectionBaselineCreations.contains(path)
         else { return }
         guard let baseline = repositoryProtectionBaselines[path]
             ?? repositoryBackups.first(where: { $0.repositoryPath == path })
@@ -3432,6 +3437,19 @@ final class WorkspaceViewModel: ObservableObject {
             )
         } catch is CancellationError {
             return
+        } catch RepositoryBackupError.backupMissing,
+                RepositoryBackupError.invalidBackupPath {
+            if repositoryProtectionBaselines[path]?.id == baseline.id {
+                repositoryProtectionBaselines[path] = nil
+            }
+            await refreshRepositoryBackupInventory(selecting: nil)
+            await createExternalRepositoryProtectionBaseline(
+                for: repository,
+                generation: generation ?? repositoryProtectionGeneration
+            )
+            return
+        } catch RepositoryBackupError.storageBusy {
+            return
         } catch {
             publishRepositoryProtectionIncident(
                 RepositoryProtectionIncident(
@@ -3455,8 +3473,11 @@ final class WorkspaceViewModel: ObservableObject {
         let repository = repositoryURL.standardizedFileURL
         let path = repository.path
         guard !agentProtectedRepositoryPaths.contains(path),
-              !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path })
+              !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path }),
+              !repositoryProtectionBaselineCreations.contains(path)
         else { return }
+        repositoryProtectionBaselineCreations.insert(path)
+        defer { repositoryProtectionBaselineCreations.remove(path) }
         do {
             guard let backup = try await repositoryBackupService.createBackup(
                 for: repository,
@@ -3547,6 +3568,9 @@ final class WorkspaceViewModel: ObservableObject {
                 reason: reason,
                 policy: appPreferences.repositoryBackupPolicy
             ) else { return }
+            if appPreferences.externalRepositoryProtectionEnabled {
+                repositoryProtectionBaselines[path] = backup
+            }
             await refreshRepositoryBackupInventory(selecting: nil)
             monitoringEngine.markHealthy(.repositoryProtection)
             if backup.reason == .majorChange {
@@ -3578,6 +3602,7 @@ final class WorkspaceViewModel: ObservableObject {
             repositoryBackups = try await backups
             repositoryBackupStorageBytes = try await byteCount
             repositoryBackupDirectoryURL = directory
+            reconcileRepositoryProtectionBaselines()
             if let id {
                 selectedRepositoryBackupID = id
             } else if let selectedRepositoryBackupID,
@@ -3590,6 +3615,18 @@ final class WorkspaceViewModel: ObservableObject {
             return
         } catch {
             repositoryProtectionError = error.localizedDescription
+        }
+    }
+
+    private func reconcileRepositoryProtectionBaselines() {
+        let availableIDs = Set(repositoryBackups.map(\.id))
+        let stalePaths = repositoryProtectionBaselines.compactMap { path, baseline in
+            availableIDs.contains(baseline.id) ? nil : path
+        }
+        for path in stalePaths {
+            repositoryProtectionBaselines[path] = repositoryBackups.first {
+                $0.repositoryPath == path
+            }
         }
     }
 
@@ -6292,6 +6329,7 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func setStatusBarMonitoringEnabled(_ enabled: Bool) {
+        guard appPreferences.statusBarMonitoringEnabled != enabled else { return }
         appPreferences.statusBarMonitoringEnabled = enabled
         AppPreferencesStore.save(appPreferences)
         configureMonitoringEngine()
@@ -6317,8 +6355,7 @@ final class WorkspaceViewModel: ObservableObject {
     private func configureMonitoringEngine() {
         monitoringEngine.configure(
             preferences: appPreferences,
-            repositories: localRepositories,
-            selectedRepositoryURL: snapshot?.rootURL
+            repositories: localRepositories
         )
     }
 

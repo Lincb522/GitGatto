@@ -1877,3 +1877,8 @@
 "developer_tools.upgrade.update_check_failed" = "انتهى Agent، لكن تعذر تأكيد أحدث إصدار مثبت: %@. لم تتم اعتبار الترقية ناجحة.";
 "developer_tools.result.agent_log" = "سجل عملية Agent";
 "developer_tools.result.unverified_agent_log" = "سجل Agent (غير متحقق محليًا)";
+
+"monitoring.repository.all" = "كل المستودعات";
+"monitoring.repository.all.detail" = "نشاط مجمّع من %d مستودعات محلية";
+"monitoring.detail.all_repositories" = "ملخص مجمّع للمستودعات المضافة";
+"monitoring.detail.selected_repository" = "نشاط المستودع المحدد";

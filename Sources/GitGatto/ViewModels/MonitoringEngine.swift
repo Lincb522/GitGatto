@@ -5,7 +5,7 @@ import Foundation
 final class MonitoringEngine: ObservableObject {
     @Published private(set) var isEnabled = true
     @Published private(set) var statusBarEnabled = true
-    @Published private(set) var repositoryCount = 0
+    @Published private(set) var repositories: [URL] = []
     @Published private(set) var selectedRepositoryURL: URL?
     @Published private(set) var channels: [MonitoringChannelSnapshot]
     @Published private(set) var dailyActivity: [RepositoryDailyActivity] = []
@@ -48,6 +48,8 @@ final class MonitoringEngine: ObservableObject {
         return channels.count(where: \.isEnabled)
     }
 
+    var repositoryCount: Int { repositories.count }
+
     var todayActivity: RepositoryDailyActivity? {
         guard let last = dailyActivity.last(where: { Calendar.current.isDateInToday($0.date) }) else {
             return nil
@@ -61,12 +63,33 @@ final class MonitoringEngine: ObservableObject {
 
     func configure(
         preferences: AppPreferences,
-        repositories: [URL],
-        selectedRepositoryURL: URL?
+        repositories: [URL]
     ) {
-        isEnabled = preferences.monitoringEngineEnabled
-        statusBarEnabled = preferences.statusBarMonitoringEnabled
-        repositoryCount = repositories.count
+        if isEnabled != preferences.monitoringEngineEnabled {
+            isEnabled = preferences.monitoringEngineEnabled
+        }
+        if statusBarEnabled != preferences.statusBarMonitoringEnabled {
+            statusBarEnabled = preferences.statusBarMonitoringEnabled
+        }
+        let normalizedRepositories = Array(
+            Dictionary(
+                repositories.map { ($0.standardizedFileURL.path, $0.standardizedFileURL) },
+                uniquingKeysWith: { first, _ in first }
+            ).values
+        ).sorted {
+            $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
+        }
+        var activityScopeChanged = false
+        if self.repositories != normalizedRepositories {
+            self.repositories = normalizedRepositories
+            activityScopeChanged = true
+        }
+        if let selectedRepositoryURL,
+           !normalizedRepositories.contains(selectedRepositoryURL)
+        {
+            self.selectedRepositoryURL = nil
+            activityScopeChanged = true
+        }
         let enabledCategories: [MonitoringCategory: Bool] = [
             .workingTree: preferences.liveRefreshEnabled,
             .remote: preferences.remoteRefreshEnabled,
@@ -74,33 +97,37 @@ final class MonitoringEngine: ObservableObject {
             .githubActions: preferences.githubActionsMonitoringEnabled,
             .projectGoals: preferences.projectGoalMonitoringEnabled,
         ]
+        var configuredChannels = channels
         for category in MonitoringCategory.allCases {
-            update(category) { channel in
-                let enabled = preferences.monitoringEngineEnabled && (enabledCategories[category] ?? true)
-                channel.isEnabled = enabled
-                if !enabled {
-                    channel.state = .paused
-                    channel.detail = nil
-                } else if channel.state == .paused {
-                    channel.state = .healthy
-                }
+            guard let index = configuredChannels.firstIndex(where: { $0.category == category }) else {
+                continue
             }
+            let enabled = preferences.monitoringEngineEnabled && (enabledCategories[category] ?? true)
+            configuredChannels[index].isEnabled = enabled
+            if !enabled {
+                configuredChannels[index].state = .paused
+                configuredChannels[index].detail = nil
+            } else if configuredChannels[index].state == .paused {
+                configuredChannels[index].state = .healthy
+            }
+        }
+        if channels != configuredChannels {
+            channels = configuredChannels
         }
 
-        let normalizedSelection = selectedRepositoryURL?.standardizedFileURL
-        if self.selectedRepositoryURL != normalizedSelection {
-            self.selectedRepositoryURL = normalizedSelection
-            for category in [MonitoringCategory.workingTree, .remote] where isChannelEnabled(category) {
-                update(category) { channel in
-                    channel.state = .healthy
-                    channel.detail = nil
-                    channel.lastUpdatedAt = nil
-                }
-            }
-            dailyActivity = []
-            activityError = nil
+        if activityScopeChanged {
             refreshActivity()
         }
+    }
+
+    func selectRepository(_ repositoryURL: URL?) {
+        let normalizedSelection = repositoryURL?.standardizedFileURL
+        if let normalizedSelection, !repositories.contains(normalizedSelection) { return }
+        guard selectedRepositoryURL != normalizedSelection else { return }
+        selectedRepositoryURL = normalizedSelection
+        dailyActivity = []
+        activityError = nil
+        refreshActivity()
     }
 
     func markMonitoring(_ category: MonitoringCategory, detail: String? = nil) {
@@ -137,8 +164,12 @@ final class MonitoringEngine: ObservableObject {
         Task { [weak self, backgroundService] in
             do {
                 let count = try await backgroundService.recordRepositoryChange(at: repository)
-                guard let self,
-                      self.selectedRepositoryURL == repository,
+                guard let self else { return }
+                if self.selectedRepositoryURL == nil {
+                    self.refreshActivity()
+                    return
+                }
+                guard self.selectedRepositoryURL == repository,
                       let index = self.dailyActivity.lastIndex(where: {
                           Calendar.current.isDateInToday($0.date)
                       }) else { return }
@@ -154,16 +185,35 @@ final class MonitoringEngine: ObservableObject {
 
     func refreshActivity() {
         activityTask?.cancel()
-        guard let repository = selectedRepositoryURL else {
+        let selection = selectedRepositoryURL
+        let targets = selection.map { [$0] } ?? repositories
+        guard !targets.isEmpty else {
             dailyActivity = []
+            activityError = nil
             return
         }
         activityTask = Task { [weak self, backgroundService] in
             do {
-                let activity = try await backgroundService.dailyActivity(for: repository)
+                let activitySets = try await withThrowingTaskGroup(
+                    of: [RepositoryDailyActivity].self
+                ) { group in
+                    for repository in targets {
+                        group.addTask {
+                            try await backgroundService.dailyActivity(for: repository)
+                        }
+                    }
+                    var result: [[RepositoryDailyActivity]] = []
+                    for try await activity in group {
+                        result.append(activity)
+                    }
+                    return result
+                }
                 try Task.checkCancellation()
-                guard let self, self.selectedRepositoryURL == repository else { return }
-                self.dailyActivity = activity
+                guard let self,
+                      self.selectedRepositoryURL == selection,
+                      self.repositories == targets || selection != nil
+                else { return }
+                self.dailyActivity = Self.mergedActivity(activitySets)
                 self.activityError = nil
             } catch is CancellationError {
                 return
@@ -171,6 +221,26 @@ final class MonitoringEngine: ObservableObject {
                 self?.activityError = error.localizedDescription
             }
         }
+    }
+
+    private static func mergedActivity(
+        _ activitySets: [[RepositoryDailyActivity]]
+    ) -> [RepositoryDailyActivity] {
+        var merged: [Date: RepositoryDailyActivity] = [:]
+        for activity in activitySets {
+            for day in activity {
+                let date = Calendar.current.startOfDay(for: day.date)
+                var total = merged[date] ?? RepositoryDailyActivity(
+                    date: date,
+                    commitCount: 0,
+                    monitoredChangeCount: 0
+                )
+                total.commitCount += day.commitCount
+                total.monitoredChangeCount += day.monitoredChangeCount
+                merged[date] = total
+            }
+        }
+        return merged.values.sorted { $0.date < $1.date }
     }
 
     func isChannelEnabled(_ category: MonitoringCategory) -> Bool {

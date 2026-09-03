@@ -98,6 +98,57 @@ struct RepositoryBackupServiceTests {
         #expect(model.repositoryProtectionIncidents.isEmpty)
     }
 
+    @MainActor
+    @Test("A missing retained baseline is rebuilt instead of reporting repository corruption")
+    func rebuildsMissingProtectionBaseline() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let backing = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        let model = WorkspaceViewModel(repositoryBackupService: backing)
+        model.appPreferences.repositoryBackupEnabled = true
+        model.appPreferences.externalRepositoryProtectionEnabled = true
+
+        await model.createExternalRepositoryProtectionBaseline(for: fixture.repository)
+        let original = try #require(try await backing.loadBackups().first)
+        try await backing.delete(original)
+
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+
+        let rebuilt = try #require(try await backing.loadBackups().first)
+        #expect(rebuilt.id != original.id)
+        #expect(model.repositoryProtectionIncidents.isEmpty)
+    }
+
+    @MainActor
+    @Test("Concurrent arming requests create one protection baseline")
+    func coalescesProtectionBaselineCreation() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let backing = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        let service = RecordingRepositoryBackupService(
+            backing: backing,
+            createDelay: .milliseconds(150)
+        )
+        let model = WorkspaceViewModel(repositoryBackupService: service)
+        model.appPreferences.repositoryBackupEnabled = true
+        model.appPreferences.externalRepositoryProtectionEnabled = true
+
+        async let first: Void = model.createExternalRepositoryProtectionBaseline(
+            for: fixture.repository
+        )
+        async let second: Void = model.createExternalRepositoryProtectionBaseline(
+            for: fixture.repository
+        )
+        _ = await (first, second)
+
+        #expect(await service.createCallCount == 1)
+        #expect(model.repositoryProtectionIncidents.isEmpty)
+    }
+
     @Test("Protection assessment measures changes after the baseline")
     func measuresChangesAfterProtectionBaseline() async throws {
         let fixture = try BackupFixture()
@@ -724,10 +775,12 @@ struct RepositoryBackupServiceTests {
 
 private actor RecordingRepositoryBackupService: RepositoryBackupServing {
     private let backing: RepositoryBackupService
+    private let createDelay: Duration?
     private(set) var createCallCount = 0
 
-    init(backing: RepositoryBackupService) {
+    init(backing: RepositoryBackupService, createDelay: Duration? = nil) {
         self.backing = backing
+        self.createDelay = createDelay
     }
 
     func loadBackups() async throws -> [RepositoryBackup] {
@@ -740,6 +793,9 @@ private actor RecordingRepositoryBackupService: RepositoryBackupServing {
         policy: RepositoryBackupPolicy
     ) async throws -> RepositoryBackup? {
         createCallCount += 1
+        if let createDelay {
+            try await Task.sleep(for: createDelay)
+        }
         return try await backing.createBackup(for: repositoryURL, reason: reason, policy: policy)
     }
 

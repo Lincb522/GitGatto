@@ -1877,3 +1877,8 @@
 "developer_tools.upgrade.update_check_failed" = "Agent finished, but the latest installed version could not be confirmed: %@. The upgrade was not marked successful.";
 "developer_tools.result.agent_log" = "Agent operation log";
 "developer_tools.result.unverified_agent_log" = "Agent operation log (not locally verified)";
+
+"monitoring.repository.all" = "All repositories";
+"monitoring.repository.all.detail" = "Combined activity from %d local repositories";
+"monitoring.detail.all_repositories" = "Combined overview of added repositories";
+"monitoring.detail.selected_repository" = "Selected repository activity";

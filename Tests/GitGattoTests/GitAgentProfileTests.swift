@@ -18,6 +18,19 @@ struct GitAgentProfileTests {
         #expect(GitAgentSkill.allCases.count == 13)
     }
 
+    @Test("Every Agent skill has a bundled semantic icon")
+    func bundlesEverySkillIcon() {
+        for skill in GitAgentSkill.allCases {
+            let assetName = GattoIconAssets.assetName(for: skill.systemImage)
+            let asset = AppResourceBundle.current.url(
+                forResource: assetName,
+                withExtension: "svg",
+                subdirectory: "UIIcons"
+            ) ?? AppResourceBundle.current.url(forResource: assetName, withExtension: "svg")
+            #expect(asset != nil, "Missing icon for \(skill.rawValue): \(assetName)")
+        }
+    }
+
     @Test("Keeps remote writes behind explicit app controls")
     func keepsRemoteWriteBoundary() {
         #expect(GitAgentProfile.remoteBoundary.contains("Do not push"))

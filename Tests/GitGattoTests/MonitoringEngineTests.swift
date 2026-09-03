@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 import SwiftUI
 @testable import GitGatto
@@ -6,6 +7,39 @@ import Testing
 
 @Suite("Monitoring engine")
 struct MonitoringEngineTests {
+    @MainActor
+    @Test("Repeated monitoring configuration does not publish unchanged state")
+    func unchangedConfigurationIsSilent() {
+        let engine = MonitoringEngine()
+        var notifications = 0
+        let observation = engine.objectWillChange.sink {
+            notifications += 1
+        }
+
+        engine.configure(
+            preferences: AppPreferences(),
+            repositories: []
+        )
+
+        #expect(notifications == 0)
+        _ = observation
+    }
+
+    @MainActor
+    @Test("Repeated menu bar insertion callbacks do not invalidate the workspace")
+    func unchangedStatusBarPreferenceIsSilent() {
+        let model = WorkspaceViewModel()
+        var notifications = 0
+        let observation = model.objectWillChange.sink {
+            notifications += 1
+        }
+
+        model.setStatusBarMonitoringEnabled(model.appPreferences.statusBarMonitoringEnabled)
+
+        #expect(notifications == 0)
+        _ = observation
+    }
+
     @MainActor
     @Test("Configures every monitoring channel independently")
     func configuresChannelsIndependently() {
@@ -16,8 +50,7 @@ struct MonitoringEngineTests {
 
         engine.configure(
             preferences: preferences,
-            repositories: [URL(fileURLWithPath: "/tmp/repository")],
-            selectedRepositoryURL: nil
+            repositories: [URL(fileURLWithPath: "/tmp/repository")]
         )
 
         #expect(engine.isChannelEnabled(.workingTree))
@@ -38,13 +71,66 @@ struct MonitoringEngineTests {
 
         engine.configure(
             preferences: preferences,
-            repositories: [],
-            selectedRepositoryURL: nil
+            repositories: []
         )
 
         #expect(engine.overallState == .paused)
         #expect(engine.activeChannelCount == 0)
         #expect(engine.channels.allSatisfy { !$0.isEnabled && $0.state == .paused })
+    }
+
+    @MainActor
+    @Test("Status bar repository scope remains independent from workspace configuration")
+    func preservesIndependentRepositoryScope() {
+        let engine = MonitoringEngine()
+        let first = URL(fileURLWithPath: "/tmp/first-repository")
+        let second = URL(fileURLWithPath: "/tmp/second-repository")
+
+        engine.configure(preferences: AppPreferences(), repositories: [first, second])
+        #expect(engine.selectedRepositoryURL == nil)
+
+        engine.selectRepository(second)
+        engine.configure(preferences: AppPreferences(), repositories: [first, second])
+        #expect(engine.selectedRepositoryURL == second.standardizedFileURL)
+
+        engine.configure(preferences: AppPreferences(), repositories: [first])
+        #expect(engine.selectedRepositoryURL == nil)
+    }
+
+    @MainActor
+    @Test("All-repository scope aggregates activity and can focus one repository")
+    func aggregatesRepositoryActivity() async throws {
+        let root = temporaryDirectory("MonitoringAggregate")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let first = try makeRepository(named: "first", in: root)
+        let second = try makeRepository(named: "second", in: root)
+        let service = BackgroundMonitoringService(
+            rootURL: root.appendingPathComponent("store", isDirectory: true)
+        )
+        let engine = MonitoringEngine(backgroundService: service)
+
+        engine.configure(preferences: AppPreferences(), repositories: [first, second])
+        for _ in 0 ..< 100 where engine.dailyActivity.isEmpty {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let combinedToday = try #require(
+            engine.dailyActivity.last(where: { Calendar.current.isDateInToday($0.date) })
+        )
+        #expect(combinedToday.commitCount == 2)
+
+        engine.selectRepository(first)
+        for _ in 0 ..< 100 {
+            if let today = engine.dailyActivity.last(where: { Calendar.current.isDateInToday($0.date) }),
+               today.commitCount == 1
+            {
+                break
+            }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let focusedToday = try #require(
+            engine.dailyActivity.last(where: { Calendar.current.isDateInToday($0.date) })
+        )
+        #expect(focusedToday.commitCount == 1)
     }
 
     @Test("Background service combines commit and monitored activity without inventing days")
@@ -91,9 +177,9 @@ struct MonitoringEngineTests {
         await model.openRepository(repository, showFailure: false)
         model.monitoringEngine.configure(
             preferences: model.appPreferences,
-            repositories: [repository],
-            selectedRepositoryURL: repository
+            repositories: [repository]
         )
+        model.monitoringEngine.selectRepository(repository)
         for _ in 0 ..< 80 where model.monitoringEngine.dailyActivity.isEmpty {
             try await Task.sleep(for: .milliseconds(50))
         }
@@ -151,6 +237,22 @@ struct MonitoringEngineTests {
             let output = String(decoding: errorPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
             throw TestGitError(output: output)
         }
+    }
+
+    private func makeRepository(named name: String, in root: URL) throws -> URL {
+        let repository = root.appendingPathComponent(name, isDirectory: true)
+        try FileManager.default.createDirectory(at: repository, withIntermediateDirectories: true)
+        try run(["init"], at: repository)
+        try run(["config", "user.name", "GitGatto Tests"], at: repository)
+        try run(["config", "user.email", "tests@example.invalid"], at: repository)
+        try "activity\n".write(
+            to: repository.appendingPathComponent("activity.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try run(["add", "activity.txt"], at: repository)
+        try run(["commit", "-m", "Record activity"], at: repository)
+        return repository
     }
 }
 

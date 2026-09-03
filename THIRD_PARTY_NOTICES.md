@@ -2,6 +2,16 @@
 
 GitGatto includes the following third-party software and visual assets.
 
+## Reicon
+
+Project: https://github.com/Lincb522/reicon
+
+Copyright © 2025 REICON.
+
+GitGatto's semantic interface icon set is derived from Reicon at revision
+`620394ec31d576ba84f0b0d3717b6127075a4a02` and is distributed under the MIT
+License. The license text is included at [docs/licenses/reicon/LICENSE](docs/licenses/reicon/LICENSE).
+
 ## Alamofire 5.12.0
 
 Project: https://github.com/Alamofire/Alamofire

@@ -1,11 +1,10 @@
-## Added
+## Improved
 
-- Added unified monitoring states for the working tree, remote synchronization, repository protection, GitHub Actions, and project goals.
-- Added a menu bar monitor for the selected repository, live channel states, and a year of project activity, with direct access to the main app.
-- Added settings for the monitoring engine, the menu bar item, and each of the five monitoring channels.
-- Added a daily activity grid combining commits and monitored local changes.
+- The menu bar monitor can now switch independently between all repositories and an individual repository, including aggregated yearly activity for the selected scope.
+- Interface icons now use Reicon vector assets. Recovery, lost-change recovery, release-readiness, menu bar monitoring, and related states are included with consistent Retina sizing.
 
 ## Fixed
 
-- Repository protection now measures file and line changes made after the recovery baseline, avoiding alerts caused by pre-existing uncommitted work and listing the paths that crossed the configured threshold.
-- Agent tool installs and upgrades are reported as successful only after the executable, version command, and update state pass local verification. Failed verification keeps the original output and labels it as unverified.
+- Staging now verifies that a stale `.git/index.lock` is not in use before removing it and retrying. Fresh or active locks remain untouched, reducing `GG-GIT-STAGE-128` failures.
+- Repository protection rebuilds a missing or migrated baseline instead of reporting repository damage, and concurrent checks create only one baseline.
+- Repeated monitoring configuration and menu bar callbacks no longer trigger redundant workspace refreshes or replace valid sync state with cancellation errors.

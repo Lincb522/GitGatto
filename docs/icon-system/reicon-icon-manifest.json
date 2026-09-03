@@ -1,0 +1,2652 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/inventory-icons.py",
+  "source": {
+    "repository": "https://github.com/Lincb522/reicon",
+    "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+    "license": "MIT"
+  },
+  "style": {
+    "source": "SVG with a transparent canvas",
+    "rendering": "template tint with pixel-aligned point-size 1x/2x/3x representations"
+  },
+  "count": 135,
+  "icons": [
+    {
+      "symbol": "ai.translation",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-ai-translation.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "translate",
+        "category": "it",
+        "weight": "Outline"
+      },
+      "sha256": "0f87aa044aa7da0a677aabcb770f68c3e0512ab275d7c994130e7aad06ba772d",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:1238",
+        "Sources/GitGatto/DesignSystem/Components.swift:945",
+        "Sources/GitGatto/Views/HelpCenterView.swift:93",
+        "Sources/GitGatto/Views/AppSettingsView.swift:594"
+      ]
+    },
+    {
+      "symbol": "ai.writing",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-ai-writing.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "pen-writing",
+        "category": "text-formatting",
+        "weight": "Outline"
+      },
+      "sha256": "b593f404b7d4415244dbaa876fe1c7cdc77b748ea4ffd5713512205b3f00b324",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:114"
+      ]
+    },
+    {
+      "symbol": "archivebox",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-archivebox.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "archive-box",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "f4b837ff868f4e2221eff519b5966eea5d68555b9426ca70a7746d76eabfb892",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:168",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:304",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:405",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:246",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:199",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:262",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:406",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1436",
+        "Sources/GitGatto/Views/WorkspaceView.swift:502",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:122",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:577",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:630"
+      ]
+    },
+    {
+      "symbol": "archivebox.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-archivebox-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "archive-box",
+        "category": "ui",
+        "weight": "Filled"
+      },
+      "sha256": "d7fe32c1c2ef72566afea765183afa84fa675027ce849de2091700e31c8d1ffa",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:60",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:216",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:357"
+      ]
+    },
+    {
+      "symbol": "arrow.clockwise",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-clockwise.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "refresh",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "00b959e7f94cbc41952e5dbdab8a4d5d3ee19d97de255e4c7d4f8e8d9655cc30",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:1182",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:74",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:756",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:25",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:162",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:133",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:71",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:221",
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:63",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:653",
+        "Sources/GitGatto/Views/WorkspaceView.swift:805",
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:85",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:125",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:60",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:292",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:821",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:123",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:129"
+      ]
+    },
+    {
+      "symbol": "arrow.down",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-down",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "0947386cf3e16ea000232f4ed1adac43b2994e6f4e5bcbfc3f7c4a79b2f47c72",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:609",
+        "Sources/GitGatto/DesignSystem/Components.swift:943",
+        "Sources/GitGatto/Views/WorkspaceView.swift:909",
+        "Sources/GitGatto/Views/WorkspaceView.swift:1078",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:282"
+      ]
+    },
+    {
+      "symbol": "arrow.down.app",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-app.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "download-square",
+        "category": "arrows-action",
+        "weight": "Outline"
+      },
+      "sha256": "faefb166297bc43d9cef7c6297cb5d5c15b94d2d1f25b5244b2cbe35f26d2b9a",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:641",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:245",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:247",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:192",
+        "Sources/GitGatto/Views/WorkspaceView.swift:499",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:102",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:574",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:627",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:215",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:222",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:603",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1028",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1088",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1189",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:688"
+      ]
+    },
+    {
+      "symbol": "arrow.down.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-down-circle",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "db5105cfea34108441091da91864fc3ff28529645980199b2bac4dcc18a79e57",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:788",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:796",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:246"
+      ]
+    },
+    {
+      "symbol": "arrow.down.circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-down-circle",
+        "category": "arrows",
+        "weight": "Filled"
+      },
+      "sha256": "1bd8b6edfbc882bedb06156e987bf2c48a8737f2ea8398c865d3f32c09b9235b",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/UpdateCenterView.swift:250"
+      ]
+    },
+    {
+      "symbol": "arrow.down.to.line",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-down-to-line.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "download",
+        "category": "arrows-action",
+        "weight": "Outline"
+      },
+      "sha256": "bf0700fd6f87c6ef19b972d0804bae35f2f665811a42e2aad0c0c1c71f2ee3d6",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:398",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:119"
+      ]
+    },
+    {
+      "symbol": "arrow.left.arrow.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-left-arrow-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "transfer-h",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "52567158b7f1952fd69ef45a4d2704deec283751cc310754989b26a097ebadf9",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:562"
+      ]
+    },
+    {
+      "symbol": "arrow.left.arrow.right.square",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-left-arrow-right-square.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "square-transfer-h",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "4c45e140c7bd895f602978b1bca09cb7bd76b0fd98aa4da0798c2ebae5c66573",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/DiffInspectorView.swift:321"
+      ]
+    },
+    {
+      "symbol": "arrow.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-right",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "923cf155b4c77266ea333ad1627fedaee7ad376d1bbd12c1f5dcd95f52a70245",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:61",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:212",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:286",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:439"
+      ]
+    },
+    {
+      "symbol": "arrow.triangle.2.circlepath",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-2-circlepath.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrows-rotate",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "83f29c4283f7bca93e5b2bb119df75b7fa30425d2b3fdf9ef9ce51126be29a7d",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:259",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:804",
+        "Sources/GitGatto/Models/MonitoringModels.swift:18",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:28",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:332",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:248",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:140",
+        "Sources/GitGatto/Views/AppSettingsView.swift:595",
+        "Sources/GitGatto/Views/WorkspaceView.swift:582",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:938",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1030",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:687",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:775"
+      ]
+    },
+    {
+      "symbol": "arrow.triangle.branch",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-branch.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "share",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "e45f54be31289b6b915f0428689a66990206bd20027850e8141c43e5379bf63c",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:85",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:24",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:33",
+        "Sources/GitGatto/Views/BranchesWorkspaceView.swift:116",
+        "Sources/GitGatto/Views/BranchesWorkspaceView.swift:193",
+        "Sources/GitGatto/Views/BranchesWorkspaceView.swift:247",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:598",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:637",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:730",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:773",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:53",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:453",
+        "Sources/GitGatto/Views/AppSettingsView.swift:590",
+        "Sources/GitGatto/Views/WorkspaceView.swift:506",
+        "Sources/GitGatto/Views/WorkspaceView.swift:836",
+        "Sources/GitGatto/Views/WorkspaceView.swift:865",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:126",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:581",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:634",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1211",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1226",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:156",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:240",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:400"
+      ]
+    },
+    {
+      "symbol": "arrow.triangle.merge",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-triangle-merge.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "branch-up",
+        "category": "map",
+        "weight": "Outline"
+      },
+      "sha256": "00363c68c1d625f4d95ec76849e2c5678d96496a9e43335d2c55b9c2f9ba1286",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:29",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:475",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:683"
+      ]
+    },
+    {
+      "symbol": "arrow.turn.up.left",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-turn-up-left.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "undo",
+        "category": "arrows-action",
+        "weight": "Outline"
+      },
+      "sha256": "f71025ee3cb049947f04aa2440dbda796472478e9ce307a5357445d648abce15",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:521"
+      ]
+    },
+    {
+      "symbol": "arrow.turn.up.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-turn-up-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "redo",
+        "category": "arrows-action",
+        "weight": "Outline"
+      },
+      "sha256": "c6e2cbd2e0682bc46341c7c0c101829418023849e0446f33a9a8ab3b6ec29d30",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:522"
+      ]
+    },
+    {
+      "symbol": "arrow.up",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-up",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "00f9312bca8453b8994c92b5cde2d821654e0ec8d758918bbed543921f618f35",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:944",
+        "Sources/GitGatto/Views/WorkspaceView.swift:907",
+        "Sources/GitGatto/Views/WorkspaceView.swift:1078",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:281"
+      ]
+    },
+    {
+      "symbol": "arrow.up.arrow.down",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-arrow-down.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "transfer-v",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "d28bd880e80db85de0faa9114c0149d39d8a0456ce6c3ef98f73861dbc6d30bc",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HelpCenterView.swift:88",
+        "Sources/GitGatto/Views/WorkspaceView.swift:911"
+      ]
+    },
+    {
+      "symbol": "arrow.up.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-up-circle",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "c0f2d50fd2dcc0ac9008d57482c882a6fa643055c2364813d2bb24c769157af3",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:746",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:611",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:882",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:678"
+      ]
+    },
+    {
+      "symbol": "arrow.up.circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-up-circle",
+        "category": "arrows",
+        "weight": "Filled"
+      },
+      "sha256": "6ab942c6c324cc588cb538dd1736858bce8e2317184fa12a4ac75266c49c9234",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:915",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:748",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:940"
+      ]
+    },
+    {
+      "symbol": "arrow.up.forward.app",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-forward-app.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "upload-square",
+        "category": "arrows-action",
+        "weight": "Outline"
+      },
+      "sha256": "7c9bbdb16cbc8e1f0d90a949efeb9965aa742cdeb65c6f43d35822d077e64d5b",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:383",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:685"
+      ]
+    },
+    {
+      "symbol": "arrow.up.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-up-right",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "74ab51156ea4ec74171d63f307a509bf53f82daed989368b56c1dc583424368a",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:84",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:375",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:197",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:652",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:781",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1510"
+      ]
+    },
+    {
+      "symbol": "arrow.up.right.square",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-up-right-square.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "arrow-up-right-square",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "a2ee775e75003a5158d06bd48210d80c5d82e8492cd99b31d2ecb456b756cbda",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:178",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1370"
+      ]
+    },
+    {
+      "symbol": "arrow.uturn.backward",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-arrow-uturn-backward.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "undo",
+        "category": "arrows-action",
+        "weight": "Outline"
+      },
+      "sha256": "f71025ee3cb049947f04aa2440dbda796472478e9ce307a5357445d648abce15",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:317"
+      ]
+    },
+    {
+      "symbol": "bubble.left",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-bubble-left.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "chat-round-line",
+        "category": "messages",
+        "weight": "Outline"
+      },
+      "sha256": "267758e6b3a1f23d1a8335a69eb1f5fce9bafc6547465ddd7aeed0d42e438697",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:177"
+      ]
+    },
+    {
+      "symbol": "bubble.left.and.bubble.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-bubble-left-and-bubble-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "dialog",
+        "category": "messages",
+        "weight": "Outline"
+      },
+      "sha256": "4254108a42e8f0a56246a584f8b7bb9ae391a250aa9de11252cdd46e84f8be06",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:696"
+      ]
+    },
+    {
+      "symbol": "building.2",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-building-2.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "buildings",
+        "category": "building",
+        "weight": "Outline"
+      },
+      "sha256": "1a931a68b160e11bd4a5a1aeec37d338646ea6c5e4e075b6d8b8dd30c7046a07",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:557",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:566",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:574",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:356"
+      ]
+    },
+    {
+      "symbol": "checkmark",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "check",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "468093a3fd8b70e8a4261e04599ed152079980655cfbd5ffe15a65717c7d7c6a",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:623",
+        "Sources/GitGatto/DesignSystem/Components.swift:800",
+        "Sources/GitGatto/Views/GlobalErrorSheet.swift:102",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:584",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:400",
+        "Sources/GitGatto/Views/AppSettingsView.swift:1065",
+        "Sources/GitGatto/Views/WorkspaceView.swift:875",
+        "Sources/GitGatto/Views/WorkspaceView.swift:905",
+        "Sources/GitGatto/Views/WorkspaceView.swift:1011",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:345"
+      ]
+    },
+    {
+      "symbol": "checkmark.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "check-circle",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "0cbd22c08bbfae4db4c1c597e1aa63a1d033d1aa5c07e35c28821d0ffc242b15",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:31",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:157",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:431",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:979",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:459",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:525",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:877",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:677"
+      ]
+    },
+    {
+      "symbol": "checkmark.circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "check-circle",
+        "category": "ui",
+        "weight": "Filled"
+      },
+      "sha256": "8f3fa0d2eb9c6b73648a0a453e3d44c5b3e1d0504572f49d01403404883074b9",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:1183",
+        "Sources/GitGatto/DesignSystem/Components.swift:915",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:189",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:515",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:678",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:722",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:733",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:314",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:128",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:603",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:702",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:912",
+        "Sources/GitGatto/Views/AppSettingsView.swift:513",
+        "Sources/GitGatto/Views/AppSettingsView.swift:736",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:499",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:219",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:263",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:656",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:695",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:751",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:939",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1031",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1299",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:778"
+      ]
+    },
+    {
+      "symbol": "checkmark.seal",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-seal.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "check-read",
+        "category": "messages",
+        "weight": "Outline"
+      },
+      "sha256": "aed157adef35383ba1ba1f89478dbd2d30a61d10d3db435d88f4f7eda9170e10",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:136",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:285",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:326",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:764",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:25",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:584",
+        "Sources/GitGatto/Views/HelpCenterView.swift:89",
+        "Sources/GitGatto/Views/HelpCenterView.swift:284",
+        "Sources/GitGatto/Views/WorkspaceView.swift:500",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:106",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:575",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:628",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:539",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1757",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:144"
+      ]
+    },
+    {
+      "symbol": "checkmark.seal.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-seal-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "check-read",
+        "category": "messages",
+        "weight": "Filled"
+      },
+      "sha256": "a09fab4faee45b3c8fea500c0616db09593efa8b4528a1432551271222b6ca42",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:628",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:249",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1911"
+      ]
+    },
+    {
+      "symbol": "checkmark.shield",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-shield.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "shield-check",
+        "category": "security",
+        "weight": "Outline"
+      },
+      "sha256": "6a2e328797c0baa141d6e29d2496ccff9659d75eca79190cad682a934a233b73",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/MonitoringModels.swift:19",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:36",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:389",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:699",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:211",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:218",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:570",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:893",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:675",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:681"
+      ]
+    },
+    {
+      "symbol": "checkmark.square.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-checkmark-square-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "check-square",
+        "category": "ui",
+        "weight": "Filled"
+      },
+      "sha256": "7acce06fc134f498c39e20f0568d7667be9c60130e47837c790b08f0fb445982",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:274",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:352"
+      ]
+    },
+    {
+      "symbol": "chevron.compact.down",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-down.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "angle-down",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "ff5aa142e623466da067a931443a6911ef1fe031815bad649dade90136465066",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:701"
+      ]
+    },
+    {
+      "symbol": "chevron.compact.up",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-compact-up.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "angle-up",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "4dcc6ce391982a45f193cbe5d458ae8f5ea379e3b842c5f72481d3a418ca5627",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:587"
+      ]
+    },
+    {
+      "symbol": "chevron.down",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-down.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "chevron-down",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "fdc85d0f4825254b1cdccc239aabad35ea44f981fee9a3fd3b088d44257aec5c",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/UpdateCenterView.swift:311",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:115",
+        "Sources/GitGatto/Views/WorkspaceView.swift:841",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:373",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:176",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:374"
+      ]
+    },
+    {
+      "symbol": "chevron.down.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-down-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "angle-down-circle",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "00a505ba236dd74747ccd28e27c7b7a59c0bfd4f6f741a7f4df42fc14351d671",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:508"
+      ]
+    },
+    {
+      "symbol": "chevron.left",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-left.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "chevron-left",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "2fb3942ec1afd3c2803a9018b5cb1acc12dd4a2eef57cb343397c56d22b1a255",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:51",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:931",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1161",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:502",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1650"
+      ]
+    },
+    {
+      "symbol": "chevron.left.forwardslash.chevron.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-left-forwardslash-chevron-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "code",
+        "category": "it",
+        "weight": "Outline"
+      },
+      "sha256": "98a0b16e6c9493397a8116cd3c8873db62f77cc24128194bb8af34d0b7ae37bd",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:254",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:154",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:251",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1483",
+        "Sources/GitGatto/Views/DiffInspectorView.swift:115",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:426",
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:95"
+      ]
+    },
+    {
+      "symbol": "chevron.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-chevron-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "chevron-right",
+        "category": "arrows",
+        "weight": "Outline"
+      },
+      "sha256": "4ba9b5aa2c3acb788b4a24c81f106a2f3be990ef8111c2061c28d8e39091e406",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:183",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:672",
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:57",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1400",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1726",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1778",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:214",
+        "Sources/GitGatto/Views/WorkspaceView.swift:1133",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:176",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:374",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:502",
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:198",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1654"
+      ]
+    },
+    {
+      "symbol": "circle.dashed",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-circle-dashed.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "minus-circle",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "fcbb979abae82a689a05094b1d590b14c9a2a74e694eff5baea91d376a237f45",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:520",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:913"
+      ]
+    },
+    {
+      "symbol": "circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "record-circle",
+        "category": "call",
+        "weight": "Filled"
+      },
+      "sha256": "e90dadbaa8fbac5321b907a032d4c5f447d3e318d81d3aee3e6564935aa98946",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:418"
+      ]
+    },
+    {
+      "symbol": "circle.lefthalf.filled",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-circle-lefthalf-filled.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "palette",
+        "category": "tools",
+        "weight": "Outline"
+      },
+      "sha256": "e1dbd92a7b4228c1be3812c7493bb536e22d971a31bd8f16329b38d336a49ff9",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorkspaceView.swift:598",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:755"
+      ]
+    },
+    {
+      "symbol": "clock.arrow.circlepath",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-clock-arrow-circlepath.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "history",
+        "category": "time",
+        "weight": "Outline"
+      },
+      "sha256": "bdf2cb1d430c00c4cc8f51cf6981d3373444c8158c18f7a08b8d6856d75fffa7",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:862",
+        "Sources/GitGatto/Support/GitAgentProfile.swift:30",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:280",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:131",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:726",
+        "Sources/GitGatto/Views/WorkspaceView.swift:503",
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:213",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:106",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:390",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:123",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:578",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:631",
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:57",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:540",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:937",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1029",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1348",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1758",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:674",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:776"
+      ]
+    },
+    {
+      "symbol": "clock.badge.checkmark",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-clock-badge-checkmark.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "alarm-check",
+        "category": "time",
+        "weight": "Outline"
+      },
+      "sha256": "23e6c0b46b10d0c17a6fe671f7352ff6132207e90c201f4b9741cdb4dd17c2ce",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:170",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:618",
+        "Sources/GitGatto/Views/WorkspaceView.swift:504",
+        "Sources/GitGatto/Views/WorkspaceView.swift:505",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:125",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:580",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:633"
+      ]
+    },
+    {
+      "symbol": "code",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-code.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "code",
+        "category": "it",
+        "weight": "Outline"
+      },
+      "sha256": "98a0b16e6c9493397a8116cd3c8873db62f77cc24128194bb8af34d0b7ae37bd",
+      "sourceRefs": [
+        "Sources/GitGatto/ViewModels/WorkspaceViewModel.swift:1443",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:163",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:172",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:200",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:208",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:224",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:242",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:870",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1354"
+      ]
+    },
+    {
+      "symbol": "code.source",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-code-source.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "code-file",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "195f218cba304fa2cb54be62c6e154e2a5996d1c080f3dd10e10e1402f9eeeae",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:120",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:807"
+      ]
+    },
+    {
+      "symbol": "command",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-command.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "command",
+        "category": "it",
+        "weight": "Outline"
+      },
+      "sha256": "6b6a08cbe008752d4e42f8fb74e5b91d5838ed255123abb4c7c67053d85bb410",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HelpCenterView.swift:95",
+        "Sources/GitGatto/Services/CodexService.swift:1150"
+      ]
+    },
+    {
+      "symbol": "curlybraces.square",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-curlybraces-square.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "code-square",
+        "category": "it",
+        "weight": "Outline"
+      },
+      "sha256": "87969d22f763f0f2b9d77e8bf01733af89c6ede59ff127084c95aea28f2f5476",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:191",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:233",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:699",
+        "Sources/GitGatto/Views/CodeSurface.swift:163",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:340",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:673"
+      ]
+    },
+    {
+      "symbol": "doc",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "file",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "70b231119b2d7c6b78f1e456425a8b5157bb4c7c976ec4c6cebc5ccf413d2cce",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:247",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:156",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:429"
+      ]
+    },
+    {
+      "symbol": "doc.badge.ellipsis",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-ellipsis.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "file-content",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "629173bfbbf7ac83083bc842819c397c3e15865d8625126f8ae7964f2ab0c77c",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:598",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:685",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1555",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:331"
+      ]
+    },
+    {
+      "symbol": "doc.badge.gearshape",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-gearshape.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "code-file",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "195f218cba304fa2cb54be62c6e154e2a5996d1c080f3dd10e10e1402f9eeeae",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:334",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:372",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:557"
+      ]
+    },
+    {
+      "symbol": "doc.badge.minus",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc-badge-minus.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "file-minus",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "c00ad85d38dc1b9f2212d582d31861af73b97c1c65cdeac240b3769eadee48d9",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:346"
+      ]
+    },
+    {
+      "symbol": "doc.on.doc",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc-on-doc.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "files",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "31c56c067870776fa710377acd6d931a869095945c0c96708f1b5c6caff859f5",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:342",
+        "Sources/GitGatto/Views/GlobalErrorSheet.swift:102",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:386",
+        "Sources/GitGatto/Views/LegalDocumentsView.swift:66",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:356",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:520"
+      ]
+    },
+    {
+      "symbol": "doc.richtext",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc-richtext.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "doc-text",
+        "category": "notes",
+        "weight": "Outline"
+      },
+      "sha256": "9ed143ffd3acda03449c06b32fdf36d1834792745d7270a1cafc2fc91fa08763",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:32",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:806",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:920",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:427",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:671"
+      ]
+    },
+    {
+      "symbol": "doc.text",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc-text.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "file-text",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "5128b7b3b5e122094a25db1e3e89631cc46133351319ce1c6a5c564cdea6277d",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:24",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:506",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:707",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:731",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:902",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:346",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:515",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1437",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1469",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:183",
+        "Sources/GitGatto/Views/HelpCenterView.swift:399",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:339"
+      ]
+    },
+    {
+      "symbol": "doc.text.magnifyingglass",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-doc-text-magnifyingglass.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "magnifier",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "f8835a339c07a3073e1ec561024ee4920ddb8db877d5c5cbb3a7ce21bb4b68bd",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:698",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:297",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:583",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:515",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:910",
+        "Sources/GitGatto/Views/DiffInspectorView.swift:81",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:680"
+      ]
+    },
+    {
+      "symbol": "dot.radiowaves.left.and.right",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-dot-radiowaves-left-and-right.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "wave-pulse",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "86d32049e14c4c9dcd95482477c0aaa141098d9490d16efc2ba7749120255506",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:181",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:16",
+        "Sources/GitGatto/Views/AppSettingsView.swift:591"
+      ]
+    },
+    {
+      "symbol": "exclamationmark",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-exclamationmark.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "alert",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "b1151d7627130f36dfaf6af2172387d3f352c74484a4b9848dbd710a9535136f",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:633",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:125",
+        "Sources/GitGatto/Views/HelpCenterView.swift:376"
+      ]
+    },
+    {
+      "symbol": "exclamationmark.triangle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-exclamationmark-triangle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "alert-triangle",
+        "category": "ui",
+        "weight": "Filled"
+      },
+      "sha256": "82ee2cf76aa1e2c9919e75831603689c0163f5c8e7f1d92f533ab44e3a8e9a1c",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GlobalErrorSheet.swift:17",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:132",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:400",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:164",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:431",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:65",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:446",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:453",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:170",
+        "Sources/GitGatto/Views/UpdateCenterView.swift:251",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:17",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:427",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:66",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:294",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:344",
+        "Sources/GitGatto/Views/InAppBrowserSheet.swift:103",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1260",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1588",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:313",
+        "Sources/GitGatto/Views/UpdateActionButton.swift:134",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:777",
+        "Sources/GitGatto/Views/AppSettingsView.swift:1491",
+        "Sources/GitGatto/Views/ReleaseHistoryView.swift:113",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:219",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:263",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:942",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1032",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1033",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:201",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:548",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:731",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:777"
+      ]
+    },
+    {
+      "symbol": "externaldrive",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-externaldrive.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "ssd2",
+        "category": "devices",
+        "weight": "Outline"
+      },
+      "sha256": "93cf04501acfaa12ee84f7c8ebea413e35a68298b25a09cba3f3ff4e5e6fbb41",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:1425",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:287"
+      ]
+    },
+    {
+      "symbol": "externaldrive.badge.timemachine",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-externaldrive-badge-timemachine.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "archive2",
+        "category": "notes",
+        "weight": "Outline"
+      },
+      "sha256": "cccc16df3fb8b9c8af770e29971e80434b74e0e474eaf2d7bd79eaa9b66d49a1",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:592",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:150"
+      ]
+    },
+    {
+      "symbol": "externaldrive.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-externaldrive-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "ssd2",
+        "category": "devices",
+        "weight": "Filled"
+      },
+      "sha256": "fabc9dd7c8b81b47b912a74de57827f1cbe9132073a2a5aaab61ca590c3a9689",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:102",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:271",
+        "Sources/GitGatto/Views/AppSettingsView.swift:1247"
+      ]
+    },
+    {
+      "symbol": "eye",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-eye.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "eye",
+        "category": "security",
+        "weight": "Outline"
+      },
+      "sha256": "c25b8741cce539db4cd35690924413a999787cc1ffb0d517bc0918e810568767",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:813",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:878",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:886",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:189",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:526",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:655",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:960"
+      ]
+    },
+    {
+      "symbol": "eye.slash",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-eye-slash.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "eye-off",
+        "category": "security",
+        "weight": "Outline"
+      },
+      "sha256": "d1478c68b2064f10e23728e60b50b52f5d5bb0cf96157ae5f3926bb91bc78d50",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:584",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:326"
+      ]
+    },
+    {
+      "symbol": "folder",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-folder.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "folder",
+        "category": "folders",
+        "weight": "Outline"
+      },
+      "sha256": "16a7205056a8101dcd6a471ee6b0b4342e79b4c04161e0d25e98038d593f22f4",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:739",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:747",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:830",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:192",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:190",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:197",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:106",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:145",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1120",
+        "Sources/GitGatto/Views/WorkspaceView.swift:1121",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:370"
+      ]
+    },
+    {
+      "symbol": "folder.badge.minus",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-folder-badge-minus.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "folder-minus",
+        "category": "folders",
+        "weight": "Outline"
+      },
+      "sha256": "af629e3b934b8bb2e2e2c0e2526802d3ab1a11b05f79bfdef9d8da3151ca5a56",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:337"
+      ]
+    },
+    {
+      "symbol": "folder.badge.plus",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-folder-badge-plus.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "folder-plus",
+        "category": "folders",
+        "weight": "Outline"
+      },
+      "sha256": "25729596dc1a544fe262c2cd7bac3a7332f1e5b6ecbac501be1d4bd9d1cb469f",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:75",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:151",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:256",
+        "Sources/GitGatto/Views/WorkspaceView.swift:582",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:258",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:333",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:447"
+      ]
+    },
+    {
+      "symbol": "folder.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-folder-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "folder",
+        "category": "folders",
+        "weight": "Filled"
+      },
+      "sha256": "f30c1ab2c024f3b85396b28cbb2d67a3085cdb1d6bc44f324988c94f4cb580c2",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:83",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1430"
+      ]
+    },
+    {
+      "symbol": "gearshape",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-gearshape.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "gear",
+        "category": "settings",
+        "weight": "Outline"
+      },
+      "sha256": "b1a12dbdd981e3ddf8be76f985ac32c2aebbef3849098e19d3c9d0bcc5181346",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:181",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:406",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:414",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:79",
+        "Sources/GitGatto/Views/HelpCenterView.swift:94",
+        "Sources/GitGatto/Views/WorkspaceView.swift:607",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:428",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:273",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:342",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:454"
+      ]
+    },
+    {
+      "symbol": "git.pull.request",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-git-pull-request.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "diagram-tree",
+        "category": "business",
+        "weight": "Outline"
+      },
+      "sha256": "bc3dd78fde34ac6c1191744cea64972d8b32c62c554708012b226db4aa6cf546",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:41",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:167",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:809",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1751",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:666",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:679"
+      ]
+    },
+    {
+      "symbol": "github",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-github.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "github/original",
+        "sourceFile": "docs/icon-system/reicon-sources/github-original.svg",
+        "sourceURL": "https://cdn.reicon.dev/logos/github/original.svg",
+        "sourceSHA256": "c9a286f146cf4d3b53a8a632dcf607004ae3f4db80f63d65dff1e1847ff62450"
+      },
+      "sha256": "c9a286f146cf4d3b53a8a632dcf607004ae3f4db80f63d65dff1e1847ff62450",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:821",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:93",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:912"
+      ]
+    },
+    {
+      "symbol": "globe",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-globe.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "globe",
+        "category": "map",
+        "weight": "Outline"
+      },
+      "sha256": "9f654555a7a029ec7b989a6b78c74c54471d30fbace166150440519a65dd97b7",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:539",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:548",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:584",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:593",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:602",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:780",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:894",
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:88",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:672"
+      ]
+    },
+    {
+      "symbol": "hammer",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-hammer.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "sledgehammer",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "aac39ff852760b2fe1f239fa52e07e21efd18c6c8155bfa37df101e2597dd78a",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:65",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:294",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:302",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:358",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:374",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:382",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:390",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:530",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:911",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:376",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:215",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:222",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:582",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:895"
+      ]
+    },
+    {
+      "symbol": "history.file",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-history-file.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "history3",
+        "category": "time",
+        "weight": "Outline"
+      },
+      "sha256": "b14098a18038d9ce7692851ea3a278ef7dcc0381c56fb5a81a74dde02862f494",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:128",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:237",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:124",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:579",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:632"
+      ]
+    },
+    {
+      "symbol": "house.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-house-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "home",
+        "category": "ui",
+        "weight": "Filled"
+      },
+      "sha256": "efdedde25e4c3f17a197ccd29533234feacc252ee6414ac0bf9370274d43384f",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:240",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:400"
+      ]
+    },
+    {
+      "symbol": "info.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-info-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "info-circle",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "0009a49d52f99fc56dbd00bd7ca841364b3b93ae9ed46dd87a9b905efe91a599",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HelpCenterView.swift:363",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:102",
+        "Sources/GitGatto/Views/WorkspaceView.swift:617",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:279",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:351",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:460",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:112"
+      ]
+    },
+    {
+      "symbol": "internaldrive",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-internaldrive.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "ssd",
+        "category": "devices",
+        "weight": "Outline"
+      },
+      "sha256": "4f6e15ac1ee3e83bbb696cbf59330132cdb1c975c4a0ca6c490d2c2dc701cd31",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:612",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:621",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:630",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:639",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:647",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:656",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:838",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:846",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:88",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1363"
+      ]
+    },
+    {
+      "symbol": "legal.disclaimer",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-legal-disclaimer.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "alert-square",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "92188618973d16a8f51ebecedc605075483a6d7b8ffa828de1ef136e0f92787f",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:27"
+      ]
+    },
+    {
+      "symbol": "legal.open.source",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-legal-open-source.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "copyright",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "22c10cd45f3e566f9397d393a1417608d755f0ab03421d0631bd97dab65b2e8d",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:25"
+      ]
+    },
+    {
+      "symbol": "legal.privacy",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-legal-privacy.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "shield-lock",
+        "category": "security",
+        "weight": "Outline"
+      },
+      "sha256": "2d78258643d15f22a95214011d828ff64b6b3a71422742fe4e1c3846d6565fb9",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/AppNavigationModel.swift:26"
+      ]
+    },
+    {
+      "symbol": "lifepreserver",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-lifepreserver.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "life-ring",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "f3a1bf943efc50425c9a748db9be44c0ddb877d7f57ffd9d6d98881ac226bd57",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:34"
+      ]
+    },
+    {
+      "symbol": "link",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-link.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "link",
+        "category": "text-formatting",
+        "weight": "Outline"
+      },
+      "sha256": "32959b5d97572b62d8b816e713cb81b4ff50405db7b42a37e2c8303daf2c54b3",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1439",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:199",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:289"
+      ]
+    },
+    {
+      "symbol": "location",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-location.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "location",
+        "category": "map",
+        "weight": "Outline"
+      },
+      "sha256": "03c4ee0efbe6ab84d37a0646463a1d79fd8a5d6efb41cc04fe2e12a025d63293",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:353"
+      ]
+    },
+    {
+      "symbol": "lock.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-lock-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "lock",
+        "category": "security",
+        "weight": "Filled"
+      },
+      "sha256": "073bff5e7e0cb8c246dd2be510ed8360b9504a231c85805771501e68aa625c25",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/GitHubLanguageVisual.swift:272",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:284"
+      ]
+    },
+    {
+      "symbol": "lock.open",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-lock-open.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "lock-open",
+        "category": "security",
+        "weight": "Outline"
+      },
+      "sha256": "622d936b307d035bd91ef5c54fbcead0da9123bf70e703cd2b7d5775a6ed134e",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:810"
+      ]
+    },
+    {
+      "symbol": "magnifyingglass",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-magnifyingglass.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "magnifier",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "f8835a339c07a3073e1ec561024ee4920ddb8db877d5c5cbb3a7ce21bb4b68bd",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:310",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:691",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:715",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:723",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:157",
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:167",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:179",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:451",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1190",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:109",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:260",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:329",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:352"
+      ]
+    },
+    {
+      "symbol": "media.fit",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-media-fit.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "expand",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "85373c4b39e0366bbb89c75828c0a5d4b07e4ede7c4c0432246d27ae7e85e477",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:682",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:79"
+      ]
+    },
+    {
+      "symbol": "minus",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-minus.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "minus",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "80eb8bae86dec1280c333deebc6183ec96d7e64d3f3c8535f48ecb505d47f6b4",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:276",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:68"
+      ]
+    },
+    {
+      "symbol": "minus.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-minus-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "minus-circle",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "fcbb979abae82a689a05094b1d590b14c9a2a74e694eff5baea91d376a237f45",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:303",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:941"
+      ]
+    },
+    {
+      "symbol": "minus.circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-minus-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "minus-circle",
+        "category": "ui",
+        "weight": "Filled"
+      },
+      "sha256": "2391d0bcad152fdff0098c9095aa7c4489d84abfef2c4f8152505ca27b4892f4",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:679"
+      ]
+    },
+    {
+      "symbol": "moon",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-moon.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "moon",
+        "category": "weather",
+        "weight": "Outline"
+      },
+      "sha256": "1bb64471cf63748682e4e1df266a57cf27f0a9325438da0791e76b6ae8ef7c1c",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositorySidebar.swift:757"
+      ]
+    },
+    {
+      "symbol": "paintpalette",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-paintpalette.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "palette",
+        "category": "tools",
+        "weight": "Outline"
+      },
+      "sha256": "e1dbd92a7b4228c1be3812c7493bb536e22d971a31bd8f16329b38d336a49ff9",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/AppSettingsView.swift:588"
+      ]
+    },
+    {
+      "symbol": "paperplane.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-paperplane-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "paper-plane",
+        "category": "messages",
+        "weight": "Filled"
+      },
+      "sha256": "b6513a8fe49fd47cdbbf5f6bb27caf9ec25f132c3066a7edd83c5860143fa8de",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:369"
+      ]
+    },
+    {
+      "symbol": "pause",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-pause.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "pause",
+        "category": "video",
+        "weight": "Outline"
+      },
+      "sha256": "86f9018bb8704acc27efedc6912d4985c3701d788f52f9e00e3937a88a6bffb5",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:619",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:184",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:15",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:114",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:909"
+      ]
+    },
+    {
+      "symbol": "pencil",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-pencil.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "pen",
+        "category": "messages",
+        "weight": "Outline"
+      },
+      "sha256": "feb9eb395829169381d826c867c06ae01e4c6610c46ce83a1333b465c557e894",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/Components.swift:946",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:527",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:655"
+      ]
+    },
+    {
+      "symbol": "person.2",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-person-2.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "users",
+        "category": "users",
+        "weight": "Outline"
+      },
+      "sha256": "12d6c5cf31af519f34a46fbfd45618012174d878de53326c9c8f7cdf8c8eadd2",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:350"
+      ]
+    },
+    {
+      "symbol": "person.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-person-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "user-circle",
+        "category": "users",
+        "weight": "Outline"
+      },
+      "sha256": "71fb3a42711a67287ef2d69f326397e168a8f2cb13c174af7af5cb014610a1dc",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:868",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1338"
+      ]
+    },
+    {
+      "symbol": "person.crop.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "user-circle",
+        "category": "users",
+        "weight": "Outline"
+      },
+      "sha256": "71fb3a42711a67287ef2d69f326397e168a8f2cb13c174af7af5cb014610a1dc",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:403",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:132",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:285",
+        "Sources/GitGatto/Views/AboutGitGattoView.swift:79"
+      ]
+    },
+    {
+      "symbol": "person.crop.circle.badge.questionmark",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-badge-questionmark.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "help-circle",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "6e46f8ce011bf094686e072af5fa15a8f9771d68bcea0cff56874892cfb52fc0",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:269"
+      ]
+    },
+    {
+      "symbol": "person.crop.circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-person-crop-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "user-circle",
+        "category": "users",
+        "weight": "Filled"
+      },
+      "sha256": "a90139597f09e911781c99e1592259443b3af9f44ba848ba03bb9babbea3348e",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:151",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:321",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1708"
+      ]
+    },
+    {
+      "symbol": "photo",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-photo.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "image",
+        "category": "video",
+        "weight": "Outline"
+      },
+      "sha256": "7d2c769ea66d148d7dd81e5c8d5bb0b2d84519922f4bb8f711467b03394c4a49",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1433",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:367",
+        "Sources/GitGatto/Views/DiffInspectorView.swift:113",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:422"
+      ]
+    },
+    {
+      "symbol": "play.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-play-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "play-circle",
+        "category": "video",
+        "weight": "Outline"
+      },
+      "sha256": "27876c6d85f5665374a617accdd1b2336424cc666db7d6ac7e24c8a57f9ad8cc",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:144",
+        "Sources/GitGatto/Models/MonitoringModels.swift:20",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:187",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:155",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:326",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:810",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1433",
+        "Sources/GitGatto/Views/HelpCenterView.swift:86",
+        "Sources/GitGatto/Views/HelpCenterView.swift:370",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:121",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:232",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:683",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:178",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:366",
+        "Sources/GitGatto/Views/DiffInspectorView.swift:114",
+        "Sources/GitGatto/Views/FileTimelineWorkspaceView.swift:422",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:774"
+      ]
+    },
+    {
+      "symbol": "play.circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-play-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "play-circle",
+        "category": "video",
+        "weight": "Filled"
+      },
+      "sha256": "51b9c2f1653e7b4d34cd7b09c092681e005ae74fe64e4529e792f0bd13a31632",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:47",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:310"
+      ]
+    },
+    {
+      "symbol": "plus",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-plus.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "plus",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "9e6278956d1bfca7e517a92a93ba273424f84c0244eb4db2dc3961f4e2a3128b",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:1056",
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:1200",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:240",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:131",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:276",
+        "Sources/GitGatto/Views/RepositoryMediaPreview.swift:76",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:113",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:122"
+      ]
+    },
+    {
+      "symbol": "plus.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-plus-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "plus-circle",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "ce3da12fd85d8d8dc5541abb5a0d99b45cf1891251fb20d433b762f03fd01d90",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:303"
+      ]
+    },
+    {
+      "symbol": "point.3.connected.trianglepath.dotted",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-point-3-connected-trianglepath-dotted.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "share",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "e45f54be31289b6b915f0428689a66990206bd20027850e8141c43e5379bf63c",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:460",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:470",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:479",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:488",
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:81"
+      ]
+    },
+    {
+      "symbol": "point.3.filled.connected.trianglepath.dotted",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-point-3-filled-connected-trianglepath-dotted.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "nodes",
+        "category": "business",
+        "weight": "Outline"
+      },
+      "sha256": "b700e76ebd474f4a97bb6eea97c34eca13ec1735d61b8609d1862759ee341e78",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/HistoryWorkspaceView.swift:476",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:105",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:283"
+      ]
+    },
+    {
+      "symbol": "point.topleft.down.to.point.bottomright.curvepath",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-point-topleft-down-to-point-bottomright-curvepath.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "window-expand-bottom-right",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "c00907a355543c65bdf990f58848f45295378c45e3fa3a79a69a73ddab33a673",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:274",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:697",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:603",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:693",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:362"
+      ]
+    },
+    {
+      "symbol": "record.circle",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-record-circle.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "record-circle",
+        "category": "call",
+        "weight": "Outline"
+      },
+      "sha256": "05eb5b3bd53b86ff0225fd1ebb51ad5916d6588ba1ab052c9315c21fa26b8438",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/MonitoringModels.swift:21",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:599",
+        "Sources/GitGatto/Views/HelpCenterView.swift:90",
+        "Sources/GitGatto/Views/HelpCenterView.swift:285",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:89",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:466",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:907",
+        "Sources/GitGatto/Views/WorkspaceView.swift:509",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:132",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:584",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:637",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:657",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:696"
+      ]
+    },
+    {
+      "symbol": "rectangle.split.2x1",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-rectangle-split-2x1.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "layout",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "fce33e00422c114fc0b266b7d542221ebcea9d403547e83000d42c3d504a9b83",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/WorkspaceView.swift:507",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:127",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:582",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:635",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:223"
+      ]
+    },
+    {
+      "symbol": "shippingbox",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-shippingbox.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "package",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "b67bb845ba1872fb757b37432b27ebee8f529a193973c0934119bdbbe8db182f",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:75",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:398",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:423",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:442",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:452",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:514",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:522",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:42",
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:158",
+        "Sources/GitGatto/Views/GitHubActionsCenterView.swift:248",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:351",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:542",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:808",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1440",
+        "Sources/GitGatto/Views/HelpCenterView.swift:91",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:537",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1343",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:682",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:686"
+      ]
+    },
+    {
+      "symbol": "slider.horizontal.3",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-slider-horizontal-3.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "slider-h",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "6e35a0efadcab6dfeb1c89b258457cc89474f13dc88aa7f2a272408a7d3edc09",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:225",
+        "Sources/GitGatto/Views/AppSettingsView.swift:589"
+      ]
+    },
+    {
+      "symbol": "sparkles",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-sparkles.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "sparkles",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "784c7105a90a52d3d5051f37182420509e52add17fcef357f3fd660567c25846",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:19",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:247",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:415",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:568",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:624",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:194",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:254",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:421",
+        "Sources/GitGatto/Views/HelpCenterView.swift:92",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:548",
+        "Sources/GitGatto/Views/AppSettingsView.swift:593",
+        "Sources/GitGatto/Views/WorkspaceView.swift:510",
+        "Sources/GitGatto/Views/ChangesWorkspaceView.swift:473",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:143",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:585",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:638",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:329",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:863",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:144",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:300",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:252"
+      ]
+    },
+    {
+      "symbol": "square",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-square.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "box",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "b282e8296212867d696ca3f726a19dc8c560cbf99c95736e9ab5059cf76b9e0d",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryScannerView.swift:274"
+      ]
+    },
+    {
+      "symbol": "square.grid.2x2",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-square-grid-2x2.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "grid",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "d21bda9d0bbefc66105248fb493a4cb841d13ed772ce64ef80f91fc5d49e7437",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:70",
+        "Sources/GitGatto/Views/WorkspaceView.swift:498",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:99",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:573",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:626",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1755"
+      ]
+    },
+    {
+      "symbol": "square.stack.3d.up",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-square-stack-3d-up.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "layers",
+        "category": "tools",
+        "weight": "Outline"
+      },
+      "sha256": "77d2926a8acc69d1e47f491b7cd934932dbf72ba10987e0656e2e0f8113804da",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:276",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:310",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:318",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:366",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:432",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:673",
+        "Sources/GitGatto/Models/MonitoringModels.swift:17",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:83",
+        "Sources/GitGatto/Views/MonitoringStatusBarView.swift:98",
+        "Sources/GitGatto/Views/HelpCenterView.swift:87",
+        "Sources/GitGatto/Views/WorkspaceView.swift:501",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:121",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:576",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:629",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:280",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:676"
+      ]
+    },
+    {
+      "symbol": "star",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-star.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "star",
+        "category": "like",
+        "weight": "Outline"
+      },
+      "sha256": "a80de74314ad5908acddacb19c05bd5aa5a8891e474f4227c6575e9f3cf57d1c",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:976",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:597",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1665",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:538",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1176",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1207",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1222",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1756",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1931"
+      ]
+    },
+    {
+      "symbol": "star.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-star-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "star",
+        "category": "like",
+        "weight": "Filled"
+      },
+      "sha256": "9d97f40bdcc24803bf9406e1084ce56a007602d0e26c386c443d952bdbeacb0c",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:976",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1176",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:1916"
+      ]
+    },
+    {
+      "symbol": "stethoscope",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-stethoscope.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "stethoscope",
+        "category": "medicine",
+        "weight": "Outline"
+      },
+      "sha256": "22649ceb7ccdf1fa4c643279382562a554f75330c065520ebd45f31e6bacd0d1",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:27",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:152",
+        "Sources/GitGatto/Views/WorkspaceView.swift:508",
+        "Sources/GitGatto/Views/RepositoryDiagnosticsView.swift:22",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:128",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:583",
+        "Sources/GitGatto/Views/RepositorySidebar.swift:636"
+      ]
+    },
+    {
+      "symbol": "sun.max",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-sun-max.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "sun",
+        "category": "weather",
+        "weight": "Outline"
+      },
+      "sha256": "ed43be980177030fa6925b9c190c3db01348cba150a1cf8f1977acbf4b183fa6",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositorySidebar.swift:756"
+      ]
+    },
+    {
+      "symbol": "tag",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-tag.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "tag3",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "c10573ff648328dcc91e5365b984965630a96ed039db6c197e263155c8a00e44",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:35",
+        "Sources/GitGatto/Services/ProjectReleaseRuntime.swift:79"
+      ]
+    },
+    {
+      "symbol": "terminal",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-terminal.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "browser-terminal",
+        "category": "it",
+        "weight": "Outline"
+      },
+      "sha256": "8707b642d3d8334e3addf9a4aed22cb74e32ca7d5d9e2222b8f8ce191547346e",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:112",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:216",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:350",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:498",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:664",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:755",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:821",
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:854",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:453",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:685",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1279",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:995",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:556"
+      ]
+    },
+    {
+      "symbol": "text.badge.plus",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-text-badge-plus.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "file-plus",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "079a01110917cbf4a47c5c5100581383d0bdfbc94ed17b2da369019caf1b1c33",
+      "sourceRefs": [
+        "Sources/GitGatto/Support/GitAgentProfile.swift:26",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:585",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:684"
+      ]
+    },
+    {
+      "symbol": "text.bubble",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-text-bubble.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "chat-line",
+        "category": "messages",
+        "weight": "Outline"
+      },
+      "sha256": "c68bd5d19e41fe51ba7be5fba2d27a02a623f09743282a507ad3b47e486464b5",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:177"
+      ]
+    },
+    {
+      "symbol": "text.cursor",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-text-cursor.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "cursor",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "6ebf7e0fe84a9dbe1d6eeb3f76cdb846a0c6f631bd117fbd702a6495380cdc79",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:772",
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:78",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:487",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:908"
+      ]
+    },
+    {
+      "symbol": "trash",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-trash.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "trash",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "2b9b11542d6721fb5abe7e856eabc61d9fecfd0b17d3bc47504d462b88ec168d",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/StashWorkspaceView.swift:412",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:86",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:212",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:199",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:426",
+        "Sources/GitGatto/Views/WorktreeWorkspaceView.swift:268"
+      ]
+    },
+    {
+      "symbol": "trash.slash",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-trash-slash.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "file-remove",
+        "category": "files",
+        "weight": "Outline"
+      },
+      "sha256": "e7233266eab0484029464d0f82e46cbf5d7b64af122471a847556faf6dbb6cd8",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:221"
+      ]
+    },
+    {
+      "symbol": "tray.and.arrow.down",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-tray-and-arrow-down.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "download",
+        "category": "arrows-action",
+        "weight": "Outline"
+      },
+      "sha256": "bf0700fd6f87c6ef19b972d0804bae35f2f665811a42e2aad0c0c1c71f2ee3d6",
+      "sourceRefs": [
+        "Sources/GitGatto/Views/RepositoryReleasesView.swift:114",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:37",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:622",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:719",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:763",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:306"
+      ]
+    },
+    {
+      "symbol": "wrench.and.screwdriver",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-wrench-and-screwdriver.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "sledgehammer",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "aac39ff852760b2fe1f239fa52e07e21efd18c6c8155bfa37df101e2597dd78a",
+      "sourceRefs": [
+        "Sources/GitGatto/Models/DevelopmentToolModels.swift:268",
+        "Sources/GitGatto/Views/HelpCenterView.swift:96"
+      ]
+    },
+    {
+      "symbol": "xmark",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-xmark.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "xmark",
+        "category": "ui",
+        "weight": "Outline"
+      },
+      "sha256": "a7bc35a2e9466fa377c3c5ace44301d9332b864400973ed591408fbceb8d2ad3",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:181",
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:637",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:91",
+        "Sources/GitGatto/Views/CodexWorkspaceView.swift:279",
+        "Sources/GitGatto/Views/RepositoryRecoveryView.swift:149",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:24",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:185",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:188",
+        "Sources/GitGatto/Views/DownloadCenterView.swift:201",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:747",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1516",
+        "Sources/GitGatto/Views/ConflictResolutionWorkspaceView.swift:416",
+        "Sources/GitGatto/Views/HelpCenterView.swift:347",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:541",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:915"
+      ]
+    },
+    {
+      "symbol": "xmark.circle.fill",
+      "asset": "Sources/GitGatto/Resources/UIIcons/gatto-xmark-circle-fill.svg",
+      "source": {
+        "repository": "https://github.com/Lincb522/reicon",
+        "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+        "name": "x-circle",
+        "category": "ui",
+        "weight": "Filled"
+      },
+      "sha256": "073002c20269063982a774b9374f6ad141a73056a50d58c09a7a0260c8fc10af",
+      "sourceRefs": [
+        "Sources/GitGatto/DesignSystem/InteractionMotion.swift:1184",
+        "Sources/GitGatto/DesignSystem/Components.swift:321",
+        "Sources/GitGatto/Views/GitHubPullRequestReviewView.swift:680",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:192",
+        "Sources/GitGatto/Views/GitHubWorkspaceView.swift:1198",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:603",
+        "Sources/GitGatto/Views/RegressionInvestigationWorkspaceView.swift:914",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:337",
+        "Sources/GitGatto/Views/GitHubMarketplaceView.swift:359",
+        "Sources/GitGatto/Views/ProjectGoalsWorkspaceView.swift:779"
+      ]
+    }
+  ]
+}

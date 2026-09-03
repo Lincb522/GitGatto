@@ -15,33 +15,40 @@ struct BrandAssetTests {
             )
         )
         let iconURLs = enumerator.compactMap { $0 as? URL }.filter {
-            $0.pathExtension == "png" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
+            $0.pathExtension == "svg" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
         }
 
-        #expect(iconURLs.count == 129)
+        #expect(iconURLs.count == 135)
         #expect(GattoIconAssets.assetName(for: "arrow.clockwise") == "gatto-arrow-clockwise")
         #expect(GattoIconAssets.assetName(for: "sun.max") == "gatto-sun-max")
         #expect(GattoIconAssets.assetName(for: "moon") == "gatto-moon")
         #expect(GattoIconAssets.assetName(for: "github") == "gatto-github")
+        #expect(GattoIconAssets.assetName(for: "lock.open") == "gatto-lock-open")
+        #expect(GattoIconAssets.assetName(for: "trash.slash") == "gatto-trash-slash")
+        for symbol in ["externaldrive.badge.timemachine", "lifepreserver", "tag"] {
+            let name = GattoIconAssets.assetName(for: symbol)
+            #expect(iconURLs.contains { $0.deletingPathExtension().lastPathComponent == name })
+        }
         for url in iconURLs {
-            let representation = try #require(NSBitmapImageRep(data: Data(contentsOf: url)))
-            #expect(representation.pixelsWide == 256)
-            #expect(representation.pixelsHigh == 256)
-            #expect(representation.hasAlpha)
-            #expect((representation.colorAt(x: 0, y: 0)?.alphaComponent ?? 1) <= 0.01)
+            let source = try String(contentsOf: url, encoding: .utf8)
+            let image = try #require(NSImage(contentsOf: url))
+            #expect(source.contains("<svg"))
+            #expect(source.contains("viewBox="))
+            #expect(image.representations.contains { String(describing: type(of: $0)).contains("SVG") })
         }
         let source = try #require(
             AppResourceBundle.current.url(
                 forResource: "gatto-arrow-clockwise",
-                withExtension: "png",
+                withExtension: "svg",
                 subdirectory: "UIIcons"
-            ) ?? AppResourceBundle.current.url(forResource: "gatto-arrow-clockwise", withExtension: "png")
+            ) ?? AppResourceBundle.current.url(forResource: "gatto-arrow-clockwise", withExtension: "svg")
         )
         let sourceImage = try #require(NSImage(contentsOf: source))
         #expect(!sourceImage.representations.isEmpty)
         let icon = GattoIconAssets.image(for: "arrow.clockwise")
         #expect(!icon.representations.isEmpty)
         #expect(icon.isTemplate)
+        #expect(icon.size == NSSize(width: 20, height: 20))
     }
 
     @Test("Keeps an editable master and a high-resolution in-app icon")

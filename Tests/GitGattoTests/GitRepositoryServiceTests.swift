@@ -494,6 +494,59 @@ struct GitRepositoryServiceTests {
         #expect(Set(refreshedSnapshot.stagedChanges.map(\.path)) == ["modified.txt", "deleted.txt"])
     }
 
+    @Test("Staging removes an old unowned index lock and retries once")
+    func recoversStaleIndexLockWhileStaging() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoStaleIndexLockTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "before\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "tracked.txt"], at: root)
+        try runGit(["commit", "-m", "Initial commit"], at: root)
+        try "after\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+
+        let lockURL = root.appendingPathComponent(".git/index.lock")
+        try Data().write(to: lockURL)
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date().addingTimeInterval(-300)],
+            ofItemAtPath: lockURL.path
+        )
+
+        try await GitRepositoryService().stage(paths: ["tracked.txt"], in: root)
+
+        #expect(!FileManager.default.fileExists(atPath: lockURL.path))
+        #expect(try runGitOutput(["diff", "--cached", "--name-only"], at: root) == "tracked.txt")
+    }
+
+    @Test("Staging preserves a fresh index lock")
+    func preservesFreshIndexLockWhileStaging() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GitGattoFreshIndexLockTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try runGit(["init", "-b", "main"], at: root)
+        try runGit(["config", "user.name", "GitGatto Test"], at: root)
+        try runGit(["config", "user.email", "gitgatto@example.invalid"], at: root)
+        try "before\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try runGit(["add", "tracked.txt"], at: root)
+        try runGit(["commit", "-m", "Initial commit"], at: root)
+        try "after\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+
+        let lockURL = root.appendingPathComponent(".git/index.lock")
+        try Data().write(to: lockURL)
+
+        await #expect(throws: GitCommandError.self) {
+            try await GitRepositoryService().stage(paths: ["tracked.txt"], in: root)
+        }
+
+        #expect(FileManager.default.fileExists(atPath: lockURL.path))
+    }
+
     @Test("Discards staged and unstaged edits back to HEAD")
     func discardsTrackedChanges() async throws {
         let root = FileManager.default.temporaryDirectory

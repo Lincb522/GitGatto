@@ -1,0 +1,576 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/Lincb522/reicon",
+    "revision": "620394ec31d576ba84f0b0d3717b6127075a4a02",
+    "license": "MIT"
+  },
+  "rendering": {
+    "format": "SVG",
+    "viewBox": "0 0 24 24",
+    "foreground": "#000000",
+    "background": "transparent"
+  },
+  "icons": {
+    "ai.translation": {
+      "category": "it",
+      "name": "translate"
+    },
+    "ai.writing": {
+      "category": "text-formatting",
+      "name": "pen-writing"
+    },
+    "archivebox": {
+      "category": "ui",
+      "name": "archive-box"
+    },
+    "archivebox.fill": {
+      "category": "ui",
+      "name": "archive-box",
+      "weight": "Filled"
+    },
+    "arrow.clockwise": {
+      "category": "arrows",
+      "name": "refresh"
+    },
+    "arrow.down": {
+      "category": "arrows",
+      "name": "arrow-down"
+    },
+    "arrow.down.app": {
+      "category": "arrows-action",
+      "name": "download-square"
+    },
+    "arrow.down.circle": {
+      "category": "arrows",
+      "name": "arrow-down-circle"
+    },
+    "arrow.down.circle.fill": {
+      "category": "arrows",
+      "name": "arrow-down-circle",
+      "weight": "Filled"
+    },
+    "arrow.down.to.line": {
+      "category": "arrows-action",
+      "name": "download"
+    },
+    "arrow.left.arrow.right": {
+      "category": "arrows",
+      "name": "transfer-h"
+    },
+    "arrow.left.arrow.right.square": {
+      "category": "arrows",
+      "name": "square-transfer-h"
+    },
+    "arrow.right": {
+      "category": "arrows",
+      "name": "arrow-right"
+    },
+    "arrow.triangle.2.circlepath": {
+      "category": "arrows",
+      "name": "arrows-rotate"
+    },
+    "arrow.triangle.branch": {
+      "category": "ui",
+      "name": "share"
+    },
+    "arrow.triangle.merge": {
+      "category": "map",
+      "name": "branch-up"
+    },
+    "arrow.turn.up.left": {
+      "category": "arrows-action",
+      "name": "undo"
+    },
+    "arrow.turn.up.right": {
+      "category": "arrows-action",
+      "name": "redo"
+    },
+    "arrow.up": {
+      "category": "arrows",
+      "name": "arrow-up"
+    },
+    "arrow.up.arrow.down": {
+      "category": "arrows",
+      "name": "transfer-v"
+    },
+    "arrow.up.circle": {
+      "category": "arrows",
+      "name": "arrow-up-circle"
+    },
+    "arrow.up.circle.fill": {
+      "category": "arrows",
+      "name": "arrow-up-circle",
+      "weight": "Filled"
+    },
+    "arrow.up.forward.app": {
+      "category": "arrows-action",
+      "name": "upload-square"
+    },
+    "arrow.up.right": {
+      "category": "arrows",
+      "name": "arrow-up-right"
+    },
+    "arrow.up.right.square": {
+      "category": "arrows",
+      "name": "arrow-up-right-square"
+    },
+    "arrow.uturn.backward": {
+      "category": "arrows-action",
+      "name": "undo"
+    },
+    "bubble.left": {
+      "category": "messages",
+      "name": "chat-round-line"
+    },
+    "bubble.left.and.bubble.right": {
+      "category": "messages",
+      "name": "dialog"
+    },
+    "building.2": {
+      "category": "building",
+      "name": "buildings"
+    },
+    "checkmark": {
+      "category": "ui",
+      "name": "check"
+    },
+    "checkmark.circle": {
+      "category": "ui",
+      "name": "check-circle"
+    },
+    "checkmark.circle.fill": {
+      "category": "ui",
+      "name": "check-circle",
+      "weight": "Filled"
+    },
+    "checkmark.seal": {
+      "category": "messages",
+      "name": "check-read"
+    },
+    "checkmark.seal.fill": {
+      "category": "messages",
+      "name": "check-read",
+      "weight": "Filled"
+    },
+    "checkmark.shield": {
+      "category": "security",
+      "name": "shield-check"
+    },
+    "checkmark.square.fill": {
+      "category": "ui",
+      "name": "check-square",
+      "weight": "Filled"
+    },
+    "chevron.compact.down": {
+      "category": "arrows",
+      "name": "angle-down"
+    },
+    "chevron.compact.up": {
+      "category": "arrows",
+      "name": "angle-up"
+    },
+    "chevron.down": {
+      "category": "arrows",
+      "name": "chevron-down"
+    },
+    "chevron.down.circle": {
+      "category": "arrows",
+      "name": "angle-down-circle"
+    },
+    "chevron.left": {
+      "category": "arrows",
+      "name": "chevron-left"
+    },
+    "chevron.left.forwardslash.chevron.right": {
+      "category": "it",
+      "name": "code"
+    },
+    "chevron.right": {
+      "category": "arrows",
+      "name": "chevron-right"
+    },
+    "circle.dashed": {
+      "category": "ui",
+      "name": "minus-circle"
+    },
+    "circle.fill": {
+      "category": "call",
+      "name": "record-circle",
+      "weight": "Filled"
+    },
+    "circle.lefthalf.filled": {
+      "category": "tools",
+      "name": "palette"
+    },
+    "clock.arrow.circlepath": {
+      "category": "time",
+      "name": "history"
+    },
+    "clock.badge.checkmark": {
+      "category": "time",
+      "name": "alarm-check"
+    },
+    "code": {
+      "category": "it",
+      "name": "code"
+    },
+    "code.source": {
+      "category": "files",
+      "name": "code-file"
+    },
+    "command": {
+      "category": "it",
+      "name": "command"
+    },
+    "curlybraces.square": {
+      "category": "it",
+      "name": "code-square"
+    },
+    "doc": {
+      "category": "files",
+      "name": "file"
+    },
+    "doc.badge.ellipsis": {
+      "category": "files",
+      "name": "file-content"
+    },
+    "doc.badge.gearshape": {
+      "category": "files",
+      "name": "code-file"
+    },
+    "doc.badge.minus": {
+      "category": "files",
+      "name": "file-minus"
+    },
+    "doc.on.doc": {
+      "category": "files",
+      "name": "files"
+    },
+    "doc.richtext": {
+      "category": "notes",
+      "name": "doc-text"
+    },
+    "doc.text": {
+      "category": "files",
+      "name": "file-text"
+    },
+    "doc.text.magnifyingglass": {
+      "category": "ui",
+      "name": "magnifier"
+    },
+    "dot.radiowaves.left.and.right": {
+      "category": "ui",
+      "name": "wave-pulse"
+    },
+    "exclamationmark": {
+      "category": "ui",
+      "name": "alert"
+    },
+    "exclamationmark.triangle.fill": {
+      "category": "ui",
+      "name": "alert-triangle",
+      "weight": "Filled"
+    },
+    "externaldrive": {
+      "category": "devices",
+      "name": "ssd2"
+    },
+    "externaldrive.badge.timemachine": {
+      "category": "notes",
+      "name": "archive2"
+    },
+    "externaldrive.fill": {
+      "category": "devices",
+      "name": "ssd2",
+      "weight": "Filled"
+    },
+    "eye": {
+      "category": "security",
+      "name": "eye"
+    },
+    "eye.slash": {
+      "category": "security",
+      "name": "eye-off"
+    },
+    "folder": {
+      "category": "folders",
+      "name": "folder"
+    },
+    "folder.badge.minus": {
+      "category": "folders",
+      "name": "folder-minus"
+    },
+    "folder.badge.plus": {
+      "category": "folders",
+      "name": "folder-plus"
+    },
+    "folder.fill": {
+      "category": "folders",
+      "name": "folder",
+      "weight": "Filled"
+    },
+    "gearshape": {
+      "category": "settings",
+      "name": "gear"
+    },
+    "git.pull.request": {
+      "category": "business",
+      "name": "diagram-tree"
+    },
+    "github": {
+      "name": "github/original",
+      "sourceFile": "docs/icon-system/reicon-sources/github-original.svg",
+      "sourceURL": "https://cdn.reicon.dev/logos/github/original.svg",
+      "sha256": "c9a286f146cf4d3b53a8a632dcf607004ae3f4db80f63d65dff1e1847ff62450"
+    },
+    "globe": {
+      "category": "map",
+      "name": "globe"
+    },
+    "hammer": {
+      "category": "ui",
+      "name": "sledgehammer"
+    },
+    "history.file": {
+      "category": "time",
+      "name": "history3"
+    },
+    "house.fill": {
+      "category": "ui",
+      "name": "home",
+      "weight": "Filled"
+    },
+    "info.circle": {
+      "category": "ui",
+      "name": "info-circle"
+    },
+    "internaldrive": {
+      "category": "devices",
+      "name": "ssd"
+    },
+    "legal.disclaimer": {
+      "category": "ui",
+      "name": "alert-square"
+    },
+    "legal.open.source": {
+      "category": "ui",
+      "name": "copyright"
+    },
+    "legal.privacy": {
+      "category": "security",
+      "name": "shield-lock"
+    },
+    "lifepreserver": {
+      "category": "ui",
+      "name": "life-ring"
+    },
+    "link": {
+      "category": "text-formatting",
+      "name": "link"
+    },
+    "location": {
+      "category": "map",
+      "name": "location"
+    },
+    "lock.fill": {
+      "category": "security",
+      "name": "lock",
+      "weight": "Filled"
+    },
+    "lock.open": {
+      "category": "security",
+      "name": "lock-open"
+    },
+    "magnifyingglass": {
+      "category": "ui",
+      "name": "magnifier"
+    },
+    "media.fit": {
+      "category": "ui",
+      "name": "expand"
+    },
+    "minus": {
+      "category": "ui",
+      "name": "minus"
+    },
+    "minus.circle": {
+      "category": "ui",
+      "name": "minus-circle"
+    },
+    "minus.circle.fill": {
+      "category": "ui",
+      "name": "minus-circle",
+      "weight": "Filled"
+    },
+    "moon": {
+      "category": "weather",
+      "name": "moon"
+    },
+    "paintpalette": {
+      "category": "tools",
+      "name": "palette"
+    },
+    "paperplane.fill": {
+      "category": "messages",
+      "name": "paper-plane",
+      "weight": "Filled"
+    },
+    "pause": {
+      "category": "video",
+      "name": "pause"
+    },
+    "pencil": {
+      "category": "messages",
+      "name": "pen"
+    },
+    "person.2": {
+      "category": "users",
+      "name": "users"
+    },
+    "person.circle": {
+      "category": "users",
+      "name": "user-circle"
+    },
+    "person.crop.circle": {
+      "category": "users",
+      "name": "user-circle"
+    },
+    "person.crop.circle.badge.questionmark": {
+      "category": "ui",
+      "name": "help-circle"
+    },
+    "person.crop.circle.fill": {
+      "category": "users",
+      "name": "user-circle",
+      "weight": "Filled"
+    },
+    "photo": {
+      "category": "video",
+      "name": "image"
+    },
+    "play.circle": {
+      "category": "video",
+      "name": "play-circle"
+    },
+    "play.circle.fill": {
+      "category": "video",
+      "name": "play-circle",
+      "weight": "Filled"
+    },
+    "plus": {
+      "category": "ui",
+      "name": "plus"
+    },
+    "plus.circle": {
+      "category": "ui",
+      "name": "plus-circle"
+    },
+    "point.3.connected.trianglepath.dotted": {
+      "category": "ui",
+      "name": "share"
+    },
+    "point.3.filled.connected.trianglepath.dotted": {
+      "category": "business",
+      "name": "nodes"
+    },
+    "point.topleft.down.to.point.bottomright.curvepath": {
+      "category": "ui",
+      "name": "window-expand-bottom-right"
+    },
+    "record.circle": {
+      "category": "call",
+      "name": "record-circle"
+    },
+    "rectangle.split.2x1": {
+      "category": "ui",
+      "name": "layout"
+    },
+    "shippingbox": {
+      "category": "ui",
+      "name": "package"
+    },
+    "slider.horizontal.3": {
+      "category": "ui",
+      "name": "slider-h"
+    },
+    "sparkles": {
+      "category": "ui",
+      "name": "sparkles"
+    },
+    "square": {
+      "category": "ui",
+      "name": "box"
+    },
+    "square.grid.2x2": {
+      "category": "ui",
+      "name": "grid"
+    },
+    "square.stack.3d.up": {
+      "category": "tools",
+      "name": "layers"
+    },
+    "star": {
+      "category": "like",
+      "name": "star"
+    },
+    "star.fill": {
+      "category": "like",
+      "name": "star",
+      "weight": "Filled"
+    },
+    "stethoscope": {
+      "category": "medicine",
+      "name": "stethoscope"
+    },
+    "sun.max": {
+      "category": "weather",
+      "name": "sun"
+    },
+    "tag": {
+      "category": "ui",
+      "name": "tag3"
+    },
+    "terminal": {
+      "category": "it",
+      "name": "browser-terminal"
+    },
+    "text.badge.plus": {
+      "category": "files",
+      "name": "file-plus"
+    },
+    "text.bubble": {
+      "category": "messages",
+      "name": "chat-line"
+    },
+    "text.cursor": {
+      "category": "ui",
+      "name": "cursor"
+    },
+    "trash": {
+      "category": "ui",
+      "name": "trash"
+    },
+    "trash.slash": {
+      "category": "files",
+      "name": "file-remove"
+    },
+    "tray.and.arrow.down": {
+      "category": "arrows-action",
+      "name": "download"
+    },
+    "wrench.and.screwdriver": {
+      "category": "ui",
+      "name": "sledgehammer"
+    },
+    "xmark": {
+      "category": "ui",
+      "name": "xmark"
+    },
+    "xmark.circle.fill": {
+      "category": "ui",
+      "name": "x-circle",
+      "weight": "Filled"
+    }
+  }
+}

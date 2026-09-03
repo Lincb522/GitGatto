@@ -1877,3 +1877,8 @@
 "developer_tools.upgrade.update_check_failed" = "Agent terminó, pero no se pudo confirmar la última versión instalada: %@. La actualización no se marcó como correcta.";
 "developer_tools.result.agent_log" = "Registro de operación de Agent";
 "developer_tools.result.unverified_agent_log" = "Registro de Agent (sin verificación local)";
+
+"monitoring.repository.all" = "Todos los repositorios";
+"monitoring.repository.all.detail" = "Actividad combinada de %d repositorios locales";
+"monitoring.detail.all_repositories" = "Resumen combinado de los repositorios añadidos";
+"monitoring.detail.selected_repository" = "Actividad del repositorio seleccionado";

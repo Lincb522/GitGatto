@@ -5,15 +5,15 @@ struct MonitoringMenuBarLabel: View {
     @ObservedObject var engine: MonitoringEngine
 
     var body: some View {
-        Image(gattoSymbol: iconName)
+        GattoIcon(symbol: iconName, size: 16)
+            .frame(width: 18, height: 18)
             .accessibilityLabel(L10n.text(engine.overallState.localizationKey))
     }
 
     private var iconName: String {
         switch engine.overallState {
         case .paused: "pause"
-        case .healthy: "checkmark.shield"
-        case .monitoring: "dot.radiowaves.left.and.right"
+        case .healthy, .monitoring: "dot.radiowaves.left.and.right"
         case .attention: "exclamationmark.triangle.fill"
         }
     }
@@ -77,26 +77,56 @@ struct MonitoringStatusBarView: View {
 
     @ViewBuilder
     private var repositorySummary: some View {
-        if let repository = engine.selectedRepositoryURL {
+        if !engine.repositories.isEmpty {
             HStack(spacing: 10) {
-                Image(gattoSymbol: "folder.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(palette.primary)
-                    .frame(width: 30, height: 30)
-                    .background(palette.primarySoft)
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                GattoIcon(
+                    symbol: engine.selectedRepositoryURL == nil ? "square.stack.3d.up" : "folder.fill",
+                    size: 18
+                )
+                .foregroundStyle(palette.primary)
+                .frame(width: 30, height: 30)
+                .background(palette.primarySoft)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(repository.lastPathComponent)
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                    Text(repository.deletingLastPathComponent().path(percentEncoded: false))
-                        .font(.system(size: 9.5, design: .monospaced))
+                    Menu {
+                        Button {
+                            engine.selectRepository(nil)
+                        } label: {
+                            GattoLabel(
+                                L10n.text("monitoring.repository.all"),
+                                systemImage: "square.stack.3d.up"
+                            )
+                        }
+                        Divider()
+                        ForEach(engine.repositories, id: \.standardizedFileURL.path) { repository in
+                            Button {
+                                engine.selectRepository(repository)
+                            } label: {
+                                GattoLabel(repository.lastPathComponent, systemImage: "folder")
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(repositoryScopeTitle)
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundStyle(palette.ink)
+                                .lineLimit(1)
+                            GattoIcon(symbol: "chevron.down", size: 11)
+                                .foregroundStyle(palette.subtleInk)
+                        }
+                    }
+                    .menuStyle(.borderlessButton)
+                    .buttonStyle(.plain)
+
+                    Text(repositoryScopeDetail)
+                        .font(.system(size: 9.5, design: engine.selectedRepositoryURL == nil ? .default : .monospaced))
                         .foregroundStyle(palette.subtleInk)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
-                Spacer(minLength: 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                 Button {
                     engine.refreshActivity()
                 } label: {
@@ -123,6 +153,18 @@ struct MonitoringStatusBarView: View {
             .frame(height: 46)
             .monitoringPanel(theme: theme, palette: palette)
         }
+    }
+
+    private var repositoryScopeTitle: String {
+        engine.selectedRepositoryURL?.lastPathComponent
+            ?? L10n.text("monitoring.repository.all")
+    }
+
+    private var repositoryScopeDetail: String {
+        if let repository = engine.selectedRepositoryURL {
+            return repository.deletingLastPathComponent().path(percentEncoded: false)
+        }
+        return L10n.format("monitoring.repository.all.detail", engine.repositoryCount)
     }
 
     private var activityPanel: some View {
@@ -248,8 +290,14 @@ struct MonitoringStatusBarView: View {
 
         switch channel.category {
         case .workingTree:
+            guard engine.selectedRepositoryURL != nil else {
+                return L10n.text("monitoring.detail.all_repositories")
+            }
             guard let snapshot = model.snapshot else {
                 return L10n.text("monitoring.detail.no_repository")
+            }
+            guard snapshot.rootURL.standardizedFileURL == engine.selectedRepositoryURL else {
+                return L10n.text("monitoring.detail.selected_repository")
             }
             guard !snapshot.changes.isEmpty else {
                 return L10n.text("monitoring.detail.working_tree.clean")
@@ -261,8 +309,14 @@ struct MonitoringStatusBarView: View {
             )
 
         case .remote:
+            guard engine.selectedRepositoryURL != nil else {
+                return L10n.text("monitoring.detail.all_repositories")
+            }
             guard let snapshot = model.snapshot else {
                 return L10n.text("monitoring.detail.no_repository")
+            }
+            guard snapshot.rootURL.standardizedFileURL == engine.selectedRepositoryURL else {
+                return L10n.text("monitoring.detail.selected_repository")
             }
             guard snapshot.upstreamName != nil else {
                 return L10n.text("monitoring.detail.remote.no_upstream")

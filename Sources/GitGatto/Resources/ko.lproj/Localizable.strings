@@ -1877,3 +1877,8 @@
 "developer_tools.upgrade.update_check_failed" = "Agent가 종료되었지만 최신 설치 버전을 확인하지 못했습니다: %@. 업그레이드 성공으로 표시하지 않았습니다.";
 "developer_tools.result.agent_log" = "Agent 작업 기록";
 "developer_tools.result.unverified_agent_log" = "Agent 작업 기록(로컬 확인 안 됨)";
+
+"monitoring.repository.all" = "모든 저장소";
+"monitoring.repository.all.detail" = "%d개 로컬 저장소의 통합 활동";
+"monitoring.detail.all_repositories" = "추가된 저장소 통합 보기";
+"monitoring.detail.selected_repository" = "선택한 저장소 활동";
