@@ -60,6 +60,7 @@
 		2B7BC5F3C411EB759E151005 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = E537EAD5F66751FF54201ECE /* L10n.swift */; };
 		2B9BFE3CA81B2F8B52A32B78 /* OpenSourceLicense.md in Resources */ = {isa = PBXBuildFile; fileRef = 9D9761DE4749E165C5D38FAF /* OpenSourceLicense.md */; };
 		2C9697A7813DDA25E3590F26 /* GitHubReleaseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6EA29373B2BB404D23EC90F /* GitHubReleaseServiceTests.swift */; };
+		2D69135AFB659BB5F50C6FF6 /* MonitoringStatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF9E56EE0138E311F8C36AC /* MonitoringStatusBarView.swift */; };
 		2E24218378A6B64B210FA0E7 /* RepositoryRecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE8E9D3836787A18902A9AC /* RepositoryRecoveryView.swift */; };
 		2EC06570AB04F70FDFDC4311 /* CodexJSONLParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE53CFB6DEEA99F9DB3F000 /* CodexJSONLParserTests.swift */; };
 		2F7E86A5FC42D73D93D1DC08 /* gatto-exclamationmark.png in Resources */ = {isa = PBXBuildFile; fileRef = 3DFFAA6873229D46242EF4A8 /* gatto-exclamationmark.png */; };
@@ -90,6 +91,7 @@
 		407864F7A69CD0F1EC2CB464 /* rust.png in Resources */ = {isa = PBXBuildFile; fileRef = 6EF5A006132F3C4941A01B5C /* rust.png */; };
 		4091D4C5848214EC779C9662 /* gatto-person-2.png in Resources */ = {isa = PBXBuildFile; fileRef = 7EE3958D40A3458C18646402 /* gatto-person-2.png */; };
 		414C1964DEDFF2E67A22A5AA /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D09C5B8F070A70C1A914BB /* AppPreferences.swift */; };
+		414ECEA248023C43D5283A2A /* MonitoringEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E3CC09EFECBAE2EA1203AD /* MonitoringEngine.swift */; };
 		420DD091852BE4356BC26AEA /* mariadb.png in Resources */ = {isa = PBXBuildFile; fileRef = DAE3E714A24704F0C6319FE0 /* mariadb.png */; };
 		4250ED87A2B1C33FBDB7EB04 /* CodexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE00C157F088AA82ACBAFBBD /* CodexService.swift */; };
 		4371C3BA6117BB5870951486 /* ProjectGoalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33E3A9BA03790202579FBCF2 /* ProjectGoalModels.swift */; };
@@ -177,6 +179,7 @@
 		80E372A2837C3BF82D41EE97 /* gatto-paintpalette.png in Resources */ = {isa = PBXBuildFile; fileRef = 4A560FD22E0D1284AD1F9468 /* gatto-paintpalette.png */; };
 		820FBCAA82D9BFDC5E3F16A1 /* LocalizationRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D8B113159C1712C3D7A960 /* LocalizationRuntimeTests.swift */; };
 		85BC5B208096B7FDD33D901C /* RegressionInvestigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869510ADC24C6E1D1260FF39 /* RegressionInvestigationModels.swift */; };
+		864B5C3256EF0CCB7AC5F284 /* MonitoringEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FDEC2BD9ED419A3481FD211 /* MonitoringEngineTests.swift */; };
 		86C0E77CD44D8B0824BBED79 /* gatto-doc-badge-minus.png in Resources */ = {isa = PBXBuildFile; fileRef = F206E38C6F868B4127BC2A22 /* gatto-doc-badge-minus.png */; };
 		8784F27A204C4534B5E3918D /* GitEnvironmentDiagnosticServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3F3687A03C557918DF5DD5 /* GitEnvironmentDiagnosticServiceTests.swift */; };
 		87EA0F7CB8D1B5282AA5BE3F /* GlobalErrorHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2F0FCECD21005DF1142BD2 /* GlobalErrorHandlerTests.swift */; };
@@ -205,6 +208,7 @@
 		9573FC42CBE4F40AA9B6CB0F /* gatto-checkmark-shield.png in Resources */ = {isa = PBXBuildFile; fileRef = DF5D702E8B0B42415FAAFB17 /* gatto-checkmark-shield.png */; };
 		964500D333F0440DCBD788F4 /* gatto-folder-fill.png in Resources */ = {isa = PBXBuildFile; fileRef = FCF56C8E5F34E87B3522A295 /* gatto-folder-fill.png */; };
 		97F2E7C700B09CCE32C05A14 /* GitGatto-Wordmark-Dark.svg in Resources */ = {isa = PBXBuildFile; fileRef = A5F7DE1A887B081233ED8187 /* GitGatto-Wordmark-Dark.svg */; };
+		9B8A22FC69809882DAA00232 /* BackgroundMonitoringService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCBA64240C2CB8C692B521C8 /* BackgroundMonitoringService.swift */; };
 		9CAFE58329BF6E7341B26CDA /* python.png in Resources */ = {isa = PBXBuildFile; fileRef = F829EBF7EED56722E682B299 /* python.png */; };
 		9CE9762F9E44E01BAEE86027 /* gatto-code.png in Resources */ = {isa = PBXBuildFile; fileRef = ACFB93D1C3D4421003CD972C /* gatto-code.png */; };
 		9D177D3D5203D70475DD5C59 /* gatto-clock-badge-checkmark.png in Resources */ = {isa = PBXBuildFile; fileRef = 585FCC7132645D5B13432369 /* gatto-clock-badge-checkmark.png */; };
@@ -268,6 +272,7 @@
 		CE53EA160420F67DE4258FB7 /* GitEnvironmentDiagnosticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D969554850E6B98F23D098 /* GitEnvironmentDiagnosticService.swift */; };
 		CEA8A4047B03109177E28ABF /* GitFileHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCEEC83A1E92BA254239359 /* GitFileHistoryService.swift */; };
 		D01BAC16DB541A6AA32B0541 /* ProjectGoalPlanning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2451B645A20649FD76C919 /* ProjectGoalPlanning.swift */; };
+		D04BD4A5DF806E0972579C7C /* MonitoringModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4A0EA7E1DF62431D7B079C /* MonitoringModels.swift */; };
 		D09E658CABACE233BEFCB39A /* gatto-minus-circle.png in Resources */ = {isa = PBXBuildFile; fileRef = 662D5712418493C2834746E6 /* gatto-minus-circle.png */; };
 		D1CC6F6A471B9FC4FDC6A457 /* homebrew.png in Resources */ = {isa = PBXBuildFile; fileRef = DE977517638A40BFAE9F1274 /* homebrew.png */; };
 		D2627DD1AF85E9A1768D3278 /* GitHubPullRequestReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B424C5FE176CEC83AFDF747C /* GitHubPullRequestReviewView.swift */; };
@@ -347,6 +352,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		01E3CC09EFECBAE2EA1203AD /* MonitoringEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringEngine.swift; sourceTree = "<group>"; };
 		02720750D2A66508BAB13FA7 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		037409197010393E2B2D96FF /* lua.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = lua.png; sourceTree = "<group>"; };
 		03FAFC785742101330AD241A /* RepositoryDiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDiagnosticsView.swift; sourceTree = "<group>"; };
@@ -443,6 +449,7 @@
 		3DA956B7150EC0AE8947E96A /* GitFileHistoryServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitFileHistoryServiceTests.swift; sourceTree = "<group>"; };
 		3DE3700F5F831B60A0D624DE /* pulumi.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = pulumi.png; sourceTree = "<group>"; };
 		3DFFAA6873229D46242EF4A8 /* gatto-exclamationmark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-exclamationmark.png"; sourceTree = "<group>"; };
+		3FDEC2BD9ED419A3481FD211 /* MonitoringEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringEngineTests.swift; sourceTree = "<group>"; };
 		409A6F89648F8FAAF330D93E /* gatto-code-source.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-code-source.png"; sourceTree = "<group>"; };
 		40BB1455BB0D0D36D817E44C /* gatto-chevron-compact-up.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-chevron-compact-up.png"; sourceTree = "<group>"; };
 		41842C5E15BD25A736A34E10 /* deno.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = deno.png; sourceTree = "<group>"; };
@@ -541,6 +548,7 @@
 		7ABF65539C76A33D2F0526FE /* gatto-chevron-down.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-chevron-down.png"; sourceTree = "<group>"; };
 		7C3C5AB52ABD647FDD2D3579 /* gatto-photo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-photo.png"; sourceTree = "<group>"; };
 		7CE90BF3006FF44845728242 /* gatto-slider-horizontal-3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-slider-horizontal-3.png"; sourceTree = "<group>"; };
+		7DF9E56EE0138E311F8C36AC /* MonitoringStatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringStatusBarView.swift; sourceTree = "<group>"; };
 		7E8C0491156392CA5A63504E /* notarize-macos.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "notarize-macos.sh"; sourceTree = "<group>"; };
 		7EE3958D40A3458C18646402 /* gatto-person-2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-person-2.png"; sourceTree = "<group>"; };
 		7F0ED6BACD3586F96BB08C35 /* GitHubMarketplaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubMarketplaceView.swift; sourceTree = "<group>"; };
@@ -638,6 +646,7 @@
 		BA244017A2A111E5CE7C60F9 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
 		BB40D5EF971016F605A31059 /* MenuLocalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuLocalization.swift; sourceTree = "<group>"; };
 		BC415B068C03FCF9E657CE69 /* star-history.svg */ = {isa = PBXFileReference; path = "star-history.svg"; sourceTree = "<group>"; };
+		BCBA64240C2CB8C692B521C8 /* BackgroundMonitoringService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundMonitoringService.swift; sourceTree = "<group>"; };
 		BCC90B8A203C02679751AFF8 /* RepositoryDiscoveryServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDiscoveryServiceTests.swift; sourceTree = "<group>"; };
 		BD2E18C0F04B6FA49AA05A54 /* PRODUCT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PRODUCT.md; sourceTree = "<group>"; };
 		BDA8B8B545450428619E9F61 /* digitalocean.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = digitalocean.png; sourceTree = "<group>"; };
@@ -671,6 +680,7 @@
 		CCE53CFB6DEEA99F9DB3F000 /* CodexJSONLParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexJSONLParserTests.swift; sourceTree = "<group>"; };
 		CD21DE9AA0B8783D5C105D3A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CD3403AD31D70C4F9C03AD5C /* ProjectGoalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectGoalStore.swift; sourceTree = "<group>"; };
+		CE4A0EA7E1DF62431D7B079C /* MonitoringModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringModels.swift; sourceTree = "<group>"; };
 		CE50DC4702928288AE140023 /* gatto-chevron-left-forwardslash-chevron-right.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-chevron-left-forwardslash-chevron-right.png"; sourceTree = "<group>"; };
 		CFB2E2A074CB17EA135F4DEE /* RemoteImageDataCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteImageDataCacheTests.swift; sourceTree = "<group>"; };
 		D13FBA767DB3A4480F1E2D80 /* gatto-square.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "gatto-square.png"; sourceTree = "<group>"; };
@@ -789,6 +799,7 @@
 			children = (
 				658426D55CD23F4612BE1D1D /* DeveloperToolsViewModel.swift */,
 				F035454E4B1A98EE1EE9AF1C /* GitHubMarketplaceViewModel.swift */,
+				01E3CC09EFECBAE2EA1203AD /* MonitoringEngine.swift */,
 				4BA06EC24B8A70B5F1C08BF1 /* WorkspaceViewModel.swift */,
 			);
 			path = ViewModels;
@@ -864,6 +875,7 @@
 			children = (
 				1C7F06B99C27B7ECAE84BD10 /* AppDownloadManager.swift */,
 				0F60DC160127DD7A372187EB /* AppUpdateManager.swift */,
+				BCBA64240C2CB8C692B521C8 /* BackgroundMonitoringService.swift */,
 				806A093B8FDD02458C342508 /* CodexConversationStore.swift */,
 				EE00C157F088AA82ACBAFBBD /* CodexService.swift */,
 				9710D29FBC3149A59EBD6174 /* DevelopmentToolEnvironmentConfigurator.swift */,
@@ -1170,6 +1182,7 @@
 				4B0921C44134C9CFA292D890 /* DownloadModels.swift */,
 				E224280BBF138C29C3650272 /* GitModels.swift */,
 				B7E8127FACB20606495989A0 /* LocalRepositoryCatalog.swift */,
+				CE4A0EA7E1DF62431D7B079C /* MonitoringModels.swift */,
 				33E3A9BA03790202579FBCF2 /* ProjectGoalModels.swift */,
 				8F2451B645A20649FD76C919 /* ProjectGoalPlanning.swift */,
 				869510ADC24C6E1D1260FF39 /* RegressionInvestigationModels.swift */,
@@ -1265,6 +1278,7 @@
 				A758C7A17912288C6B463DCC /* LocalRepositoryCatalogTests.swift */,
 				663058658725FAFEFE3F0A39 /* MarketplaceTranslationStoreTests.swift */,
 				694F5B1A0AC7685BD11EB10D /* MenuLocalizationTests.swift */,
+				3FDEC2BD9ED419A3481FD211 /* MonitoringEngineTests.swift */,
 				82786E615DB7F5C875ABE410 /* PersistenceStoreTests.swift */,
 				D58F9255A52D052D724E5F5E /* ProductCopyTests.swift */,
 				8744CD7C60A7B0D05C4D0210 /* ProjectGoalTests.swift */,
@@ -1331,6 +1345,7 @@
 				ECA2653BCF345EECA3E79074 /* HistoryWorkspaceView.swift */,
 				A4BECAC1068A1853F738BF1C /* InAppBrowserSheet.swift */,
 				78FF7BBC34336097B90B4D6B /* LegalDocumentsView.swift */,
+				7DF9E56EE0138E311F8C36AC /* MonitoringStatusBarView.swift */,
 				7FD1F84517F6582959B4B2BF /* ProjectGoalsWorkspaceView.swift */,
 				7648352ECB0849B3FD1C43BA /* RegressionInvestigationWorkspaceView.swift */,
 				F56654C1C1C14A54E9676F80 /* ReleaseHistoryView.swift */,
@@ -1694,6 +1709,7 @@
 				820FBCAA82D9BFDC5E3F16A1 /* LocalizationRuntimeTests.swift in Sources */,
 				2619FC0C4AB85B68C274B3DE /* MarketplaceTranslationStoreTests.swift in Sources */,
 				0928DFE721CCBA6142A51383 /* MenuLocalizationTests.swift in Sources */,
+				864B5C3256EF0CCB7AC5F284 /* MonitoringEngineTests.swift in Sources */,
 				CC672794EAB69986A71BF998 /* PersistenceStoreTests.swift in Sources */,
 				62B3F4BA36C603124C523653 /* ProductCopyTests.swift in Sources */,
 				2AB6D2BCB1A16AA031B4EEC2 /* ProjectGoalTests.swift in Sources */,
@@ -1722,6 +1738,7 @@
 				C5BDB87E3C4B2D5DDBBCDABE /* AppSettingsView.swift in Sources */,
 				94A2418EE5504BAA35BF7917 /* AppUpdateManager.swift in Sources */,
 				53BFDF7E8C6806EC7331A712 /* AutomaticTranslationPolicy.swift in Sources */,
+				9B8A22FC69809882DAA00232 /* BackgroundMonitoringService.swift in Sources */,
 				B3815369F1ABDE1DC8221A04 /* BranchesWorkspaceView.swift in Sources */,
 				616BABF979F1CAB5670A6743 /* ChangesWorkspaceView.swift in Sources */,
 				67D990CB13335B7E2A96A0B9 /* CodeSurface.swift in Sources */,
@@ -1777,6 +1794,9 @@
 				1CE4AAA75418622D967C4F6F /* MarketplaceApplicationDetails.swift in Sources */,
 				3391B03AEB39F8F841358C2F /* MarketplaceTranslationStore.swift in Sources */,
 				26DEAB77B137F29C73B62C8A /* MenuLocalization.swift in Sources */,
+				414ECEA248023C43D5283A2A /* MonitoringEngine.swift in Sources */,
+				D04BD4A5DF806E0972579C7C /* MonitoringModels.swift in Sources */,
+				2D69135AFB659BB5F50C6FF6 /* MonitoringStatusBarView.swift in Sources */,
 				4371C3BA6117BB5870951486 /* ProjectGoalModels.swift in Sources */,
 				D01BAC16DB541A6AA32B0541 /* ProjectGoalPlanning.swift in Sources */,
 				25CA65469308AF0207ECD66C /* ProjectGoalRuntime.swift in Sources */,
@@ -1976,7 +1996,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18014;
+				CURRENT_PROJECT_VERSION = 18015;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1997,7 +2017,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.14;
+				MARKETING_VERSION = 0.18.15;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -2043,7 +2063,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18014;
+				CURRENT_PROJECT_VERSION = 18015;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2058,7 +2078,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.14;
+				MARKETING_VERSION = 0.18.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

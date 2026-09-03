@@ -1,16 +1,11 @@
 ## Added
 
-- Extended disaster-recovery protection to every managed local repository, including changes made by external Agents, Git CLIs, terminals, and scripts.
-- Added rolling pre-operation recovery baselines that detect repository deletion, deleted files, lost uncommitted work, and unexpected branch, HEAD, or index changes.
-- Added incident cards to Disaster Recovery with original errors, affected paths, repository state, and direct access to the preserved recovery point.
-
-## Improved
-
-- Recovery points now use atomic staging, commit markers, content verification, and filesystem synchronization. Only complete transactions survive an interrupted exit.
-- Each repository retains no more than three rolling recovery points. A high-risk event freezes the latest recovery point so later automatic backups cannot replace the evidence.
-- GitGatto's built-in Agent must create a recovery point before writing and audits deletions, overwritten work, and Git state afterward.
+- Added unified monitoring states for the working tree, remote synchronization, repository protection, GitHub Actions, and project goals.
+- Added a menu bar monitor for the selected repository, live channel states, and a year of project activity, with direct access to the main app.
+- Added settings for the monitoring engine, the menu bar item, and each of the five monitoring channels.
+- Added a daily activity grid combining commits and monitored local changes.
 
 ## Fixed
 
-- Added a lightweight repository watchdog so delayed FSEvents cannot leave staging state or disaster-recovery incidents stale under load.
-- Homebrew execution timeouts now begin after the process actually starts instead of counting scheduler wait time.
+- Repository protection now measures file and line changes made after the recovery baseline, avoiding alerts caused by pre-existing uncommitted work and listing the paths that crossed the configured threshold.
+- Agent tool installs and upgrades are reported as successful only after the executable, version command, and update state pass local verification. Failed verification keeps the original output and labels it as unverified.

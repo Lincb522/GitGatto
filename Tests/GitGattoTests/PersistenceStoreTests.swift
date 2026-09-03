@@ -41,9 +41,30 @@ struct PersistenceStoreTests {
         #expect(preferences.externalRepositoryProtectionEnabled)
         #expect(preferences.agentConversationHistoryLimit == 24)
         #expect(preferences.defaultAgentRunMode == .analyze)
+        #expect(preferences.monitoringEngineEnabled)
+        #expect(preferences.statusBarMonitoringEnabled)
+        #expect(preferences.githubActionsMonitoringEnabled)
+        #expect(preferences.projectGoalMonitoringEnabled)
 
         let encoded = try #require(String(data: JSONEncoder().encode(preferences), encoding: .utf8))
         #expect(!encoded.contains("autoDiscoverRepositories"))
+    }
+
+    @Test("Persists monitoring engine and menu bar preferences")
+    func persistsMonitoringPreferences() throws {
+        var preferences = AppPreferences()
+        preferences.monitoringEngineEnabled = false
+        preferences.statusBarMonitoringEnabled = false
+        preferences.githubActionsMonitoringEnabled = false
+        preferences.projectGoalMonitoringEnabled = false
+
+        let data = try JSONEncoder().encode(preferences)
+        let restored = try JSONDecoder().decode(AppPreferences.self, from: data)
+
+        #expect(!restored.monitoringEngineEnabled)
+        #expect(!restored.statusBarMonitoringEnabled)
+        #expect(!restored.githubActionsMonitoringEnabled)
+        #expect(!restored.projectGoalMonitoringEnabled)
     }
 
     @Test("Persists the selected main-window close behavior")

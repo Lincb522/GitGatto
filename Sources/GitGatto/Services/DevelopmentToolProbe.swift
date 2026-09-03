@@ -4,6 +4,19 @@ struct DevelopmentToolProbeResult: Sendable, Equatable {
     let isInstalled: Bool
     let version: String?
     let executableURL: URL?
+    let failureDetail: String?
+
+    init(
+        isInstalled: Bool,
+        version: String?,
+        executableURL: URL?,
+        failureDetail: String? = nil
+    ) {
+        self.isInstalled = isInstalled
+        self.version = version
+        self.executableURL = executableURL
+        self.failureDetail = failureDetail
+    }
 }
 
 protocol DevelopmentToolProbing: Sendable {
@@ -33,7 +46,12 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
             tool.executableCandidates,
             homebrewFormula: tool.homebrewFormula
         ) else {
-            return DevelopmentToolProbeResult(isInstalled: false, version: nil, executableURL: nil)
+            return DevelopmentToolProbeResult(
+                isInstalled: false,
+                version: nil,
+                executableURL: nil,
+                failureDetail: L10n.text("developer_tools.verification.executable_missing")
+            )
         }
         return await probeCommand(executableURL: executableURL, arguments: tool.versionArguments)
     }
@@ -90,10 +108,13 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
                 let stdout = output.fileHandleForReading.readDataToEndOfFile()
                 let stderr = error.fileHandleForReading.readDataToEndOfFile()
                 guard process.terminationStatus == 0 else {
+                    let text = String(decoding: stderr.isEmpty ? stdout : stderr, as: UTF8.self)
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
                     return DevelopmentToolProbeResult(
                         isInstalled: false,
                         version: nil,
-                        executableURL: executableURL
+                        executableURL: executableURL,
+                        failureDetail: String(text.prefix(2_000))
                     )
                 }
                 let text = String(decoding: stdout.isEmpty ? stderr : stdout, as: UTF8.self)
@@ -103,7 +124,8 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
                     return DevelopmentToolProbeResult(
                         isInstalled: false,
                         version: nil,
-                        executableURL: executableURL
+                        executableURL: executableURL,
+                        failureDetail: L10n.text("developer_tools.verification.empty_version")
                     )
                 }
                 return DevelopmentToolProbeResult(
@@ -115,7 +137,8 @@ actor DevelopmentToolProbe: DevelopmentToolProbing {
                 return DevelopmentToolProbeResult(
                     isInstalled: false,
                     version: nil,
-                    executableURL: executableURL
+                    executableURL: executableURL,
+                    failureDetail: error.localizedDescription
                 )
             }
         }.value

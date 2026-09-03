@@ -226,19 +226,25 @@ actor RepositoryBackupService: RepositoryBackupServing {
         var deletedPaths = Set(current.deletedPaths).subtracting(baseline.deletedPaths)
         var lostChangedPaths = Set<String>()
         let currentChangedPaths = Set(current.changedPaths)
+        let baselineChangedPaths = Set(baseline.copiedPaths + baseline.deletedPaths)
+        var changedPathsSinceBaseline = currentChangedPaths.symmetricDifference(baselineChangedPaths)
         let baselineWorkspace = try backupDirectory(for: backup)
             .appendingPathComponent("workspace", isDirectory: true)
         for path in baseline.copiedPaths {
             let url = try containedURL(path: path, in: repository)
             if !Self.itemExists(at: url, fileManager: fileManager) {
                 deletedPaths.insert(path)
+                changedPathsSinceBaseline.insert(path)
                 continue
             }
-            guard !currentChangedPaths.contains(path) else { continue }
             let preservedURL = try containedURL(path: path, in: baselineWorkspace)
-            if Self.itemExists(at: preservedURL, fileManager: fileManager),
-               !fileManager.contentsEqual(atPath: preservedURL.path, andPath: url.path)
-            {
+            let differsFromBaseline = Self.itemExists(at: preservedURL, fileManager: fileManager)
+                && !fileManager.contentsEqual(atPath: preservedURL.path, andPath: url.path)
+            if differsFromBaseline {
+                changedPathsSinceBaseline.insert(path)
+            }
+            guard !currentChangedPaths.contains(path) else { continue }
+            if differsFromBaseline {
                 lostChangedPaths.insert(path)
             }
         }
@@ -246,6 +252,8 @@ actor RepositoryBackupService: RepositoryBackupServing {
             backupID: backup.id,
             changedFileCount: current.changedPaths.count,
             changedLineCount: current.changedLineCount,
+            changedPathsSinceBaseline: changedPathsSinceBaseline.sorted(),
+            changedLineCountSinceBaseline: abs(current.changedLineCount - backup.changedLineCount),
             deletedPaths: deletedPaths.sorted(),
             lostChangedPaths: lostChangedPaths.sorted(),
             headChanged: current.headSHA != backup.headSHA,

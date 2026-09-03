@@ -989,14 +989,27 @@ struct GitHubMarketplaceView: View {
             }
 
             if let result = status.result, !result.isEmpty {
-                Text(result)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(palette.ink)
-                    .textSelection(.enabled)
-                    .padding(11)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(palette.raisedSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack(spacing: 6) {
+                        Image(gattoSymbol: status.state == .installed
+                            ? "terminal"
+                            : "exclamationmark.triangle")
+                        Text(L10n.text(status.state == .installed
+                            ? "developer_tools.result.agent_log"
+                            : "developer_tools.result.unverified_agent_log"))
+                    }
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(status.state == .installed ? palette.mutedInk : palette.warning)
+
+                    Text(result)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(palette.ink)
+                        .textSelection(.enabled)
+                }
+                .padding(11)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(status.state == .installed ? palette.raisedSurface : palette.warningSoft.opacity(0.42))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
         .padding(14)

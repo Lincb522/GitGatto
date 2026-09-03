@@ -396,6 +396,7 @@ struct DevelopmentToolTests {
         #expect(!result.isInstalled)
         #expect(result.version == nil)
         #expect(result.executableURL == executable)
+        #expect(result.failureDetail?.isEmpty == false)
     }
 
     @Test("System authorization runs only a validated Homebrew repair command")
@@ -586,6 +587,36 @@ struct DevelopmentToolTests {
         #expect(status.latestVersion == "3.8.0")
         #expect(!status.canUpgrade)
         #expect(await fixture.upgradedToolIDs == ["git-lfs"])
+    }
+
+    @Test("Agent success text cannot override a failed local upgrade verification")
+    @MainActor
+    func rejectsUnverifiedAgentUpgradeSuccess() async throws {
+        let fixture = DevelopmentToolInstallFixture()
+        let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
+        await fixture.seedInstalled(tool.id)
+        await fixture.keepInstalledVersionDuringUpgrade()
+        let model = DeveloperToolsViewModel(
+            installer: fixture,
+            probe: fixture,
+            updateChecker: fixture,
+            environmentConfigurator: fixture
+        )
+
+        model.refresh()
+        try await waitUntil { model.status(for: tool).updateAvailability == .available }
+        model.upgrade(tool)
+        try await waitUntil { model.status(for: tool).state == .actionRequired }
+
+        let status = model.status(for: tool)
+        #expect(status.updateAvailability == .available)
+        #expect(status.retryOperation == .upgrade)
+        #expect(status.result == "Upgrade completed successfully")
+        #expect(status.detail == L10n.format(
+            "developer_tools.upgrade.still_outdated",
+            "3.7.1",
+            "3.8.0"
+        ))
     }
 
     @Test("Incomplete Agent configuration remains actionable after a verified upgrade")
@@ -982,6 +1013,7 @@ private actor DevelopmentToolInstallFixture:
     private var isSystemAuthorized = false
     private var cancelsAuthorization = false
     private var reportsUserConfigurationAction = false
+    private var keepsInstalledVersionDuringUpgrade = false
 
     func seedInstalled(_ toolID: String) {
         installedToolIDs = [toolID]
@@ -998,6 +1030,10 @@ private actor DevelopmentToolInstallFixture:
 
     func requireUserConfigurationAction() {
         reportsUserConfigurationAction = true
+    }
+
+    func keepInstalledVersionDuringUpgrade() {
+        keepsInstalledVersionDuringUpgrade = true
     }
 
     func probe() async -> CodexAvailability { .unavailable }
@@ -1132,9 +1168,13 @@ private actor DevelopmentToolInstallFixture:
         await progress(AgentInstallProgress(.preparing))
         await progress(AgentInstallProgress(.inspecting))
         await progress(AgentInstallProgress(.installing))
-        upgradedToolIDs.append(tool.id)
+        if !keepsInstalledVersionDuringUpgrade {
+            upgradedToolIDs.append(tool.id)
+        }
         return CodexRunResult(
-            response: "Upgraded and verified",
+            response: keepsInstalledVersionDuringUpgrade
+                ? "Upgrade completed successfully"
+                : "Upgraded and verified",
             commandCount: 2,
             fileChangeCount: 0,
             requiresUserAction: reportsUserConfigurationAction

@@ -477,38 +477,66 @@ final class DeveloperToolsViewModel: ObservableObject {
                         "developer_tools.install.configuration_failed",
                         environmentConfigurationError.localizedDescription
                     )
+                    completed.retryOperation = operation
+                } else if !verification.isInstalled {
+                    completed.state = .actionRequired
+                    completed.detail = L10n.format(
+                        "developer_tools.install.verification_failed",
+                        verification.failureDetail
+                            ?? L10n.text("developer_tools.verification.executable_missing")
+                    )
+                    completed.retryOperation = operation
                 } else if result.requiresUserAction {
                     completed.state = .actionRequired
                     completed.detail = L10n.text("developer_tools.configuration.action_required")
                     completed.retryOperation = operation
                 } else {
-                    completed.state = verification.isInstalled ? .installed : .actionRequired
-                    completed.detail = verification.isInstalled
-                        ? environmentConfiguration == .unchanged
-                            ? L10n.text("developer_tools.install.verified")
-                            : L10n.text("developer_tools.install.configured")
-                        : L10n.text("developer_tools.install.action_required")
+                    completed.state = .installed
+                    completed.detail = environmentConfiguration == .unchanged
+                        ? L10n.text("developer_tools.install.verified")
+                        : L10n.text("developer_tools.install.configured")
                 }
             case .upgrade:
-                let upgraded = verification.isInstalled
-                    && updateResult?.availability != .available
                 if let environmentConfigurationError {
                     completed.state = .actionRequired
                     completed.detail = L10n.format(
                         "developer_tools.upgrade.configuration_failed",
                         environmentConfigurationError.localizedDescription
                     )
+                    completed.retryOperation = operation
+                } else if !verification.isInstalled {
+                    completed.state = .actionRequired
+                    completed.detail = L10n.format(
+                        "developer_tools.upgrade.verification_failed",
+                        verification.failureDetail
+                            ?? L10n.text("developer_tools.verification.executable_missing")
+                    )
+                    completed.retryOperation = operation
+                } else if updateResult?.availability == .available {
+                    completed.state = .actionRequired
+                    completed.detail = L10n.format(
+                        "developer_tools.upgrade.still_outdated",
+                        updateResult?.installedVersion ?? verification.version ?? "—",
+                        updateResult?.latestVersion ?? "—"
+                    )
+                    completed.retryOperation = operation
+                } else if updateResult?.availability != .current {
+                    completed.state = .actionRequired
+                    completed.detail = L10n.format(
+                        "developer_tools.upgrade.update_check_failed",
+                        updateResult?.detail
+                            ?? L10n.text("developer_tools.update.error.response")
+                    )
+                    completed.retryOperation = operation
                 } else if result.requiresUserAction {
                     completed.state = .actionRequired
                     completed.detail = L10n.text("developer_tools.configuration.action_required")
                     completed.retryOperation = operation
                 } else {
-                    completed.state = upgraded ? .installed : .actionRequired
-                    completed.detail = upgraded
-                        ? environmentConfiguration == .unchanged
-                            ? L10n.text("developer_tools.upgrade.verified")
-                            : L10n.text("developer_tools.upgrade.configured")
-                        : L10n.text("developer_tools.upgrade.action_required")
+                    completed.state = .installed
+                    completed.detail = environmentConfiguration == .unchanged
+                        ? L10n.text("developer_tools.upgrade.verified")
+                        : L10n.text("developer_tools.upgrade.configured")
                 }
             }
             statuses[tool.id] = completed

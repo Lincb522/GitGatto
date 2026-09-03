@@ -548,6 +548,11 @@ struct AppSettingsView: View {
             GeneralSettingsPage(preferences: $model.appPreferences)
         case .git:
             GitSettingsPage(model: model, preferences: $model.appPreferences)
+        case .monitoring:
+            MonitoringSettingsPage(
+                engine: model.monitoringEngine,
+                preferences: $model.appPreferences
+            )
         case .recovery:
             RecoverySettingsPage(model: model, preferences: $model.appPreferences)
         case .agent:
@@ -564,6 +569,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
     case appearance
     case general
     case git
+    case monitoring
     case recovery
     case agent
     case translation
@@ -582,6 +588,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .appearance: "paintpalette"
         case .general: "slider.horizontal.3"
         case .git: "arrow.triangle.branch"
+        case .monitoring: "dot.radiowaves.left.and.right"
         case .recovery: "externaldrive.badge.timemachine"
         case .agent: "sparkles"
         case .translation: "ai.translation"
@@ -1243,58 +1250,6 @@ private struct GitSettingsPage: View {
             .foregroundStyle(palette.subtleInk)
         }
 
-        SettingsSection(titleKey: "settings.git.live") {
-            SettingsControlRow(
-                titleKey: "settings.git.live_refresh",
-                descriptionKey: "settings.git.live_refresh.body"
-            ) {
-                Toggle("", isOn: $preferences.liveRefreshEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-
-            SettingsControlRow(
-                titleKey: "settings.git.refresh_interval",
-                descriptionKey: "settings.git.refresh_interval.body"
-            ) {
-                intervalPicker(
-                    selection: $preferences.liveRefreshInterval,
-                    values: [0.5, 1, 2, 5]
-                )
-            }
-
-            SettingsControlRow(
-                titleKey: "settings.git.remote_refresh",
-                descriptionKey: "settings.git.remote_refresh.body"
-            ) {
-                Toggle("", isOn: $preferences.remoteRefreshEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-
-            SettingsControlRow(
-                titleKey: "settings.git.remote_interval",
-                descriptionKey: "settings.git.remote_interval.body"
-            ) {
-                intervalPicker(
-                    selection: $preferences.remoteRefreshInterval,
-                    values: [15, 30, 60, 120]
-                )
-            }
-        }
-
-        SettingsSection(titleKey: "settings.git.status") {
-            let palette = AppPalette(colorScheme)
-            HStack(spacing: 9) {
-                Image(gattoSymbol: model.liveSyncError == nil ? "dot.radiowaves.left.and.right" : "exclamationmark.triangle.fill")
-                    .foregroundStyle(model.liveSyncError == nil ? palette.success : palette.warning)
-                Text(model.liveSyncError ?? L10n.text(preferences.liveRefreshEnabled ? "settings.git.status.active" : "settings.git.status.paused"))
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(palette.mutedInk)
-                    .textSelection(.enabled)
-            }
-        }
-
         SettingsSection(titleKey: "settings.git.safety") {
             SettingsControlRow(
                 titleKey: "settings.git.confirm_discard",
@@ -1307,6 +1262,117 @@ private struct GitSettingsPage: View {
         }
     }
 
+}
+
+private struct MonitoringSettingsPage: View {
+    @ObservedObject var engine: MonitoringEngine
+    @Binding var preferences: AppPreferences
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+
+        SettingsSection(titleKey: "settings.monitoring.engine") {
+            SettingsControlRow(
+                titleKey: "settings.monitoring.engine_enabled",
+                descriptionKey: "settings.monitoring.engine_enabled.body"
+            ) {
+                Toggle("", isOn: $preferences.monitoringEngineEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            SettingsControlRow(
+                titleKey: "settings.monitoring.status_bar",
+                descriptionKey: "settings.monitoring.status_bar.body"
+            ) {
+                Toggle("", isOn: $preferences.statusBarMonitoringEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(overallColor(palette))
+                    .frame(width: 8, height: 8)
+                Text(L10n.text(engine.overallState.localizationKey))
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                Text(L10n.format("monitoring.summary", engine.activeChannelCount, engine.repositoryCount))
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(palette.mutedInk)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 42)
+            .background(palette.raisedSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(palette.divider, lineWidth: 1)
+            }
+        }
+
+        SettingsSection(titleKey: "settings.monitoring.channels") {
+            monitoringToggle(.workingTree, isOn: $preferences.liveRefreshEnabled)
+            monitoringToggle(.remote, isOn: $preferences.remoteRefreshEnabled)
+            monitoringToggle(.repositoryProtection, isOn: $preferences.repositoryBackupEnabled)
+            monitoringToggle(.githubActions, isOn: $preferences.githubActionsMonitoringEnabled)
+            monitoringToggle(.projectGoals, isOn: $preferences.projectGoalMonitoringEnabled)
+        }
+
+        SettingsSection(titleKey: "settings.monitoring.cadence") {
+            SettingsControlRow(
+                titleKey: "settings.git.refresh_interval",
+                descriptionKey: "settings.git.refresh_interval.body"
+            ) {
+                intervalPicker(
+                    selection: $preferences.liveRefreshInterval,
+                    values: [0.5, 1, 2, 5]
+                )
+                .disabled(!preferences.monitoringEngineEnabled || !preferences.liveRefreshEnabled)
+            }
+
+            SettingsControlRow(
+                titleKey: "settings.git.remote_interval",
+                descriptionKey: "settings.git.remote_interval.body"
+            ) {
+                intervalPicker(
+                    selection: $preferences.remoteRefreshInterval,
+                    values: [15, 30, 60, 120]
+                )
+                .disabled(!preferences.monitoringEngineEnabled || !preferences.remoteRefreshEnabled)
+            }
+        }
+
+        SettingsSection(titleKey: "monitoring.activity.title") {
+            RepositoryActivityHeatmap(
+                activity: engine.dailyActivity,
+                accent: palette.primary,
+                emptyColor: palette.divider.opacity(0.42),
+                futureColor: palette.divider.opacity(0.18),
+                labelColor: palette.subtleInk
+            )
+            .frame(height: 82)
+            .accessibilityLabel(L10n.text("monitoring.activity.accessibility"))
+        }
+    }
+
+    private func monitoringToggle(
+        _ category: MonitoringCategory,
+        isOn: Binding<Bool>
+    ) -> some View {
+        SettingsControlRow(
+            titleKey: category.titleKey,
+            descriptionKey: category.descriptionKey
+        ) {
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .disabled(!preferences.monitoringEngineEnabled)
+        }
+    }
+
     private func intervalPicker(selection: Binding<Double>, values: [Double]) -> some View {
         Picker("", selection: selection) {
             ForEach(values, id: \.self) { value in
@@ -1315,6 +1381,15 @@ private struct GitSettingsPage: View {
         }
         .labelsHidden()
         .frame(width: 130)
+    }
+
+    private func overallColor(_ palette: AppPalette) -> Color {
+        switch engine.overallState {
+        case .paused: palette.subtleInk
+        case .healthy: palette.success
+        case .monitoring: palette.primary
+        case .attention: palette.warning
+        }
     }
 }
 
@@ -1326,15 +1401,6 @@ private struct RecoverySettingsPage: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         SettingsSection(titleKey: "settings.recovery.protection") {
-            SettingsControlRow(
-                titleKey: "settings.git.backup_enabled",
-                descriptionKey: "settings.git.backup_enabled.body"
-            ) {
-                Toggle("", isOn: $preferences.repositoryBackupEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-
             SettingsControlRow(
                 titleKey: "settings.recovery.agent_protection",
                 descriptionKey: "settings.recovery.agent_protection.body"

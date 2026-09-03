@@ -112,6 +112,33 @@ struct GitGattoApp: App {
         .defaultSize(width: 760, height: 620)
         .windowStyle(.hiddenTitleBar)
 
+        MenuBarExtra(
+            isInserted: Binding(
+                get: { model.appPreferences.statusBarMonitoringEnabled },
+                set: { model.setStatusBarMonitoringEnabled($0) }
+            )
+        ) {
+            AppThemeRoot {
+                MonitoringStatusBarView(model: model, engine: model.monitoringEngine)
+            }
+            .appLocalization(model.appPreferences.language)
+        } label: {
+            MonitoringMenuBarLabel(engine: model.monitoringEngine)
+        }
+        .menuBarExtraStyle(.window)
+
+#if DEBUG
+        Window("Monitoring", id: "monitoring-status-preview") {
+            AppThemeRoot {
+                MonitoringStatusBarView(model: model, engine: model.monitoringEngine)
+            }
+            .appLocalization(model.appPreferences.language)
+        }
+        .defaultSize(width: 430, height: 620)
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+#endif
+
         Settings {
             AppThemeRoot(resetsContentOnStyleChange: false) {
                 AppSettingsView(model: model, updateManager: updateManager)
@@ -361,6 +388,8 @@ private struct DebugPreviewLauncher: View {
                     destination = "help"
                 } else if environment["GITGATTO_SCANNER_PREVIEW"] == "1" {
                     destination = "repository-scanner"
+                } else if environment["GITGATTO_MONITORING_PREVIEW"] == "1" {
+                    destination = "monitoring-status-preview"
                 } else {
                     destination = nil
                 }

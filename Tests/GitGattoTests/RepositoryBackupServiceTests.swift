@@ -55,6 +55,150 @@ struct RepositoryBackupServiceTests {
     }
 
     @MainActor
+    @Test("External audit ignores unchanged work already captured by its baseline")
+    func ignoresPreexistingChangesDuringExternalAudit() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let backing = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        let model = WorkspaceViewModel(repositoryBackupService: backing)
+        model.appPreferences.repositoryBackupEnabled = true
+        model.appPreferences.externalRepositoryProtectionEnabled = true
+        model.appPreferences.majorBackupFileThreshold = 2
+        model.appPreferences.majorBackupLineThreshold = 100
+        try "first baseline edit\n".write(
+            to: fixture.repository.appendingPathComponent("tracked.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "one\n".write(
+            to: fixture.repository.appendingPathComponent("one.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "two\n".write(
+            to: fixture.repository.appendingPathComponent("two.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        await model.createExternalRepositoryProtectionBaseline(for: fixture.repository)
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+
+        #expect(model.repositoryProtectionIncidents.isEmpty)
+
+        try "one change after baseline\n".write(
+            to: fixture.repository.appendingPathComponent("one.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+
+        #expect(model.repositoryProtectionIncidents.isEmpty)
+    }
+
+    @Test("Protection assessment measures changes after the baseline")
+    func measuresChangesAfterProtectionBaseline() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let service = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        try "baseline edit\n".write(
+            to: fixture.repository.appendingPathComponent("tracked.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let checkpoint = try #require(await service.createBackup(
+            for: fixture.repository,
+            reason: .externalCheckpoint,
+            policy: .standard
+        ))
+
+        let unchanged = try await service.assessChanges(after: checkpoint, in: fixture.repository)
+        #expect(unchanged.changedPathsSinceBaseline.isEmpty)
+        #expect(unchanged.changedLineCountSinceBaseline == 0)
+
+        try "baseline edit\nsecond line\n".write(
+            to: fixture.repository.appendingPathComponent("tracked.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "new path\n".write(
+            to: fixture.repository.appendingPathComponent("after.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let changed = try await service.assessChanges(after: checkpoint, in: fixture.repository)
+
+        #expect(Set(changed.changedPathsSinceBaseline) == ["after.txt", "tracked.txt"])
+        #expect(changed.changedLineCountSinceBaseline > 0)
+    }
+
+    @MainActor
+    @Test("External audit reports only post-baseline changes that reach the threshold")
+    func reportsPostBaselineThresholdChanges() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let backing = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        let model = WorkspaceViewModel(repositoryBackupService: backing)
+        model.appPreferences.repositoryBackupEnabled = true
+        model.appPreferences.externalRepositoryProtectionEnabled = true
+        model.appPreferences.majorBackupFileThreshold = 2
+        model.appPreferences.majorBackupLineThreshold = 100
+        try "baseline tracked edit\n".write(
+            to: fixture.repository.appendingPathComponent("tracked.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "baseline untracked edit\n".write(
+            to: fixture.repository.appendingPathComponent("notes.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        await model.createExternalRepositoryProtectionBaseline(for: fixture.repository)
+
+        try "post-baseline tracked edit\n".write(
+            to: fixture.repository.appendingPathComponent("tracked.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "post-baseline untracked edit\n".write(
+            to: fixture.repository.appendingPathComponent("notes.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+
+        let incident = try #require(model.repositoryProtectionIncidents.first)
+        #expect(incident.exceedsConfiguredChangeLimit)
+        #expect(incident.assessment?.changedPathsSinceBaseline == ["notes.txt", "tracked.txt"])
+        #expect(incident.assessment?.deletedPaths.isEmpty == true)
+        #expect(incident.assessment?.lostChangedPaths.isEmpty == true)
+
+        if let outputPath = ProcessInfo.processInfo.environment[
+            "GITGATTO_EXTERNAL_PROTECTION_THRESHOLD_UI_SNAPSHOT_PATH"
+        ] {
+            await model.reloadRepositoryBackups()
+            let view = RepositoryRecoveryView(model: model)
+                .frame(width: 1_100, height: 700)
+            let hostingView = NSHostingView(rootView: view)
+            hostingView.frame = NSRect(x: 0, y: 0, width: 1_100, height: 700)
+            hostingView.layoutSubtreeIfNeeded()
+            hostingView.displayIfNeeded()
+            let representation = try #require(
+                hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)
+            )
+            hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
+            let data = try #require(representation.representation(using: .png, properties: [:]))
+            try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
+        }
+    }
+
+    @MainActor
     @Test("Agent edit creates a checkpoint before repository writes")
     func protectsAgentEditBeforeWrite() async throws {
         let fixture = try BackupFixture()

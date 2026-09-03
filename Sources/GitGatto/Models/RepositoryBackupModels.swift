@@ -57,6 +57,8 @@ struct RepositoryProtectionAssessment: Sendable, Equatable {
     let backupID: UUID
     let changedFileCount: Int
     let changedLineCount: Int
+    let changedPathsSinceBaseline: [String]
+    let changedLineCountSinceBaseline: Int
     let deletedPaths: [String]
     let lostChangedPaths: [String]
     let headChanged: Bool
@@ -96,6 +98,7 @@ struct RepositoryProtectionIncident: Identifiable, Sendable, Equatable {
     let backup: RepositoryBackup
     let kind: RepositoryProtectionIncidentKind
     let assessment: RepositoryProtectionAssessment?
+    let exceedsConfiguredChangeLimit: Bool
     let failureDescription: String?
 
     init(
@@ -106,6 +109,7 @@ struct RepositoryProtectionIncident: Identifiable, Sendable, Equatable {
         backup: RepositoryBackup,
         kind: RepositoryProtectionIncidentKind,
         assessment: RepositoryProtectionAssessment? = nil,
+        exceedsConfiguredChangeLimit: Bool = false,
         failureDescription: String? = nil
     ) {
         self.id = id
@@ -115,6 +119,7 @@ struct RepositoryProtectionIncident: Identifiable, Sendable, Equatable {
         self.backup = backup
         self.kind = kind
         self.assessment = assessment
+        self.exceedsConfiguredChangeLimit = exceedsConfiguredChangeLimit
         self.failureDescription = failureDescription
     }
 }

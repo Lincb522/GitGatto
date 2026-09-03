@@ -204,6 +204,7 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var repositoryProtectionError: String?
     @Published private(set) var agentProtectionNotice: AgentProtectionNotice?
     @Published private(set) var repositoryProtectionIncidents: [RepositoryProtectionIncident] = []
+    let monitoringEngine: MonitoringEngine
 
     private let service: any GitRepositoryServing
     private let codexService: any CodexServing
@@ -317,6 +318,7 @@ final class WorkspaceViewModel: ObservableObject {
         projectGoalStore: any ProjectGoalStoring = ProjectGoalStore(),
         regressionInvestigationStore: any RegressionInvestigationStoring = RegressionInvestigationStore(),
         regressionInvestigationRuntime: RegressionInvestigationRuntime = RegressionInvestigationRuntime(),
+        monitoringEngine: MonitoringEngine = MonitoringEngine(),
         repositoryBackupService: any RepositoryBackupServing = RepositoryBackupService(
             rootURL: AppPreferencesStore.load().repositoryBackupDirectoryURL
         )
@@ -336,6 +338,7 @@ final class WorkspaceViewModel: ObservableObject {
         self.projectGoalStore = projectGoalStore
         self.regressionInvestigationStore = regressionInvestigationStore
         self.regressionInvestigationRuntime = regressionInvestigationRuntime
+        self.monitoringEngine = monitoringEngine
         self.repositoryBackupService = repositoryBackupService
         projectGoalRuntime = ProjectGoalRuntime(
             repositoryService: service,
@@ -361,6 +364,11 @@ final class WorkspaceViewModel: ObservableObject {
         }
         normalizeRepositoryCatalog()
         persistRepositoryLists()
+        monitoringEngine.configure(
+            preferences: appPreferences,
+            repositories: localRepositories,
+            selectedRepositoryURL: snapshot?.rootURL
+        )
     }
 
     var repositoryName: String? {
@@ -1845,6 +1853,7 @@ final class WorkspaceViewModel: ObservableObject {
             configureRegressionDefaults(for: loaded.rootURL)
             preloadRepositorySurfaces(for: loaded)
             remember(loaded.rootURL)
+            configureMonitoringEngine()
             isRefreshing = false
             if hasStarted {
                 startAvailabilityProbes()
@@ -2949,6 +2958,11 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func startProjectGoalMonitorIfNeeded() {
         projectGoalMonitorTask?.cancel()
+        guard appPreferences.monitoringEngineEnabled,
+              appPreferences.projectGoalMonitoringEnabled else {
+            projectGoalMonitorTask = nil
+            return
+        }
         let ids = projectGoals
             .filter {
                 $0.status == .waiting
@@ -2958,8 +2972,10 @@ final class WorkspaceViewModel: ObservableObject {
             .map(\.id)
         guard !ids.isEmpty else {
             projectGoalMonitorTask = nil
+            monitoringEngine.markHealthy(.projectGoals)
             return
         }
+        monitoringEngine.markMonitoring(.projectGoals)
         projectGoalMonitorTask = Task { [weak self] in
             while !Task.isCancelled {
                 do {
@@ -2977,8 +2993,20 @@ final class WorkspaceViewModel: ObservableObject {
                     return
                 }
                 guard let self else { return }
+                self.monitoringEngine.markMonitoring(.projectGoals)
                 for id in ids {
                     await self.refreshProjectGoal(id: id, showErrors: false)
+                }
+                let hasFailure = self.projectGoals.contains {
+                    ids.contains($0.id) && $0.lastError != nil
+                }
+                if hasFailure {
+                    self.monitoringEngine.markAttention(
+                        .projectGoals,
+                        error: L10n.text("monitoring.detail.goal_attention")
+                    )
+                } else {
+                    self.monitoringEngine.markHealthy(.projectGoals)
                 }
                 if !self.projectGoals.contains(where: {
                     ids.contains($0.id)
@@ -3225,8 +3253,12 @@ final class WorkspaceViewModel: ObservableObject {
 
     func restartRepositoryProtection() {
         stopRepositoryProtection()
-        guard appPreferences.repositoryBackupEnabled,
+        configureMonitoringEngine()
+        guard appPreferences.monitoringEngineEnabled,
+              appPreferences.repositoryBackupEnabled,
               !isMigratingRepositoryBackupStorage else { return }
+
+        monitoringEngine.markMonitoring(.repositoryProtection)
 
         let generation = repositoryProtectionGeneration
         for repositoryURL in localRepositories {
@@ -3242,6 +3274,8 @@ final class WorkspaceViewModel: ObservableObject {
             ) { [weak self] in
                 Task { @MainActor in
                     guard let self else { return }
+                    self.monitoringEngine.recordRepositoryChange(at: repository)
+                    self.monitoringEngine.markMonitoring(.repositoryProtection)
                     if self.appPreferences.externalRepositoryProtectionEnabled {
                         self.scheduleExternalRepositoryProtectionAudit(
                             for: repository,
@@ -3269,6 +3303,7 @@ final class WorkspaceViewModel: ObservableObject {
                 guard !Task.isCancelled,
                       self.repositoryProtectionGeneration == generation else { return }
                 await self.refreshRepositoryBackupInventory(selecting: nil)
+                self.monitoringEngine.markHealthy(.repositoryProtection)
                 self.repositoryProtectionArmingTask = nil
             }
         }
@@ -3368,11 +3403,13 @@ final class WorkspaceViewModel: ObservableObject {
                 after: baseline,
                 in: repository
             )
-            let changedLineDelta = abs(assessment.changedLineCount - baseline.changedLineCount)
-            let exceedsLimit = assessment.changedFileCount >= max(
+            let exceedsLimit = assessment.changedPathsSinceBaseline.count >= max(
                 1,
                 appPreferences.majorBackupFileThreshold
-            ) || changedLineDelta >= max(1, appPreferences.majorBackupLineThreshold)
+            ) || assessment.changedLineCountSinceBaseline >= max(
+                1,
+                appPreferences.majorBackupLineThreshold
+            )
             let hasDestructiveChange = !assessment.deletedPaths.isEmpty
                 || !assessment.lostChangedPaths.isEmpty
                 || exceedsLimit
@@ -3383,7 +3420,8 @@ final class WorkspaceViewModel: ObservableObject {
                         repositoryName: repository.lastPathComponent,
                         backup: baseline,
                         kind: .destructiveChange,
-                        assessment: assessment
+                        assessment: assessment,
+                        exceedsConfiguredChangeLimit: exceedsLimit
                     )
                 )
                 return
@@ -3427,6 +3465,7 @@ final class WorkspaceViewModel: ObservableObject {
             ) else { return }
             guard generation == nil || generation == repositoryProtectionGeneration else { return }
             repositoryProtectionBaselines[path] = backup
+            monitoringEngine.markHealthy(.repositoryProtection)
         } catch is CancellationError {
             return
         } catch {
@@ -3434,6 +3473,10 @@ final class WorkspaceViewModel: ObservableObject {
                 "recovery.error.monitoring",
                 repository.lastPathComponent,
                 error.localizedDescription
+            )
+            monitoringEngine.markAttention(
+                .repositoryProtection,
+                error: repositoryProtectionError ?? error.localizedDescription
             )
         }
     }
@@ -3444,6 +3487,10 @@ final class WorkspaceViewModel: ObservableObject {
         selectedRepositoryBackupID = incident.backup.id
         repositoryBackupTasks[incident.repositoryPath]?.cancel()
         repositoryBackupTasks[incident.repositoryPath] = nil
+        monitoringEngine.markAttention(
+            .repositoryProtection,
+            error: L10n.format("recovery.guard.notice.detected", incident.repositoryName)
+        )
         showNotice(.init(
             message: L10n.format(
                 "recovery.guard.notice.detected",
@@ -3501,6 +3548,7 @@ final class WorkspaceViewModel: ObservableObject {
                 policy: appPreferences.repositoryBackupPolicy
             ) else { return }
             await refreshRepositoryBackupInventory(selecting: nil)
+            monitoringEngine.markHealthy(.repositoryProtection)
             if backup.reason == .majorChange {
                 showNotice(.init(message: L10n.text("recovery.notice.major_created")))
             }
@@ -3511,6 +3559,10 @@ final class WorkspaceViewModel: ObservableObject {
                 "recovery.error.monitoring",
                 repositoryURL.lastPathComponent,
                 error.localizedDescription
+            )
+            monitoringEngine.markAttention(
+                .repositoryProtection,
+                error: repositoryProtectionError ?? error.localizedDescription
             )
         }
     }
@@ -3554,11 +3606,13 @@ final class WorkspaceViewModel: ObservableObject {
         repositoryChangeMonitor?.stop()
         repositoryChangeMonitor = nil
         isLiveRefreshing = false
+        configureMonitoringEngine()
         guard let repositoryURL = snapshot?.rootURL else { return }
 
-        if appPreferences.liveRefreshEnabled {
+        if appPreferences.monitoringEngineEnabled, appPreferences.liveRefreshEnabled {
             let monitor = RepositoryChangeMonitor(repositoryURL: repositoryURL) { [weak self] in
                 Task { @MainActor in
+                    self?.monitoringEngine.recordRepositoryChange(at: repositoryURL)
                     self?.scheduleRepositoryEventRefresh()
                 }
             }
@@ -3578,7 +3632,10 @@ final class WorkspaceViewModel: ObservableObject {
             }
         }
 
-        if appPreferences.remoteRefreshEnabled, snapshot?.upstreamName != nil {
+        if appPreferences.monitoringEngineEnabled,
+           appPreferences.remoteRefreshEnabled,
+           snapshot?.upstreamName != nil
+        {
             let interval = max(15, appPreferences.remoteRefreshInterval)
             remoteRefreshTask = Task { [weak self] in
                 while !Task.isCancelled {
@@ -3599,6 +3656,7 @@ final class WorkspaceViewModel: ObservableObject {
               !isRefreshing,
               !isLiveRefreshing,
               activeOperation == nil else { return }
+        monitoringEngine.markMonitoring(.workingTree)
         let repositoryURL = currentSnapshot.rootURL
         let mutationGeneration = repositoryMutationGeneration
         isLiveRefreshing = true
@@ -3619,6 +3677,7 @@ final class WorkspaceViewModel: ObservableObject {
             if liveSyncError != nil {
                 liveSyncError = nil
             }
+            monitoringEngine.markHealthy(.workingTree)
         } catch is CancellationError {
             return
         } catch {
@@ -3628,11 +3687,14 @@ final class WorkspaceViewModel: ObservableObject {
             if liveSyncError != message {
                 liveSyncError = message
             }
+            monitoringEngine.markAttention(.workingTree, error: message)
         }
     }
 
     private func scheduleRepositoryEventRefresh() {
-        guard appPreferences.liveRefreshEnabled, snapshot != nil else { return }
+        guard appPreferences.monitoringEngineEnabled,
+              appPreferences.liveRefreshEnabled,
+              snapshot != nil else { return }
         repositoryEventRefreshTask?.cancel()
         let refreshID = UUID()
         activeRepositoryEventRefreshID = refreshID
@@ -3666,6 +3728,7 @@ final class WorkspaceViewModel: ObservableObject {
               !isRefreshing,
               !isLiveRefreshing,
               activeOperation == nil else { return }
+        monitoringEngine.markMonitoring(.remote)
         let repositoryURL = currentSnapshot.rootURL
         let mutationGeneration = repositoryMutationGeneration
         isLiveRefreshing = true
@@ -3688,6 +3751,7 @@ final class WorkspaceViewModel: ObservableObject {
             if liveSyncError != nil {
                 liveSyncError = nil
             }
+            monitoringEngine.markHealthy(.remote)
         } catch is CancellationError {
             return
         } catch {
@@ -3697,6 +3761,7 @@ final class WorkspaceViewModel: ObservableObject {
             if liveSyncError != message {
                 liveSyncError = message
             }
+            monitoringEngine.markAttention(.remote, error: message)
         }
     }
 
@@ -5875,7 +5940,13 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func startGitHubActionsMonitor(for repository: GitHubRepository) {
         githubActionsMonitorTask?.cancel()
-        guard githubActionRuns.contains(where: { Self.isActiveGitHubActionStatus($0.status) }) else { return }
+        guard appPreferences.monitoringEngineEnabled,
+              appPreferences.githubActionsMonitoringEnabled else { return }
+        guard githubActionRuns.contains(where: { Self.isActiveGitHubActionStatus($0.status) }) else {
+            monitoringEngine.markHealthy(.githubActions)
+            return
+        }
+        monitoringEngine.markMonitoring(.githubActions)
         githubActionsMonitorTask = Task {
             while !Task.isCancelled, selectedGitHubRepository?.id == repository.id {
                 do {
@@ -5887,6 +5958,7 @@ final class WorkspaceViewModel: ObservableObject {
                         selectedGitHubActionRun = runs.first { $0.id == selectedRunID }
                     }
                     if !runs.contains(where: { Self.isActiveGitHubActionStatus($0.status) }) {
+                        monitoringEngine.markHealthy(.githubActions)
                         return
                     }
                 } catch is CancellationError {
@@ -5894,6 +5966,10 @@ final class WorkspaceViewModel: ObservableObject {
                 } catch {
                     guard selectedGitHubRepository?.id == repository.id else { return }
                     githubActionsError = L10n.format("github.actions.error.refresh", error.localizedDescription)
+                    monitoringEngine.markAttention(
+                        .githubActions,
+                        error: githubActionsError ?? error.localizedDescription
+                    )
                     return
                 }
             }
@@ -6189,8 +6265,7 @@ final class WorkspaceViewModel: ObservableObject {
         }
         AIProviderSettings.save(projectAIConfiguration, lane: .project)
         AIProviderSettings.save(translationAIConfiguration, lane: .translation)
-        restartLiveRefreshLoop()
-        restartRepositoryProtection()
+        restartMonitoringTasks()
         retryCodexProbe()
         translationProbeTask?.cancel()
         translationAIAvailability = .checking
@@ -6208,6 +6283,55 @@ final class WorkspaceViewModel: ObservableObject {
     func rememberWindowCloseBehavior(_ behavior: WindowCloseBehavior) {
         appPreferences.windowCloseBehavior = behavior
         AppPreferencesStore.save(appPreferences)
+    }
+
+    func setMonitoringEngineEnabled(_ enabled: Bool) {
+        appPreferences.monitoringEngineEnabled = enabled
+        AppPreferencesStore.save(appPreferences)
+        restartMonitoringTasks()
+    }
+
+    func setStatusBarMonitoringEnabled(_ enabled: Bool) {
+        appPreferences.statusBarMonitoringEnabled = enabled
+        AppPreferencesStore.save(appPreferences)
+        configureMonitoringEngine()
+    }
+
+    func setMonitoringCategory(_ category: MonitoringCategory, enabled: Bool) {
+        switch category {
+        case .workingTree:
+            appPreferences.liveRefreshEnabled = enabled
+        case .remote:
+            appPreferences.remoteRefreshEnabled = enabled
+        case .repositoryProtection:
+            appPreferences.repositoryBackupEnabled = enabled
+        case .githubActions:
+            appPreferences.githubActionsMonitoringEnabled = enabled
+        case .projectGoals:
+            appPreferences.projectGoalMonitoringEnabled = enabled
+        }
+        AppPreferencesStore.save(appPreferences)
+        restartMonitoringTasks()
+    }
+
+    private func configureMonitoringEngine() {
+        monitoringEngine.configure(
+            preferences: appPreferences,
+            repositories: localRepositories,
+            selectedRepositoryURL: snapshot?.rootURL
+        )
+    }
+
+    private func restartMonitoringTasks() {
+        configureMonitoringEngine()
+        restartLiveRefreshLoop()
+        restartRepositoryProtection()
+        startProjectGoalMonitorIfNeeded()
+        githubActionsMonitorTask?.cancel()
+        githubActionsMonitorTask = nil
+        if let repository = selectedGitHubRepository {
+            startGitHubActionsMonitor(for: repository)
+        }
     }
 
     func runCodex() {
@@ -6710,9 +6834,11 @@ final class WorkspaceViewModel: ObservableObject {
                 after: backup,
                 in: repositoryURL
             )
-            let changedLineDelta = abs(assessment.changedLineCount - backup.changedLineCount)
             let exceedsLimit = reportedFileChangeCount >= max(1, appPreferences.majorBackupFileThreshold)
-                || changedLineDelta >= max(1, appPreferences.majorBackupLineThreshold)
+                || assessment.changedLineCountSinceBaseline >= max(
+                    1,
+                    appPreferences.majorBackupLineThreshold
+                )
             let notice = AgentProtectionNotice(
                 backup: backup,
                 assessment: assessment,

@@ -199,10 +199,14 @@ enum AppStyleDefaults {
 struct AppPreferences: Codable, Sendable, Equatable {
     var language: AppLanguage = .system
     var defaultWorkspace: WorkspaceSection = .github
+    var monitoringEngineEnabled = true
+    var statusBarMonitoringEnabled = true
     var liveRefreshEnabled = true
     var liveRefreshInterval = 1.0
     var remoteRefreshEnabled = true
     var remoteRefreshInterval = 30.0
+    var githubActionsMonitoringEnabled = true
+    var projectGoalMonitoringEnabled = true
     var repositoryBackupEnabled = true
     var repositoryBackupIntervalMinutes = 10.0
     var majorBackupFileThreshold = 20
@@ -224,10 +228,14 @@ struct AppPreferences: Codable, Sendable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case language
         case defaultWorkspace
+        case monitoringEngineEnabled
+        case statusBarMonitoringEnabled
         case liveRefreshEnabled
         case liveRefreshInterval
         case remoteRefreshEnabled
         case remoteRefreshInterval
+        case githubActionsMonitoringEnabled
+        case projectGoalMonitoringEnabled
         case repositoryBackupEnabled
         case repositoryBackupIntervalMinutes
         case majorBackupFileThreshold
@@ -253,10 +261,26 @@ struct AppPreferences: Codable, Sendable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
         defaultWorkspace = try container.decodeIfPresent(WorkspaceSection.self, forKey: .defaultWorkspace) ?? .github
+        monitoringEngineEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .monitoringEngineEnabled
+        ) ?? true
+        statusBarMonitoringEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .statusBarMonitoringEnabled
+        ) ?? true
         liveRefreshEnabled = try container.decodeIfPresent(Bool.self, forKey: .liveRefreshEnabled) ?? true
         liveRefreshInterval = try container.decodeIfPresent(Double.self, forKey: .liveRefreshInterval) ?? 1
         remoteRefreshEnabled = try container.decodeIfPresent(Bool.self, forKey: .remoteRefreshEnabled) ?? true
         remoteRefreshInterval = try container.decodeIfPresent(Double.self, forKey: .remoteRefreshInterval) ?? 30
+        githubActionsMonitoringEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .githubActionsMonitoringEnabled
+        ) ?? true
+        projectGoalMonitoringEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .projectGoalMonitoringEnabled
+        ) ?? true
         repositoryBackupEnabled = try container.decodeIfPresent(
             Bool.self,
             forKey: .repositoryBackupEnabled

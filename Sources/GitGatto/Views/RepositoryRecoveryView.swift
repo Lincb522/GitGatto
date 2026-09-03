@@ -94,8 +94,19 @@ struct RepositoryRecoveryView: View {
                         if assessment.headChanged || assessment.branchChanged || assessment.indexChanged {
                             Text(L10n.text("recovery.guard.incident.git_state"))
                         }
+                        if incident.exceedsConfiguredChangeLimit {
+                            Text(L10n.format(
+                                "recovery.guard.incident.threshold",
+                                assessment.changedPathsSinceBaseline.count,
+                                assessment.changedLineCountSinceBaseline
+                            ))
+                        }
                         let affectedPaths = Array(Set(
-                            assessment.deletedPaths + assessment.lostChangedPaths
+                            assessment.deletedPaths
+                                + assessment.lostChangedPaths
+                                + (incident.exceedsConfiguredChangeLimit
+                                    ? assessment.changedPathsSinceBaseline
+                                    : [])
                         )).sorted()
                         if !affectedPaths.isEmpty {
                             Text(affectedPaths.prefix(5).joined(separator: "  ·  "))
