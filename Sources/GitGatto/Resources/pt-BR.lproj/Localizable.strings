@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "Todos os pontos de recuperação do GitGatto serão removidos permanentemente. Os arquivos dos repositórios não serão alterados.";
 "recovery.notice.repository_deleted" = "Backups do repositório excluídos.";
 "recovery.notice.all_deleted" = "Todos os backups foram excluídos.";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Proteção do Agent";
+"recovery.error.agent_checkpoint_unavailable" = "Não foi possível criar o ponto de recuperação do Agent. A gravação foi interrompida.";
+"settings.recovery.agent_protection" = "Proteger edições do Agent";
+"settings.recovery.agent_protection.body" = "Cria um ponto de recuperação persistente antes de o Agent gravar no repositório atual.";
+"codex.status.creating_recovery_point" = "Criando ponto de recuperação…";
+"codex.status.checking_protected_changes" = "Verificando alterações protegidas…";
+"codex.protection.review.title" = "As alterações do Agent precisam de revisão";
+"codex.protection.review.deleted" = "%d arquivo(s) foram excluídos após o início do Agent.";
+"codex.protection.review.repository_state" = "O branch atual, HEAD ou a área de stage mudou durante a execução do Agent.";
+"codex.protection.review.large_change" = "O Agent informou alterações em %d arquivo(s), acima do limite configurado.";
+"codex.protection.action.review" = "Revisar alterações";
+"codex.protection.action.recovery_point" = "Abrir ponto de recuperação";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "Proteção do repositório";
+"codex.protection.review.lost_changes" = "%d arquivos não confirmados existentes foram sobrescritos ou removidos.";
+"settings.recovery.external_protection" = "Monitorar Agents e CLI externos";
+"settings.recovery.external_protection.body" = "Mantém bases de recuperação rotativas para repositórios gerenciados e detecta exclusões, perda de conteúdo não confirmado, mudanças em massa e danos ao Git causados por outras ferramentas.";
+"recovery.guard.notice.detected" = "Possíveis mudanças destrutivas foram detectadas em %@. O ponto de recuperação anterior foi preservado.";
+"recovery.guard.incident.title" = "Verificar mudanças anormais em %@";
+"recovery.guard.incident.repository_unavailable" = "A pasta do repositório ou os metadados do Git estão ausentes ou danificados.";
+"recovery.guard.incident.deleted" = "%d arquivos foram excluídos desde a última base protegida.";
+"recovery.guard.incident.lost_changes" = "%d arquivos não confirmados existentes foram sobrescritos ou removidos.";
+"recovery.guard.incident.git_state" = "O branch, HEAD ou o estado de stage também mudou.";
+"recovery.guard.action.review" = "Verificar repositório";
+"recovery.guard.action.recovery" = "Abrir recuperação";

@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "GitGatto의 모든 복원 지점을 영구적으로 삭제합니다. 저장소 원본 파일에는 영향을 주지 않습니다.";
 "recovery.notice.repository_deleted" = "저장소 백업을 삭제했습니다.";
 "recovery.notice.all_deleted" = "모든 백업을 삭제했습니다.";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Agent 보호";
+"recovery.error.agent_checkpoint_unavailable" = "Agent 복구 지점을 만들 수 없어 쓰기 작업을 중단했습니다.";
+"settings.recovery.agent_protection" = "Agent 편집 보호";
+"settings.recovery.agent_protection.body" = "Agent가 현재 저장소에 쓰기 전에 디스크에 확정된 복구 지점을 만듭니다.";
+"codex.status.creating_recovery_point" = "복구 지점 생성 중…";
+"codex.status.checking_protected_changes" = "보호된 변경 사항 확인 중…";
+"codex.protection.review.title" = "Agent 변경 사항을 검토해야 합니다";
+"codex.protection.review.deleted" = "Agent 실행 후 파일 %d개가 삭제되었습니다.";
+"codex.protection.review.repository_state" = "Agent 실행 중 현재 브랜치, HEAD 또는 스테이징 상태가 변경되었습니다.";
+"codex.protection.review.large_change" = "Agent가 파일 %d개 변경을 보고해 설정된 한도를 초과했습니다.";
+"codex.protection.action.review" = "변경 사항 검토";
+"codex.protection.action.recovery_point" = "복구 지점 열기";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "저장소 보호";
+"codex.protection.review.lost_changes" = "기존 미커밋 파일 %d개가 덮어써지거나 제거되었습니다.";
+"settings.recovery.external_protection" = "외부 Agent 및 CLI 감시";
+"settings.recovery.external_protection.body" = "관리 저장소의 순환 복구 기준을 유지하고 다른 도구의 삭제, 미커밋 내용 손실, 대규모 변경 및 Git 손상을 감지합니다.";
+"recovery.guard.notice.detected" = "%@에서 파괴적 변경 가능성을 감지했습니다. 작업 전 복구 지점을 보존했습니다.";
+"recovery.guard.incident.title" = "%@의 비정상 변경 확인";
+"recovery.guard.incident.repository_unavailable" = "저장소 디렉터리 또는 Git 메타데이터가 없거나 손상되었습니다.";
+"recovery.guard.incident.deleted" = "마지막 보호 기준 이후 파일 %d개가 삭제되었습니다.";
+"recovery.guard.incident.lost_changes" = "기존 미커밋 파일 %d개가 덮어써지거나 제거되었습니다.";
+"recovery.guard.incident.git_state" = "브랜치, HEAD 또는 스테이징 상태도 변경되었습니다.";
+"recovery.guard.action.review" = "저장소 확인";
+"recovery.guard.action.recovery" = "복구 지점 열기";

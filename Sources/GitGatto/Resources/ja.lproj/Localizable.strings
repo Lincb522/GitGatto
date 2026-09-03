@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "GitGatto のすべての復元ポイントを完全に削除します。リポジトリの元ファイルには影響しません。";
 "recovery.notice.repository_deleted" = "リポジトリのバックアップを削除しました。";
 "recovery.notice.all_deleted" = "すべてのバックアップを削除しました。";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Agent 保護";
+"recovery.error.agent_checkpoint_unavailable" = "Agent の復元ポイントを作成できなかったため、書き込み操作を停止しました。";
+"settings.recovery.agent_protection" = "Agent の編集を保護";
+"settings.recovery.agent_protection.body" = "Agent が現在のリポジトリへ書き込む前に、永続的な復元ポイントを作成します。";
+"codex.status.creating_recovery_point" = "復元ポイントを作成中…";
+"codex.status.checking_protected_changes" = "保護された変更を確認中…";
+"codex.protection.review.title" = "Agent の変更を確認してください";
+"codex.protection.review.deleted" = "Agent の開始後に %d 件のファイルが削除されました。";
+"codex.protection.review.repository_state" = "Agent の実行中に現在のブランチ、HEAD、またはステージ状態が変更されました。";
+"codex.protection.review.large_change" = "Agent が %d 件のファイル変更を報告し、設定上限を超えました。";
+"codex.protection.action.review" = "変更を確認";
+"codex.protection.action.recovery_point" = "復元ポイントを開く";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "リポジトリガード";
+"codex.protection.review.lost_changes" = "既存の未コミットファイル %d 件が上書きまたは消去されました。";
+"settings.recovery.external_protection" = "外部 Agent と CLI を監視";
+"settings.recovery.external_protection.body" = "管理対象リポジトリの復元基準を保持し、他のツールによる削除、未コミット内容の消失、大規模変更、Git の破損を検出します。";
+"recovery.guard.notice.detected" = "%@ で破壊的な変更の可能性を検出しました。操作前の復元ポイントを保持しています。";
+"recovery.guard.incident.title" = "%@ の異常な変更を確認";
+"recovery.guard.incident.repository_unavailable" = "リポジトリのディレクトリまたは Git メタデータが見つからないか破損しています。";
+"recovery.guard.incident.deleted" = "前回の保護基準から %d 件のファイルが削除されました。";
+"recovery.guard.incident.lost_changes" = "既存の未コミットファイル %d 件が上書きまたは消去されました。";
+"recovery.guard.incident.git_state" = "ブランチ、HEAD、またはステージ状態も変更されました。";
+"recovery.guard.action.review" = "リポジトリを確認";
+"recovery.guard.action.recovery" = "復元ポイントを開く";

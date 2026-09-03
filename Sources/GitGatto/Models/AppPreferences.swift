@@ -210,6 +210,8 @@ struct AppPreferences: Codable, Sendable, Equatable {
     var repositoryBackupRetentionCount = RepositoryBackupPolicy.maximumRetentionCount
     var repositoryBackupMaximumFileSizeMB = 50
     var repositoryBackupDirectoryPath: String?
+    var agentEditProtectionEnabled = true
+    var externalRepositoryProtectionEnabled = true
     var commitDraftDetail: CommitDraftDetail = .concise
     var agentConversationHistoryLimit = 24
     var defaultAgentRunMode: CodexRunMode = .analyze
@@ -233,6 +235,8 @@ struct AppPreferences: Codable, Sendable, Equatable {
         case repositoryBackupRetentionCount
         case repositoryBackupMaximumFileSizeMB
         case repositoryBackupDirectoryPath
+        case agentEditProtectionEnabled
+        case externalRepositoryProtectionEnabled
         case commitDraftDetail
         case agentConversationHistoryLimit
         case defaultAgentRunMode
@@ -283,6 +287,14 @@ struct AppPreferences: Codable, Sendable, Equatable {
             String.self,
             forKey: .repositoryBackupDirectoryPath
         )
+        agentEditProtectionEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .agentEditProtectionEnabled
+        ) ?? true
+        externalRepositoryProtectionEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .externalRepositoryProtectionEnabled
+        ) ?? true
         commitDraftDetail = try container.decodeIfPresent(CommitDraftDetail.self, forKey: .commitDraftDetail) ?? .concise
         agentConversationHistoryLimit = try max(1, container.decodeIfPresent(
             Int.self,

@@ -1,22 +1,16 @@
 ## Added
 
-- Expanded the developer tool catalog to 99 tools with bundled brand icons.
-- Added separate install and upgrade queues with three concurrent lanes, queue positions, per-tool cancellation, multi-selection, select all, and batch upgrades.
-- Added complete release goals and natural-language custom goal conditions.
-- Added Disaster Recovery to monitor managed local repositories, save uncommitted work on a schedule, capture major changes immediately, and restore a recovery point to a new repository copy.
-- Added backup management with storage usage, manual recovery points, and actions to reveal or delete one backup, one repository's backups, or all backups.
+- Extended disaster-recovery protection to every managed local repository, including changes made by external Agents, Git CLIs, terminals, and scripts.
+- Added rolling pre-operation recovery baselines that detect repository deletion, deleted files, lost uncommitted work, and unexpected branch, HEAD, or index changes.
+- Added incident cards to Disaster Recovery with original errors, affected paths, repository state, and direct access to the preserved recovery point.
 
 ## Improved
 
-- After an install or upgrade, Agent completes current-user setup, component registration, environment migration, and version verification.
-- Formulae without a compatible bottle may use Homebrew's normal source build and declared build dependencies.
-- Each repository retains no more than three rolling recovery points. Identical content is not written again, and changing the backup location migrates and verifies existing recovery points.
+- Recovery points now use atomic staging, commit markers, content verification, and filesystem synchronization. Only complete transactions survive an interrupted exit.
+- Each repository retains no more than three rolling recovery points. A high-risk event freezes the latest recovery point so later automatic backups cannot replace the evidence.
+- GitGatto's built-in Agent must create a recovery point before writing and audits deletions, overwritten work, and Git state afterward.
 
 ## Fixed
 
-- Keep one app mark visible when the sidebar is collapsed without restoring the duplicated compact logo.
-- Homebrew upgrades now run through GitGatto's controlled execution path so Homebrew's build sandbox is not nested inside the Agent sandbox.
-- Concurrent upgrade lanes serialize Homebrew mutations to prevent Cellar lock conflicts across shared dependencies.
-- Docker Compose registers through the current user's CLI plug-in directory without reading or changing Docker credential configuration; incomplete setup remains action required.
-- Agent installations now share a controlled write scope; Homebrew package installs use the dedicated package runner and other Agent CLIs cannot write outside that scope.
-- Account sign-in and token state no longer block a completed tool installation.
+- Added a lightweight repository watchdog so delayed FSEvents cannot leave staging state or disaster-recovery incidents stale under load.
+- Homebrew execution timeouts now begin after the process actually starts instead of counting scheduler wait time.

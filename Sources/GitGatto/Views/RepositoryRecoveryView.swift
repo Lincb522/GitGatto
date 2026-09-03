@@ -12,6 +12,10 @@ struct RepositoryRecoveryView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
             metrics(palette)
             Rectangle().fill(palette.divider).frame(height: 1)
+            if let incident = model.repositoryProtectionIncidents.first {
+                protectionIncident(incident, palette: palette)
+                Rectangle().fill(palette.divider).frame(height: 1)
+            }
 
             if model.isLoadingRepositoryBackups, model.repositoryBackups.isEmpty {
                 GattoLoadingState(text: L10n.text("recovery.loading"))
@@ -51,6 +55,103 @@ struct RepositoryRecoveryView: View {
         } message: { target in
             Text(deletionMessage(target))
         }
+    }
+
+    private func protectionIncident(
+        _ incident: RepositoryProtectionIncident,
+        palette: AppPalette
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(gattoSymbol: "exclamationmark.triangle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(palette.warning)
+                .frame(width: 34, height: 34)
+                .background(palette.warning.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.format("recovery.guard.incident.title", incident.repositoryName))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    if incident.kind == .repositoryUnavailable {
+                        Text(L10n.text("recovery.guard.incident.repository_unavailable"))
+                    }
+                    if let assessment = incident.assessment {
+                        if !assessment.deletedPaths.isEmpty {
+                            Text(L10n.format(
+                                "recovery.guard.incident.deleted",
+                                assessment.deletedPaths.count
+                            ))
+                        }
+                        if !assessment.lostChangedPaths.isEmpty {
+                            Text(L10n.format(
+                                "recovery.guard.incident.lost_changes",
+                                assessment.lostChangedPaths.count
+                            ))
+                        }
+                        if assessment.headChanged || assessment.branchChanged || assessment.indexChanged {
+                            Text(L10n.text("recovery.guard.incident.git_state"))
+                        }
+                        let affectedPaths = Array(Set(
+                            assessment.deletedPaths + assessment.lostChangedPaths
+                        )).sorted()
+                        if !affectedPaths.isEmpty {
+                            Text(affectedPaths.prefix(5).joined(separator: "  ·  "))
+                                .font(.system(size: 10, design: .monospaced))
+                                .lineLimit(2)
+                        }
+                    }
+                    if let failureDescription = incident.failureDescription {
+                        Text(failureDescription)
+                            .font(.system(size: 10, design: .monospaced))
+                            .lineLimit(3)
+                            .textSelection(.enabled)
+                    }
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(palette.mutedInk)
+
+                HStack(spacing: 8) {
+                    Button(L10n.text("recovery.guard.action.review")) {
+                        model.reviewRepositoryProtectionIncident(incident)
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    Button(L10n.text("recovery.guard.action.recovery")) {
+                        model.openRepositoryProtectionIncident(incident)
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Text(incident.detectedAt.formatted(date: .omitted, time: .shortened))
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(palette.subtleInk)
+
+            Button {
+                model.dismissRepositoryProtectionIncident(incident)
+            } label: {
+                Image(gattoSymbol: "xmark")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(palette.subtleInk)
+            .help(L10n.text("action.close"))
+        }
+        .padding(13)
+        .background(palette.raisedSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(palette.warning.opacity(0.38), lineWidth: 1)
+        }
+        .padding(12)
+        .background(palette.surface)
     }
 
     private func header(_ palette: AppPalette) -> some View {

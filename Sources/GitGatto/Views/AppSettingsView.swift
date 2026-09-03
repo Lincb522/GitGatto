@@ -1335,6 +1335,26 @@ private struct RecoverySettingsPage: View {
                     .toggleStyle(.switch)
             }
 
+            SettingsControlRow(
+                titleKey: "settings.recovery.agent_protection",
+                descriptionKey: "settings.recovery.agent_protection.body"
+            ) {
+                Toggle("", isOn: $preferences.agentEditProtectionEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .disabled(!preferences.repositoryBackupEnabled)
+            }
+
+            SettingsControlRow(
+                titleKey: "settings.recovery.external_protection",
+                descriptionKey: "settings.recovery.external_protection.body"
+            ) {
+                Toggle("", isOn: $preferences.externalRepositoryProtectionEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .disabled(!preferences.repositoryBackupEnabled)
+            }
+
             HStack(spacing: 10) {
                 Image(gattoSymbol: "externaldrive")
                     .font(.system(size: 15, weight: .semibold))

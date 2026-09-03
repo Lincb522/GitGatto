@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 
 protocol RepositoryBackupServing: Sendable {
@@ -8,6 +9,10 @@ protocol RepositoryBackupServing: Sendable {
         reason: RepositoryBackupReason,
         policy: RepositoryBackupPolicy
     ) async throws -> RepositoryBackup?
+    func assessChanges(
+        after backup: RepositoryBackup,
+        in repositoryURL: URL
+    ) async throws -> RepositoryProtectionAssessment
     func restore(_ backup: RepositoryBackup, to destinationURL: URL) async throws -> URL
     func delete(_ backup: RepositoryBackup) async throws
     func deleteBackups(forRepositoryPath repositoryPath: String?) async throws
@@ -26,6 +31,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     private let decoder: JSONDecoder
     private var activeStorageOperations = 0
     private var isMigratingStorage = false
+    private var activeStagingDirectoryNames = Set<String>()
 
     nonisolated static func defaultRootURL(fileManager: FileManager = .default) -> URL {
         fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -55,6 +61,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     func loadBackups() async throws -> [RepositoryBackup] {
         try beginStorageOperation()
         defer { endStorageOperation() }
+        try recoverInterruptedTransactions()
         return try manifests().map(\.backup).sorted { $0.createdAt > $1.createdAt }
     }
 
@@ -70,6 +77,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
             throw RepositoryBackupError.repositoryUnavailable
         }
 
+        try recoverInterruptedTransactions()
         let maximumFileSize = max(1, policy.maximumFileSize)
         let state = try await inspect(repository, maximumFileSize: maximumFileSize)
         if reason == .majorChange,
@@ -78,10 +86,13 @@ actor RepositoryBackupService: RepositoryBackupServing {
         {
             return nil
         }
-        if reason != .manual, state.changedPaths.isEmpty {
+        let alwaysCreatesRecoveryPoint = reason == .manual
+            || reason == .agentCheckpoint
+            || reason == .externalCheckpoint
+        if !alwaysCreatesRecoveryPoint, state.changedPaths.isEmpty {
             return nil
         }
-        if reason != .manual,
+        if !alwaysCreatesRecoveryPoint,
            try manifests().contains(where: {
                $0.backup.repositoryPath == repository.path && $0.fingerprint == state.fingerprint
            })
@@ -95,8 +106,10 @@ actor RepositoryBackupService: RepositoryBackupServing {
         let stagingURL = rootURL.appendingPathComponent(".\(directoryName).staging", isDirectory: true)
         let finalURL = rootURL.appendingPathComponent(directoryName, isDirectory: true)
         try fileManager.createDirectory(at: stagingURL, withIntermediateDirectories: true)
+        activeStagingDirectoryNames.insert(stagingURL.lastPathComponent)
         var completed = false
         defer {
+            activeStagingDirectoryNames.remove(stagingURL.lastPathComponent)
             if !completed {
                 try? fileManager.removeItem(at: stagingURL)
             }
@@ -156,6 +169,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
             deletedPaths: state.deletedPaths,
             omittedPaths: omittedPaths,
             fingerprint: state.fingerprint,
+            indexFingerprint: state.indexFingerprint,
             bundleFileName: bundleFileName
         )
         try write(provisionalManifest, to: stagingURL)
@@ -181,15 +195,63 @@ actor RepositoryBackupService: RepositoryBackupServing {
                 deletedPaths: state.deletedPaths,
                 omittedPaths: omittedPaths,
                 fingerprint: state.fingerprint,
+                indexFingerprint: state.indexFingerprint,
                 bundleFileName: bundleFileName
             ),
             to: stagingURL
         )
-        let retentionCount = RepositoryBackupPolicy.clampedRetentionCount(policy.retentionCount)
-        try enforceRetention(for: repository.path, limit: retentionCount - 1)
+        try writeCommitMarker(for: backup, in: stagingURL)
+        try synchronizeTree(at: stagingURL)
         try fileManager.moveItem(at: stagingURL, to: finalURL)
         completed = true
+        try synchronizeFileSystemItem(at: rootURL)
+        let retentionCount = RepositoryBackupPolicy.clampedRetentionCount(policy.retentionCount)
+        try enforceRetention(for: repository.path, limit: retentionCount)
+        try synchronizeFileSystemItem(at: rootURL)
         return backup
+    }
+
+    func assessChanges(
+        after backup: RepositoryBackup,
+        in repositoryURL: URL
+    ) async throws -> RepositoryProtectionAssessment {
+        try beginStorageOperation()
+        defer { endStorageOperation() }
+        let repository = repositoryURL.standardizedFileURL.resolvingSymlinksInPath()
+        guard repository.path == backup.repositoryPath else {
+            throw RepositoryBackupError.invalidBackupPath
+        }
+        let baseline = try manifest(for: backup)
+        let current = try await inspect(repository, maximumFileSize: .max)
+        var deletedPaths = Set(current.deletedPaths).subtracting(baseline.deletedPaths)
+        var lostChangedPaths = Set<String>()
+        let currentChangedPaths = Set(current.changedPaths)
+        let baselineWorkspace = try backupDirectory(for: backup)
+            .appendingPathComponent("workspace", isDirectory: true)
+        for path in baseline.copiedPaths {
+            let url = try containedURL(path: path, in: repository)
+            if !Self.itemExists(at: url, fileManager: fileManager) {
+                deletedPaths.insert(path)
+                continue
+            }
+            guard !currentChangedPaths.contains(path) else { continue }
+            let preservedURL = try containedURL(path: path, in: baselineWorkspace)
+            if Self.itemExists(at: preservedURL, fileManager: fileManager),
+               !fileManager.contentsEqual(atPath: preservedURL.path, andPath: url.path)
+            {
+                lostChangedPaths.insert(path)
+            }
+        }
+        return RepositoryProtectionAssessment(
+            backupID: backup.id,
+            changedFileCount: current.changedPaths.count,
+            changedLineCount: current.changedLineCount,
+            deletedPaths: deletedPaths.sorted(),
+            lostChangedPaths: lostChangedPaths.sorted(),
+            headChanged: current.headSHA != backup.headSHA,
+            branchChanged: current.branchName != backup.branchName,
+            indexChanged: baseline.indexFingerprint.map { $0 != current.indexFingerprint } ?? false
+        )
     }
 
     func restore(_ backup: RepositoryBackup, to destinationURL: URL) async throws -> URL {
@@ -378,6 +440,111 @@ actor RepositoryBackupService: RepositoryBackupServing {
         candidate.path.hasPrefix("\(root.path)/")
     }
 
+    private func recoverInterruptedTransactions() throws {
+        try fileManager.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let candidates = try fileManager.contentsOfDirectory(
+            at: rootURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: []
+        ).filter { $0.lastPathComponent.hasSuffix(".staging") }
+
+        var changedStorage = false
+        for stagingURL in candidates where !activeStagingDirectoryNames.contains(stagingURL.lastPathComponent) {
+            guard let manifest = committedManifest(in: stagingURL),
+                  stagingURL.lastPathComponent == ".\(manifest.backup.directoryName).staging"
+            else {
+                try fileManager.removeItem(at: stagingURL)
+                changedStorage = true
+                continue
+            }
+            let finalURL = rootURL.appendingPathComponent(
+                manifest.backup.directoryName,
+                isDirectory: true
+            )
+            if fileManager.fileExists(atPath: finalURL.path) {
+                try fileManager.removeItem(at: stagingURL)
+            } else {
+                try fileManager.moveItem(at: stagingURL, to: finalURL)
+            }
+            changedStorage = true
+        }
+        if changedStorage {
+            try synchronizeFileSystemItem(at: rootURL)
+        }
+    }
+
+    private func committedManifest(in directory: URL) -> RepositoryBackupManifest? {
+        let manifestURL = directory.appendingPathComponent("manifest.json")
+        let markerURL = directory.appendingPathComponent("commit.json")
+        guard let manifestData = try? Data(contentsOf: manifestURL),
+              let markerData = try? Data(contentsOf: markerURL),
+              let manifest = try? decoder.decode(RepositoryBackupManifest.self, from: manifestData),
+              let marker = try? decoder.decode(RepositoryBackupCommitMarker.self, from: markerData),
+              marker.schemaVersion == RepositoryBackupCommitMarker.currentSchemaVersion,
+              marker.backupID == manifest.backup.id,
+              marker.manifestSHA256 == Self.digest(manifestData)
+        else {
+            return nil
+        }
+        return manifest
+    }
+
+    private func writeCommitMarker(for backup: RepositoryBackup, in directory: URL) throws {
+        let manifestURL = directory.appendingPathComponent("manifest.json")
+        let manifestData = try Data(contentsOf: manifestURL)
+        let marker = RepositoryBackupCommitMarker(
+            schemaVersion: RepositoryBackupCommitMarker.currentSchemaVersion,
+            backupID: backup.id,
+            manifestSHA256: Self.digest(manifestData)
+        )
+        let data = try encoder.encode(marker)
+        try data.write(to: directory.appendingPathComponent("commit.json"), options: .atomic)
+    }
+
+    private static func digest(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func synchronizeTree(at root: URL) throws {
+        guard let enumerator = fileManager.enumerator(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey],
+            options: []
+        ) else {
+            throw RepositoryBackupError.backupMissing
+        }
+        var directories = [root]
+        for case let item as URL in enumerator {
+            let values = try item.resourceValues(forKeys: [
+                .isDirectoryKey,
+                .isRegularFileKey,
+                .isSymbolicLinkKey,
+            ])
+            if values.isDirectory == true {
+                directories.append(item)
+            } else if values.isRegularFile == true, values.isSymbolicLink != true {
+                try synchronizeFileSystemItem(at: item)
+            }
+        }
+        for directory in directories.sorted(by: { $0.path.count > $1.path.count }) {
+            try synchronizeFileSystemItem(at: directory)
+        }
+    }
+
+    private func synchronizeFileSystemItem(at url: URL) throws {
+        let descriptor: Int32 = url.withUnsafeFileSystemRepresentation { path in
+            guard let path else { return Int32(-1) }
+            return Darwin.open(path, O_RDONLY)
+        }
+        guard descriptor >= 0 else {
+            throw CocoaError(.fileReadUnknown)
+        }
+        defer { Darwin.close(descriptor) }
+        if fcntl(descriptor, F_FULLFSYNC) != 0, fsync(descriptor) != 0 {
+            throw CocoaError(.fileWriteUnknown)
+        }
+    }
+
     private func storageInventory(at root: URL) throws -> [String: RepositoryBackupStorageEntry] {
         guard fileManager.fileExists(atPath: root.path) else { return [:] }
         let canonicalRoot = root.standardizedFileURL.resolvingSymlinksInPath()
@@ -422,6 +589,12 @@ actor RepositoryBackupService: RepositoryBackupServing {
         let headSHA = headResult.exitCode == 0
             ? headResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
             : nil
+        if headSHA != nil {
+            _ = try await runner.run(
+                at: repository,
+                arguments: ["cat-file", "-e", "HEAD^{commit}"]
+            )
+        }
         let branchResult = try await runner.run(
             at: repository,
             arguments: ["symbolic-ref", "--quiet", "--short", "HEAD"],
@@ -430,6 +603,11 @@ actor RepositoryBackupService: RepositoryBackupServing {
         let branch = branchResult.exitCode == 0
             ? branchResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
             : nil
+        let index = try await runner.run(
+            at: repository,
+            arguments: ["ls-files", "--stage", "-z"]
+        )
+        let indexFingerprint = Self.digest(index.output)
 
         var paths = Set<String>()
         if headSHA != nil {
@@ -492,6 +670,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
             changedPaths: sortedPaths,
             deletedPaths: deletedPaths,
             changedLineCount: changedLineCount,
+            indexFingerprint: indexFingerprint,
             fingerprint: fingerprint
         )
     }
@@ -616,10 +795,19 @@ private struct RepositoryBackupState: Sendable {
     let changedPaths: [String]
     let deletedPaths: [String]
     let changedLineCount: Int
+    let indexFingerprint: String
     let fingerprint: String
 }
 
 private struct RepositoryBackupStorageEntry: Equatable {
     let byteCount: Int64
     let sha256: String
+}
+
+private struct RepositoryBackupCommitMarker: Codable {
+    static let currentSchemaVersion = 1
+
+    let schemaVersion: Int
+    let backupID: UUID
+    let manifestSHA256: String
 }

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import GitGatto
 
-@Suite("Repository service")
+@Suite("Repository service", .serialized)
 struct GitRepositoryServiceTests {
     @Test("Adds common macOS executable locations to a Finder-style PATH")
     func resolvesGitExtensionsOutsideSystemPath() {

@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "All GitGatto recovery points will be permanently removed. Repository files are not affected.";
 "recovery.notice.repository_deleted" = "Repository backups deleted.";
 "recovery.notice.all_deleted" = "All backups deleted.";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Agent guard";
+"recovery.error.agent_checkpoint_unavailable" = "The Agent recovery point could not be created. The write operation was stopped.";
+"settings.recovery.agent_protection" = "Protect Agent edits";
+"settings.recovery.agent_protection.body" = "Create a durable recovery point before an Agent can write to the current repository.";
+"codex.status.creating_recovery_point" = "Creating recovery point…";
+"codex.status.checking_protected_changes" = "Checking protected changes…";
+"codex.protection.review.title" = "Agent changes need review";
+"codex.protection.review.deleted" = "%d file(s) were deleted after the Agent started.";
+"codex.protection.review.repository_state" = "The current branch, HEAD, or staging state changed during the Agent run.";
+"codex.protection.review.large_change" = "The Agent reported changes to %d file(s), above the configured limit.";
+"codex.protection.action.review" = "Review Changes";
+"codex.protection.action.recovery_point" = "Open Recovery Point";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "Repository guard";
+"codex.protection.review.lost_changes" = "%d pre-existing uncommitted files were overwritten or cleared.";
+"settings.recovery.external_protection" = "Monitor external Agent and CLI changes";
+"settings.recovery.external_protection.body" = "Keep rolling recovery baselines for managed repositories and detect destructive filesystem or Git changes made by other tools.";
+"recovery.guard.notice.detected" = "Potential destructive changes detected in %@. The recovery baseline was preserved.";
+"recovery.guard.incident.title" = "Check changes in %@";
+"recovery.guard.incident.repository_unavailable" = "The repository directory or Git metadata is missing or damaged.";
+"recovery.guard.incident.deleted" = "%d files were deleted after the last protected baseline.";
+"recovery.guard.incident.lost_changes" = "%d pre-existing uncommitted files were overwritten or cleared.";
+"recovery.guard.incident.git_state" = "Branch, HEAD, or staging state also changed.";
+"recovery.guard.action.review" = "Inspect repository";
+"recovery.guard.action.recovery" = "Open recovery point";

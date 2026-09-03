@@ -110,6 +110,11 @@ struct CodexWorkspaceView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 16) {
+                    if let notice = model.agentProtectionNotice {
+                        agentProtectionBanner(notice, palette: palette)
+                            .id("agent-protection")
+                    }
+
                     if model.codexMessages.isEmpty && !model.isCodexRunning {
                         CodexEmptyState(model: model)
                             .frame(maxWidth: .infinity)
@@ -196,6 +201,96 @@ struct CodexWorkspaceView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func agentProtectionBanner(
+        _ notice: AgentProtectionNotice,
+        palette: AppPalette
+    ) -> some View {
+        HStack(alignment: .top, spacing: 11) {
+            Image(gattoSymbol: "checkmark.shield")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(palette.warning)
+                .frame(width: 32, height: 32)
+                .background(palette.warning.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.text("codex.protection.review.title"))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    if !notice.assessment.deletedPaths.isEmpty {
+                        Text(L10n.format(
+                            "codex.protection.review.deleted",
+                            notice.assessment.deletedPaths.count
+                        ))
+                    }
+                    if !notice.assessment.lostChangedPaths.isEmpty {
+                        Text(L10n.format(
+                            "codex.protection.review.lost_changes",
+                            notice.assessment.lostChangedPaths.count
+                        ))
+                    }
+                    if notice.assessment.headChanged
+                        || notice.assessment.branchChanged
+                        || notice.assessment.indexChanged
+                    {
+                        Text(L10n.text("codex.protection.review.repository_state"))
+                    }
+                    if notice.exceedsConfiguredChangeLimit {
+                        Text(L10n.format(
+                            "codex.protection.review.large_change",
+                            max(notice.reportedFileChangeCount, notice.assessment.changedFileCount)
+                        ))
+                    }
+                    let affectedPaths = Array(Set(
+                        notice.assessment.deletedPaths + notice.assessment.lostChangedPaths
+                    )).sorted()
+                    if !affectedPaths.isEmpty {
+                        Text(affectedPaths.prefix(4).joined(separator: "  ·  "))
+                            .font(.system(size: 10, design: .monospaced))
+                            .lineLimit(2)
+                            .textSelection(.enabled)
+                    }
+                }
+                .font(.system(size: 11.5))
+                .foregroundStyle(palette.mutedInk)
+
+                HStack(spacing: 8) {
+                    Button(L10n.text("codex.protection.action.review")) {
+                        model.reviewProtectedAgentChanges()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    Button(L10n.text("codex.protection.action.recovery_point")) {
+                        model.openAgentRecoveryPoint()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                model.dismissAgentProtectionNotice()
+            } label: {
+                Image(gattoSymbol: "xmark")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(palette.subtleInk)
+            .help(L10n.text("action.close"))
+        }
+        .padding(13)
+        .background(palette.warning.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(palette.warning.opacity(0.32), lineWidth: 1)
+        }
     }
 
     private func composer(_ palette: AppPalette) -> some View {

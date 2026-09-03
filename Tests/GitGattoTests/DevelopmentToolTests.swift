@@ -5,7 +5,7 @@ import SwiftUI
 import Testing
 @testable import GitGatto
 
-@Suite("Developer tool installation and updates")
+@Suite("Developer tool installation and updates", .serialized)
 struct DevelopmentToolTests {
     @Test("Agent installation phases form one complete ordered progress sequence")
     func installationPhaseSequence() {

@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "Alle GitGatto-Wiederherstellungspunkte werden dauerhaft gelöscht. Repository-Dateien bleiben unverändert.";
 "recovery.notice.repository_deleted" = "Repository-Backups gelöscht.";
 "recovery.notice.all_deleted" = "Alle Backups gelöscht.";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Agent-Schutz";
+"recovery.error.agent_checkpoint_unavailable" = "Der Agent-Wiederherstellungspunkt konnte nicht erstellt werden. Der Schreibvorgang wurde gestoppt.";
+"settings.recovery.agent_protection" = "Agent-Änderungen schützen";
+"settings.recovery.agent_protection.body" = "Erstellt einen dauerhaft gespeicherten Wiederherstellungspunkt, bevor der Agent in das aktuelle Repository schreibt.";
+"codex.status.creating_recovery_point" = "Wiederherstellungspunkt wird erstellt…";
+"codex.status.checking_protected_changes" = "Geschützte Änderungen werden geprüft…";
+"codex.protection.review.title" = "Agent-Änderungen müssen geprüft werden";
+"codex.protection.review.deleted" = "Nach dem Agent-Start wurden %d Datei(en) gelöscht.";
+"codex.protection.review.repository_state" = "Der aktuelle Branch, HEAD oder Staging-Bereich wurde während des Agent-Laufs geändert.";
+"codex.protection.review.large_change" = "Der Agent meldete Änderungen an %d Datei(en) und überschritt damit das konfigurierte Limit.";
+"codex.protection.action.review" = "Änderungen prüfen";
+"codex.protection.action.recovery_point" = "Wiederherstellungspunkt öffnen";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "Repository-Schutz";
+"codex.protection.review.lost_changes" = "%d vorhandene nicht committete Dateien wurden überschrieben oder entfernt.";
+"settings.recovery.external_protection" = "Externe Agents und CLI überwachen";
+"settings.recovery.external_protection.body" = "Hält rollierende Wiederherstellungsstände für verwaltete Repositories und erkennt Löschungen, Verlust nicht committeter Inhalte, große Änderungen und Git-Schäden durch andere Werkzeuge.";
+"recovery.guard.notice.detected" = "In %@ wurden möglicherweise destruktive Änderungen erkannt. Der Wiederherstellungsstand vor dem Vorgang wurde beibehalten.";
+"recovery.guard.incident.title" = "Ungewöhnliche Änderungen in %@ prüfen";
+"recovery.guard.incident.repository_unavailable" = "Repository-Ordner oder Git-Metadaten fehlen oder sind beschädigt.";
+"recovery.guard.incident.deleted" = "Seit dem letzten Schutzstand wurden %d Dateien gelöscht.";
+"recovery.guard.incident.lost_changes" = "%d vorhandene nicht committete Dateien wurden überschrieben oder entfernt.";
+"recovery.guard.incident.git_state" = "Branch, HEAD oder Staging-Status wurde ebenfalls geändert.";
+"recovery.guard.action.review" = "Repository prüfen";
+"recovery.guard.action.recovery" = "Wiederherstellung öffnen";

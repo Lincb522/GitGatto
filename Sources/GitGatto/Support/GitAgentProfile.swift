@@ -80,7 +80,7 @@ enum GitAgentProfile {
         case .analyze:
             "Inspect and answer without modifying files or Git state. GitHub access, when needed, is read-only."
         case .edit:
-            "You may edit files and perform the smallest non-destructive local repository repair required by the request, including staging, unstaging, local commits, repository-local configuration, hook permissions, and conflict-file edits. Verify the resulting Git state. GitHub access remains read-only."
+            "You may edit files and perform only the smallest reversible local repair required by the request. Do not delete files, change HEAD or branches, create commits, rewrite the index, modify repository configuration or hooks, or remove Git objects unless the current request explicitly names that exact effect. Verify the resulting working-tree and Git state. GitHub access remains read-only."
         }
     }
 

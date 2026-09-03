@@ -4,6 +4,8 @@ enum RepositoryBackupReason: String, Codable, CaseIterable, Sendable {
     case scheduled
     case majorChange
     case manual
+    case agentCheckpoint
+    case externalCheckpoint
 }
 
 struct RepositoryBackup: Identifiable, Codable, Sendable, Equatable {
@@ -47,7 +49,74 @@ struct RepositoryBackupManifest: Codable, Sendable, Equatable {
     let deletedPaths: [String]
     let omittedPaths: [String]
     let fingerprint: String
+    let indexFingerprint: String?
     let bundleFileName: String?
+}
+
+struct RepositoryProtectionAssessment: Sendable, Equatable {
+    let backupID: UUID
+    let changedFileCount: Int
+    let changedLineCount: Int
+    let deletedPaths: [String]
+    let lostChangedPaths: [String]
+    let headChanged: Bool
+    let branchChanged: Bool
+    let indexChanged: Bool
+
+    var requiresReview: Bool {
+        !deletedPaths.isEmpty
+            || !lostChangedPaths.isEmpty
+            || headChanged
+            || branchChanged
+            || indexChanged
+    }
+}
+
+struct AgentProtectionNotice: Sendable, Equatable {
+    let backup: RepositoryBackup
+    let assessment: RepositoryProtectionAssessment
+    let reportedFileChangeCount: Int
+    let exceedsConfiguredChangeLimit: Bool
+
+    var requiresReview: Bool {
+        assessment.requiresReview || exceedsConfiguredChangeLimit
+    }
+}
+
+enum RepositoryProtectionIncidentKind: Sendable, Equatable {
+    case destructiveChange
+    case repositoryUnavailable
+}
+
+struct RepositoryProtectionIncident: Identifiable, Sendable, Equatable {
+    let id: UUID
+    let repositoryPath: String
+    let repositoryName: String
+    let detectedAt: Date
+    let backup: RepositoryBackup
+    let kind: RepositoryProtectionIncidentKind
+    let assessment: RepositoryProtectionAssessment?
+    let failureDescription: String?
+
+    init(
+        id: UUID = UUID(),
+        repositoryPath: String,
+        repositoryName: String,
+        detectedAt: Date = Date(),
+        backup: RepositoryBackup,
+        kind: RepositoryProtectionIncidentKind,
+        assessment: RepositoryProtectionAssessment? = nil,
+        failureDescription: String? = nil
+    ) {
+        self.id = id
+        self.repositoryPath = repositoryPath
+        self.repositoryName = repositoryName
+        self.detectedAt = detectedAt
+        self.backup = backup
+        self.kind = kind
+        self.assessment = assessment
+        self.failureDescription = failureDescription
+    }
 }
 
 enum RepositoryBackupError: LocalizedError, Sendable {
@@ -58,6 +127,7 @@ enum RepositoryBackupError: LocalizedError, Sendable {
     case storageBusy
     case migrationDestinationNotEmpty
     case migrationVerificationFailed
+    case agentCheckpointUnavailable
 
     var errorDescription: String? {
         switch self {
@@ -75,6 +145,8 @@ enum RepositoryBackupError: LocalizedError, Sendable {
             L10n.text("recovery.error.migration_destination_not_empty")
         case .migrationVerificationFailed:
             L10n.text("recovery.error.migration_verification_failed")
+        case .agentCheckpointUnavailable:
+            L10n.text("recovery.error.agent_checkpoint_unavailable")
         }
     }
 }

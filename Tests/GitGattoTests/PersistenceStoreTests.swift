@@ -37,6 +37,8 @@ struct PersistenceStoreTests {
         #expect(preferences.repositoryBackupRetentionCount == 3)
         #expect(preferences.repositoryBackupMaximumFileSizeMB == 50)
         #expect(preferences.repositoryBackupDirectoryPath == nil)
+        #expect(preferences.agentEditProtectionEnabled)
+        #expect(preferences.externalRepositoryProtectionEnabled)
         #expect(preferences.agentConversationHistoryLimit == 24)
         #expect(preferences.defaultAgentRunMode == .analyze)
 
@@ -60,6 +62,8 @@ struct PersistenceStoreTests {
         var preferences = AppPreferences()
         preferences.repositoryBackupDirectoryPath = "/Volumes/Backups/GitGatto Recovery"
         preferences.repositoryBackupRetentionCount = 99
+        preferences.agentEditProtectionEnabled = false
+        preferences.externalRepositoryProtectionEnabled = false
         preferences.agentConversationHistoryLimit = 40
         preferences.defaultAgentRunMode = .edit
 
@@ -68,6 +72,8 @@ struct PersistenceStoreTests {
 
         #expect(restored.repositoryBackupDirectoryURL?.path == "/Volumes/Backups/GitGatto Recovery")
         #expect(restored.repositoryBackupRetentionCount == 3)
+        #expect(!restored.agentEditProtectionEnabled)
+        #expect(!restored.externalRepositoryProtectionEnabled)
         #expect(restored.agentConversationHistoryLimit == 40)
         #expect(restored.defaultAgentRunMode == .edit)
     }

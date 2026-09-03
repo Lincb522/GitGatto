@@ -90,6 +90,7 @@ actor DevelopmentToolHomebrewService: DevelopmentToolHomebrewManaging {
                 try await withThrowingTaskGroup(of: DevelopmentToolHomebrewCommand.Output.self) { group in
                     group.addTask { try await command.run() }
                     group.addTask { [timeout] in
+                        try await command.waitUntilStarted()
                         try await Task.sleep(for: timeout)
                         command.cancel()
                         throw DevelopmentToolHomebrewError.timedOut
@@ -232,7 +233,7 @@ private final class DevelopmentToolHomebrewCommand: @unchecked Sendable {
     }
 
     func run() async throws -> Output {
-        try await Task.detached(priority: .utility) { [self] in
+        try await Task.detached(priority: .userInitiated) { [self] in
             try runBlocking()
         }.value
     }
@@ -249,6 +250,16 @@ private final class DevelopmentToolHomebrewCommand: @unchecked Sendable {
             if process.isRunning {
                 kill(process.processIdentifier, SIGKILL)
             }
+        }
+    }
+
+    func waitUntilStarted() async throws {
+        while true {
+            try Task.checkCancellation()
+            let state = lock.withLock { (hasStarted, isCancelled) }
+            if state.0 { return }
+            if state.1 { throw CancellationError() }
+            try await Task.sleep(for: .milliseconds(10))
         }
     }
 
@@ -286,12 +297,12 @@ private final class DevelopmentToolHomebrewCommand: @unchecked Sendable {
         let errorBox = HomebrewCommandDataBox()
         let group = DispatchGroup()
         group.enter()
-        DispatchQueue.global(qos: .utility).async {
+        DispatchQueue.global(qos: .userInitiated).async {
             outputBox.set(outputPipe.fileHandleForReading.readDataToEndOfFile())
             group.leave()
         }
         group.enter()
-        DispatchQueue.global(qos: .utility).async {
+        DispatchQueue.global(qos: .userInitiated).async {
             errorBox.set(errorPipe.fileHandleForReading.readDataToEndOfFile())
             group.leave()
         }

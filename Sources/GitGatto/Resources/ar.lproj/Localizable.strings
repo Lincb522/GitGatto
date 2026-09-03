@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "ستُحذف جميع نقاط استعادة GitGatto نهائيًا، ولن تتأثر ملفات المستودعات الأصلية.";
 "recovery.notice.repository_deleted" = "حُذفت نسخ المستودع.";
 "recovery.notice.all_deleted" = "حُذفت جميع النسخ.";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "حماية Agent";
+"recovery.error.agent_checkpoint_unavailable" = "تعذر إنشاء نقطة استرداد Agent، لذلك أوقفت عملية الكتابة.";
+"settings.recovery.agent_protection" = "حماية تعديلات Agent";
+"settings.recovery.agent_protection.body" = "ينشئ نقطة استرداد ثابتة على القرص قبل أن يكتب Agent في المستودع الحالي.";
+"codex.status.creating_recovery_point" = "جارٍ إنشاء نقطة استرداد…";
+"codex.status.checking_protected_changes" = "جارٍ فحص التغييرات المحمية…";
+"codex.protection.review.title" = "تغييرات Agent تحتاج إلى مراجعة";
+"codex.protection.review.deleted" = "حُذف %d ملف بعد بدء Agent.";
+"codex.protection.review.repository_state" = "تغير الفرع الحالي أو HEAD أو منطقة التجهيز أثناء تشغيل Agent.";
+"codex.protection.review.large_change" = "أبلغ Agent عن تغيير %d ملف، متجاوزًا الحد المضبوط.";
+"codex.protection.action.review" = "مراجعة التغييرات";
+"codex.protection.action.recovery_point" = "فتح نقطة الاسترداد";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "حماية المستودع";
+"codex.protection.review.lost_changes" = "تمت الكتابة فوق %d من الملفات غير الملتزم بها أو مسحها.";
+"settings.recovery.external_protection" = "مراقبة Agent وCLI الخارجيين";
+"settings.recovery.external_protection.body" = "يحفظ نقاط استعادة دورية للمستودعات المُدارة ويرصد الحذف وفقدان المحتوى غير الملتزم به والتغييرات الكبيرة وتلف Git الناتج عن أدوات أخرى.";
+"recovery.guard.notice.detected" = "تم رصد تغييرات قد تكون مدمرة في %@. تم الاحتفاظ بنقطة الاستعادة السابقة للعملية.";
+"recovery.guard.incident.title" = "فحص التغييرات غير المعتادة في %@";
+"recovery.guard.incident.repository_unavailable" = "دليل المستودع أو بيانات Git الوصفية مفقودة أو تالفة.";
+"recovery.guard.incident.deleted" = "تم حذف %d من الملفات منذ آخر نقطة حماية.";
+"recovery.guard.incident.lost_changes" = "تمت الكتابة فوق %d من الملفات غير الملتزم بها أو مسحها.";
+"recovery.guard.incident.git_state" = "تغير أيضًا الفرع أو HEAD أو حالة التجهيز.";
+"recovery.guard.action.review" = "فحص المستودع";
+"recovery.guard.action.recovery" = "فتح نقطة الاستعادة";

@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "Tous les points de reprise GitGatto seront définitivement supprimés. Les fichiers des dépôts ne seront pas modifiés.";
 "recovery.notice.repository_deleted" = "Sauvegardes du dépôt supprimées.";
 "recovery.notice.all_deleted" = "Toutes les sauvegardes ont été supprimées.";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Protection Agent";
+"recovery.error.agent_checkpoint_unavailable" = "Le point de restauration Agent n’a pas pu être créé. L’écriture a été interrompue.";
+"settings.recovery.agent_protection" = "Protéger les modifications Agent";
+"settings.recovery.agent_protection.body" = "Crée un point de restauration durable avant que l’Agent écrive dans le dépôt actuel.";
+"codex.status.creating_recovery_point" = "Création du point de restauration…";
+"codex.status.checking_protected_changes" = "Vérification des modifications protégées…";
+"codex.protection.review.title" = "Les modifications Agent doivent être vérifiées";
+"codex.protection.review.deleted" = "%d fichier(s) ont été supprimés après le démarrage de l’Agent.";
+"codex.protection.review.repository_state" = "La branche actuelle, HEAD ou la zone de staging a changé pendant l’exécution de l’Agent.";
+"codex.protection.review.large_change" = "L’Agent a signalé %d fichier(s) modifié(s), au-delà de la limite configurée.";
+"codex.protection.action.review" = "Vérifier les modifications";
+"codex.protection.action.recovery_point" = "Ouvrir le point de restauration";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "Protection du dépôt";
+"codex.protection.review.lost_changes" = "%d fichiers non validés existants ont été écrasés ou supprimés.";
+"settings.recovery.external_protection" = "Surveiller les Agents et CLI externes";
+"settings.recovery.external_protection.body" = "Conserve des bases de restauration tournantes pour les dépôts gérés et détecte les suppressions, la perte de contenu non validé, les modifications massives et les dommages Git causés par d’autres outils.";
+"recovery.guard.notice.detected" = "Des modifications potentiellement destructrices ont été détectées dans %@. Le point de restauration antérieur a été conservé.";
+"recovery.guard.incident.title" = "Vérifier les changements anormaux de %@";
+"recovery.guard.incident.repository_unavailable" = "Le dossier du dépôt ou les métadonnées Git sont absents ou endommagés.";
+"recovery.guard.incident.deleted" = "%d fichiers ont été supprimés depuis la dernière base protégée.";
+"recovery.guard.incident.lost_changes" = "%d fichiers non validés existants ont été écrasés ou supprimés.";
+"recovery.guard.incident.git_state" = "La branche, HEAD ou l’état de staging a également changé.";
+"recovery.guard.action.review" = "Examiner le dépôt";
+"recovery.guard.action.recovery" = "Ouvrir la restauration";

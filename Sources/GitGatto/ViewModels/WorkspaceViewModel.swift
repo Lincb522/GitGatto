@@ -202,6 +202,8 @@ final class WorkspaceViewModel: ObservableObject {
     @Published private(set) var isMigratingRepositoryBackupStorage = false
     @Published private(set) var activeRepositoryBackupPath: String?
     @Published private(set) var repositoryProtectionError: String?
+    @Published private(set) var agentProtectionNotice: AgentProtectionNotice?
+    @Published private(set) var repositoryProtectionIncidents: [RepositoryProtectionIncident] = []
 
     private let service: any GitRepositoryServing
     private let codexService: any CodexServing
@@ -280,6 +282,12 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryBackupTimerTask: Task<Void, Never>?
     private var repositoryBackupTasks: [String: Task<Void, Never>] = [:]
     private var repositoryBackupMonitors: [String: RepositoryChangeMonitor] = [:]
+    private var repositoryProtectionArmingTask: Task<Void, Never>?
+    private var repositoryProtectionAuditTasks: [String: Task<Void, Never>] = [:]
+    private var repositoryProtectionBaselines: [String: RepositoryBackup] = [:]
+    private var repositoryProtectionGeneration = UUID()
+    private var repositoryProtectionSuppressedUntil: [String: Date] = [:]
+    private var agentProtectedRepositoryPaths = Set<String>()
     private let recentRepositoriesKey = "recentRepositories"
     private let localRepositoriesKey = "managedLocalRepositories"
     private let legacyLocalRepositoriesKey = "localRepositories"
@@ -379,6 +387,49 @@ final class WorkspaceViewModel: ObservableObject {
 
     var protectedRepositoryCount: Int {
         appPreferences.repositoryBackupEnabled ? localRepositories.count : 0
+    }
+
+    func reviewProtectedAgentChanges() {
+        selectedSection = .changes
+    }
+
+    func openAgentRecoveryPoint() {
+        guard let backup = agentProtectionNotice?.backup else { return }
+        selectedRepositoryBackupID = backup.id
+        selectedSection = .recovery
+    }
+
+    func dismissAgentProtectionNotice() {
+        agentProtectionNotice = nil
+    }
+
+    func reviewRepositoryProtectionIncident(_ incident: RepositoryProtectionIncident) {
+        let repositoryURL = URL(fileURLWithPath: incident.repositoryPath, isDirectory: true)
+        guard FileManager.default.fileExists(
+            atPath: repositoryURL.appendingPathComponent(".git").path
+        ) else {
+            openRepositoryProtectionIncident(incident)
+            return
+        }
+        Task {
+            await openRepository(repositoryURL)
+            selectedSection = .changes
+        }
+    }
+
+    func openRepositoryProtectionIncident(_ incident: RepositoryProtectionIncident) {
+        selectedRepositoryBackupID = incident.backup.id
+        selectedSection = .recovery
+    }
+
+    func dismissRepositoryProtectionIncident(_ incident: RepositoryProtectionIncident) {
+        repositoryProtectionIncidents.removeAll { $0.id == incident.id }
+        let repositoryURL = URL(fileURLWithPath: incident.repositoryPath, isDirectory: true)
+        if FileManager.default.fileExists(
+            atPath: repositoryURL.appendingPathComponent(".git").path
+        ) {
+            Task { await createExternalRepositoryProtectionBaseline(for: repositoryURL) }
+        }
     }
 
     var currentRepositoryGoals: [ProjectGoal] {
@@ -3177,19 +3228,49 @@ final class WorkspaceViewModel: ObservableObject {
         guard appPreferences.repositoryBackupEnabled,
               !isMigratingRepositoryBackupStorage else { return }
 
+        let generation = repositoryProtectionGeneration
         for repositoryURL in localRepositories {
             let repository = repositoryURL.standardizedFileURL
             let path = repository.path
+            if let existing = repositoryBackups.first(where: { $0.repositoryPath == path }) {
+                repositoryProtectionBaselines[path] = existing
+            }
             let monitor = RepositoryChangeMonitor(
                 repositoryURL: repository,
-                includesGitMetadata: false
+                includesGitMetadata: appPreferences.externalRepositoryProtectionEnabled,
+                includesGitObjectChanges: appPreferences.externalRepositoryProtectionEnabled
             ) { [weak self] in
                 Task { @MainActor in
-                    self?.scheduleMajorRepositoryBackup(for: repository)
+                    guard let self else { return }
+                    if self.appPreferences.externalRepositoryProtectionEnabled {
+                        self.scheduleExternalRepositoryProtectionAudit(
+                            for: repository,
+                            generation: generation
+                        )
+                    } else {
+                        self.scheduleMajorRepositoryBackup(for: repository)
+                    }
                 }
             }
             repositoryBackupMonitors[path] = monitor
             monitor.start()
+        }
+
+        if appPreferences.externalRepositoryProtectionEnabled {
+            let repositories = localRepositories
+            repositoryProtectionArmingTask = Task { [weak self] in
+                guard let self else { return }
+                for repository in repositories where !Task.isCancelled {
+                    await self.createExternalRepositoryProtectionBaseline(
+                        for: repository,
+                        generation: generation
+                    )
+                }
+                guard !Task.isCancelled,
+                      self.repositoryProtectionGeneration == generation else { return }
+                await self.refreshRepositoryBackupInventory(selecting: nil)
+                self.repositoryProtectionArmingTask = nil
+            }
         }
 
         let interval = max(1, appPreferences.repositoryBackupIntervalMinutes) * 60
@@ -3207,21 +3288,175 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     private func stopRepositoryProtection() {
+        repositoryProtectionGeneration = UUID()
+        repositoryProtectionArmingTask?.cancel()
+        repositoryProtectionArmingTask = nil
         repositoryBackupTimerTask?.cancel()
         repositoryBackupTimerTask = nil
         for task in repositoryBackupTasks.values {
             task.cancel()
         }
         repositoryBackupTasks = [:]
+        for task in repositoryProtectionAuditTasks.values {
+            task.cancel()
+        }
+        repositoryProtectionAuditTasks = [:]
+        repositoryProtectionBaselines = [:]
         for monitor in repositoryBackupMonitors.values {
             monitor.stop()
         }
         repositoryBackupMonitors = [:]
     }
 
+    private func scheduleExternalRepositoryProtectionAudit(
+        for repositoryURL: URL,
+        generation: UUID
+    ) {
+        guard appPreferences.repositoryBackupEnabled,
+              appPreferences.externalRepositoryProtectionEnabled,
+              repositoryProtectionGeneration == generation else { return }
+        let repository = repositoryURL.standardizedFileURL
+        let path = repository.path
+        guard !agentProtectedRepositoryPaths.contains(path),
+              repositoryProtectionSuppressedUntil[path].map({ $0 <= Date() }) ?? true,
+              !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path })
+        else { return }
+        repositoryProtectionAuditTasks[path]?.cancel()
+        repositoryProtectionAuditTasks[path] = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(1.5))
+            } catch {
+                return
+            }
+            guard let self,
+                  !Task.isCancelled,
+                  self.repositoryProtectionGeneration == generation else { return }
+            await self.auditExternalRepositoryChange(
+                for: repository,
+                generation: generation
+            )
+            if self.repositoryProtectionGeneration == generation {
+                self.repositoryProtectionAuditTasks[path] = nil
+            }
+        }
+    }
+
+    func auditExternalRepositoryChange(
+        for repositoryURL: URL,
+        generation: UUID? = nil
+    ) async {
+        guard appPreferences.repositoryBackupEnabled,
+              appPreferences.externalRepositoryProtectionEnabled else { return }
+        if let generation, generation != repositoryProtectionGeneration { return }
+        let repository = repositoryURL.standardizedFileURL
+        let path = repository.path
+        guard !agentProtectedRepositoryPaths.contains(path),
+              !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path })
+        else { return }
+        guard let baseline = repositoryProtectionBaselines[path]
+            ?? repositoryBackups.first(where: { $0.repositoryPath == path })
+        else {
+            await createExternalRepositoryProtectionBaseline(
+                for: repository,
+                generation: generation ?? repositoryProtectionGeneration
+            )
+            return
+        }
+
+        do {
+            let assessment = try await repositoryBackupService.assessChanges(
+                after: baseline,
+                in: repository
+            )
+            let changedLineDelta = abs(assessment.changedLineCount - baseline.changedLineCount)
+            let exceedsLimit = assessment.changedFileCount >= max(
+                1,
+                appPreferences.majorBackupFileThreshold
+            ) || changedLineDelta >= max(1, appPreferences.majorBackupLineThreshold)
+            let hasDestructiveChange = !assessment.deletedPaths.isEmpty
+                || !assessment.lostChangedPaths.isEmpty
+                || exceedsLimit
+            if hasDestructiveChange {
+                publishRepositoryProtectionIncident(
+                    RepositoryProtectionIncident(
+                        repositoryPath: path,
+                        repositoryName: repository.lastPathComponent,
+                        backup: baseline,
+                        kind: .destructiveChange,
+                        assessment: assessment
+                    )
+                )
+                return
+            }
+            await createExternalRepositoryProtectionBaseline(
+                for: repository,
+                generation: generation ?? repositoryProtectionGeneration
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            publishRepositoryProtectionIncident(
+                RepositoryProtectionIncident(
+                    repositoryPath: path,
+                    repositoryName: repository.lastPathComponent,
+                    backup: baseline,
+                    kind: .repositoryUnavailable,
+                    failureDescription: error.localizedDescription
+                )
+            )
+        }
+    }
+
+    func createExternalRepositoryProtectionBaseline(
+        for repositoryURL: URL,
+        generation: UUID? = nil
+    ) async {
+        guard appPreferences.repositoryBackupEnabled,
+              appPreferences.externalRepositoryProtectionEnabled else { return }
+        if let generation, generation != repositoryProtectionGeneration { return }
+        let repository = repositoryURL.standardizedFileURL
+        let path = repository.path
+        guard !agentProtectedRepositoryPaths.contains(path),
+              !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path })
+        else { return }
+        do {
+            guard let backup = try await repositoryBackupService.createBackup(
+                for: repository,
+                reason: .externalCheckpoint,
+                policy: appPreferences.repositoryBackupPolicy
+            ) else { return }
+            guard generation == nil || generation == repositoryProtectionGeneration else { return }
+            repositoryProtectionBaselines[path] = backup
+        } catch is CancellationError {
+            return
+        } catch {
+            repositoryProtectionError = L10n.format(
+                "recovery.error.monitoring",
+                repository.lastPathComponent,
+                error.localizedDescription
+            )
+        }
+    }
+
+    private func publishRepositoryProtectionIncident(_ incident: RepositoryProtectionIncident) {
+        repositoryProtectionIncidents.removeAll { $0.repositoryPath == incident.repositoryPath }
+        repositoryProtectionIncidents.insert(incident, at: 0)
+        selectedRepositoryBackupID = incident.backup.id
+        repositoryBackupTasks[incident.repositoryPath]?.cancel()
+        repositoryBackupTasks[incident.repositoryPath] = nil
+        showNotice(.init(
+            message: L10n.format(
+                "recovery.guard.notice.detected",
+                incident.repositoryName
+            ),
+            tone: .attention
+        ))
+    }
+
     func scheduleMajorRepositoryBackup(for repositoryURL: URL) {
         guard appPreferences.repositoryBackupEnabled else { return }
         let path = repositoryURL.standardizedFileURL.path
+        guard !agentProtectedRepositoryPaths.contains(path) else { return }
         guard repositoryBackupTasks[path] == nil else { return }
         repositoryBackupTasks[path] = Task { [weak self] in
             do {
@@ -3249,6 +3484,10 @@ final class WorkspaceViewModel: ObservableObject {
         reason: RepositoryBackupReason
     ) async {
         let path = repositoryURL.standardizedFileURL.path
+        guard !agentProtectedRepositoryPaths.contains(path) else { return }
+        guard !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path }) else {
+            return
+        }
         activeRepositoryBackupPath = path
         defer {
             if activeRepositoryBackupPath == path {
@@ -4837,6 +5076,8 @@ final class WorkspaceViewModel: ObservableObject {
         readmeAgentTask = Task {
             var temporaryRoot = existingTemporaryRoot
             var keepsWorkspace = false
+            var protectionBackup: RepositoryBackup?
+            var protectedRepositoryURL: URL?
             defer {
                 isBeautifyingReadme = false
                 if !keepsWorkspace, let temporaryRoot {
@@ -4853,12 +5094,26 @@ final class WorkspaceViewModel: ObservableObject {
                     readmeRewriteTemporaryRoot = root
                     repositoryURL = try await githubService.cloneReadmeWorkspace(repository, into: root)
                 }
-                _ = try await codexService.run(
+                if selectedGitHubLocalRepositoryURL != nil,
+                   appPreferences.agentEditProtectionEnabled
+                {
+                    protectionBackup = try await createAgentRecoveryPoint(for: repositoryURL)
+                    protectedRepositoryURL = repositoryURL
+                }
+                let result = try await codexService.run(
                     prompt: GitAgentProfile.readmePrompt(style: style),
                     context: [],
                     in: repositoryURL,
                     mode: .edit
                 )
+                if let backup = protectionBackup {
+                    await completeAgentProtection(
+                        backup,
+                        in: repositoryURL,
+                        reportedFileChangeCount: result.fileChangeCount
+                    )
+                    protectionBackup = nil
+                }
                 guard !Task.isCancelled,
                       selectedGitHubRepository?.id == repository.id else { return }
                 guard let localReadme = Self.primaryReadme(
@@ -4886,8 +5141,26 @@ final class WorkspaceViewModel: ObservableObject {
                 keepsWorkspace = true
                 showNotice(.init(message: L10n.text("github.readme.agent.preview_ready")))
             } catch is CancellationError {
+                if let protectionBackup,
+                   let repositoryURL = protectedRepositoryURL
+                {
+                    await completeAgentProtection(
+                        protectionBackup,
+                        in: repositoryURL,
+                        reportedFileChangeCount: 0
+                    )
+                }
                 return
             } catch {
+                if let protectionBackup,
+                   let repositoryURL = protectedRepositoryURL
+                {
+                    await completeAgentProtection(
+                        protectionBackup,
+                        in: repositoryURL,
+                        reportedFileChangeCount: 0
+                    )
+                }
                 guard !Task.isCancelled else { return }
                 readmeAgentError = L10n.format("github.readme.agent.error", error.localizedDescription)
             }
@@ -6235,6 +6508,9 @@ final class WorkspaceViewModel: ObservableObject {
         codexActivity = L10n.text("codex.status.running")
         isCodexRunning = true
         isDraftingCommitMessage = fillsCommitComposer
+        if mode == .edit {
+            agentProtectionNotice = nil
+        }
 
         codexTask = Task {
             defer {
@@ -6247,7 +6523,23 @@ final class WorkspaceViewModel: ObservableObject {
             }
 
             var failureContext: AppErrorContext = .agent
+            var protectionBackup: RepositoryBackup?
             do {
+                if mode == .edit, appPreferences.agentEditProtectionEnabled {
+                    codexActivity = L10n.text("codex.status.creating_recovery_point")
+                    protectionBackup = try await createAgentRecoveryPoint(for: repositoryURL)
+                    guard !Task.isCancelled, activeCodexRunID == runID else {
+                        if let protectionBackup {
+                            await completeAgentProtection(
+                                protectionBackup,
+                                in: repositoryURL,
+                                reportedFileChangeCount: 0
+                            )
+                        }
+                        return
+                    }
+                    codexActivity = L10n.text("codex.status.running")
+                }
                 var effectiveRequest = request
                 var automaticallyStagedCount = 0
                 if includesStagedDiff {
@@ -6308,6 +6600,14 @@ final class WorkspaceViewModel: ObservableObject {
                         mode: mode
                     )
                 }
+                if let protectionBackup {
+                    codexActivity = L10n.text("codex.status.checking_protected_changes")
+                    await completeAgentProtection(
+                        protectionBackup,
+                        in: repositoryURL,
+                        reportedFileChangeCount: result.fileChangeCount
+                    )
+                }
                 guard !Task.isCancelled, activeCodexRunID == runID else { return }
                 let response = CodexResponseFormatter.clean(result.response)
                 let message = CodexMessage(
@@ -6347,9 +6647,23 @@ final class WorkspaceViewModel: ObservableObject {
                     await refreshProjectGoals(showErrors: false)
                 }
             } catch is CancellationError {
+                if let protectionBackup {
+                    await completeAgentProtection(
+                        protectionBackup,
+                        in: repositoryURL,
+                        reportedFileChangeCount: 0
+                    )
+                }
                 guard activeCodexRunID == runID else { return }
                 codexActivity = L10n.text("codex.status.cancelled")
             } catch {
+                if let protectionBackup {
+                    await completeAgentProtection(
+                        protectionBackup,
+                        in: repositoryURL,
+                        reportedFileChangeCount: 0
+                    )
+                }
                 guard activeCodexRunID == runID else { return }
                 codexActivity = nil
                 codexError = L10n.format("codex.error.run", error.localizedDescription)
@@ -6357,6 +6671,63 @@ final class WorkspaceViewModel: ObservableObject {
                     presentError(error, context: failureContext, repositoryURL: repositoryURL)
                 }
             }
+        }
+    }
+
+    private func createAgentRecoveryPoint(for repositoryURL: URL) async throws -> RepositoryBackup {
+        let path = repositoryURL.standardizedFileURL.path
+        repositoryBackupTasks[path]?.cancel()
+        repositoryBackupTasks[path] = nil
+        activeRepositoryBackupPath = path
+        defer {
+            if activeRepositoryBackupPath == path {
+                activeRepositoryBackupPath = nil
+            }
+        }
+        guard let backup = try await repositoryBackupService.createBackup(
+            for: repositoryURL,
+            reason: .agentCheckpoint,
+            policy: appPreferences.repositoryBackupPolicy
+        ) else {
+            throw RepositoryBackupError.agentCheckpointUnavailable
+        }
+        agentProtectedRepositoryPaths.insert(path)
+        return backup
+    }
+
+    private func completeAgentProtection(
+        _ backup: RepositoryBackup,
+        in repositoryURL: URL,
+        reportedFileChangeCount: Int
+    ) async {
+        let protectedPath = repositoryURL.standardizedFileURL.path
+        defer {
+            agentProtectedRepositoryPaths.remove(protectedPath)
+            repositoryProtectionSuppressedUntil[protectedPath] = Date().addingTimeInterval(3)
+        }
+        do {
+            let assessment = try await repositoryBackupService.assessChanges(
+                after: backup,
+                in: repositoryURL
+            )
+            let changedLineDelta = abs(assessment.changedLineCount - backup.changedLineCount)
+            let exceedsLimit = reportedFileChangeCount >= max(1, appPreferences.majorBackupFileThreshold)
+                || changedLineDelta >= max(1, appPreferences.majorBackupLineThreshold)
+            let notice = AgentProtectionNotice(
+                backup: backup,
+                assessment: assessment,
+                reportedFileChangeCount: reportedFileChangeCount,
+                exceedsConfiguredChangeLimit: exceedsLimit
+            )
+            agentProtectionNotice = notice.requiresReview ? notice : nil
+            await refreshRepositoryBackupInventory(
+                selecting: notice.requiresReview ? backup.id : nil
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            repositoryProtectionError = error.localizedDescription
+            await refreshRepositoryBackupInventory(selecting: backup.id)
         }
     }
 

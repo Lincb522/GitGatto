@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "将永久删除 GitGatto 的全部恢复点，不会影响仓库原文件。";
 "recovery.notice.repository_deleted" = "已删除此仓库的全部备份。";
 "recovery.notice.all_deleted" = "已删除全部备份。";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Agent 保护";
+"recovery.error.agent_checkpoint_unavailable" = "无法创建 Agent 恢复点，已停止本次写入操作。";
+"settings.recovery.agent_protection" = "保护 Agent 写入";
+"settings.recovery.agent_protection.body" = "Agent 写入当前仓库前，先创建经过落盘确认的恢复点。";
+"codex.status.creating_recovery_point" = "正在创建恢复点…";
+"codex.status.checking_protected_changes" = "正在检查受保护的改动…";
+"codex.protection.review.title" = "Agent 改动需要检查";
+"codex.protection.review.deleted" = "Agent 运行后发现 %d 个文件被删除。";
+"codex.protection.review.repository_state" = "Agent 运行期间当前分支、HEAD 或暂存状态发生了变化。";
+"codex.protection.review.large_change" = "Agent 报告改动了 %d 个文件，已超过设定阈值。";
+"codex.protection.action.review" = "检查改动";
+"codex.protection.action.recovery_point" = "打开恢复点";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "仓库守卫";
+"codex.protection.review.lost_changes" = "%d 个原有未提交文件被覆盖或清除。";
+"settings.recovery.external_protection" = "监控外部 Agent 与 CLI";
+"settings.recovery.external_protection.body" = "为受管仓库保留滚动恢复基线，检测其他工具造成的删库、未提交内容丢失、大规模改动与 Git 损坏。";
+"recovery.guard.notice.detected" = "检测到 %@ 可能发生破坏性改动，已保留操作前恢复点。";
+"recovery.guard.incident.title" = "检查 %@ 的异常改动";
+"recovery.guard.incident.repository_unavailable" = "仓库目录或 Git 元数据已丢失或损坏。";
+"recovery.guard.incident.deleted" = "相对上一个保护基线，有 %d 个文件被删除。";
+"recovery.guard.incident.lost_changes" = "有 %d 个原有未提交文件被覆盖或清除。";
+"recovery.guard.incident.git_state" = "分支、HEAD 或暂存状态也发生了变化。";
+"recovery.guard.action.review" = "检查仓库";
+"recovery.guard.action.recovery" = "打开恢复点";

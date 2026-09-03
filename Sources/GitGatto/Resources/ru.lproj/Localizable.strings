@@ -1785,3 +1785,31 @@
 "recovery.delete.all_confirm.body" = "Все точки восстановления GitGatto будут удалены безвозвратно. Файлы репозиториев не изменятся.";
 "recovery.notice.repository_deleted" = "Копии репозитория удалены.";
 "recovery.notice.all_deleted" = "Все копии удалены.";
+
+// Power-loss and Agent write protection
+"recovery.reason.agentCheckpoint" = "Защита Agent";
+"recovery.error.agent_checkpoint_unavailable" = "Не удалось создать точку восстановления Agent. Операция записи остановлена.";
+"settings.recovery.agent_protection" = "Защищать изменения Agent";
+"settings.recovery.agent_protection.body" = "Создаёт сохранённую на диске точку восстановления до записи Agent в текущий репозиторий.";
+"codex.status.creating_recovery_point" = "Создание точки восстановления…";
+"codex.status.checking_protected_changes" = "Проверка защищённых изменений…";
+"codex.protection.review.title" = "Изменения Agent требуют проверки";
+"codex.protection.review.deleted" = "После запуска Agent удалено файлов: %d.";
+"codex.protection.review.repository_state" = "Во время работы Agent изменилась текущая ветка, HEAD или индекс.";
+"codex.protection.review.large_change" = "Agent сообщил об изменении %d файлов — это выше заданного порога.";
+"codex.protection.action.review" = "Проверить изменения";
+"codex.protection.action.recovery_point" = "Открыть точку восстановления";
+
+// External repository protection
+"recovery.reason.externalCheckpoint" = "Защита репозитория";
+"codex.protection.review.lost_changes" = "%d существующих незакоммиченных файлов были перезаписаны или удалены.";
+"settings.recovery.external_protection" = "Контроль внешних Agent и CLI";
+"settings.recovery.external_protection.body" = "Хранит сменяемые точки восстановления управляемых репозиториев и обнаруживает удаления, потерю незакоммиченных данных, массовые изменения и повреждения Git другими инструментами.";
+"recovery.guard.notice.detected" = "В %@ обнаружены потенциально разрушительные изменения. Точка восстановления до операции сохранена.";
+"recovery.guard.incident.title" = "Проверить необычные изменения в %@";
+"recovery.guard.incident.repository_unavailable" = "Каталог репозитория или метаданные Git отсутствуют либо повреждены.";
+"recovery.guard.incident.deleted" = "После последней защищённой точки удалено файлов: %d.";
+"recovery.guard.incident.lost_changes" = "Перезаписано или удалено незакоммиченных файлов: %d.";
+"recovery.guard.incident.git_state" = "Также изменилась ветка, HEAD или индекс.";
+"recovery.guard.action.review" = "Проверить репозиторий";
+"recovery.guard.action.recovery" = "Открыть восстановление";

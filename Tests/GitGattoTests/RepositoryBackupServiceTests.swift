@@ -4,8 +4,133 @@ import SwiftUI
 @testable import GitGatto
 import Testing
 
-@Suite("Repository disaster recovery")
+@Suite("Repository disaster recovery", .serialized)
 struct RepositoryBackupServiceTests {
+    @MainActor
+    @Test("External repository deletion keeps a restorable pre-operation baseline")
+    func protectsRepositoryFromExternalDeletion() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let backing = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        let model = WorkspaceViewModel(repositoryBackupService: backing)
+        model.appPreferences.repositoryBackupEnabled = true
+        model.appPreferences.externalRepositoryProtectionEnabled = true
+
+        await model.createExternalRepositoryProtectionBaseline(for: fixture.repository)
+        try FileManager.default.removeItem(at: fixture.repository)
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+
+        let incident = try #require(model.repositoryProtectionIncidents.first)
+        #expect(incident.kind == .repositoryUnavailable)
+        #expect(incident.backup.reason == .externalCheckpoint)
+
+        let restored = try await backing.restore(
+            incident.backup,
+            to: fixture.root.appendingPathComponent("restored", isDirectory: true)
+        )
+        #expect(try String(
+            contentsOf: restored.appendingPathComponent("tracked.txt"),
+            encoding: .utf8
+        ) == "base\n")
+
+        if let outputPath = ProcessInfo.processInfo.environment[
+            "GITGATTO_EXTERNAL_PROTECTION_UI_SNAPSHOT_PATH"
+        ] {
+            await model.reloadRepositoryBackups()
+            let view = RepositoryRecoveryView(model: model)
+                .frame(width: 1_100, height: 700)
+            let hostingView = NSHostingView(rootView: view)
+            hostingView.frame = NSRect(x: 0, y: 0, width: 1_100, height: 700)
+            hostingView.layoutSubtreeIfNeeded()
+            hostingView.displayIfNeeded()
+            let representation = try #require(
+                hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)
+            )
+            hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
+            let data = try #require(representation.representation(using: .png, properties: [:]))
+            try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
+        }
+    }
+
+    @MainActor
+    @Test("Agent edit creates a checkpoint before repository writes")
+    func protectsAgentEditBeforeWrite() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let defaults = UserDefaults.standard
+        let previousManaged = defaults.array(forKey: "managedLocalRepositories")
+        let previousRecent = defaults.array(forKey: "recentRepositories")
+        defaults.removeObject(forKey: "managedLocalRepositories")
+        defaults.removeObject(forKey: "recentRepositories")
+        defer {
+            if let previousManaged {
+                defaults.set(previousManaged, forKey: "managedLocalRepositories")
+            } else {
+                defaults.removeObject(forKey: "managedLocalRepositories")
+            }
+            if let previousRecent {
+                defaults.set(previousRecent, forKey: "recentRepositories")
+            } else {
+                defaults.removeObject(forKey: "recentRepositories")
+            }
+        }
+
+        let backing = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        let backups = RecordingRepositoryBackupService(backing: backing)
+        let agent = DestructiveAgentFixture()
+        let model = WorkspaceViewModel(
+            codexService: agent,
+            repositoryBackupService: backups
+        )
+        model.appPreferences.agentEditProtectionEnabled = true
+        await model.openRepository(fixture.repository)
+        model.retryCodexProbe()
+        let availabilityDeadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while model.codexAvailability.state == .checking,
+              ContinuousClock.now < availabilityDeadline
+        {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        #expect(model.codexAvailability.state == .available)
+
+        model.codexRunMode = .edit
+        model.codexPrompt = "Update the repository"
+        model.runCodex()
+        let completionDeadline = ContinuousClock.now.advanced(by: .seconds(60))
+        while model.isCodexRunning,
+              ContinuousClock.now < completionDeadline
+        {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        #expect(!model.isCodexRunning)
+        #expect(await backups.createCallCount == 1)
+        #expect(await agent.sawCheckpointBeforeWrite)
+        #expect(model.agentProtectionNotice?.assessment.deletedPaths == ["tracked.txt"])
+        #expect(model.agentProtectionNotice?.requiresReview == true)
+
+        if let outputPath = ProcessInfo.processInfo.environment[
+            "GITGATTO_AGENT_PROTECTION_UI_SNAPSHOT_PATH"
+        ] {
+            let view = CodexWorkspaceView(model: model)
+                .frame(width: 1_100, height: 700)
+            let hostingView = NSHostingView(rootView: view)
+            hostingView.frame = NSRect(x: 0, y: 0, width: 1_100, height: 700)
+            hostingView.layoutSubtreeIfNeeded()
+            hostingView.displayIfNeeded()
+            let representation = try #require(
+                hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)
+            )
+            hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
+            let data = try #require(representation.representation(using: .png, properties: [:]))
+            try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
+        }
+    }
+
     @MainActor
     @Test("A monitored repository change creates a major backup", .timeLimit(.minutes(1)))
     func monitorsManagedRepository() async throws {
@@ -34,6 +159,7 @@ struct RepositoryBackupServiceTests {
         let service = RecordingRepositoryBackupService(backing: backingService)
         let model = WorkspaceViewModel(repositoryBackupService: service)
         model.appPreferences.repositoryBackupEnabled = true
+        model.appPreferences.externalRepositoryProtectionEnabled = false
         model.appPreferences.majorBackupFileThreshold = 1
         model.appPreferences.majorBackupLineThreshold = 10000
         await model.openRepository(fixture.repository)
@@ -104,6 +230,115 @@ struct RepositoryBackupServiceTests {
         #expect(!FileManager.default.fileExists(atPath: restored.appendingPathComponent("deleted.txt").path))
         #expect(try git(["status", "--porcelain"], at: fixture.repository).contains("tracked.txt"))
         #expect(try git(["status", "--porcelain"], at: restored).contains("tracked.txt"))
+    }
+
+    @Test("A clean repository still gets an Agent checkpoint")
+    func createsAgentCheckpointForCleanRepository() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let storeURL = fixture.root.appendingPathComponent("backups", isDirectory: true)
+        let service = RepositoryBackupService(rootURL: storeURL)
+
+        let backup = try #require(await service.createBackup(
+            for: fixture.repository,
+            reason: .agentCheckpoint,
+            policy: .standard
+        ))
+
+        #expect(backup.reason == .agentCheckpoint)
+        #expect(backup.changedFileCount == 0)
+        #expect(FileManager.default.fileExists(
+            atPath: storeURL
+                .appendingPathComponent(backup.directoryName)
+                .appendingPathComponent("commit.json")
+                .path
+        ))
+    }
+
+    @Test("Recovers a fully committed staging backup after an interrupted rename")
+    func recoversCommittedStagingBackup() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let storeURL = fixture.root.appendingPathComponent("backups", isDirectory: true)
+        let service = RepositoryBackupService(rootURL: storeURL)
+        let backup = try #require(await service.createBackup(
+            for: fixture.repository,
+            reason: .manual,
+            policy: .standard
+        ))
+        let finalURL = storeURL.appendingPathComponent(backup.directoryName, isDirectory: true)
+        let stagingURL = storeURL.appendingPathComponent(
+            ".\(backup.directoryName).staging",
+            isDirectory: true
+        )
+        try FileManager.default.moveItem(at: finalURL, to: stagingURL)
+
+        let restarted = RepositoryBackupService(rootURL: storeURL)
+        let recovered = try await restarted.loadBackups()
+
+        #expect(recovered.map(\.id) == [backup.id])
+        #expect(FileManager.default.fileExists(atPath: finalURL.path))
+        #expect(!FileManager.default.fileExists(atPath: stagingURL.path))
+    }
+
+    @Test("Discards an incomplete staging backup without exposing it")
+    func discardsIncompleteStagingBackup() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let storeURL = fixture.root.appendingPathComponent("backups", isDirectory: true)
+        let stagingURL = storeURL.appendingPathComponent(".interrupted.staging", isDirectory: true)
+        try FileManager.default.createDirectory(at: stagingURL, withIntermediateDirectories: true)
+        try Data("partial".utf8).write(to: stagingURL.appendingPathComponent("workspace.tmp"))
+
+        let service = RepositoryBackupService(rootURL: storeURL)
+        let backups = try await service.loadBackups()
+
+        #expect(backups.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: stagingURL.path))
+    }
+
+    @Test("Agent audit detects newly deleted files and repository state changes")
+    func auditsAgentDestructiveChanges() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let service = RepositoryBackupService(
+            rootURL: fixture.root.appendingPathComponent("backups", isDirectory: true)
+        )
+        try "untracked baseline\n".write(
+            to: fixture.repository.appendingPathComponent("notes.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "important uncommitted work\n".write(
+            to: fixture.repository.appendingPathComponent("tracked.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let checkpoint = try #require(await service.createBackup(
+            for: fixture.repository,
+            reason: .agentCheckpoint,
+            policy: .standard
+        ))
+
+        try git(["checkout", "--", "tracked.txt"], at: fixture.repository)
+        try FileManager.default.removeItem(at: fixture.repository.appendingPathComponent("deleted.txt"))
+        try FileManager.default.removeItem(at: fixture.repository.appendingPathComponent("notes.txt"))
+        try "new index state\n".write(
+            to: fixture.repository.appendingPathComponent("staged.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try git(["add", "staged.txt"], at: fixture.repository)
+        try git(["checkout", "--detach", "HEAD"], at: fixture.repository)
+
+        let assessment = try await service.assessChanges(after: checkpoint, in: fixture.repository)
+
+        #expect(assessment.requiresReview)
+        #expect(Set(assessment.deletedPaths) == ["deleted.txt", "notes.txt"])
+        #expect(assessment.lostChangedPaths == ["tracked.txt"])
+        #expect(assessment.branchChanged)
+        #expect(!assessment.headChanged)
+        #expect(assessment.indexChanged)
     }
 
     @Test("Creates immediate backups only after a major-change threshold")
@@ -368,6 +603,13 @@ private actor RecordingRepositoryBackupService: RepositoryBackupServing {
         try await backing.restore(backup, to: destinationURL)
     }
 
+    func assessChanges(
+        after backup: RepositoryBackup,
+        in repositoryURL: URL
+    ) async throws -> RepositoryProtectionAssessment {
+        try await backing.assessChanges(after: backup, in: repositoryURL)
+    }
+
     func delete(_ backup: RepositoryBackup) async throws {
         try await backing.delete(backup)
     }
@@ -395,6 +637,67 @@ private actor RecordingRepositoryBackupService: RepositoryBackupServing {
     func migrateStorage(to destinationURL: URL) async throws -> URL {
         try await backing.migrateStorage(to: destinationURL)
     }
+}
+
+private actor DestructiveAgentFixture: CodexServing {
+    private(set) var sawCheckpointBeforeWrite = false
+
+    func probe() async -> CodexAvailability {
+        CodexAvailability(state: .available, version: "fixture")
+    }
+
+    func run(
+        prompt: String,
+        context: [CodexMessage],
+        in repositoryURL: URL,
+        mode: CodexRunMode
+    ) async throws -> CodexRunResult {
+        let recoveryRoot = repositoryURL.deletingLastPathComponent()
+            .appendingPathComponent("backups", isDirectory: true)
+        let committedCheckpoints = (try? FileManager.default.contentsOfDirectory(
+            at: recoveryRoot,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )) ?? []
+        sawCheckpointBeforeWrite = committedCheckpoints.contains { directory in
+            FileManager.default.fileExists(
+                atPath: directory.appendingPathComponent("commit.json").path
+            )
+        }
+        try FileManager.default.removeItem(
+            at: repositoryURL.appendingPathComponent("tracked.txt")
+        )
+        return CodexRunResult(
+            response: "Updated the repository.",
+            commandCount: 1,
+            fileChangeCount: 1
+        )
+    }
+
+    func runWithProvidedContext(
+        prompt: String,
+        context: [CodexMessage]
+    ) async throws -> CodexRunResult {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func draftPullRequestReply(context: GitHubPullRequestContext) async throws -> String {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func translate(_ text: String, target: CodexTranslationTarget) async throws -> String {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func translateHTML(
+        _ html: String,
+        target: CodexTranslationTarget,
+        progress: @escaping @Sendable (Int, Int) async -> Void
+    ) async throws -> String {
+        throw CodexServiceError.executionFailed(-1)
+    }
+
+    func cancel() async {}
 }
 
 private struct BackupFixture {
