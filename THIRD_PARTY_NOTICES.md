@@ -74,11 +74,13 @@ GitGatto adapts the Octocat Wink geometry and motion patterns from Circular Down
 
 ## GitHub language icons
 
-The 833-language icon catalog uses marks from the following projects and custom fallbacks derived from GitHub Linguist language names and colors:
+The 833-language catalog directly bundles unmodified SVG assets from the following GitHub-hosted open-source projects. Languages without a dedicated upstream mark use GitHub's File Code Octicon:
 
 - [Simple Icons](https://github.com/simple-icons/simple-icons) — [CC0 1.0](docs/licenses/github-language-icons/simple-icons-LICENSE.md)
 - [VSCode Icons](https://github.com/vscode-icons/vscode-icons) — [MIT](docs/licenses/github-language-icons/vscode-icons-LICENSE)
 - [Devicon](https://github.com/devicons/devicon) — [MIT](docs/licenses/github-language-icons/devicon-LICENSE)
 - [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) — [MIT](docs/licenses/github-language-icons/material-icons-LICENSE)
+- [File Icons](https://github.com/file-icons/atom) — [MIT](docs/licenses/github-language-icons/file-icons-atom-LICENSE.md)
+- [Octicons](https://github.com/primer/octicons) — [MIT](docs/licenses/github-language-icons/octicons-LICENSE)
 
 Pinned source revisions and icon counts are recorded in [SOURCES.md](docs/licenses/github-language-icons/SOURCES.md). Upstream marks and trademarks remain the property of their respective owners.

@@ -5,12 +5,15 @@ import SwiftUI
 enum GitHubLanguageIconAssets {
     private struct Manifest: Decodable {
         let totalLanguages: Int
+        let directIconCount: Int
         let items: [Item]
     }
 
     private struct Item: Decodable {
         let name: String
-        let resourceName: String
+        let resourceName: String?
+        let isTemplate: Bool
+        let tintHex: String?
     }
 
     private static let manifest: Manifest? = {
@@ -23,10 +26,10 @@ enum GitHubLanguageIconAssets {
         return try? decoder.decode(Manifest.self, from: data)
     }()
 
-    private static let resourceNames: [String: String] = {
+    private static let itemsByLanguage: [String: Item] = {
         guard let manifest else { return [:] }
         return Dictionary(uniqueKeysWithValues: manifest.items.map { item in
-            (item.name.lowercased(), item.resourceName)
+            (item.name.lowercased(), item)
         })
     }()
 
@@ -48,43 +51,63 @@ enum GitHubLanguageIconAssets {
         return cache
     }()
 
-    private static let availablePixelSizes = [16, 24, 48, 128]
-
     static var count: Int { manifest?.totalLanguages ?? 0 }
+    static var directIconCount: Int { manifest?.directIconCount ?? 0 }
 
     static func resourceName(for language: String?) -> String? {
         guard let language else { return nil }
         let key = language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !key.isEmpty else { return nil }
-        return resourceNames[key]
+        return itemsByLanguage[key]?.resourceName
+    }
+
+    static func isTemplate(for language: String?) -> Bool {
+        item(for: language)?.isTemplate ?? false
+    }
+
+    static func tintHex(for language: String?) -> String? {
+        item(for: language)?.tintHex
+    }
+
+    static func tintNeedsAdaptiveContrast(for language: String?, colorScheme: ColorScheme) -> Bool {
+        guard let tintHex = tintHex(for: language) else { return false }
+        let value = tintHex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard value.count == 6, let rgb = UInt64(value, radix: 16) else { return false }
+        let red = Double((rgb >> 16) & 0xFF) / 255
+        let green = Double((rgb >> 8) & 0xFF) / 255
+        let blue = Double(rgb & 0xFF) / 255
+        let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+        return colorScheme == .dark ? luminance < 0.22 : luminance > 0.90
+    }
+
+    private static func item(for language: String?) -> Item? {
+        guard let language else { return nil }
+        let key = language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !key.isEmpty else { return nil }
+        return itemsByLanguage[key]
     }
 
     @MainActor
     static func image(for language: String?) -> NSImage? {
         guard let resourceName = resourceName(for: language) else { return nil }
-        return sourceImage(resourceName: resourceName, pixelSize: 128)
-    }
-
-    static func sourcePixelSize(pointSize: CGFloat, scale: Int) -> Int {
-        let requiredPixels = Int(ceil(max(12, pointSize) * CGFloat(max(1, scale))))
-        return availablePixelSizes.first(where: { $0 >= requiredPixels })
-            ?? availablePixelSizes[availablePixelSizes.count - 1]
+        guard let image = sourceImage(resourceName: resourceName) else { return nil }
+        image.isTemplate = isTemplate(for: language)
+        return image
     }
 
     @MainActor
-    private static func sourceImage(resourceName: String, pixelSize: Int) -> NSImage? {
-        let sizedResourceName = "\(resourceName)-\(pixelSize)"
-        let cacheKey = sizedResourceName as NSString
+    private static func sourceImage(resourceName: String) -> NSImage? {
+        let cacheKey = resourceName as NSString
         if let cached = imageCache.object(forKey: cacheKey) { return cached }
         let bundle = AppResourceBundle.current
-        guard let url = bundle.url(forResource: sizedResourceName, withExtension: "png")
+        guard let url = bundle.url(forResource: resourceName, withExtension: "svg")
                 ?? bundle.url(
-                    forResource: sizedResourceName,
-                    withExtension: "png",
+                    forResource: resourceName,
+                    withExtension: "svg",
                     subdirectory: "LanguageIcons"
                 ),
               let image = NSImage(contentsOf: url) else { return nil }
-        imageCache.setObject(image, forKey: cacheKey, cost: pixelSize * pixelSize * 4)
+        imageCache.setObject(image, forKey: cacheKey, cost: 64 * 1_024)
         return image
     }
 
@@ -94,13 +117,9 @@ enum GitHubLanguageIconAssets {
         let resolvedSize = max(12, pointSize)
         let key = "\(resourceName):\(Int((resolvedSize * 100).rounded()))" as NSString
         if let cached = thumbnailCache.object(forKey: key) { return cached }
-        guard let rendered = PixelAlignedImageRenderer.render(pointSize: resolvedSize, sourceForScale: { scale in
-            sourceImage(
-                resourceName: resourceName,
-                pixelSize: sourcePixelSize(pointSize: resolvedSize, scale: scale)
-            )
-        }) else { return nil }
-        rendered.isTemplate = false
+        guard let source = sourceImage(resourceName: resourceName) else { return nil }
+        let rendered = PixelAlignedImageRenderer.render(source, pointSize: resolvedSize)
+        rendered.isTemplate = isTemplate(for: language)
         let pixelSize = Int(ceil(resolvedSize))
         thumbnailCache.setObject(rendered, forKey: key, cost: pixelSize * pixelSize * 4 * 14)
         return rendered
@@ -120,7 +139,7 @@ enum GitHubLanguageIconAssets {
                 ),
               let source = NSImage(contentsOf: url) else { return nil }
         let rendered = PixelAlignedImageRenderer.render(source, pointSize: resolvedSize)
-        rendered.isTemplate = false
+        rendered.isTemplate = true
         placeholderCache.setObject(rendered, forKey: key)
         return rendered
     }
@@ -232,19 +251,28 @@ struct GitHubLanguageIcon: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
+        let sourceTint = GitHubLanguageIconAssets.tintHex(for: language).flatMap { Color(hex: $0) }
+        let templateTint = GitHubLanguageIconAssets.tintNeedsAdaptiveContrast(
+            for: language,
+            colorScheme: colorScheme
+        ) ? palette.ink : (sourceTint ?? palette.ink)
         ZStack(alignment: .bottomTrailing) {
             if let image = GitHubLanguageIconAssets.thumbnail(for: language, pointSize: size) {
                 Image(nsImage: image)
                     .resizable()
+                    .renderingMode(GitHubLanguageIconAssets.isTemplate(for: language) ? .template : .original)
                     .interpolation(.high)
                     .antialiased(true)
                     .scaledToFit()
+                    .foregroundStyle(templateTint)
             } else if let image = GitHubLanguageIconAssets.placeholder(pointSize: size) {
                 Image(nsImage: image)
                     .resizable()
+                    .renderingMode(.template)
                     .interpolation(.high)
                     .antialiased(true)
                     .scaledToFit()
+                    .foregroundStyle(palette.subtleInk)
             } else {
                 let style = GitHubLanguageStyle.resolved(language)
                 RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)

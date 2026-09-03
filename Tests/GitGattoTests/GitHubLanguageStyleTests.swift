@@ -31,46 +31,39 @@ struct GitHubLanguageStyleTests {
         #expect(GitHubLanguageStyle.resolved("  ") == nil)
     }
 
-    @Test("Loads the complete GitHub language logo catalog")
+    @Test("Loads the GitHub language catalog backed by direct open-source SVGs")
     @MainActor
     func loadsLanguageLogoCatalog() throws {
         #expect(GitHubLanguageIconAssets.count == 833)
+        #expect(GitHubLanguageIconAssets.directIconCount == 699)
         #expect(GitHubLanguageIconAssets.resourceName(for: "C") == "081-c")
         #expect(GitHubLanguageIconAssets.resourceName(for: "C#") == "082-c")
         #expect(GitHubLanguageIconAssets.resourceName(for: "C++") == "083-c")
         #expect(GitHubLanguageIconAssets.resourceName(for: "Objective-C++") == "490-objective-c")
         #expect(GitHubLanguageIconAssets.resourceName(for: "Swift") == "691-swift")
-        #expect(GitHubLanguageIconAssets.resourceName(for: "MoonBit") == "443-moonbit")
+        #expect(GitHubLanguageIconAssets.resourceName(for: "MoonBit") == nil)
+        #expect(GitHubLanguageIconAssets.isTemplate(for: "Swift"))
+        #expect(!GitHubLanguageIconAssets.isTemplate(for: "Java"))
+        #expect(GitHubLanguageIconAssets.tintHex(for: "Swift") == "#F05138")
+        #expect(GitHubLanguageIconAssets.tintNeedsAdaptiveContrast(for: "Rust", colorScheme: .dark))
+        #expect(!GitHubLanguageIconAssets.tintNeedsAdaptiveContrast(for: "Rust", colorScheme: .light))
         #expect(GitHubLanguageIconAssets.image(for: "Swift") != nil)
         #expect(GitHubLanguageIconAssets.image(for: "Unknown Fixture Language") == nil)
     }
 
-    @Test("Selects the nearest raster source for each backing scale")
-    func selectsRasterSourceSizes() {
-        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 13, scale: 1) == 16)
-        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 13, scale: 2) == 48)
-        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 24, scale: 1) == 24)
-        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 24, scale: 2) == 48)
-        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 24, scale: 3) == 128)
-        #expect(GitHubLanguageIconAssets.sourcePixelSize(pointSize: 58, scale: 2) == 128)
-    }
-
-    @Test("Bundles every optimized raster size")
-    func bundlesOptimizedRasterSizes() throws {
-        for pixelSize in [16, 24, 48, 128] {
-            let resourceName = "691-swift-\(pixelSize)"
+    @Test("Bundles direct vector assets without generated raster variants")
+    func bundlesDirectVectorAssets() throws {
+        for resourceName in ["691-swift", "567-python", "331-java", "082-c"] {
             let url = try #require(
-                AppResourceBundle.current.url(forResource: resourceName, withExtension: "png")
+                AppResourceBundle.current.url(forResource: resourceName, withExtension: "svg")
                     ?? AppResourceBundle.current.url(
                         forResource: resourceName,
-                        withExtension: "png",
+                        withExtension: "svg",
                         subdirectory: "LanguageIcons"
                     )
             )
             let image = try #require(NSImage(contentsOf: url))
-            let representation = try #require(image.representations.first)
-            #expect(representation.pixelsWide == pixelSize)
-            #expect(representation.pixelsHigh == pixelSize)
+            #expect(image.isValid)
         }
     }
 
@@ -83,7 +76,7 @@ struct GitHubLanguageStyleTests {
         #expect(Set(image.representations.map(\.pixelsHigh)) == [24, 48, 72])
     }
 
-    @Test("Builds exact backing-scale thumbnails for small language logos")
+    @Test("Rasterizes direct vectors at exact backing scales for small language logos")
     @MainActor
     func buildsSmallLanguageThumbnails() throws {
         let image = try #require(GitHubLanguageIconAssets.thumbnail(for: "Swift", pointSize: 24))
