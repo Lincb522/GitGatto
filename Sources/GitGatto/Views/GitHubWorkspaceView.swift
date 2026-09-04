@@ -12,6 +12,9 @@ struct GitHubWorkspaceView: View {
     @State private var isRepositoryHeaderCollapsed = false
     @State private var githubFileQuery = ""
     @State private var readmeCardMovesBackward = false
+    @State private var workspaceMode: GitHubWorkspaceMode = .repositories
+    @StateObject private var syncModel = RepositorySyncViewModel()
+    @StateObject private var collaborationModel = GitHubCollaborationViewModel()
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -27,6 +30,21 @@ struct GitHubWorkspaceView: View {
             InAppBrowserSheet(url: page.url, persistent: page.persistent)
                 .frame(minWidth: 820, minHeight: 640)
         }
+        .task {
+            syncModel.load(repositories: model.localRepositories)
+            collaborationModel.configure(repositories: model.githubAccountRepositories)
+            loadWorkspaceMode()
+        }
+        .onChange(of: model.localRepositories) { _, repositories in
+            syncModel.load(repositories: repositories)
+        }
+        .onChange(of: model.githubAccountRepositories) { _, repositories in
+            collaborationModel.configure(repositories: repositories)
+            if workspaceMode == .issues { collaborationModel.loadIssues() }
+        }
+        .onChange(of: workspaceMode) { _, _ in
+            loadWorkspaceMode()
+        }
     }
 
     private func conventionalWorkspace(_ palette: AppPalette, theme: AppVisualTheme) -> some View {
@@ -35,8 +53,26 @@ struct GitHubWorkspaceView: View {
                 .emeraldSurface(.elevated, cornerRadius: 16)
             Rectangle().fill(palette.divider).frame(height: 1)
 
-            if model.githubAvailability.state == .unavailable {
+            if workspaceMode == .synchronization {
+                RepositorySyncWorkspaceView(syncModel: syncModel) { repositoryURL in
+                    Task { await model.openRepository(repositoryURL) }
+                }
+            } else if model.githubAvailability.state == .unavailable {
                 unavailableState(palette)
+            } else if workspaceMode == .inbox {
+                GitHubInboxView(collaborationModel: collaborationModel) { url in
+                    inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
+                }
+            } else if workspaceMode == .issues {
+                GitHubIssuesView(
+                    collaborationModel: collaborationModel,
+                    openURL: { url in
+                        inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
+                    },
+                    localRepositoryURL: localRepositoryURL,
+                    createBranch: createIssueBranch,
+                    sendToAgent: sendIssueToAgent
+                )
             } else {
                 Group {
                     if theme == .standard {
@@ -137,114 +173,157 @@ struct GitHubWorkspaceView: View {
     }
 
     private func searchHeader(_ palette: AppPalette) -> some View {
-        HStack(spacing: 12) {
-            Text(L10n.text("github.title"))
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(palette.ink)
-            GitHubAvailabilityBadge(availability: model.githubAvailability)
-
-            if let account = model.githubAccount {
-                Button {
-                    inAppBrowserPage = InAppBrowserPage(url: account.webURL, persistent: true)
-                } label: {
-                    HStack(spacing: 7) {
-                        Image(gattoSymbol: "person.crop.circle.fill")
-                        Text(account.login)
-                            .lineLimit(1)
+        GeometryReader { proxy in
+            let compact = proxy.size.width < 1_020
+            HStack(spacing: compact ? 8 : 11) {
+                if !compact {
+                    HStack(spacing: 8) {
+                        Text(L10n.text("github.title"))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                        GitHubAvailabilityBadge(availability: model.githubAvailability)
                     }
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(palette.mutedInk)
-                    .padding(.horizontal, 9)
-                    .frame(height: 28)
-                    .background(palette.raisedSurface)
-                    .clipShape(Capsule())
-                    .overlay { Capsule().stroke(palette.divider, lineWidth: 1) }
                 }
-                .buttonStyle(.plain)
-            } else if model.githubAvailability.state != .unavailable {
-                Button {
-                    model.beginGitHubLogin()
-                } label: {
-                    HStack(spacing: 7) {
-                        if model.isLaunchingGitHubLogin {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(gattoSymbol: "person.crop.circle")
+
+                accountControl(palette)
+
+                if compact {
+                    Menu {
+                        ForEach(GitHubWorkspaceMode.allCases) { mode in
+                            Button(L10n.text("github.workspace.mode.\(mode.rawValue)")) {
+                                workspaceMode = mode
+                            }
                         }
-                        Text(L10n.text("github.action.login"))
-                            .lineLimit(1)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(gattoSymbol: workspaceMode.symbol)
+                            Text(L10n.text("github.workspace.mode.\(workspaceMode.rawValue)"))
+                            Image(gattoSymbol: "chevron.down")
+                                .font(.system(size: 8, weight: .bold))
+                        }
+                        .font(.system(size: 11, weight: .semibold))
                     }
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(palette.mutedInk)
-                    .padding(.horizontal, 9)
-                    .frame(height: 28)
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                } else {
+                    Picker("", selection: $workspaceMode) {
+                        ForEach(GitHubWorkspaceMode.allCases) { mode in
+                            Text(L10n.text("github.workspace.mode.\(mode.rawValue)"))
+                                .tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 330)
+                }
+
+                Spacer(minLength: 6)
+
+                if workspaceMode == .repositories {
+                    Menu {
+                        ForEach(GitHubSearchScope.allCases) { scope in
+                            Button(L10n.text("github.search.scope.\(scope.rawValue)")) {
+                                model.selectGitHubSearchScope(scope)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(L10n.text("github.search.scope.\(model.githubSearchScope.rawValue)"))
+                            Image(gattoSymbol: "chevron.down")
+                                .font(.system(size: 8, weight: .bold))
+                        }
+                        .font(.system(size: 10.5, weight: .semibold))
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+
+                    HStack(spacing: 7) {
+                        Image(gattoSymbol: "magnifyingglass")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(palette.subtleInk)
+                        TextField(searchPlaceholder, text: $model.githubQuery)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(palette.ink)
+                            .onSubmit { model.searchGitHub() }
+                        if !model.githubQuery.isEmpty {
+                            Button {
+                                model.githubQuery = ""
+                                model.searchGitHub()
+                            } label: {
+                                Image(gattoSymbol: "xmark.circle.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(palette.subtleInk)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(minWidth: compact ? 150 : 180, idealWidth: compact ? 210 : 250, maxWidth: compact ? 260 : 320)
+                    .frame(height: 32)
                     .background(palette.raisedSurface)
-                    .clipShape(Capsule())
-                    .overlay { Capsule().stroke(palette.divider, lineWidth: 1) }
-                }
-                .buttonStyle(.plain)
-                .disabled(model.isLaunchingGitHubLogin)
-            }
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(palette.divider, lineWidth: 1)
+                    }
 
-            Spacer(minLength: 12)
-
-            Picker("", selection: searchScopeBinding) {
-                ForEach(GitHubSearchScope.allCases) { scope in
-                    Text(L10n.text("github.search.scope.\(scope.rawValue)"))
-                        .tag(scope)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(width: 152)
-
-            HStack(spacing: 7) {
-                Image(gattoSymbol: "magnifyingglass")
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(palette.subtleInk)
-                TextField(searchPlaceholder, text: $model.githubQuery)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(palette.ink)
-                    .onSubmit { model.searchGitHub() }
-                if !model.githubQuery.isEmpty {
                     Button {
-                        model.githubQuery = ""
                         model.searchGitHub()
                     } label: {
-                        Image(gattoSymbol: "xmark.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(palette.subtleInk)
+                        Image(gattoSymbol: "arrow.right")
+                            .font(.system(size: 11.5, weight: .bold))
+                            .frame(width: 16, height: 16)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PrimaryButtonStyle())
+                    .help(L10n.text("github.action.search"))
+                    .disabled(model.isLoadingGitHub || model.githubAvailability.state != .available)
+                    .opacity(model.isLoadingGitHub ? 0.55 : 1)
                 }
             }
-            .padding(.horizontal, 10)
-            .frame(minWidth: 220, idealWidth: 300, maxWidth: 340)
-            .frame(height: 32)
-            .background(palette.raisedSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(palette.divider, lineWidth: 1)
-            }
-
-            Button {
-                model.searchGitHub()
-            } label: {
-                Image(gattoSymbol: "arrow.right")
-                    .font(.system(size: 11.5, weight: .bold))
-                    .frame(width: 16, height: 16)
-            }
-                .buttonStyle(PrimaryButtonStyle())
-                .help(L10n.text("github.action.search"))
-                .disabled(model.isLoadingGitHub || model.githubAvailability.state != .available)
-                .opacity(model.isLoadingGitHub ? 0.55 : 1)
+            .padding(.horizontal, compact ? 12 : 18)
         }
-        .padding(.horizontal, 20)
         .frame(height: 62)
         .background(palette.surface)
+    }
+
+    @ViewBuilder
+    private func accountControl(_ palette: AppPalette) -> some View {
+        if let account = model.githubAccount {
+            Button {
+                inAppBrowserPage = InAppBrowserPage(url: account.webURL, persistent: true)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(gattoSymbol: "person.crop.circle.fill")
+                    Text(account.login).lineLimit(1)
+                }
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(palette.mutedInk)
+                .padding(.horizontal, 8)
+                .frame(height: 27)
+                .background(palette.raisedSurface)
+                .clipShape(Capsule())
+                .overlay { Capsule().stroke(palette.divider, lineWidth: 1) }
+            }
+            .buttonStyle(.plain)
+        } else if model.githubAvailability.state != .unavailable {
+            Button {
+                model.beginGitHubLogin()
+            } label: {
+                HStack(spacing: 6) {
+                    if model.isLaunchingGitHubLogin {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(gattoSymbol: "person.crop.circle")
+                    }
+                    Text(L10n.text("github.action.login"))
+                }
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(palette.mutedInk)
+            }
+            .buttonStyle(.borderless)
+            .disabled(model.isLaunchingGitHubLogin)
+        }
     }
 
     private var searchScopeBinding: Binding<GitHubSearchScope> {
@@ -1332,6 +1411,61 @@ struct GitHubWorkspaceView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private func loadWorkspaceMode() {
+        switch workspaceMode {
+        case .repositories:
+            break
+        case .synchronization:
+            syncModel.load(repositories: model.localRepositories)
+        case .inbox:
+            collaborationModel.loadInbox()
+        case .issues:
+            collaborationModel.configure(repositories: model.githubAccountRepositories)
+            collaborationModel.loadIssues()
+        }
+    }
+
+    private func localRepositoryURL(for repository: GitHubRepository) -> URL? {
+        model.localRepositories.first { url in
+            url.lastPathComponent.caseInsensitiveCompare(repository.name) == .orderedSame
+        }
+    }
+
+    private func createIssueBranch(
+        _ issue: GitHubIssue,
+        _ repository: GitHubRepository,
+        _ localURL: URL
+    ) {
+        let slug = issue.title.lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        let suffix = String(slug.prefix(42))
+        let branchName = suffix.isEmpty ? "issue-\(issue.number)" : "issue-\(issue.number)-\(suffix)"
+        Task {
+            await model.openRepository(localURL)
+            await model.createBranch(named: branchName, from: "HEAD", checksOut: true)
+            model.selectedSection = .branches
+        }
+    }
+
+    private func sendIssueToAgent(
+        _ issue: GitHubIssue,
+        _ repository: GitHubRepository,
+        _ localURL: URL
+    ) {
+        Task {
+            await model.openRepository(localURL)
+            model.codexPrompt = L10n.format(
+                "github.issues.agent.prompt",
+                repository.fullName,
+                issue.number,
+                issue.title,
+                issue.body ?? ""
+            )
+            model.selectedSection = .codex
+        }
+    }
+
     private var readmeCardTransition: AnyTransition {
         guard !reduceMotion else { return .opacity }
         let insertion = ReadmeCardSwapModifier(
@@ -1661,6 +1795,18 @@ private struct GitHubAvailabilityBadge: View {
         }
     }
 }
+
+private extension GitHubWorkspaceMode {
+    var symbol: String {
+        switch self {
+        case .repositories: "square.grid.2x2"
+        case .synchronization: "arrow.triangle.2.circlepath"
+        case .inbox: "tray"
+        case .issues: "circle.dotted"
+        }
+    }
+}
+
 
 private struct GitHubRepositoryRow: View {
     let repository: GitHubRepository

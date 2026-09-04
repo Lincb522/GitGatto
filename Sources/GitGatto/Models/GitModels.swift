@@ -145,6 +145,123 @@ struct BranchRecord: Identifiable, Sendable, Hashable {
     var id: String { name }
 }
 
+enum GitReferenceKind: String, Sendable, Hashable, CaseIterable, Identifiable {
+    case localBranch
+    case remoteBranch
+    case tag
+    case head
+
+    var id: String { rawValue }
+}
+
+struct GitReferenceRecord: Identifiable, Sendable, Hashable {
+    let name: String
+    let revision: String
+    let shortHash: String
+    let kind: GitReferenceKind
+
+    var id: String { "\(kind.rawValue):\(name)" }
+}
+
+struct GitTagRecord: Identifiable, Sendable, Hashable {
+    let name: String
+    let hash: String
+    let shortHash: String
+    let subject: String
+    let creator: String?
+    let createdAt: Date?
+    let isAnnotated: Bool
+
+    var id: String { name }
+}
+
+struct GitRemoteRecord: Identifiable, Sendable, Hashable {
+    let name: String
+    let fetchURL: String
+    let pushURL: String
+
+    var id: String { name }
+}
+
+struct GitReflogRecord: Identifiable, Sendable, Hashable {
+    let selector: String
+    let hash: String
+    let shortHash: String
+    let createdAt: Date
+    let subject: String
+
+    var id: String { "\(selector):\(hash)" }
+}
+
+struct GitReferenceSnapshot: Sendable, Equatable {
+    let references: [GitReferenceRecord]
+    let tags: [GitTagRecord]
+    let remotes: [GitRemoteRecord]
+    let reflog: [GitReflogRecord]
+
+    static let empty = GitReferenceSnapshot(references: [], tags: [], remotes: [], reflog: [])
+}
+
+enum GitComparisonMode: String, Sendable, CaseIterable, Identifiable {
+    case direct
+    case commonAncestor
+
+    var id: String { rawValue }
+}
+
+enum GitResetMode: String, Sendable, CaseIterable, Identifiable {
+    case soft
+    case mixed
+    case hard
+
+    var id: String { rawValue }
+}
+
+enum GitCommitRewriteMode: String, Sendable, CaseIterable, Identifiable {
+    case reword
+    case squash
+    case fixup
+    case drop
+    case split
+
+    var id: String { rawValue }
+}
+
+enum GitReferenceServiceError: LocalizedError, Sendable, Equatable {
+    case unavailable
+    case invalidName(String)
+    case currentBranchCannotBeDeleted
+    case workingTreeNotClean
+    case rootCommitCannotBeRewritten
+    case firstCommitCannotBeFolded
+    case publishedCommitCannotBeRewritten
+    case mergeHistoryCannotBeRewritten
+    case remoteRequired
+
+    var errorDescription: String? {
+        switch self {
+        case .unavailable:
+            L10n.text("git_tools.error.unavailable")
+        case let .invalidName(name):
+            L10n.format("git_tools.error.invalid_name", name)
+        case .currentBranchCannotBeDeleted:
+            L10n.text("git_tools.error.current_branch_delete")
+        case .workingTreeNotClean:
+            L10n.text("git_tools.error.working_tree_not_clean")
+        case .rootCommitCannotBeRewritten:
+            L10n.text("git_tools.error.root_commit")
+        case .firstCommitCannotBeFolded:
+            L10n.text("git_tools.error.first_commit_fold")
+        case .publishedCommitCannotBeRewritten:
+            L10n.text("git_tools.error.published_commit")
+        case .mergeHistoryCannotBeRewritten:
+            L10n.text("git_tools.error.merge_history")
+        case .remoteRequired:
+            L10n.text("git_tools.error.remote_required")
+        }
+    }
+}
+
 struct RepositorySnapshot: Sendable, Equatable {
     let rootURL: URL
     let branchName: String
@@ -238,6 +355,25 @@ enum OperationKind: Sendable, Equatable {
     case stashApply
     case stashPop
     case stashDrop
+    case compare
+    case branchCreate
+    case branchRename
+    case branchDelete
+    case branchUpstream
+    case branchCleanup
+    case tagCreate
+    case tagDelete
+    case tagPush
+    case remoteAdd
+    case remoteEdit
+    case remoteDelete
+    case remoteFetch
+    case reflogRestore
+    case cherryPick
+    case revertCommit
+    case resetCommit
+    case rewriteCommit
+    case reorderCommits
 
     var isRemoteSync: Bool {
         self == .pull || self == .push || self == .commitAndPush
@@ -711,6 +847,39 @@ struct GitHubPullRequestContext: Sendable {
     let repositoryName: String
     let pullRequest: GitHubPullRequest
     let diff: String
+    let comments: [GitHubPullRequestComment]
+    let reviews: [GitHubPullRequestReview]
+    let reviewEvent: GitHubPullRequestReviewEvent?
+
+    init(
+        repositoryName: String,
+        pullRequest: GitHubPullRequest,
+        diff: String,
+        comments: [GitHubPullRequestComment] = [],
+        reviews: [GitHubPullRequestReview] = [],
+        reviewEvent: GitHubPullRequestReviewEvent? = nil
+    ) {
+        self.repositoryName = repositoryName
+        self.pullRequest = pullRequest
+        self.diff = diff
+        self.comments = comments
+        self.reviews = reviews
+        self.reviewEvent = reviewEvent
+    }
+
+    func including(
+        reviewCenter: GitHubPullRequestReviewCenter?,
+        event: GitHubPullRequestReviewEvent?
+    ) -> GitHubPullRequestContext {
+        GitHubPullRequestContext(
+            repositoryName: repositoryName,
+            pullRequest: pullRequest,
+            diff: diff,
+            comments: reviewCenter?.comments ?? comments,
+            reviews: reviewCenter?.reviews ?? reviews,
+            reviewEvent: event
+        )
+    }
 }
 
 struct GitHubDeliveryPullRequest: Sendable, Equatable {

@@ -30,6 +30,31 @@ protocol GitHubServing: Sendable {
     func isStarred(_ repository: GitHubRepository) async throws -> Bool
     func setStarred(_ starred: Bool, repository: GitHubRepository) async throws
     func pullRequests(for repository: GitHubRepository) async throws -> [GitHubPullRequest]
+    func inbox() async throws -> [GitHubInboxItem]
+    func issues(
+        for repository: GitHubRepository,
+        state: GitHubIssueState,
+        page: Int
+    ) async throws -> [GitHubIssue]
+    func issueComments(
+        for issue: GitHubIssue,
+        in repository: GitHubRepository
+    ) async throws -> [GitHubIssueComment]
+    func createIssue(
+        _ draft: GitHubIssueDraft,
+        in repository: GitHubRepository
+    ) async throws -> GitHubIssue
+    func updateIssue(
+        _ issue: GitHubIssue,
+        draft: GitHubIssueDraft,
+        state: GitHubIssueState,
+        in repository: GitHubRepository
+    ) async throws -> GitHubIssue
+    func addIssueComment(
+        _ body: String,
+        to issue: GitHubIssue,
+        in repository: GitHubRepository
+    ) async throws -> GitHubIssueComment
     func pullRequestContext(
         for pullRequest: GitHubPullRequest,
         in repository: GitHubRepository
@@ -162,6 +187,49 @@ extension GitHubServing {
     }
 
     func releases(for repository: GitHubRepository) async throws -> [GitHubRelease] {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func inbox() async throws -> [GitHubInboxItem] {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func issues(
+        for repository: GitHubRepository,
+        state: GitHubIssueState,
+        page: Int
+    ) async throws -> [GitHubIssue] {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func issueComments(
+        for issue: GitHubIssue,
+        in repository: GitHubRepository
+    ) async throws -> [GitHubIssueComment] {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func createIssue(
+        _ draft: GitHubIssueDraft,
+        in repository: GitHubRepository
+    ) async throws -> GitHubIssue {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func updateIssue(
+        _ issue: GitHubIssue,
+        draft: GitHubIssueDraft,
+        state: GitHubIssueState,
+        in repository: GitHubRepository
+    ) async throws -> GitHubIssue {
+        throw GitHubServiceError.invalidResponse
+    }
+
+    func addIssueComment(
+        _ body: String,
+        to issue: GitHubIssue,
+        in repository: GitHubRepository
+    ) async throws -> GitHubIssueComment {
         throw GitHubServiceError.invalidResponse
     }
 
@@ -1094,7 +1162,7 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
         }
     }
 
-    private func api(_ arguments: [String]) async throws -> Data {
+    func api(_ arguments: [String]) async throws -> Data {
         try await execute(arguments: ["api"] + arguments, currentDirectoryURL: nil).standardOutput
     }
 

@@ -465,6 +465,11 @@ private struct GitGattoCommands: Commands {
         }
 
         CommandGroup(after: .sidebar) {
+            Button(L10n.text("command_palette.title")) {
+                NotificationCenter.default.post(name: .gitGattoShowCommandPalette, object: nil)
+            }
+            .keyboardShortcut("k", modifiers: .command)
+
             Divider()
             workspaceCommand(.github, shortcut: "1")
             workspaceCommand(.marketplace, shortcut: "2")

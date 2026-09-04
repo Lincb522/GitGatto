@@ -67,6 +67,18 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var selectedChange: WorkingTreeChange?
     @Published var selectedCommit: CommitRecord?
     @Published var selectedBranch: BranchRecord?
+    @Published private(set) var gitReferenceSnapshot: GitReferenceSnapshot = .empty
+    @Published var selectedTag: GitTagRecord?
+    @Published var selectedRemote: GitRemoteRecord?
+    @Published var selectedReflogEntry: GitReflogRecord?
+    @Published var gitToolsSearchText = ""
+    @Published var comparisonBaseRevision = "HEAD~1"
+    @Published var comparisonTargetRevision = "HEAD"
+    @Published var comparisonMode: GitComparisonMode = .direct
+    @Published private(set) var comparisonDocument: DiffDocument?
+    @Published private(set) var isLoadingGitTools = false
+    @Published private(set) var isLoadingComparison = false
+    @Published private(set) var gitToolsError: String?
     @Published var commitMessage = ""
     @Published var searchText = ""
     @Published var notice: OperationNotice?
@@ -236,6 +248,8 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryFilesTask: Task<Void, Never>?
     private var fileTimelineTask: Task<Void, Never>?
     private var diagnosticsTask: Task<Void, Never>?
+    private var gitToolsTask: Task<Void, Never>?
+    private var comparisonTask: Task<Void, Never>?
     private var noticeTask: Task<Void, Never>?
     private var codexTask: Task<Void, Never>?
     private var codexProbeTask: Task<Void, Never>?
@@ -4386,6 +4400,261 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    func refreshGitTools() {
+        guard let repositoryURL = snapshot?.rootURL else { return }
+        gitToolsTask?.cancel()
+        isLoadingGitTools = true
+        gitToolsError = nil
+        let service = self.service
+        gitToolsTask = Task {
+            do {
+                let loaded = try await service.referenceSnapshot(in: repositoryURL)
+                guard !Task.isCancelled,
+                      snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                apply(loaded)
+                isLoadingGitTools = false
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled,
+                      snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                isLoadingGitTools = false
+                gitToolsError = error.localizedDescription
+                presentError(error, context: .repositoryRefresh, repositoryURL: repositoryURL)
+            }
+        }
+    }
+
+    func compareReferences() {
+        guard let repositoryURL = snapshot?.rootURL else { return }
+        comparisonTask?.cancel()
+        isLoadingComparison = true
+        comparisonDocument = nil
+        let base = comparisonBaseRevision
+        let target = comparisonTargetRevision
+        let mode = comparisonMode
+        let service = self.service
+        comparisonTask = Task {
+            do {
+                let document = try await service.compare(
+                    from: base,
+                    to: target,
+                    mode: mode,
+                    in: repositoryURL
+                )
+                guard !Task.isCancelled,
+                      snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return }
+                comparisonDocument = document
+                isLoadingComparison = false
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled else { return }
+                isLoadingComparison = false
+                presentError(error, context: .git(.compare), repositoryURL: repositoryURL)
+            }
+        }
+    }
+
+    func createBranch(named name: String, from startPoint: String, checksOut: Bool) async {
+        let service = self.service
+        await performGitTool(.branchCreate, successKey: "git_tools.notice.branch_created") { repositoryURL in
+            try await service.createBranch(named: name, from: startPoint, checksOut: checksOut, in: repositoryURL)
+        }
+    }
+
+    func renameBranch(_ branch: BranchRecord, to newName: String) async {
+        let service = self.service
+        await performGitTool(.branchRename, successKey: "git_tools.notice.branch_renamed") { repositoryURL in
+            try await service.renameBranch(from: branch.name, to: newName, in: repositoryURL)
+        }
+    }
+
+    func deleteBranch(_ branch: BranchRecord, force: Bool) async {
+        let service = self.service
+        let backupService = repositoryBackupService
+        let policy = appPreferences.repositoryBackupPolicy
+        await performGitTool(.branchDelete, successKey: "git_tools.notice.branch_deleted") { repositoryURL in
+            _ = try await backupService.createBackup(for: repositoryURL, reason: .manual, policy: policy)
+            try await service.deleteBranch(named: branch.name, force: force, in: repositoryURL)
+        }
+    }
+
+    func setUpstream(_ upstream: String?, for branch: BranchRecord) async {
+        let service = self.service
+        await performGitTool(.branchUpstream, successKey: "git_tools.notice.upstream_updated") { repositoryURL in
+            try await service.setUpstream(upstream, for: branch.name, in: repositoryURL)
+        }
+    }
+
+    func cleanupMergedBranches(force: Bool = false) async {
+        guard let current = snapshot?.branchName else { return }
+        let service = self.service
+        let backupService = repositoryBackupService
+        let policy = appPreferences.repositoryBackupPolicy
+        await performGitTool(.branchCleanup, successKey: "git_tools.notice.branches_cleaned") { repositoryURL in
+            let branches = try await service.mergedBranchCandidates(into: current, in: repositoryURL)
+            guard !branches.isEmpty else { return }
+            _ = try await backupService.createBackup(for: repositoryURL, reason: .manual, policy: policy)
+            for name in branches {
+                try await service.deleteBranch(named: name, force: force, in: repositoryURL)
+            }
+        }
+    }
+
+    func createTag(named name: String, revision: String, message: String?, signed: Bool) async {
+        let service = self.service
+        await performGitTool(.tagCreate, successKey: "git_tools.notice.tag_created") { repositoryURL in
+            try await service.createTag(
+                named: name,
+                at: revision,
+                message: message,
+                signed: signed,
+                in: repositoryURL
+            )
+        }
+    }
+
+    func deleteTag(_ tag: GitTagRecord) async {
+        let service = self.service
+        await performGitTool(.tagDelete, successKey: "git_tools.notice.tag_deleted") { repositoryURL in
+            try await service.deleteTag(named: tag.name, in: repositoryURL)
+        }
+    }
+
+    func pushTag(_ tag: GitTagRecord, to remote: String) async {
+        let service = self.service
+        await performGitTool(.tagPush, successKey: "git_tools.notice.tag_pushed") { repositoryURL in
+            try await service.pushTag(named: tag.name, to: remote, in: repositoryURL)
+        }
+    }
+
+    func deleteRemoteTag(_ tag: GitTagRecord, from remote: String) async {
+        let service = self.service
+        await performGitTool(.tagDelete, successKey: "git_tools.notice.remote_tag_deleted") { repositoryURL in
+            try await service.deleteRemoteTag(named: tag.name, from: remote, in: repositoryURL)
+        }
+    }
+
+    func addRemote(named name: String, fetchURL: String, pushURL: String?) async {
+        let service = self.service
+        await performGitTool(.remoteAdd, successKey: "git_tools.notice.remote_added") { repositoryURL in
+            try await service.addRemote(named: name, fetchURL: fetchURL, pushURL: pushURL, in: repositoryURL)
+        }
+    }
+
+    func updateRemote(_ remote: GitRemoteRecord, name: String, fetchURL: String, pushURL: String) async {
+        let service = self.service
+        await performGitTool(.remoteEdit, successKey: "git_tools.notice.remote_updated") { repositoryURL in
+            try await service.updateRemote(
+                named: remote.name,
+                newName: name,
+                fetchURL: fetchURL,
+                pushURL: pushURL,
+                in: repositoryURL
+            )
+        }
+    }
+
+    func deleteRemote(_ remote: GitRemoteRecord) async {
+        let service = self.service
+        await performGitTool(.remoteDelete, successKey: "git_tools.notice.remote_deleted") { repositoryURL in
+            try await service.deleteRemote(named: remote.name, in: repositoryURL)
+        }
+    }
+
+    func fetchRemote(_ remote: GitRemoteRecord, prunes: Bool) async {
+        let service = self.service
+        await performGitTool(.remoteFetch, successKey: "git_tools.notice.remote_fetched") { repositoryURL in
+            try await service.fetchRemote(named: remote.name, prunes: prunes, in: repositoryURL)
+        }
+    }
+
+    func testRemote(_ remote: GitRemoteRecord) async {
+        let service = self.service
+        await performGitTool(.remoteFetch, successKey: "git_tools.notice.remote_reachable") { repositoryURL in
+            try await service.testRemote(named: remote.name, in: repositoryURL)
+        }
+    }
+
+    func restoreReflogEntry(_ entry: GitReflogRecord, as branchName: String) async {
+        let service = self.service
+        await performGitTool(.reflogRestore, successKey: "git_tools.notice.reflog_restored") { repositoryURL in
+            try await service.restoreReflogEntry(entry, as: branchName, in: repositoryURL)
+        }
+    }
+
+    func amendHead(message: String) async {
+        let service = self.service
+        let backupService = repositoryBackupService
+        let policy = appPreferences.repositoryBackupPolicy
+        await performGitTool(.rewriteCommit, successKey: "git_tools.notice.commit_amended") { repositoryURL in
+            _ = try await backupService.createBackup(for: repositoryURL, reason: .manual, policy: policy)
+            try await service.amendHead(message: message, in: repositoryURL)
+        }
+    }
+
+    func rewriteCommit(_ commit: CommitRecord, mode: GitCommitRewriteMode, message: String? = nil) async {
+        let service = self.service
+        let backupService = repositoryBackupService
+        let policy = appPreferences.repositoryBackupPolicy
+        let succeeded = await performRepositoryTransition(
+            .rewriteCommit,
+            completedKey: "git_tools.notice.commit_rewritten"
+        ) { repositoryURL in
+            _ = try await backupService.createBackup(for: repositoryURL, reason: .manual, policy: policy)
+            return try await service.rewriteCommit(commit.hash, mode: mode, newMessage: message, in: repositoryURL)
+        }
+        if succeeded { refreshGitTools() }
+    }
+
+    func reorderCommits(_ commits: [CommitRecord]) async {
+        let service = self.service
+        let backupService = repositoryBackupService
+        let policy = appPreferences.repositoryBackupPolicy
+        let succeeded = await performRepositoryTransition(
+            .reorderCommits,
+            completedKey: "git_tools.notice.commits_reordered"
+        ) { repositoryURL in
+            _ = try await backupService.createBackup(for: repositoryURL, reason: .manual, policy: policy)
+            return try await service.reorderCommits(commits.map(\.hash), in: repositoryURL)
+        }
+        if succeeded { refreshGitTools() }
+    }
+
+    func cherryPick(_ commit: CommitRecord) async {
+        let service = self.service
+        let succeeded = await performRepositoryTransition(.cherryPick, completedKey: "git_tools.notice.cherry_picked") {
+            repositoryURL in
+            try await service.cherryPick(commit.hash, in: repositoryURL)
+        }
+        if succeeded { refreshGitTools() }
+    }
+
+    func revertCommit(_ commit: CommitRecord) async {
+        let service = self.service
+        let succeeded = await performRepositoryTransition(.revertCommit, completedKey: "git_tools.notice.commit_reverted") {
+            repositoryURL in
+            try await service.revertCommit(commit.hash, in: repositoryURL)
+        }
+        if succeeded { refreshGitTools() }
+    }
+
+    func reset(to commit: CommitRecord, mode: GitResetMode) async {
+        let service = self.service
+        let backupService = repositoryBackupService
+        let policy = appPreferences.repositoryBackupPolicy
+        await performGitTool(.resetCommit, successKey: "git_tools.notice.reset_completed") { repositoryURL in
+            _ = try await backupService.createBackup(for: repositoryURL, reason: .manual, policy: policy)
+            try await service.reset(to: commit.hash, mode: mode, in: repositoryURL)
+        }
+    }
+
+    func copyCommitHash(_ commit: CommitRecord) {
+        copyToPasteboard(commit.hash)
+        showNotice(.init(message: L10n.text("git_tools.notice.hash_copied")))
+    }
+
     func continueRepositoryOperation() async {
         guard repositoryOperationState?.canContinue == true else { return }
         let service = self.service
@@ -5602,9 +5871,13 @@ final class WorkspaceViewModel: ObservableObject {
             githubError = nil
             defer { isDraftingPullRequestReply = false }
             do {
-                let context = try await githubService.pullRequestContext(
+                let baseContext = try await githubService.pullRequestContext(
                     for: pullRequest,
                     in: repository
+                )
+                let context = baseContext.including(
+                    reviewCenter: pullRequestReviewCenter,
+                    event: nil
                 )
                 let draft = try await codexService.draftPullRequestReply(context: context)
                 guard !Task.isCancelled,
@@ -5629,9 +5902,13 @@ final class WorkspaceViewModel: ObservableObject {
             pullRequestReviewError = nil
             defer { isDraftingPullRequestReply = false }
             do {
-                let context = try await githubService.pullRequestContext(
+                let baseContext = try await githubService.pullRequestContext(
                     for: pullRequest,
                     in: repository
+                )
+                let context = baseContext.including(
+                    reviewCenter: pullRequestReviewCenter,
+                    event: pullRequestReviewEvent
                 )
                 let draft = try await codexService.draftPullRequestReply(context: context)
                 guard !Task.isCancelled,
@@ -6935,6 +7212,40 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     @discardableResult
+    private func performGitTool(
+        _ operation: OperationKind,
+        successKey: String,
+        refreshesRepository: Bool = true,
+        action: @escaping @Sendable (URL) async throws -> Void
+    ) async -> Bool {
+        guard let repositoryURL = snapshot?.rootURL, activeOperation == nil else { return false }
+        activeOperation = operation
+        defer { activeOperation = nil }
+
+        do {
+            try await action(repositoryURL)
+            if refreshesRepository {
+                await refresh()
+            }
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return false }
+            let references = try await service.referenceSnapshot(in: repositoryURL)
+            apply(references)
+            showNotice(.init(message: L10n.text(successKey)))
+            return true
+        } catch {
+            if refreshesRepository {
+                await refresh()
+            }
+            guard snapshot?.rootURL.standardizedFileURL == repositoryURL.standardizedFileURL else { return false }
+            if let references = try? await service.referenceSnapshot(in: repositoryURL) {
+                apply(references)
+            }
+            presentError(error, context: .git(operation), repositoryURL: repositoryURL)
+            return false
+        }
+    }
+
+    @discardableResult
     private func performRepositoryTransition(
         _ operation: OperationKind,
         completedKey: String,
@@ -7095,6 +7406,18 @@ final class WorkspaceViewModel: ObservableObject {
         worktreeError = nil
     }
 
+    private func apply(_ loaded: GitReferenceSnapshot) {
+        let selectedTagID = selectedTag?.id
+        let selectedRemoteID = selectedRemote?.id
+        let selectedReflogID = selectedReflogEntry?.id
+        gitReferenceSnapshot = loaded
+        selectedTag = selectedTagID.flatMap { id in loaded.tags.first { $0.id == id } } ?? loaded.tags.first
+        selectedRemote = selectedRemoteID.flatMap { id in loaded.remotes.first { $0.id == id } } ?? loaded.remotes.first
+        selectedReflogEntry = selectedReflogID.flatMap { id in loaded.reflog.first { $0.id == id } }
+            ?? loaded.reflog.first
+        gitToolsError = nil
+    }
+
     private func apply(_ loaded: RepositorySnapshot, preservingSelection: Bool = false) {
         let selectedChangeID = preservingSelection ? selectedChange?.id : nil
         let selectedCommitID = preservingSelection ? selectedCommit?.id : nil
@@ -7184,6 +7507,9 @@ final class WorkspaceViewModel: ObservableObject {
             repositoryBackupLoadTask = Task { [weak self] in
                 await self?.reloadRepositoryBackups()
             }
+        case .branches:
+            guard force || gitReferenceSnapshot == .empty else { return }
+            refreshGitTools()
         default:
             break
         }
@@ -7247,6 +7573,8 @@ final class WorkspaceViewModel: ObservableObject {
         repositoryFilesTask?.cancel()
         fileTimelineTask?.cancel()
         diagnosticsTask?.cancel()
+        gitToolsTask?.cancel()
+        comparisonTask?.cancel()
         diffDocument = nil
         commitDiffDocument = nil
         selectedChangePreviewURL = nil
@@ -7282,6 +7610,14 @@ final class WorkspaceViewModel: ObservableObject {
         fileBlameLines = []
         repositoryDiagnostics = nil
         activeDiagnosticOperation = nil
+        gitReferenceSnapshot = .empty
+        selectedTag = nil
+        selectedRemote = nil
+        selectedReflogEntry = nil
+        comparisonDocument = nil
+        isLoadingGitTools = false
+        isLoadingComparison = false
+        gitToolsError = nil
         isLiveRefreshing = false
         liveSyncError = nil
         hasCompletedRepositorySurfacePreload = false

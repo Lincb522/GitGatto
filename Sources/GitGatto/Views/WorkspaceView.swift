@@ -8,11 +8,14 @@ struct WorkspaceView: View {
     @StateObject private var developerToolsModel = DeveloperToolsViewModel()
     @StateObject private var downloads = AppDownloadManager()
     @State private var didReportInitialContentReady = false
+    @State private var showsCommandPalette = false
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @AppStorage("workspace.sidebar.collapsed") private var isSidebarCollapsed = false
     @AppStorage("workspace.sidebar.width") private var sidebarWidth = 232.0
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     init(
         model: WorkspaceViewModel,
@@ -271,6 +274,18 @@ struct WorkspaceView: View {
         .sheet(isPresented: $downloads.isPresented) {
             DownloadCenterView(manager: downloads)
             .frame(minWidth: 620, minHeight: 520)
+        }
+        .sheet(isPresented: $showsCommandPalette) {
+            GlobalCommandPalette(
+                model: model,
+                openSettings: { openSettings() },
+                openScanner: { openWindow(id: "repository-scanner") },
+                openHelp: { openWindow(id: "help") },
+                dismiss: { showsCommandPalette = false }
+            )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .gitGattoShowCommandPalette)) { _ in
+            showsCommandPalette = true
         }
         .onChange(of: model.appPreferences.language) { _, language in
             marketplaceModel.refreshAutomaticTranslation(to: language.translationTarget)

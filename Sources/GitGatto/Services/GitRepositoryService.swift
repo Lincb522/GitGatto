@@ -76,9 +76,178 @@ protocol GitRepositoryServing: Sendable {
     func continueRepositoryOperation(in repositoryURL: URL) async throws -> RepositoryOperationTransition
     func skipRepositoryOperation(in repositoryURL: URL) async throws -> RepositoryOperationTransition
     func abortRepositoryOperation(in repositoryURL: URL) async throws
+    func referenceSnapshot(in repositoryURL: URL) async throws -> GitReferenceSnapshot
+    func compare(
+        from baseRevision: String,
+        to targetRevision: String,
+        mode: GitComparisonMode,
+        in repositoryURL: URL
+    ) async throws -> DiffDocument
+    func createBranch(
+        named name: String,
+        from startPoint: String,
+        checksOut: Bool,
+        in repositoryURL: URL
+    ) async throws
+    func renameBranch(from oldName: String, to newName: String, in repositoryURL: URL) async throws
+    func deleteBranch(named name: String, force: Bool, in repositoryURL: URL) async throws
+    func setUpstream(_ upstream: String?, for branch: String, in repositoryURL: URL) async throws
+    func mergedBranchCandidates(into base: String, in repositoryURL: URL) async throws -> [String]
+    func createTag(
+        named name: String,
+        at revision: String,
+        message: String?,
+        signed: Bool,
+        in repositoryURL: URL
+    ) async throws
+    func deleteTag(named name: String, in repositoryURL: URL) async throws
+    func pushTag(named name: String, to remote: String, in repositoryURL: URL) async throws
+    func deleteRemoteTag(named name: String, from remote: String, in repositoryURL: URL) async throws
+    func addRemote(named name: String, fetchURL: String, pushURL: String?, in repositoryURL: URL) async throws
+    func updateRemote(
+        named name: String,
+        newName: String,
+        fetchURL: String,
+        pushURL: String,
+        in repositoryURL: URL
+    ) async throws
+    func deleteRemote(named name: String, in repositoryURL: URL) async throws
+    func fetchRemote(named name: String, prunes: Bool, in repositoryURL: URL) async throws
+    func testRemote(named name: String, in repositoryURL: URL) async throws
+    func restoreReflogEntry(_ entry: GitReflogRecord, as branchName: String, in repositoryURL: URL) async throws
+    func amendHead(message: String, in repositoryURL: URL) async throws
+    func rewriteCommit(
+        _ hash: String,
+        mode: GitCommitRewriteMode,
+        newMessage: String?,
+        in repositoryURL: URL
+    ) async throws -> RepositoryOperationTransition
+    func cherryPick(_ hash: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func revertCommit(_ hash: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
+    func reset(to hash: String, mode: GitResetMode, in repositoryURL: URL) async throws
+    func reorderCommits(_ orderedHashes: [String], in repositoryURL: URL) async throws -> RepositoryOperationTransition
 }
 
 extension GitRepositoryServing {
+    func referenceSnapshot(in repositoryURL: URL) async throws -> GitReferenceSnapshot {
+        .empty
+    }
+
+    func compare(
+        from baseRevision: String,
+        to targetRevision: String,
+        mode: GitComparisonMode,
+        in repositoryURL: URL
+    ) async throws -> DiffDocument {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func createBranch(
+        named name: String,
+        from startPoint: String,
+        checksOut: Bool,
+        in repositoryURL: URL
+    ) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func renameBranch(from oldName: String, to newName: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func deleteBranch(named name: String, force: Bool, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func setUpstream(_ upstream: String?, for branch: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func mergedBranchCandidates(into base: String, in repositoryURL: URL) async throws -> [String] {
+        []
+    }
+
+    func createTag(
+        named name: String,
+        at revision: String,
+        message: String?,
+        signed: Bool,
+        in repositoryURL: URL
+    ) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func deleteTag(named name: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func pushTag(named name: String, to remote: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func deleteRemoteTag(named name: String, from remote: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func addRemote(named name: String, fetchURL: String, pushURL: String?, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func updateRemote(
+        named name: String,
+        newName: String,
+        fetchURL: String,
+        pushURL: String,
+        in repositoryURL: URL
+    ) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func deleteRemote(named name: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func fetchRemote(named name: String, prunes: Bool, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func testRemote(named name: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func restoreReflogEntry(_ entry: GitReflogRecord, as branchName: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func amendHead(message: String, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func rewriteCommit(
+        _ hash: String,
+        mode: GitCommitRewriteMode,
+        newMessage: String?,
+        in repositoryURL: URL
+    ) async throws -> RepositoryOperationTransition {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func cherryPick(_ hash: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func revertCommit(_ hash: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func reset(to hash: String, mode: GitResetMode, in repositoryURL: URL) async throws {
+        throw GitReferenceServiceError.unavailable
+    }
+
+    func reorderCommits(_ orderedHashes: [String], in repositoryURL: URL) async throws -> RepositoryOperationTransition {
+        throw GitReferenceServiceError.unavailable
+    }
+
     func loadRepositoryOverview(at selectedURL: URL) async throws -> RepositorySnapshot {
         try await loadRepository(at: selectedURL)
     }
@@ -162,7 +331,7 @@ extension GitRepositoryServing {
 }
 
 actor GitRepositoryService: GitRepositoryServing {
-    private let runner: GitCommandRunner
+    let runner: GitCommandRunner
     private var gitDirectoriesByRepositoryPath: [String: URL] = [:]
 
     private static let staleIndexLockAge: TimeInterval = 120

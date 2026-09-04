@@ -37,6 +37,7 @@ struct GitCommandRunner: Sendable {
     func run(
         at repositoryURL: URL,
         arguments: [String],
+        environment environmentOverrides: [String: String] = [:],
         acceptedExitCodes: Set<Int32> = [0]
     ) async throws -> GitCommandResult {
         let processBox = GitCommandProcessBox()
@@ -44,6 +45,7 @@ struct GitCommandRunner: Sendable {
             try Self.runBlocking(
                 at: repositoryURL,
                 arguments: arguments,
+                environmentOverrides: environmentOverrides,
                 acceptedExitCodes: acceptedExitCodes,
                 processBox: processBox
             )
@@ -61,6 +63,7 @@ struct GitCommandRunner: Sendable {
     private static func runBlocking(
         at repositoryURL: URL,
         arguments: [String],
+        environmentOverrides: [String: String],
         acceptedExitCodes: Set<Int32>,
         processBox: GitCommandProcessBox
     ) throws -> GitCommandResult {
@@ -83,6 +86,7 @@ struct GitCommandRunner: Sendable {
         environment["GIT_HTTP_LOW_SPEED_TIME"] = "10"
         environment["GIT_SSH_COMMAND"] = "ssh -o BatchMode=yes -o ConnectTimeout=10"
         environment["PATH"] = commandPath(inheritedPath: environment["PATH"])
+        environment.merge(environmentOverrides) { _, override in override }
         process.environment = environment
 
         try process.run()

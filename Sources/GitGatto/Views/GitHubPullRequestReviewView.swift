@@ -237,18 +237,22 @@ struct GitHubPullRequestReviewView: View {
                 .disabled(model.activeGitHubOperation != nil || model.isDraftingPullRequestReply)
 
             HStack(spacing: 8) {
-                if model.isDraftingPullRequestReply {
-                    Button(L10n.text("github.action.stop_ai")) { model.cancelPullRequestDraft() }
-                        .buttonStyle(SecondaryButtonStyle())
-                } else {
-                    Button {
+                Button {
+                    if model.isDraftingPullRequestReply {
+                        model.cancelPullRequestDraft()
+                    } else {
                         model.draftPullRequestReview()
-                    } label: {
-                        GattoLabel(L10n.text("github.review.action.agent_draft"), systemImage: "sparkles")
                     }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .disabled(!model.canDraftPullRequestReply)
+                } label: {
+                    ReadmeRewriteMotionLabel(
+                        title: L10n.text(model.isDraftingPullRequestReply
+                            ? "github.review.action.agent_drafting"
+                            : "github.review.action.agent_draft"),
+                        isActive: model.isDraftingPullRequestReply
+                    )
                 }
+                .buttonStyle(.plain)
+                .disabled(!model.canDraftPullRequestReply && !model.isDraftingPullRequestReply)
                 Spacer()
                 Button(L10n.text("github.review.action.submit")) {
                     model.submitPullRequestReview()
