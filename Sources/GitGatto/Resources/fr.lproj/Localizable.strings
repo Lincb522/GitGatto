@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "Développer le résumé du projet";
 "github.action.search" = "Rechercher";
 "github.action.login" = "Connectez-vous à GitHub";
+"settings.github.account" = "Compte GitHub";
+"settings.github.account.connected" = "Connecté";
+"settings.github.account.connected.body" = "Compte actuel : %@";
+"settings.github.account.signed_out" = "Non connecté";
+"settings.github.account.signed_out.body" = "Connectez-vous pour accéder aux dépôts privés et aux dépôts auxquels vous collaborez.";
 "github.action.clone" = "Cloner localement";
 "github.action.fork_clone" = "Fourchette et clone";
 "github.action.open_web" = "Ouvrir GitHub Web";

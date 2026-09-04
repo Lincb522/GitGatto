@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "Развернуть краткое описание проекта";
 "github.action.search" = "Поиск";
 "github.action.login" = "Войдите в GitHub";
+"settings.github.account" = "Учётная запись GitHub";
+"settings.github.account.connected" = "Вход выполнен";
+"settings.github.account.connected.body" = "Текущая учётная запись: %@";
+"settings.github.account.signed_out" = "Вход не выполнен";
+"settings.github.account.signed_out.body" = "Войдите, чтобы получить доступ к приватным репозиториям и репозиториям, над которыми вы работаете.";
 "github.action.clone" = "Локальное клонирование";
 "github.action.fork_clone" = "Форк и клон";
 "github.action.open_web" = "Открыть GitHub Интернет";

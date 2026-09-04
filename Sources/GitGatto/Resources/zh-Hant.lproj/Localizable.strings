@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "展開專案概要";
 "github.action.search" = "搜索";
 "github.action.login" = "登入GitHub";
+"settings.github.account" = "GitHub 帳號";
+"settings.github.account.connected" = "已登入";
+"settings.github.account.connected.body" = "目前帳號：%@";
+"settings.github.account.signed_out" = "未登入";
+"settings.github.account.signed_out.body" = "登入後可存取你的私人儲存庫與參與協作的儲存庫。";
 "github.action.clone" = "本地克隆";
 "github.action.fork_clone" = "分叉和克隆";
 "github.action.open_web" = "開啟GitHub 網頁";

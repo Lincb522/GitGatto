@@ -161,6 +161,30 @@ struct GitHubWorkspaceView: View {
                     .overlay { Capsule().stroke(palette.divider, lineWidth: 1) }
                 }
                 .buttonStyle(.plain)
+            } else if model.githubAvailability.state != .unavailable {
+                Button {
+                    model.beginGitHubLogin()
+                } label: {
+                    HStack(spacing: 7) {
+                        if model.isLaunchingGitHubLogin {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(gattoSymbol: "person.crop.circle")
+                        }
+                        Text(L10n.text("github.action.login"))
+                            .lineLimit(1)
+                    }
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(palette.mutedInk)
+                    .padding(.horizontal, 9)
+                    .frame(height: 28)
+                    .background(palette.raisedSurface)
+                    .clipShape(Capsule())
+                    .overlay { Capsule().stroke(palette.divider, lineWidth: 1) }
+                }
+                .buttonStyle(.plain)
+                .disabled(model.isLaunchingGitHubLogin)
             }
 
             Spacer(minLength: 12)

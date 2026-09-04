@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "プロジェクトの概要を展開する";
 "github.action.search" = "検索";
 "github.action.login" = "GitHub にサインインします";
+"settings.github.account" = "GitHub アカウント";
+"settings.github.account.connected" = "サインイン済み";
+"settings.github.account.connected.body" = "現在のアカウント：%@";
+"settings.github.account.signed_out" = "サインインしていません";
+"settings.github.account.signed_out.body" = "サインインすると、非公開リポジトリと共同管理しているリポジトリにアクセスできます。";
 "github.action.clone" = "ローカルでクローンを作成する";
 "github.action.fork_clone" = "フォークとクローン";
 "github.action.open_web" = "GitHub ウェブを開く";

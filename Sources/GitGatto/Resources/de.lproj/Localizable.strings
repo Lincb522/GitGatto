@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "Projektzusammenfassung erweitern";
 "github.action.search" = "Suchen";
 "github.action.login" = "Melden Sie sich bei GitHub an";
+"settings.github.account" = "GitHub-Konto";
+"settings.github.account.connected" = "Angemeldet";
+"settings.github.account.connected.body" = "Aktuelles Konto: %@";
+"settings.github.account.signed_out" = "Nicht angemeldet";
+"settings.github.account.signed_out.body" = "Melden Sie sich an, um auf private und gemeinsam verwaltete Repositories zuzugreifen.";
 "github.action.clone" = "Lokal klonen";
 "github.action.fork_clone" = "Fork & Clone";
 "github.action.open_web" = "Öffnen Sie das GitHub-Web";

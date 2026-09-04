@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "قم بتوسيع ملخص المشروع";
 "github.action.search" = "بحث";
 "github.action.login" = "تسجيل الدخول إلى GitHub";
+"settings.github.account" = "حساب GitHub";
+"settings.github.account.connected" = "تم تسجيل الدخول";
+"settings.github.account.connected.body" = "الحساب الحالي: %@";
+"settings.github.account.signed_out" = "لم يتم تسجيل الدخول";
+"settings.github.account.signed_out.body" = "سجّل الدخول للوصول إلى مستودعاتك الخاصة والمستودعات التي تتعاون فيها.";
 "github.action.clone" = "استنساخ محليا";
 "github.action.fork_clone" = "الشوكة والاستنساخ";
 "github.action.open_web" = "مفتوح GitHub الويب";

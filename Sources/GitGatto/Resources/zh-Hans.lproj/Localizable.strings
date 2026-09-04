@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "展开项目摘要";
 "github.action.search" = "搜索";
 "github.action.login" = "登录 GitHub";
+"settings.github.account" = "GitHub 账号";
+"settings.github.account.connected" = "已登录";
+"settings.github.account.connected.body" = "当前账号：%@";
+"settings.github.account.signed_out" = "未登录";
+"settings.github.account.signed_out.body" = "登录后可读取你的私有仓库和参与协作的仓库。";
 "github.action.clone" = "克隆到本地";
 "github.action.fork_clone" = "Fork 并克隆";
 "github.action.open_web" = "打开 GitHub 网页";

@@ -6,15 +6,21 @@ OUTPUT_DIR="${1:-$ROOT/dist}"
 FINAL_APP="$OUTPUT_DIR/GitGatto.app"
 STAGE_ROOT=""
 BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
-VERSION="${GITGATTO_VERSION:-0.18.17}"
-BUILD="${GITGATTO_BUILD_NUMBER:-18017}"
+VERSION="${GITGATTO_VERSION:-0.18.18}"
+BUILD="${GITGATTO_BUILD_NUMBER:-18018}"
 FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
 CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 SIGNING_KEYCHAIN="${GITGATTO_SIGNING_KEYCHAIN:-}"
+ENTITLEMENTS="$ROOT/Config/GitGatto.entitlements"
 ICON_MASTER="$ROOT/Assets/GitGatto-AppIcon.svg"
 
 if [[ "$FEED_URL" != https://* ]]; then
     print -u2 "GITGATTO_UPDATE_FEED_URL must use HTTPS."
+    exit 1
+fi
+
+if [[ ! -f "$ENTITLEMENTS" ]]; then
+    print -u2 "Missing entitlements file: $ENTITLEMENTS"
     exit 1
 fi
 
@@ -86,6 +92,10 @@ info = {
     "CFBundleVersion": build,
     "CFBundleIconFile": "AppIcon",
     "LSMinimumSystemVersion": "14.0",
+    "NSAppleEventsUsageDescription": (
+        "GitGatto opens Terminal to run the GitHub CLI login command "
+        "so you can sign in to GitHub."
+    ),
     "NSHighResolutionCapable": True,
     "SUFeedURL": feed_url,
     "SUEnableAutomaticChecks": False,
@@ -98,7 +108,8 @@ PY
 chmod +x "$APP/Contents/MacOS/GitGatto"
 if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
     codesign --force --deep --sign - "$APP"
-    codesign --force --sign - -r='designated => identifier "dev.gitgatto.client"' "$APP"
+    codesign --force --sign - --entitlements "$ENTITLEMENTS" \
+        -r='designated => identifier "dev.gitgatto.client"' "$APP"
 else
     SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
     SPARKLE_VERSION="$SPARKLE/Versions/B"
@@ -112,11 +123,13 @@ else
     codesign $SIGN_ARGS "$SPARKLE_VERSION/Autoupdate"
     codesign $SIGN_ARGS "$SPARKLE_VERSION/Updater.app"
     codesign $SIGN_ARGS "$SPARKLE"
-    codesign $SIGN_ARGS "$APP"
+    codesign $SIGN_ARGS --entitlements "$ENTITLEMENTS" "$APP"
 fi
 
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 codesign --verify --deep --strict "$APP"
+codesign -d --entitlements - --xml "$APP" 2>/dev/null \
+    | grep -q 'com.apple.security.automation.apple-events'
 if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
     codesign --verify --deep --strict -R='identifier "dev.gitgatto.client"' "$APP"
 else

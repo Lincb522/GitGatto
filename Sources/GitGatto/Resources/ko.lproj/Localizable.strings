@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "프로젝트 요약 펼치기";
 "github.action.search" = "검색";
 "github.action.login" = "GitHub에 로그인";
+"settings.github.account" = "GitHub 계정";
+"settings.github.account.connected" = "로그인됨";
+"settings.github.account.connected.body" = "현재 계정: %@";
+"settings.github.account.signed_out" = "로그인되지 않음";
+"settings.github.account.signed_out.body" = "로그인하여 비공개 저장소와 공동 작업 중인 저장소에 접근하세요.";
 "github.action.clone" = "로컬로 복제";
 "github.action.fork_clone" = "포크 및 클론";
 "github.action.open_web" = "열기 GitHub 웹";

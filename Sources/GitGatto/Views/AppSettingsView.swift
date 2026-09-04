@@ -1221,6 +1221,10 @@ private struct GitSettingsPage: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        SettingsSection(titleKey: "settings.github.account") {
+            GitHubAccountSettings(model: model)
+        }
+
         SettingsSection(titleKey: "settings.git.discovery") {
             SettingsControlRow(
                 titleKey: "repository.scan.now",
@@ -1262,6 +1266,77 @@ private struct GitSettingsPage: View {
         }
     }
 
+}
+
+private struct GitHubAccountSettings: View {
+    @ObservedObject var model: WorkspaceViewModel
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        HStack(alignment: .center, spacing: 16) {
+            Image(gattoSymbol: model.githubAccount == nil ? "person.crop.circle" : "checkmark.circle.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(model.githubAccount == nil ? palette.subtleInk : palette.success)
+                .frame(width: 32, height: 32)
+                .background(palette.raisedSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(L10n.text(model.githubAccount == nil
+                    ? "settings.github.account.signed_out"
+                    : "settings.github.account.connected"))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+
+                Text(accountDetail)
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(palette.mutedInk)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 16)
+
+            if model.githubAccount == nil {
+                Button {
+                    model.beginGitHubLogin()
+                } label: {
+                    HStack(spacing: 7) {
+                        if model.isLaunchingGitHubLogin {
+                            ProgressView().controlSize(.small)
+                        }
+                        Text(L10n.text("github.action.login"))
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(model.isLaunchingGitHubLogin)
+            }
+
+            Button(L10n.text("github.action.retry")) {
+                model.retryGitHubProbe()
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(model.githubAvailability.state == .checking)
+        }
+
+        if let error = model.githubError {
+            Text(error)
+                .font(.system(size: 10.5))
+                .foregroundStyle(palette.danger)
+                .textSelection(.enabled)
+        } else if let activity = model.githubActivity {
+            Text(activity)
+                .font(.system(size: 10.5))
+                .foregroundStyle(palette.mutedInk)
+        }
+    }
+
+    private var accountDetail: String {
+        if let account = model.githubAccount {
+            return L10n.format("settings.github.account.connected.body", account.login)
+        }
+        return L10n.text("settings.github.account.signed_out.body")
+    }
 }
 
 private struct MonitoringSettingsPage: View {

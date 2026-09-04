@@ -206,6 +206,11 @@
 "github.repository.header.expand" = "Expand project summary";
 "github.action.search" = "Search";
 "github.action.login" = "Sign in to GitHub";
+"settings.github.account" = "GitHub Account";
+"settings.github.account.connected" = "Signed In";
+"settings.github.account.connected.body" = "Current account: %@";
+"settings.github.account.signed_out" = "Not Signed In";
+"settings.github.account.signed_out.body" = "Sign in to access private repositories and repositories you collaborate on.";
 "github.action.clone" = "Clone Locally";
 "github.action.fork_clone" = "Fork & Clone";
 "github.action.open_web" = "Open GitHub Web";
