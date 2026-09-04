@@ -4,6 +4,17 @@ import Testing
 
 @Suite("Application downloads and installation")
 struct AppDownloadManagerTests {
+    @Test("Download file names cannot escape or alias the download directory")
+    func sanitizesDownloadFileNames() {
+        #expect(AppDownloadManager.safeFileName("GitGatto-1.0.dmg") == "GitGatto-1.0.dmg")
+        #expect(AppDownloadManager.safeFileName("a/b:c.zip") == "a-b-c.zip")
+        #expect(AppDownloadManager.safeFileName("..") == "download")
+        #expect(AppDownloadManager.safeFileName(".") == "download")
+        #expect(AppDownloadManager.safeFileName("../../etc") == "-..-etc")
+        #expect(AppDownloadManager.safeFileName(".hidden.dmg") == "hidden.dmg")
+        #expect(AppDownloadManager.safeFileName("  ") == "download")
+    }
+
     @Test("Downloads a release asset through the managed engine")
     @MainActor
     func downloadsReleaseAsset() async throws {

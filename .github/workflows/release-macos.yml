@@ -21,10 +21,19 @@ concurrency:
 jobs:
   release:
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       CODESIGN_IDENTITY: "Developer ID Application: chengbo lin (7VJKFX4HF8)"
       MACOS_DEVELOPER_ID_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
+      MACOS_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.MACOS_DEVELOPER_ID_P12_PASSWORD }}
+      # Optional: when all three are present the release is notarized and stapled.
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      # Optional: when both are present the appcast carries an EdDSA signature and the app
+      # embeds SUPublicEDKey, so updates no longer depend solely on the Developer ID certificate.
+      SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+      SPARKLE_ED_PUBLIC_KEY: ${{ vars.SPARKLE_ED_PUBLIC_KEY }}
       RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 
     steps:
@@ -37,12 +46,36 @@ jobs:
         shell: zsh {0}
         run: |
           set -euo pipefail
-          for variable in MACOS_DEVELOPER_ID_P12_BASE64; do
+          for variable in MACOS_DEVELOPER_ID_P12_BASE64 MACOS_DEVELOPER_ID_P12_PASSWORD; do
             if [[ -z "${(P)variable:-}" ]]; then
               print -u2 "Missing GitHub Actions secret: $variable"
               exit 1
             fi
           done
+
+          NOTARIZE=false
+          if [[ -n "${APP_STORE_CONNECT_KEY_ID:-}" || -n "${APP_STORE_CONNECT_ISSUER_ID:-}" || -n "${APP_STORE_CONNECT_PRIVATE_KEY_BASE64:-}" ]]; then
+            for variable in APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_PRIVATE_KEY_BASE64; do
+              if [[ -z "${(P)variable:-}" ]]; then
+                print -u2 "Notarization is partially configured; missing secret: $variable"
+                exit 1
+              fi
+            done
+            NOTARIZE=true
+          else
+            print "::warning::App Store Connect secrets are not configured; the DMG will be signed but not notarized."
+          fi
+
+          SIGN_APPCAST=false
+          if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" || -n "${SPARKLE_ED_PUBLIC_KEY:-}" ]]; then
+            if [[ -z "${SPARKLE_ED_PRIVATE_KEY:-}" || -z "${SPARKLE_ED_PUBLIC_KEY:-}" ]]; then
+              print -u2 "Sparkle EdDSA signing needs both the SPARKLE_ED_PRIVATE_KEY secret and the SPARKLE_ED_PUBLIC_KEY variable."
+              exit 1
+            fi
+            SIGN_APPCAST=true
+          else
+            print "::warning::Sparkle EdDSA key is not configured; updates rely on Developer ID signature continuity only."
+          fi
 
           VERSION="${RELEASE_TAG#v}"
           if [[ ! "$VERSION" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
@@ -53,8 +86,10 @@ jobs:
           BUILD_NUMBER="$(python3 -c 'import sys; major, minor, patch = map(int, sys.argv[1].split(".")); print(major * 1_000_000 + minor * 1_000 + patch)' "$VERSION")"
           print "VERSION=$VERSION" >> "$GITHUB_ENV"
           print "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+          print "NOTARIZE=$NOTARIZE" >> "$GITHUB_ENV"
+          print "SIGN_APPCAST=$SIGN_APPCAST" >> "$GITHUB_ENV"
 
-      - name: Import Developer ID certificate
+      - name: Import signing credentials
         shell: zsh {0}
         run: |
           set -euo pipefail
@@ -68,7 +103,7 @@ jobs:
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$CERTIFICATE_PATH" \
-            -P "GitGattoActions" \
+            -P "$MACOS_DEVELOPER_ID_P12_PASSWORD" \
             -A \
             -t cert \
             -f pkcs12 \
@@ -80,22 +115,49 @@ jobs:
             "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -F "$CODESIGN_IDENTITY"
+          print "GITGATTO_SIGNING_KEYCHAIN=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+          if [[ "$NOTARIZE" == true ]]; then
+            PRIVATE_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+            print -n "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > "$PRIVATE_KEY_PATH"
+            chmod 600 "$PRIVATE_KEY_PATH"
+            print "APP_STORE_CONNECT_KEY_PATH=$PRIVATE_KEY_PATH" >> "$GITHUB_ENV"
+          fi
 
       - name: Build and sign application
         shell: zsh {0}
         run: |
           set -euo pipefail
+          if [[ "$SIGN_APPCAST" == true ]]; then
+            export GITGATTO_SPARKLE_PUBLIC_KEY="$SPARKLE_ED_PUBLIC_KEY"
+          fi
           GITGATTO_VERSION="$VERSION" \
           GITGATTO_BUILD_NUMBER="$BUILD_NUMBER" \
           GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
+          GITGATTO_SIGNING_KEYCHAIN="$GITGATTO_SIGNING_KEYCHAIN" \
             ./scripts/package-macos.sh
 
-      - name: Create release DMG
+      - name: Notarize, staple and create release DMG
+        if: env.NOTARIZE == 'true'
         shell: zsh {0}
         run: |
           set -euo pipefail
           mkdir -p dist/releases
           GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
+          GITGATTO_SIGNING_KEYCHAIN="$GITGATTO_SIGNING_KEYCHAIN" \
+          GITGATTO_NOTARIZATION_DIR="$PWD/dist/releases/notarization" \
+            ./scripts/notarize-macos.sh \
+              "$PWD/dist/GitGatto.app" \
+              "$PWD/dist/releases/GitGatto-$VERSION.dmg"
+
+      - name: Create signed release DMG (not notarized)
+        if: env.NOTARIZE != 'true'
+        shell: zsh {0}
+        run: |
+          set -euo pipefail
+          mkdir -p dist/releases
+          GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
+          GITGATTO_SIGNING_KEYCHAIN="$GITGATTO_SIGNING_KEYCHAIN" \
             ./scripts/create-dmg.sh \
               "$PWD/dist/GitGatto.app" \
               "$PWD/dist/releases/GitGatto-$VERSION.dmg"
@@ -110,13 +172,20 @@ jobs:
 
           APPCAST_TOOL="$(find .build/artifacts/sparkle/Sparkle/bin -type f -name generate_appcast -perm +111 -print -quit)"
           [[ -x "$APPCAST_TOOL" ]]
-          "$APPCAST_TOOL" \
-            --embed-release-notes \
-            --maximum-versions 1 \
-            --download-url-prefix "https://github.com/Lincb522/GitGatto/releases/download/$RELEASE_TAG/" \
-            --full-release-notes-url "https://github.com/Lincb522/GitGatto/releases" \
-            -o "$RELEASE_DIR/appcast.xml" \
-            "$RELEASE_DIR"
+
+          APPCAST_ARGS=(
+            --embed-release-notes
+            --maximum-versions 1
+            --download-url-prefix "https://github.com/Lincb522/GitGatto/releases/download/$RELEASE_TAG/"
+            --full-release-notes-url "https://github.com/Lincb522/GitGatto/releases"
+            -o "$RELEASE_DIR/appcast.xml"
+          )
+          if [[ "$SIGN_APPCAST" == true ]]; then
+            print -n "$SPARKLE_ED_PRIVATE_KEY" | "$APPCAST_TOOL" --ed-key-file - "${APPCAST_ARGS[@]}" "$RELEASE_DIR"
+            grep -q 'sparkle:edSignature=' "$RELEASE_DIR/appcast.xml"
+          else
+            "$APPCAST_TOOL" "${APPCAST_ARGS[@]}" "$RELEASE_DIR"
+          fi
 
           grep -F "GitGatto-$VERSION.dmg" "$RELEASE_DIR/appcast.xml"
           (
@@ -155,7 +224,18 @@ jobs:
               --latest
           fi
 
-      - name: Remove temporary signing keychain
+      - name: Upload notarization evidence
+        if: always() && env.NOTARIZE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: GitGatto-${{ env.RELEASE_TAG }}-notarization
+          path: dist/releases/notarization/*.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Remove temporary credentials
         if: always()
         shell: zsh {0}
-        run: security delete-keychain "$RUNNER_TEMP/gitgatto-signing.keychain-db" 2>/dev/null || true
+        run: |
+          security delete-keychain "$RUNNER_TEMP/gitgatto-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/developer-id-application.p12" "$RUNNER_TEMP/AuthKey.p8"

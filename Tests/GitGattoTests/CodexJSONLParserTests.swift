@@ -14,6 +14,29 @@ struct CodexJSONLParserTests {
         ])
     }
 
+    @Test("Natural-language search prompt embeds the user request verbatim")
+    func searchPromptEmbedsRequest() {
+        let request = "Swift Git clients for macOS with more than 500 stars"
+        let prompt = CodexService.gitHubSearchQueryPrompt(request, scope: .projects)
+
+        #expect(prompt.contains("GitHub repository search"))
+        #expect(prompt.hasSuffix("Request:\n\(request)"))
+        #expect(!prompt.contains("input.prefix"))
+
+        let developerPrompt = CodexService.gitHubSearchQueryPrompt("Rust maintainers", scope: .developers)
+        #expect(developerPrompt.contains("GitHub user search"))
+        #expect(developerPrompt.hasSuffix("Request:\nRust maintainers"))
+    }
+
+    @Test("Natural-language search prompt truncates oversized requests")
+    func searchPromptTruncatesRequest() {
+        let request = String(repeating: "a", count: 1_500)
+        let prompt = CodexService.gitHubSearchQueryPrompt(request, scope: .projects)
+
+        #expect(prompt.hasSuffix(String(repeating: "a", count: 1_000)))
+        #expect(!prompt.hasSuffix(String(repeating: "a", count: 1_001)))
+    }
+
     @Test("Returns the final message and completed action counts")
     func parsesCompletedItems() throws {
         let jsonl = """

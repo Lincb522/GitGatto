@@ -6,9 +6,13 @@ OUTPUT_DIR="${1:-$ROOT/dist}"
 FINAL_APP="$OUTPUT_DIR/GitGatto.app"
 STAGE_ROOT=""
 BACKUP_APP="$OUTPUT_DIR/.GitGatto.previous"
-VERSION="${GITGATTO_VERSION:-0.18.18}"
-BUILD="${GITGATTO_BUILD_NUMBER:-18018}"
+# project.yml is the single source of truth for the default version and build number.
+DEFAULT_VERSION="$(sed -nE 's/^[[:space:]]*MARKETING_VERSION:[[:space:]]*"?([0-9.]+)"?.*/\1/p' "$ROOT/project.yml" | head -n 1)"
+DEFAULT_BUILD="$(sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION:[[:space:]]*"?([0-9]+)"?.*/\1/p' "$ROOT/project.yml" | head -n 1)"
+VERSION="${GITGATTO_VERSION:-$DEFAULT_VERSION}"
+BUILD="${GITGATTO_BUILD_NUMBER:-$DEFAULT_BUILD}"
 FEED_URL="${GITGATTO_UPDATE_FEED_URL:-https://github.com/Lincb522/GitGatto/releases/latest/download/appcast.xml}"
+SPARKLE_PUBLIC_KEY="${GITGATTO_SPARKLE_PUBLIC_KEY:-}"
 CODESIGN_IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 SIGNING_KEYCHAIN="${GITGATTO_SIGNING_KEYCHAIN:-}"
 ENTITLEMENTS="$ROOT/Config/GitGatto.entitlements"
@@ -72,11 +76,11 @@ render_icon 512 icon_512x512.png
 render_icon 1024 icon_512x512@2x.png
 iconutil -c icns "$ICON_WORK" -o "$APP/Contents/Resources/AppIcon.icns"
 
-/usr/bin/python3 - "$APP/Contents/Info.plist" "$VERSION" "$BUILD" "$FEED_URL" <<'PY'
+/usr/bin/python3 - "$APP/Contents/Info.plist" "$VERSION" "$BUILD" "$FEED_URL" "$SPARKLE_PUBLIC_KEY" <<'PY'
 import plistlib
 import sys
 
-path, version, build, feed_url = sys.argv[1:]
+path, version, build, feed_url, sparkle_public_key = sys.argv[1:]
 info = {
     "CFBundleExecutable": "GitGatto",
     "CFBundleIdentifier": "dev.gitgatto.client",
@@ -101,6 +105,8 @@ info = {
     "SUEnableAutomaticChecks": False,
     "SUAutomaticallyUpdate": False,
 }
+if sparkle_public_key:
+    info["SUPublicEDKey"] = sparkle_public_key
 with open(path, "wb") as handle:
     plistlib.dump(info, handle, sort_keys=False)
 PY

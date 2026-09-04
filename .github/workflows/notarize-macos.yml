@@ -22,6 +22,7 @@ jobs:
     env:
       CODESIGN_IDENTITY: "Developer ID Application: chengbo lin (7VJKFX4HF8)"
       MACOS_DEVELOPER_ID_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
+      MACOS_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.MACOS_DEVELOPER_ID_P12_PASSWORD }}
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
@@ -39,6 +40,7 @@ jobs:
           set -euo pipefail
           for variable in \
             MACOS_DEVELOPER_ID_P12_BASE64 \
+            MACOS_DEVELOPER_ID_P12_PASSWORD \
             APP_STORE_CONNECT_KEY_ID \
             APP_STORE_CONNECT_ISSUER_ID \
             APP_STORE_CONNECT_PRIVATE_KEY_BASE64
@@ -87,7 +89,7 @@ jobs:
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$CERTIFICATE_PATH" \
-            -P "GitGattoActions" \
+            -P "$MACOS_DEVELOPER_ID_P12_PASSWORD" \
             -A \
             -t cert \
             -f pkcs12 \

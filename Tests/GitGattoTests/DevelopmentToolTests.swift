@@ -318,6 +318,55 @@ struct DevelopmentToolTests {
         #expect(!fileManager.fileExists(atPath: deniedFile.path))
     }
 
+    @Test("Installer sandbox denies reading credential stores even inside writable roots")
+    func externalAgentInstallerCannotReadCredentialStores() throws {
+        let fileManager = FileManager.default
+        let home = fileManager.homeDirectoryForCurrentUser
+        let protectedPaths = CodexService.installerSandboxProtectedPaths(home: home)
+            .map { $0.standardizedFileURL.resolvingSymlinksInPath().path }
+        let profile = CodexService.installerSandboxProfile(
+            writableDirectories: [home.appendingPathComponent(".config", isDirectory: true)]
+        )
+
+        for expected in [".ssh", ".config/gh", ".aws", ".docker/config.json", ".git-credentials"] {
+            let resolved = home.appendingPathComponent(expected).standardizedFileURL.resolvingSymlinksInPath().path
+            #expect(protectedPaths.contains(resolved))
+            #expect(profile.contains("(deny file-read* file-write* (subpath \"\(resolved)\"))"))
+        }
+
+        // `~/.config/gh` sits under the writable `~/.config` root; the trailing denial must still win.
+        let ghDirectory = home.appendingPathComponent(".config/gh", isDirectory: true)
+        let existedBefore = fileManager.fileExists(atPath: ghDirectory.path)
+        if !existedBefore {
+            try fileManager.createDirectory(at: ghDirectory, withIntermediateDirectories: true)
+        }
+        defer {
+            if !existedBefore { try? fileManager.removeItem(at: ghDirectory) }
+        }
+        let probeName = ".gitgatto-sandbox-probe-\(UUID().uuidString)"
+        let probeFile = ghDirectory.appendingPathComponent(probeName)
+        defer { try? fileManager.removeItem(at: probeFile) }
+
+        let write = Process()
+        write.executableURL = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+        write.arguments = ["-p", profile, "/usr/bin/touch", probeFile.path]
+        write.standardError = Pipe()
+        try write.run()
+        write.waitUntilExit()
+
+        let list = Process()
+        list.executableURL = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
+        list.arguments = ["-p", profile, "/bin/ls", ghDirectory.path]
+        list.standardOutput = Pipe()
+        list.standardError = Pipe()
+        try list.run()
+        list.waitUntilExit()
+
+        #expect(write.terminationStatus != 0)
+        #expect(!fileManager.fileExists(atPath: probeFile.path))
+        #expect(list.terminationStatus != 0)
+    }
+
     @Test("Post-install setup persists a user-local executable directory once")
     func persistsUserLocalPath() async throws {
         let home = FileManager.default.temporaryDirectory

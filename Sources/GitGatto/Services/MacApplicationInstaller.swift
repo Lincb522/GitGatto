@@ -93,24 +93,55 @@ actor MacApplicationInstaller {
 
     @discardableResult
     private func run(_ executable: String, _ arguments: [String]) async throws -> Data {
-        try await withCheckedThrowingContinuation { continuation in
-            let process = Process()
-            let output = Pipe()
-            let error = Pipe()
-            process.executableURL = URL(fileURLWithPath: executable)
-            process.arguments = arguments
-            process.standardOutput = output
-            process.standardError = error
-            process.terminationHandler = { process in
-                let data = output.fileHandleForReading.readDataToEndOfFile()
-                if process.terminationStatus == 0 {
-                    continuation.resume(returning: data)
-                } else {
-                    let message = String(decoding: error.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                    continuation.resume(throwing: MacApplicationInstallerError.commandFailed(message))
-                }
-            }
-            do { try process.run() } catch { continuation.resume(throwing: error) }
-        }
+        try await Task.detached(priority: .userInitiated) {
+            try Self.runBlocking(executable, arguments)
+        }.value
     }
+
+    private static func runBlocking(_ executable: String, _ arguments: [String]) throws -> Data {
+        let process = Process()
+        let output = Pipe()
+        let error = Pipe()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        process.standardOutput = output
+        process.standardError = error
+        // A DMG with a license agreement makes hdiutil prompt on stdin; EOF fails fast instead of hanging.
+        process.standardInput = FileHandle.nullDevice
+        try process.run()
+
+        // Drain both pipes while the child runs so output larger than the pipe buffer cannot deadlock it.
+        let outputBox = InstallerDataBox()
+        let errorBox = InstallerDataBox()
+        let reads = DispatchGroup()
+        reads.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            outputBox.set(output.fileHandleForReading.readDataToEndOfFile())
+            reads.leave()
+        }
+        reads.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            errorBox.set(error.fileHandleForReading.readDataToEndOfFile())
+            reads.leave()
+        }
+        process.waitUntilExit()
+        reads.wait()
+
+        guard process.terminationStatus == 0 else {
+            let message = String(decoding: errorBox.value, as: UTF8.self)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            throw MacApplicationInstallerError.commandFailed(
+                message.isEmpty ? "\(executable) exited with status \(process.terminationStatus)" : message
+            )
+        }
+        return outputBox.value
+    }
+}
+
+private final class InstallerDataBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage = Data()
+
+    var value: Data { lock.withLock { storage } }
+    func set(_ value: Data) { lock.withLock { storage = value } }
 }

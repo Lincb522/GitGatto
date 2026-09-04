@@ -13,6 +13,7 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
     private let includesGitObjectChanges: Bool
     private var stream: FSEventStreamRef?
     private var watchdog: DispatchSourceTimer?
+    /// Only read or written on `callbackQueue`; `start`/`stop` never touch it directly.
     private var watchdogFingerprint: RepositoryWatchdogFingerprint?
 
     init(
@@ -78,7 +79,6 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         watchdog?.setEventHandler {}
         watchdog?.cancel()
         watchdog = nil
-        watchdogFingerprint = nil
         if let stream {
             FSEventStreamStop(stream)
             FSEventStreamInvalidate(stream)
@@ -128,7 +128,12 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
     }
 
     private func startWatchdog() {
-        watchdogFingerprint = currentWatchdogFingerprint()
+        // Seed the baseline on the serial callback queue so it is ordered before the first tick
+        // and never touched from the caller's thread.
+        callbackQueue.async { [weak self] in
+            guard let self else { return }
+            self.watchdogFingerprint = self.currentWatchdogFingerprint()
+        }
         let watchdog = DispatchSource.makeTimerSource(queue: callbackQueue)
         watchdog.schedule(
             deadline: .now() + 1,

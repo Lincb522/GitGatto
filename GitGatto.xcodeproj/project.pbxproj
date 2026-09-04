@@ -91,6 +91,7 @@
 		407864F7A69CD0F1EC2CB464 /* rust.png in Resources */ = {isa = PBXBuildFile; fileRef = 6EF5A006132F3C4941A01B5C /* rust.png */; };
 		414C1964DEDFF2E67A22A5AA /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D09C5B8F070A70C1A914BB /* AppPreferences.swift */; };
 		414ECEA248023C43D5283A2A /* MonitoringEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01E3CC09EFECBAE2EA1203AD /* MonitoringEngine.swift */; };
+		420C02C0E6597304543C495B /* gatto-externaldrive-badge-timemachine.svg in Resources */ = {isa = PBXBuildFile; fileRef = 785701812764EC9B43DD59FF /* gatto-externaldrive-badge-timemachine.svg */; };
 		420DD091852BE4356BC26AEA /* mariadb.png in Resources */ = {isa = PBXBuildFile; fileRef = DAE3E714A24704F0C6319FE0 /* mariadb.png */; };
 		4250ED87A2B1C33FBDB7EB04 /* CodexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE00C157F088AA82ACBAFBBD /* CodexService.swift */; };
 		429656490DBAC3062099D9D6 /* gatto-arrow-up-forward-app.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4941F17AB0B2A0A9F5AFD6BF /* gatto-arrow-up-forward-app.svg */; };
@@ -163,6 +164,7 @@
 		78F4A7FE9653D4AC3ED19E56 /* BrandAssetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6FD6467D3A736D023FEC9F /* BrandAssetTests.swift */; };
 		7900A6022F2EB59905897F5C /* RepositoryChangeMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62A8CC6F9FFD2503F03CBE2 /* RepositoryChangeMonitorTests.swift */; };
 		791EBF9E213117CD8274A8FC /* RegressionInvestigationWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7648352ECB0849B3FD1C43BA /* RegressionInvestigationWorkspaceView.swift */; };
+		79BEF8401C35B42A90F21B8C /* gatto-tag.svg in Resources */ = {isa = PBXBuildFile; fileRef = CD4AAA9FA96A7BC808DEC82C /* gatto-tag.svg */; };
 		79CBBBE66CECE5A27AF9B631 /* AppThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 051E4BD4D843828AC076CE32 /* AppThemeTests.swift */; };
 		7BCFDFD4B55807272714CBC1 /* gatto-exclamationmark-triangle-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = 19DDCFAB49A6CE0BB5E08346 /* gatto-exclamationmark-triangle-fill.svg */; };
 		7D811DB4E11EB80D1E48ECCE /* GitHubReadmeTranslationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46D7808D76C0C6B19F16E6C1 /* GitHubReadmeTranslationStore.swift */; };
@@ -242,6 +244,7 @@
 		B7866BD5B798709781DA8BC4 /* gatto-minus-circle-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = 99E614C8D25A1B2284D43A8B /* gatto-minus-circle-fill.svg */; };
 		B7B039D4223B6779A27C2CE1 /* gatto-paintpalette.svg in Resources */ = {isa = PBXBuildFile; fileRef = 756D94281F1F0FE500A0EF62 /* gatto-paintpalette.svg */; };
 		B91640C2E6D111230255BEC7 /* gatto-xmark-circle-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = F73CD23C26377F612646D3B6 /* gatto-xmark-circle-fill.svg */; };
+		B98592333B9A7D3A93895C64 /* gatto-lifepreserver.svg in Resources */ = {isa = PBXBuildFile; fileRef = 51887A5BE330B009A67C3818 /* gatto-lifepreserver.svg */; };
 		B98BCA471CCB6631348EBED0 /* gatto-arrow-triangle-2-circlepath.svg in Resources */ = {isa = PBXBuildFile; fileRef = 2EBAA4B6DA5D7DCA8772CDCF /* gatto-arrow-triangle-2-circlepath.svg */; };
 		BB28F450EFC9C5C60EB40392 /* ConflictResolutionWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73553D4584968CDA41575597 /* ConflictResolutionWorkspaceView.swift */; };
 		BB53913C418AF05A713D2FBA /* gatto-shippingbox.svg in Resources */ = {isa = PBXBuildFile; fileRef = 36F0392BBCF9B3CEC04A01D9 /* gatto-shippingbox.svg */; };
@@ -487,6 +490,7 @@
 		4FE8E9D3836787A18902A9AC /* RepositoryRecoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryRecoveryView.swift; sourceTree = "<group>"; };
 		5130ECA2270C6A946203AA96 /* gatto-text-bubble.svg */ = {isa = PBXFileReference; path = "gatto-text-bubble.svg"; sourceTree = "<group>"; };
 		51420AA231364892A6A82DB2 /* gatto-globe.svg */ = {isa = PBXFileReference; path = "gatto-globe.svg"; sourceTree = "<group>"; };
+		51887A5BE330B009A67C3818 /* gatto-lifepreserver.svg */ = {isa = PBXFileReference; path = "gatto-lifepreserver.svg"; sourceTree = "<group>"; };
 		53FD91FF93BDC65F0C514CDC /* GitGatto-AppIcon-Dark.svg */ = {isa = PBXFileReference; path = "GitGatto-AppIcon-Dark.svg"; sourceTree = "<group>"; };
 		54CBDAC1B1BBECC69238CF84 /* uv.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = uv.png; sourceTree = "<group>"; };
 		54D3F3B41A1D20A72B2A9EEA /* GitHubLanguageIcons.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = GitHubLanguageIcons.json; sourceTree = "<group>"; };
@@ -542,6 +546,7 @@
 		76C7FFB910C2E89457BC7112 /* AppResourceBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppResourceBundle.swift; sourceTree = "<group>"; };
 		77025BF377170681403BE545 /* RepositorySidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositorySidebar.swift; sourceTree = "<group>"; };
 		77D4C57B362B982DBA8B487A /* architecture-overview.svg */ = {isa = PBXFileReference; path = "architecture-overview.svg"; sourceTree = "<group>"; };
+		785701812764EC9B43DD59FF /* gatto-externaldrive-badge-timemachine.svg */ = {isa = PBXFileReference; path = "gatto-externaldrive-badge-timemachine.svg"; sourceTree = "<group>"; };
 		78B4DD8BE5858D80585AF7BB /* gatto-doc-badge-minus.svg */ = {isa = PBXFileReference; path = "gatto-doc-badge-minus.svg"; sourceTree = "<group>"; };
 		78D8B04491F14B9B237B5FBF /* GitHubReadmeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubReadmeView.swift; sourceTree = "<group>"; };
 		78FF7BBC34336097B90B4D6B /* LegalDocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDocumentsView.swift; sourceTree = "<group>"; };
@@ -683,6 +688,7 @@
 		CCE53CFB6DEEA99F9DB3F000 /* CodexJSONLParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexJSONLParserTests.swift; sourceTree = "<group>"; };
 		CD21DE9AA0B8783D5C105D3A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CD3403AD31D70C4F9C03AD5C /* ProjectGoalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectGoalStore.swift; sourceTree = "<group>"; };
+		CD4AAA9FA96A7BC808DEC82C /* gatto-tag.svg */ = {isa = PBXFileReference; path = "gatto-tag.svg"; sourceTree = "<group>"; };
 		CE4407B5C6305856E402E20F /* gatto-checkmark-circle.svg */ = {isa = PBXFileReference; path = "gatto-checkmark-circle.svg"; sourceTree = "<group>"; };
 		CE4A0EA7E1DF62431D7B079C /* MonitoringModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringModels.swift; sourceTree = "<group>"; };
 		CE9BB87F3C2024F152CC773B /* gatto-git-pull-request.svg */ = {isa = PBXFileReference; path = "gatto-git-pull-request.svg"; sourceTree = "<group>"; };
@@ -952,6 +958,7 @@
 				9ECD681D0AF4492F1564F674 /* gatto-dot-radiowaves-left-and-right.svg */,
 				19DDCFAB49A6CE0BB5E08346 /* gatto-exclamationmark-triangle-fill.svg */,
 				9359C749488F4B567A280652 /* gatto-exclamationmark.svg */,
+				785701812764EC9B43DD59FF /* gatto-externaldrive-badge-timemachine.svg */,
 				C612C7B8397822054067E33F /* gatto-externaldrive-fill.svg */,
 				70E8D4E591ED9985ED9B879E /* gatto-externaldrive.svg */,
 				3AA2BB2D2970240F97561D32 /* gatto-eye-slash.svg */,
@@ -972,6 +979,7 @@
 				E378182A79694527464D093A /* gatto-legal-disclaimer.svg */,
 				9928695EB459C3D25B6F14A3 /* gatto-legal-open-source.svg */,
 				F2B85FEA8DFFFF680F04B702 /* gatto-legal-privacy.svg */,
+				51887A5BE330B009A67C3818 /* gatto-lifepreserver.svg */,
 				5AC96EC6A854BECCCCC1B256 /* gatto-link.svg */,
 				2FB52B2ABEB7FA082A87F801 /* gatto-location.svg */,
 				40C56C405E8E9A40CCB1BB40 /* gatto-lock-fill.svg */,
@@ -1011,6 +1019,7 @@
 				DCA2CB1980947B2C1D585C7F /* gatto-star.svg */,
 				08B2D7185524876DDFA2FE0C /* gatto-stethoscope.svg */,
 				9B1B4BD27B33174104D4D9E2 /* gatto-sun-max.svg */,
+				CD4AAA9FA96A7BC808DEC82C /* gatto-tag.svg */,
 				AFCE7BCE0883B44C90A5FE3D /* gatto-terminal.svg */,
 				55FF3F29C5DA5661DD129730 /* gatto-text-badge-plus.svg */,
 				5130ECA2270C6A946203AA96 /* gatto-text-bubble.svg */,
@@ -1564,6 +1573,7 @@
 				F7A1946A21AAEB371A1F1F95 /* gatto-dot-radiowaves-left-and-right.svg in Resources */,
 				7BCFDFD4B55807272714CBC1 /* gatto-exclamationmark-triangle-fill.svg in Resources */,
 				9026D7B5D3F41A19867E4379 /* gatto-exclamationmark.svg in Resources */,
+				420C02C0E6597304543C495B /* gatto-externaldrive-badge-timemachine.svg in Resources */,
 				E9E09BBBE23ABA6488E793F5 /* gatto-externaldrive-fill.svg in Resources */,
 				C5A8757DF5B1A980B4D352EF /* gatto-externaldrive.svg in Resources */,
 				593C40CB1B6FF64840CF3D58 /* gatto-eye-slash.svg in Resources */,
@@ -1584,6 +1594,7 @@
 				6956B17133BB5ED85FA4F161 /* gatto-legal-disclaimer.svg in Resources */,
 				5FB414BC1F647E8D93474AF2 /* gatto-legal-open-source.svg in Resources */,
 				CB9B19F07B3DA2A13062A2AB /* gatto-legal-privacy.svg in Resources */,
+				B98592333B9A7D3A93895C64 /* gatto-lifepreserver.svg in Resources */,
 				D7371941FF4FC65AF275709C /* gatto-link.svg in Resources */,
 				6DACE03BC76B123D0E399C64 /* gatto-location.svg in Resources */,
 				0FA38FE3AD8B8411CBCB6A9C /* gatto-lock-fill.svg in Resources */,
@@ -1623,6 +1634,7 @@
 				902F08BCC9DAE799E16F41A6 /* gatto-star.svg in Resources */,
 				9B7189AD4D4F5573912A4BD3 /* gatto-stethoscope.svg in Resources */,
 				B376CBE24C25EF4D2F6D031E /* gatto-sun-max.svg in Resources */,
+				79BEF8401C35B42A90F21B8C /* gatto-tag.svg in Resources */,
 				607ED7324E4C3F7A60A2F261 /* gatto-terminal.svg in Resources */,
 				EB21CC8C89DB918B4F7B4160 /* gatto-text-badge-plus.svg in Resources */,
 				FC4B3C968FD0B93960AE9AA8 /* gatto-text-bubble.svg in Resources */,

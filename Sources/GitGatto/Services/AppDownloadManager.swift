@@ -488,8 +488,17 @@ final class AppDownloadManager: ObservableObject {
         return downloadDirectory.appendingPathComponent(name)
     }
 
-    private static func safeFileName(_ name: String) -> String {
-        let sanitized = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+    nonisolated static func safeFileName(_ name: String) -> String {
+        var sanitized = name
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+            .replacingOccurrences(of: "\0", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // "." and ".." would resolve to the download directory or its parent, which the
+        // `.removePreviousFile` destination option would then delete.
+        while sanitized.hasPrefix(".") {
+            sanitized.removeFirst()
+        }
         return sanitized.isEmpty ? "download" : sanitized
     }
 }
