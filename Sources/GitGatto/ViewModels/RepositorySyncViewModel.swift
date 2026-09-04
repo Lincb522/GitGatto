@@ -14,6 +14,7 @@ final class RepositorySyncViewModel: ObservableObject {
     private var refreshTask: Task<Void, Never>?
     private var operationTask: Task<Void, Never>?
     private var loadedRepositoryIDs = Set<String>()
+    private var refreshRequestID: UUID?
 
     init(service: any RepositorySyncServing = RepositorySyncService()) {
         self.service = service
@@ -34,15 +35,22 @@ final class RepositorySyncViewModel: ObservableObject {
         loadedRepositoryIDs = ids
         selectedRepositoryIDs.formIntersection(ids)
         isRefreshing = true
+        let requestID = UUID()
+        refreshRequestID = requestID
         let service = self.service
         refreshTask = Task {
+            defer {
+                if refreshRequestID == requestID {
+                    isRefreshing = false
+                    refreshTask = nil
+                    refreshRequestID = nil
+                }
+            }
             let values = await Self.boundedMap(normalized, limit: 4) { url in
                 await service.status(for: url)
             }
             guard !Task.isCancelled else { return }
             statuses = values.sorted(by: Self.compareStatus)
-            isRefreshing = false
-            refreshTask = nil
         }
     }
 

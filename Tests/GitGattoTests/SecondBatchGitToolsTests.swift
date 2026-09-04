@@ -43,6 +43,24 @@ struct SecondBatchGitToolsTests {
         #expect(await service.status(for: fixture.first).health == .clean)
     }
 
+    @Test("Concurrent repository status checks do not starve process output readers")
+    func concurrentRepositoryStatusChecks() async throws {
+        let root = try makeRepository()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let service = RepositorySyncService()
+
+        let statuses = await withTaskGroup(of: RepositorySyncStatus.self) { group in
+            for _ in 0..<16 {
+                group.addTask { await service.status(for: root) }
+            }
+            return await group.reduce(into: []) { $0.append($1) }
+        }
+
+        #expect(statuses.count == 16)
+        #expect(statuses.allSatisfy { $0.health != .unavailable })
+        #expect(statuses.allSatisfy { $0.errorMessage == nil })
+    }
+
     @Test("Commit search combines SHA, message, author, path, extension, and pickaxe filters")
     func commitSearch() async throws {
         let root = try makeRepository()

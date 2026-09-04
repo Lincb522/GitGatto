@@ -94,30 +94,19 @@ struct GitCommandRunner: Sendable {
             process.terminate()
         }
 
-        let outputBox = GitCommandDataBox()
-        let errorBox = GitCommandDataBox()
-        let readGroup = DispatchGroup()
-        readGroup.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            outputBox.set(outputPipe.fileHandleForReading.readDataToEndOfFile())
-            readGroup.leave()
-        }
-        readGroup.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            errorBox.set(errorPipe.fileHandleForReading.readDataToEndOfFile())
-            readGroup.leave()
-        }
-
-        process.waitUntilExit()
-        readGroup.wait()
+        let capturedOutput = ProcessPipeCollector.waitForExit(
+            process,
+            standardOutput: outputPipe,
+            standardError: errorPipe
+        )
 
         if processBox.isCancelled || Task.isCancelled {
             throw CancellationError()
         }
 
         let result = GitCommandResult(
-            output: outputBox.value,
-            errorOutput: errorBox.value,
+            output: capturedOutput.standardOutput,
+            errorOutput: capturedOutput.standardError,
             exitCode: process.terminationStatus
         )
 
@@ -190,15 +179,60 @@ private final class GitCommandProcessBox: @unchecked Sendable {
     }
 }
 
-private final class GitCommandDataBox: @unchecked Sendable {
+struct ProcessPipeOutput: Sendable {
+    let standardOutput: Data
+    let standardError: Data
+}
+
+enum ProcessPipeCollector {
+    static func waitForExit(
+        _ process: Process,
+        standardOutput outputPipe: Pipe,
+        standardError errorPipe: Pipe
+    ) -> ProcessPipeOutput {
+        let outputReader = ProcessPipeReader(
+            handle: outputPipe.fileHandleForReading,
+            name: "GitGatto.stdout"
+        )
+        let errorReader = ProcessPipeReader(
+            handle: errorPipe.fileHandleForReading,
+            name: "GitGatto.stderr"
+        )
+        outputReader.start()
+        errorReader.start()
+        process.waitUntilExit()
+        return ProcessPipeOutput(
+            standardOutput: outputReader.waitForData(),
+            standardError: errorReader.waitForData()
+        )
+    }
+}
+
+private final class ProcessPipeReader: @unchecked Sendable {
+    private let handle: FileHandle
+    private let name: String
+    private let completion = DispatchSemaphore(value: 0)
     private let lock = NSLock()
     private var storage = Data()
 
-    var value: Data {
-        lock.withLock { storage }
+    init(handle: FileHandle, name: String) {
+        self.handle = handle
+        self.name = name
     }
 
-    func set(_ value: Data) {
-        lock.withLock { storage = value }
+    func start() {
+        let thread = Thread { [self] in
+            let data = handle.readDataToEndOfFile()
+            lock.withLock { storage = data }
+            completion.signal()
+        }
+        thread.name = name
+        thread.qualityOfService = .userInitiated
+        thread.start()
+    }
+
+    func waitForData() -> Data {
+        completion.wait()
+        return lock.withLock { storage }
     }
 }

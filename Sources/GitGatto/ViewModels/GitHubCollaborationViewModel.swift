@@ -36,6 +36,9 @@ final class GitHubCollaborationViewModel: ObservableObject {
     private var issueReplyTask: Task<Void, Never>?
     private var issuePage = 0
     private var didLoadInbox = false
+    private var inboxRequestID: UUID?
+    private var issuesRequestID: UUID?
+    private var commentsRequestID: UUID?
 
     init(
         service: any GitHubServing = GitHubService(),
@@ -82,16 +85,19 @@ final class GitHubCollaborationViewModel: ObservableObject {
     }
 
     func loadInbox(force: Bool = false) {
-        guard force || !didLoadInbox else { return }
+        guard force || (!didLoadInbox && !isLoadingInbox) else { return }
         inboxTask?.cancel()
         isLoadingInbox = true
         inboxError = nil
+        let requestID = UUID()
+        inboxRequestID = requestID
         let service = self.service
         inboxTask = Task {
             defer {
-                if !Task.isCancelled {
+                if inboxRequestID == requestID {
                     isLoadingInbox = false
                     inboxTask = nil
+                    inboxRequestID = nil
                 }
             }
             do {
@@ -124,18 +130,22 @@ final class GitHubCollaborationViewModel: ObservableObject {
 
     func loadIssues(force: Bool = false) {
         guard let repository = selectedRepository,
-              !isLoadingIssues,
-              force || issuePage == 0 else { return }
+              force || (!isLoadingIssues && issuePage == 0) else { return }
         issuesTask?.cancel()
         isLoadingIssues = true
+        isLoadingMoreIssues = false
         issueError = nil
         let state = issueState
+        let requestID = UUID()
+        issuesRequestID = requestID
         let service = self.service
         issuesTask = Task {
             defer {
-                if selectedRepository?.id == repository.id, issueState == state, !Task.isCancelled {
+                if issuesRequestID == requestID {
                     isLoadingIssues = false
+                    isLoadingMoreIssues = false
                     issuesTask = nil
+                    issuesRequestID = nil
                 }
             }
             do {
@@ -170,12 +180,15 @@ final class GitHubCollaborationViewModel: ObservableObject {
         let state = issueState
         isLoadingMoreIssues = true
         issueError = nil
+        let requestID = UUID()
+        issuesRequestID = requestID
         let service = self.service
         issuesTask = Task {
             defer {
-                if selectedRepository?.id == repository.id, issueState == state, !Task.isCancelled {
+                if issuesRequestID == requestID {
                     isLoadingMoreIssues = false
                     issuesTask = nil
+                    issuesRequestID = nil
                 }
             }
             do {
@@ -208,12 +221,15 @@ final class GitHubCollaborationViewModel: ObservableObject {
         guard let issue, let repository = selectedRepository else { return }
         isLoadingIssueComments = true
         issueError = nil
+        let requestID = UUID()
+        commentsRequestID = requestID
         let service = self.service
         commentsTask = Task {
             defer {
-                if selectedIssue?.id == issue.id, !Task.isCancelled {
+                if commentsRequestID == requestID {
                     isLoadingIssueComments = false
                     commentsTask = nil
+                    commentsRequestID = nil
                 }
             }
             do {
@@ -360,6 +376,8 @@ final class GitHubCollaborationViewModel: ObservableObject {
     }
 
     private func resetIssues() {
+        issuesRequestID = nil
+        commentsRequestID = nil
         issuesTask?.cancel()
         commentsTask?.cancel()
         cancelIssueReplyDraft()

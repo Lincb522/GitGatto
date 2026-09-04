@@ -14,42 +14,33 @@ struct RepositorySyncService: RepositorySyncServing {
 
     func status(for repositoryURL: URL) async -> RepositorySyncStatus {
         do {
-            async let branchResult = runner.run(
+            let branchOutput = try await runner.run(
                 at: repositoryURL,
                 arguments: ["symbolic-ref", "--quiet", "--short", "HEAD"],
                 acceptedExitCodes: [0, 1]
             )
-            async let headResult = runner.run(
+            let headOutput = try await runner.run(
                 at: repositoryURL,
                 arguments: ["rev-parse", "--short", "HEAD"],
                 acceptedExitCodes: [0, 128]
             )
-            async let upstreamResult = runner.run(
+            let upstreamOutput = try await runner.run(
                 at: repositoryURL,
                 arguments: ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
                 acceptedExitCodes: [0, 128]
             )
-            async let changesResult = runner.run(
+            let changesOutput = try await runner.run(
                 at: repositoryURL,
                 arguments: ["status", "--porcelain=v1", "--untracked-files=normal"]
             )
-            async let lastCommitResult = runner.run(
+            let lastCommitOutput = try await runner.run(
                 at: repositoryURL,
                 arguments: ["log", "-1", "--format=%ct"],
                 acceptedExitCodes: [0, 128]
             )
-            async let remotesResult = runner.run(
+            let remotesOutput = try await runner.run(
                 at: repositoryURL,
                 arguments: ["remote"]
-            )
-
-            let (branchOutput, headOutput, upstreamOutput, changesOutput, lastCommitOutput, remotesOutput) = try await (
-                branchResult,
-                headResult,
-                upstreamResult,
-                changesResult,
-                lastCommitResult,
-                remotesResult
             )
             let branchName = branchOutput.text.trimmingCharacters(in: .whitespacesAndNewlines)
             let shortHead = headOutput.text.trimmingCharacters(in: .whitespacesAndNewlines)

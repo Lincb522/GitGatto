@@ -1,8 +1,8 @@
-## Added
+## Fixed
 
-- Repository tools now manage branches, tags, and remotes in one place, compare Git references, and recover Reflog entries into new branches.
-- Commit history can amend, reorder, squash, split, cherry-pick, revert, and reset local commits. GitGatto creates a recovery point before rewriting and blocks published commits from being rewritten.
-- Multi-repository sync can fetch, pull, and push in batches, with distinct states for incoming, outgoing, diverged, conflicted, and failed repositories plus targeted retries.
-- The GitHub inbox groups review requests, requested changes, mentions, failed checks, conflicts, and merge-ready work. Issues can be created, edited, closed, reopened, and discussed inside GitGatto.
-- The global command palette switches pages, repositories, and branches or runs common Git actions. Commit search combines SHA, author, path, changed text, date, and revision filters.
-- Agent can draft Pull Request replies from diffs, reviews, and discussion, and draft same-language Issue replies from the issue body, labels, and comments. Every draft stays editable and is published only after confirmation.
+- Multi-repository sync, the GitHub inbox, and Issues no longer remain indefinitely in a loading state when concurrent Git and GitHub CLI commands wait on each other.
+- Switching collaboration pages or repositories now cancels superseded requests and restores the correct loading state.
+
+## Improved
+
+- Repository status is loaded only after opening Multi-Repository Sync, so background scans no longer block other GitHub pages.

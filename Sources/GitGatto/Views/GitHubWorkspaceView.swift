@@ -31,12 +31,13 @@ struct GitHubWorkspaceView: View {
                 .frame(minWidth: 820, minHeight: 640)
         }
         .task {
-            syncModel.load(repositories: model.localRepositories)
             collaborationModel.configure(repositories: model.githubAccountRepositories)
             loadWorkspaceMode()
         }
         .onChange(of: model.localRepositories) { _, repositories in
-            syncModel.load(repositories: repositories)
+            if workspaceMode == .synchronization {
+                syncModel.load(repositories: repositories)
+            }
         }
         .onChange(of: model.githubAccountRepositories) { _, repositories in
             collaborationModel.configure(repositories: repositories)
