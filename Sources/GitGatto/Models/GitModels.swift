@@ -4,6 +4,7 @@ import SwiftUI
 
 enum WorkspaceSection: String, CaseIterable, Identifiable, Sendable, Codable {
     case changes
+    case intelligence
     case stash
     case history
     case timeMachine

@@ -128,11 +128,11 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
     }
 
     private func startWatchdog() {
-        // Seed the baseline on the serial callback queue so it is ordered before the first tick
-        // and never touched from the caller's thread.
-        callbackQueue.async { [weak self] in
-            guard let self else { return }
-            self.watchdogFingerprint = self.currentWatchdogFingerprint()
+        // Establish the baseline before returning from start(). Otherwise a Git command issued
+        // immediately after opening a repository can race the asynchronous seed and disappear
+        // into the first fingerprint instead of producing a change callback.
+        callbackQueue.sync {
+            watchdogFingerprint = currentWatchdogFingerprint()
         }
         let watchdog = DispatchSource.makeTimerSource(queue: callbackQueue)
         watchdog.schedule(

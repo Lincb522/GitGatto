@@ -7,6 +7,7 @@ struct WorkspaceView: View {
     @StateObject private var marketplaceModel = GitHubMarketplaceViewModel()
     @StateObject private var developerToolsModel = DeveloperToolsViewModel()
     @StateObject private var downloads = AppDownloadManager()
+    @StateObject private var intelligenceModel = RepositoryIntelligenceViewModel()
     @State private var didReportInitialContentReady = false
     @State private var showsCommandPalette = false
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
@@ -328,6 +329,11 @@ struct WorkspaceView: View {
             switch model.selectedSection {
             case .changes:
                 ChangesWorkspaceView(model: model)
+            case .intelligence:
+                RepositoryIntelligenceWorkspaceView(
+                    model: intelligenceModel,
+                    workspaceModel: model
+                )
             case .stash:
                 StashWorkspaceView(model: model)
             case .history:
@@ -445,7 +451,7 @@ private struct ConsoleSectionRail: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private let sections: [WorkspaceSection] = [
-        .github, .marketplace, .goals, .changes, .history, .timeMachine, .recovery, .branches, .worktrees, .diagnostics, .codex
+        .github, .marketplace, .goals, .changes, .intelligence, .history, .timeMachine, .recovery, .branches, .worktrees, .diagnostics, .codex
     ]
 
     var body: some View {
@@ -496,6 +502,7 @@ private struct ConsoleSectionRail: View {
         case .marketplace: marketplaceCount
         case .goals: model.activeProjectGoalCount
         case .changes: model.snapshot?.changes.count
+        case .intelligence: nil
         case .stash: model.stashes.count
         case .history: model.commitGraph.nodes.count
         case .timeMachine: model.repositoryFiles.count
@@ -514,6 +521,7 @@ private struct ConsoleSectionRail: View {
         case .marketplace: "arrow.down.app"
         case .goals: "checkmark.seal"
         case .changes: "square.stack.3d.up"
+        case .intelligence: "point.3.connected.trianglepath.dotted"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
         case .timeMachine: "clock.badge.checkmark"

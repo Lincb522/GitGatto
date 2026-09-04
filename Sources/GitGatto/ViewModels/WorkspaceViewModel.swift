@@ -3278,6 +3278,11 @@ final class WorkspaceViewModel: ObservableObject {
 
         monitoringEngine.markMonitoring(.repositoryProtection)
 
+        let monitoredRepositories = localRepositories
+        Task {
+            await RepositoryActivityLedger.shared.seed(monitoredRepositories)
+        }
+
         let generation = repositoryProtectionGeneration
         for repositoryURL in localRepositories {
             let repository = repositoryURL.standardizedFileURL
@@ -3294,6 +3299,9 @@ final class WorkspaceViewModel: ObservableObject {
                     guard let self else { return }
                     self.monitoringEngine.recordRepositoryChange(at: repository)
                     self.monitoringEngine.markMonitoring(.repositoryProtection)
+                    Task {
+                        await RepositoryActivityLedger.shared.recordChange(in: repository)
+                    }
                     if self.appPreferences.externalRepositoryProtectionEnabled {
                         self.scheduleExternalRepositoryProtectionAudit(
                             for: repository,
@@ -3661,9 +3669,15 @@ final class WorkspaceViewModel: ObservableObject {
         guard let repositoryURL = snapshot?.rootURL else { return }
 
         if appPreferences.monitoringEngineEnabled, appPreferences.liveRefreshEnabled {
+            Task {
+                await RepositoryActivityLedger.shared.seed([repositoryURL])
+            }
             let monitor = RepositoryChangeMonitor(repositoryURL: repositoryURL) { [weak self] in
                 Task { @MainActor in
                     self?.monitoringEngine.recordRepositoryChange(at: repositoryURL)
+                    Task {
+                        await RepositoryActivityLedger.shared.recordChange(in: repositoryURL)
+                    }
                     self?.scheduleRepositoryEventRefresh()
                 }
             }
@@ -3746,7 +3760,9 @@ final class WorkspaceViewModel: ObservableObject {
         guard appPreferences.monitoringEngineEnabled,
               appPreferences.liveRefreshEnabled,
               snapshot != nil else { return }
-        repositoryEventRefreshTask?.cancel()
+        // Coalesce event bursts without cancelling a refresh that is already reading Git state.
+        // Git may refresh its index while answering status queries, which can itself emit an event.
+        guard repositoryEventRefreshTask == nil else { return }
         let refreshID = UUID()
         activeRepositoryEventRefreshID = refreshID
         let delay = max(0.15, min(appPreferences.liveRefreshInterval, 2))

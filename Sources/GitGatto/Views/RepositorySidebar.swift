@@ -119,6 +119,7 @@ struct RepositorySidebar: View {
             )
             if repositoryToolsExpanded {
                 navigationButton(.changes, titleKey: "nav.changes", systemImage: "square.stack.3d.up", count: model.snapshot?.changes.count)
+                navigationButton(.intelligence, titleKey: "nav.intelligence", systemImage: "point.3.connected.trianglepath.dotted")
                 navigationButton(.stash, titleKey: "nav.stash", systemImage: "archivebox", count: model.stashes.isEmpty ? nil : model.stashes.count)
                 navigationButton(.history, titleKey: "nav.history", systemImage: "clock.arrow.circlepath", count: model.commitGraph.nodes.isEmpty ? nil : model.commitGraph.nodes.count)
                 navigationButton(.timeMachine, titleKey: "nav.timeMachine", systemImage: "history.file", count: model.repositoryFiles.isEmpty ? nil : model.repositoryFiles.count)
@@ -474,7 +475,7 @@ struct RepositorySidebar: View {
     }
 
     private var collapsedSections: [WorkspaceSection] {
-        [.github, .marketplace, .goals, .changes, .stash, .history, .timeMachine, .recovery, .branches, .worktrees, .diagnostics, .regression, .codex]
+        [.github, .marketplace, .goals, .changes, .intelligence, .stash, .history, .timeMachine, .recovery, .branches, .worktrees, .diagnostics, .regression, .codex]
     }
 
     private func count(for section: WorkspaceSection) -> Int? {
@@ -483,6 +484,7 @@ struct RepositorySidebar: View {
         case .marketplace: nil
         case .goals: model.activeProjectGoalCount
         case .changes: model.snapshot?.changes.count
+        case .intelligence: nil
         case .stash: model.stashes.count
         case .history: model.commitGraph.nodes.count
         case .timeMachine: model.repositoryFiles.count
@@ -574,6 +576,7 @@ private struct FolioRailNavigationButton: View {
         case .marketplace: "arrow.down.app"
         case .goals: "checkmark.seal"
         case .changes: "square.stack.3d.up"
+        case .intelligence: "point.3.connected.trianglepath.dotted"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
         case .timeMachine: "history.file"
@@ -627,6 +630,7 @@ private struct CollapsedSidebarNavigationButton: View {
         case .marketplace: "arrow.down.app"
         case .goals: "checkmark.seal"
         case .changes: "square.stack.3d.up"
+        case .intelligence: "point.3.connected.trianglepath.dotted"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
         case .timeMachine: "history.file"

@@ -36,6 +36,16 @@ Agent 结果不是成功依据。项目目标、错误修复、README 重写和�
 
 `ProjectGoalRuntime` 把交付拆成有依赖关系的条件：暂存、提交、Push、Pull Request、Review、Actions、产物与合并。`ProjectReleaseRuntime` 在此基础上核对 README、译文、版本、构建号、更新日志、标签、Release、DMG、Appcast 与本机应用。已完成步骤写入 `ProjectGoalStore`，中断后从未完成条件继续。
 
+## 变更中心
+
+`ChangeIntentService` 读取真实工作区补丁，把文本改动拆成可分配的 hunk，并在用户确认后按顺序创建本地提交。每次应用计划前先建立恢复点；仓库指纹变化、分配不完整或验证命令失败都会中止并恢复原来的 HEAD 与暂存状态。
+
+`CodeProvenanceService` 以 `git blame` 和提交对象为本地证据。在 origin 与 GitHub CLI 可用时，再关联该提交对应的 Pull Request、Issue、Review 与 Checks；远端不可用不会覆盖本地结果。
+
+`ReproductionCapsuleService` 把补丁、安全的未跟踪文件、失败输出和工具版本写入 `.gatto`。导入时校验目录结构与补丁摘要，恢复时从记录的基准提交创建独立 worktree，不执行胶囊中的命令。
+
+`RepositoryActivityLedger` 由仓库事件触发，记录 Git 状态变化与当时工作目录位于仓库内的已知 Agent 进程。责任链只保存可执行文件名、进程 ID、路径与引用变化；置信度表示关联证据强弱，不作为操作主体的确定结论。
+
 `RegressionInvestigationRuntime` 使用 `GitWorktreeService` 创建独立 worktree，再运行 `git bisect`。自动验证以退出码判定，手动验证由用户标记；候选提交、判定、耗时和输出写入 `RegressionInvestigationStore`。当前工作区不会被切换。
 
 ## 灾备与恢复

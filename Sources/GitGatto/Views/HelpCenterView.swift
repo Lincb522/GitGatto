@@ -67,6 +67,7 @@ struct HelpCenterView: View {
 private enum HelpTopic: String, CaseIterable, Identifiable {
     case gettingStarted
     case changes
+    case intelligence
     case sync
     case goals
     case regression
@@ -85,6 +86,7 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
         switch self {
         case .gettingStarted: "play.circle"
         case .changes: "square.stack.3d.up"
+        case .intelligence: "point.3.connected.trianglepath.dotted"
         case .sync: "arrow.up.arrow.down"
         case .goals: "checkmark.seal"
         case .regression: "record.circle"
@@ -123,6 +125,29 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
                     "help.changes.files.1",
                     "help.changes.files.2",
                     "help.changes.files.3"
+                ])
+            ]
+        case .intelligence:
+            [
+                .init("help.intelligence.intent.title", bullets: [
+                    "help.intelligence.intent.1",
+                    "help.intelligence.intent.2",
+                    "help.intelligence.intent.3"
+                ]),
+                .init("help.intelligence.provenance.title", bullets: [
+                    "help.intelligence.provenance.1",
+                    "help.intelligence.provenance.2",
+                    "help.intelligence.provenance.3"
+                ]),
+                .init("help.intelligence.capsule.title", bullets: [
+                    "help.intelligence.capsule.1",
+                    "help.intelligence.capsule.2",
+                    "help.intelligence.capsule.3"
+                ]),
+                .init("help.intelligence.activity.title", bullets: [
+                    "help.intelligence.activity.1",
+                    "help.intelligence.activity.2",
+                    "help.intelligence.activity.3"
                 ])
             ]
         case .sync:

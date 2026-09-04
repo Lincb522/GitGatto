@@ -301,6 +301,7 @@ private extension WorkspaceSection {
     var symbol: String {
         switch self {
         case .changes: "square.3.layers.3d"
+        case .intelligence: "point.3.connected.trianglepath.dotted"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
         case .timeMachine: "doc.badge.clock"
