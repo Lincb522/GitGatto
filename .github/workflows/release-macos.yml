@@ -138,7 +138,9 @@ jobs:
             ./scripts/package-macos.sh
 
       - name: Notarize, staple and create release DMG
+        id: notarize
         if: env.NOTARIZE == 'true'
+        continue-on-error: true
         shell: zsh {0}
         run: |
           set -euo pipefail
@@ -151,7 +153,7 @@ jobs:
               "$PWD/dist/releases/GitGatto-$VERSION.dmg"
 
       - name: Create signed release DMG (not notarized)
-        if: env.NOTARIZE != 'true'
+        if: env.NOTARIZE != 'true' || steps.notarize.outcome != 'success'
         shell: zsh {0}
         run: |
           set -euo pipefail
