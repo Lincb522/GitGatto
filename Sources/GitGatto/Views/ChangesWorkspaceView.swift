@@ -4,6 +4,7 @@ struct ChangesWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+    @AppStorage("workspace.changes.navigator.width") private var navigatorWidth = 300.0
 
     @ViewBuilder
     var body: some View {
@@ -14,16 +15,10 @@ struct ChangesWorkspaceView: View {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
                 } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
-                        .appGlassPanel(cornerRadius: 14, elevated: false)
-                        .padding(10)
                 } else if AppVisualTheme.resolved(themeRaw) == .emerald {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
-                        .emeraldSurface(.panel, cornerRadius: 16)
-                        .padding(10)
                 } else if AppVisualTheme.resolved(themeRaw) == .folio {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
-                        .folioSurface(.panel, cornerRadius: 16)
-                        .padding(10)
                 } else {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
                         .appConsolePanel()
@@ -42,44 +37,46 @@ struct ChangesWorkspaceView: View {
                     )
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
-                HStack(spacing: 10) {
+                HStack(spacing: 0) {
                     ChangeNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
-                        .appGlassPanel(cornerRadius: 14, elevated: false)
+                    Rectangle().fill(palette.divider).frame(width: 1)
                     DiffInspectorView(
                         change: model.selectedChange,
                         document: model.diffDocument,
                         previewURL: model.selectedChangePreviewURL
                     )
-                        .appGlassPanel(cornerRadius: 14, elevated: false)
                 }
-                .padding(10)
             } else if AppVisualTheme.resolved(themeRaw) == .emerald {
-                HStack(spacing: 10) {
-                    ChangeNavigator(model: model)
-                        .frame(width: min(380, max(310, proxy.size.width * 0.36)))
-                        .emeraldSurface(.elevated, cornerRadius: 16)
-                    DiffInspectorView(
-                        change: model.selectedChange,
-                        document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL
-                    )
-                    .emeraldSurface(.panel, cornerRadius: 16)
+                HorizontalResizableSplitView(
+                    primaryWidth: Binding(
+                        get: { proxy.size.width - navigatorWidth - 7 },
+                        set: { navigatorWidth = proxy.size.width - $0 - 7 }
+                    ),
+                    minimumPrimaryWidth: 370,
+                    maximumPrimaryWidth: max(370, proxy.size.width - 287),
+                    minimumSecondaryWidth: 280,
+                    separatorWidth: 7
+                ) {
+                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL)
+                } secondary: {
+                    ChangeNavigator(model: model, showsTitle: false)
+                        .overlay(alignment: .leading) { Rectangle().fill(palette.divider).frame(width: 1) }
                 }
-                .padding(10)
             } else if AppVisualTheme.resolved(themeRaw) == .folio {
-                HStack(spacing: 10) {
-                    ChangeNavigator(model: model)
-                        .frame(width: min(380, max(310, proxy.size.width * 0.36)))
-                        .folioSurface(.elevated, cornerRadius: 16)
-                    DiffInspectorView(
-                        change: model.selectedChange,
-                        document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL
-                    )
-                    .folioSurface(.panel, cornerRadius: 16)
+                folioWorkspace(palette: palette, width: proxy.size.width)
+            } else if AppVisualTheme.resolved(themeRaw) == .console {
+                HorizontalResizableSplitView(
+                    primaryWidth: $navigatorWidth,
+                    minimumPrimaryWidth: 270,
+                    maximumPrimaryWidth: 380,
+                    minimumSecondaryWidth: 365,
+                    separatorWidth: 5
+                ) {
+                    ChangeNavigator(model: model, showsTitle: false)
+                } secondary: {
+                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL)
                 }
-                .padding(10)
             } else {
                 HStack(spacing: 8) {
                     ChangeNavigator(model: model)
@@ -97,10 +94,104 @@ struct ChangesWorkspaceView: View {
             }
         }
     }
+    private func folioWorkspace(palette: AppPalette, width: CGFloat) -> some View {
+        VStack(spacing: 14) {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    SearchField(text: $model.searchText, placeholderKey: "search.changes")
+                        .frame(maxWidth: 280)
+                    CountBadge(count: model.snapshot?.changes.count ?? 0, emphasized: false)
+                    Spacer(minLength: 8)
+                    Menu {
+                        Button(L10n.text("action.stage_all")) {
+                            Task { await model.stage(model.filteredChanges.filter { !$0.isStaged }) }
+                        }
+                        .disabled(model.filteredChanges.allSatisfy(\.isStaged))
+                        Button(L10n.text("action.unstage_all")) {
+                            Task { await model.unstage(model.filteredChanges.filter(\.isStaged)) }
+                        }
+                        .disabled(!model.filteredChanges.contains(where: \.isStaged))
+                    } label: {
+                        Color.clear.frame(width: 32, height: 32)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .frame(width: 32, height: 32)
+                    .overlay {
+                        GattoIcon(symbol: "ellipsis", size: 18)
+                            .foregroundStyle(palette.mutedInk)
+                            .allowsHitTesting(false)
+                    }
+                    .help(L10n.text("changes.title"))
+                    .accessibilityLabel(L10n.text("changes.title"))
+                    .disabled(model.activeOperation != nil)
+                }
+                if !model.filteredChanges.isEmpty {
+                    ScrollViewReader { scroll in
+                        ScrollView(.horizontal) {
+                            LazyHStack(spacing: 8) {
+                                ForEach(model.filteredChanges) { change in
+                                    ChangeRow(model: model, change: change, isSelected: model.selectedChange?.id == change.id) {
+                                        model.selectChange(change)
+                                    } toggleStage: {
+                                        Task {
+                                            if change.isStaged { await model.unstage([change]) }
+                                            else { await model.stage([change]) }
+                                        }
+                                    }
+                                    .frame(width: 300)
+                                    .help(change.path)
+                                    .accessibilityAddTraits(model.selectedChange?.id == change.id ? .isSelected : [])
+                                    .background(palette.surface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 9))
+                                    .accessibilityValue(L10n.text(change.isStaged ? "changes.staged_single" : "changes.unstaged_single"))
+                                    .id(change.id)
+                                }
+                            }
+                        }
+                        .scrollIndicators(.visible)
+                        .onChange(of: model.selectedChange?.id) { _, id in
+                            if let id { scroll.scrollTo(id, anchor: .center) }
+                        }
+                    }
+                    .frame(height: 58)
+                }
+            }
+            .padding(.top, 8)
+
+            HorizontalResizableSplitView(
+                primaryWidth: Binding(
+                    get: { width - navigatorWidth - 14 },
+                    set: { navigatorWidth = width - $0 - 14 }
+                ),
+                minimumPrimaryWidth: 370,
+                maximumPrimaryWidth: max(370, width - 254),
+                minimumSecondaryWidth: 240,
+                separatorWidth: 14
+            ) {
+                Group {
+                    if model.snapshot?.changes.isEmpty == true {
+                        ChangesEmptyState()
+                    } else {
+                        DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL)
+                    }
+                }
+                .folioSurface(.panel, cornerRadius: 14)
+            } secondary: {
+                ScrollView {
+                    CommitComposer(model: model, isInspector: true)
+                }
+                .background(palette.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+        }
+    }
+
 }
 
 private struct ChangeNavigator: View {
     @ObservedObject var model: WorkspaceViewModel
+    var showsTitle = true
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
@@ -116,12 +207,14 @@ private struct ChangeNavigator: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             VStack(spacing: 12) {
-                HStack {
-                    Text(L10n.text("changes.title"))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                    Spacer()
-                    CountBadge(count: model.snapshot?.changes.count ?? 0, emphasized: true)
+                if showsTitle {
+                    HStack {
+                        Text(L10n.text("changes.title"))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                        Spacer()
+                        CountBadge(count: model.snapshot?.changes.count ?? 0, emphasized: true)
+                    }
                 }
                 SearchField(text: $model.searchText, placeholderKey: "search.changes")
             }
@@ -211,6 +304,7 @@ private struct ChangeRow: View {
     let toggleStage: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    private var isConsole: Bool { AppStyleDefaults.theme == .console }
     @State private var isHovering = false
     @State private var isConfirmingDiscard = false
 
@@ -255,11 +349,11 @@ private struct ChangeRow: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(fileName)
-                        .font(.system(size: 12.5, weight: isSelected ? .semibold : .medium))
+                        .font(.system(size: isConsole ? 11.5 : 12.5, weight: isSelected ? .semibold : .medium, design: isConsole ? .monospaced : .default))
                         .foregroundStyle(palette.ink)
                         .lineLimit(1)
-                    Text(parentPath)
-                        .font(.system(size: 10.5))
+                    Text(AppStyleDefaults.theme == .folio ? L10n.text(change.isStaged ? "changes.staged_single" : "changes.unstaged_single") + " · " + parentPath : parentPath)
+                        .font(.system(size: isConsole ? 9.5 : 10.5, design: isConsole ? .monospaced : .default))
                         .foregroundStyle(palette.subtleInk)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -267,7 +361,7 @@ private struct ChangeRow: View {
 
                 Spacer(minLength: 4)
 
-                if isHovering || isSelected || isUpdatingStage {
+                if isHovering || isSelected || isUpdatingStage || AppStyleDefaults.theme == .folio {
                     Button(action: toggleStage) {
                         Group {
                             if isUpdatingStage {
@@ -288,7 +382,7 @@ private struct ChangeRow: View {
                 }
             }
             .padding(.horizontal, 14)
-            .frame(height: 48)
+            .frame(height: isConsole ? 40 : 48)
             .contentShape(Rectangle())
             .background(isSelected ? palette.primarySoft : (isHovering ? palette.raisedSurface.opacity(0.75) : Color.clear))
         }
@@ -410,6 +504,7 @@ private struct ChangeRow: View {
 
 private struct CommitComposer: View {
     @ObservedObject var model: WorkspaceViewModel
+    var isInspector = false
     @Environment(\.colorScheme) private var colorScheme
 
     private var canCommit: Bool {
@@ -454,7 +549,7 @@ private struct CommitComposer: View {
                     .padding(.horizontal, 5)
                     .padding(.vertical, 3)
             }
-                .frame(height: 68)
+                .frame(height: isInspector ? 172 : 68)
                 .background(palette.raisedSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 .overlay {
@@ -462,32 +557,29 @@ private struct CommitComposer: View {
                         .stroke(palette.divider, lineWidth: 1)
                 }
 
-            HStack(spacing: 8) {
-                Button {
-                    model.draftCommitMessageForComposer()
-                } label: {
-                    HStack(spacing: 7) {
-                        if model.isDraftingCommitMessage {
-                            GattoLoadingGlyph(size: 16)
-                        } else {
-                            Image(gattoSymbol: "sparkles")
-                                .frame(width: 16, height: 16)
-                        }
-                        Text(L10n.text(model.isDraftingCommitMessage
-                            ? "codex.status.drafting_commit"
-                            : "commit.agent_draft"))
-                            .lineLimit(1)
-                    }
-                    .font(.system(size: 11.5, weight: .semibold))
+            if isInspector {
+                VStack(alignment: .leading, spacing: 8) {
+                    draftButton
+                    draftDetail
                 }
-                .buttonStyle(SecondaryButtonStyle())
-                .disabled(!canDraft)
-
-                Spacer()
-
-                Text(L10n.text("commit.draft_detail.\(model.appPreferences.commitDraftDetail.rawValue)"))
-                    .font(.system(size: 10.5, weight: .medium))
-                    .foregroundStyle(palette.subtleInk)
+            } else if [.console, .emerald].contains(AppStyleDefaults.theme) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        draftButton.fixedSize(horizontal: true, vertical: false)
+                        Spacer(minLength: 8)
+                        draftDetail.fixedSize()
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        draftButton
+                        draftDetail
+                    }
+                }
+            } else {
+                HStack(spacing: 8) {
+                    draftButton
+                    Spacer()
+                    draftDetail
+                }
             }
 
             Button {
@@ -513,6 +605,35 @@ private struct CommitComposer: View {
         .padding(14)
         .background(palette.surface)
     }
+    private var draftButton: some View {
+        Button {
+            model.draftCommitMessageForComposer()
+        } label: {
+            HStack(spacing: 7) {
+                if model.isDraftingCommitMessage {
+                    GattoLoadingGlyph(size: 16)
+                } else {
+                    Image(gattoSymbol: "sparkles")
+                        .frame(width: 16, height: 16)
+                }
+                Text(L10n.text(model.isDraftingCommitMessage
+                    ? "codex.status.drafting_commit"
+                    : "commit.agent_draft"))
+                    .lineLimit([AppVisualTheme.console, .emerald, .folio].contains(AppStyleDefaults.theme) ? 2 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .font(.system(size: 11.5, weight: .semibold))
+        }
+        .buttonStyle(SecondaryButtonStyle())
+        .disabled(!canDraft)
+    }
+
+    private var draftDetail: some View {
+        Text(L10n.text("commit.draft_detail.\(model.appPreferences.commitDraftDetail.rawValue)"))
+            .font(.system(size: 10.5, weight: .medium))
+            .foregroundStyle(AppPalette(colorScheme).subtleInk)
+    }
+
 }
 
 private struct ChangesEmptyState: View {

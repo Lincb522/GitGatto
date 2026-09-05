@@ -25,6 +25,15 @@ struct RepositoryCatalogSection: Identifiable, Sendable, Equatable {
     var id: String { kind.id }
 }
 
+struct RepositorySidebarCatalog: Sendable, Equatable {
+    let currentRepository: LocalRepositoryRecord?
+    let sections: [RepositoryCatalogSection]
+
+    var isEmpty: Bool {
+        currentRepository == nil && sections.allSatisfy(\.repositories.isEmpty)
+    }
+}
+
 enum LocalRepositoryCatalog {
     private static let activeWindow: TimeInterval = 30 * 24 * 60 * 60
     private static let recentWindow: TimeInterval = 180 * 24 * 60 * 60
@@ -68,6 +77,40 @@ enum LocalRepositoryCatalog {
             }
             return RepositoryCatalogSection(kind: kind, repositories: sorted)
         }
+    }
+
+    static func sidebarCatalog(
+        sections: [RepositoryCatalogSection],
+        currentRepositoryPath: String?,
+        query: String
+    ) -> RepositorySidebarCatalog {
+        let normalizedCurrentPath = currentRepositoryPath.map {
+            URL(fileURLWithPath: $0).standardizedFileURL.path
+        }
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let allRecords = sections.flatMap(\.repositories)
+        let currentRepository = normalizedCurrentPath.flatMap { path in
+            allRecords.first { $0.id == path }
+        }
+
+        func matches(_ record: LocalRepositoryRecord) -> Bool {
+            normalizedQuery.isEmpty
+                || record.url.lastPathComponent.localizedCaseInsensitiveContains(normalizedQuery)
+                || record.id.localizedCaseInsensitiveContains(normalizedQuery)
+        }
+
+        let visibleCurrent = currentRepository.flatMap { matches($0) ? $0 : nil }
+        let filteredSections = sections.compactMap { section -> RepositoryCatalogSection? in
+            let repositories = section.repositories.filter { record in
+                record.id != normalizedCurrentPath && matches(record)
+            }
+            guard !repositories.isEmpty else { return nil }
+            return RepositoryCatalogSection(kind: section.kind, repositories: repositories)
+        }
+        return RepositorySidebarCatalog(
+            currentRepository: visibleCurrent,
+            sections: filteredSections
+        )
     }
 
     private static func compare(

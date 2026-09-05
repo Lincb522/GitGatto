@@ -139,6 +139,8 @@ private struct StashPanelModifier: ViewModifier {
             content.emeraldSurface(.elevated, cornerRadius: 16)
         case .folio:
             content.folioSurface(.elevated, cornerRadius: 16)
+        case .lumen:
+            content.lumenSurface(.inset, cornerRadius: 14)
         }
     }
 }

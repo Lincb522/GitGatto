@@ -1089,11 +1089,45 @@ final class WorkspaceViewModel: ObservableObject {
                     completedAt: Date().addingTimeInterval(-180)
                 )
             )
-            localRepositories = [
-                rootURL,
-                rootURL.deletingLastPathComponent().appendingPathComponent("aside-music", isDirectory: true),
-            ]
-            recentRepositories = localRepositories
+            if ProcessInfo.processInfo.environment["GITGATTO_SIDEBAR_PREVIEW"] == "1" {
+                let previewRoot = URL(fileURLWithPath: "/Users/developer/Projects", isDirectory: true)
+                let repositoryNames = [
+                    rootURL.lastPathComponent,
+                    "aside-music",
+                    "gatto-web",
+                    "repository-insights",
+                    "git-transport",
+                    "release-toolkit",
+                    "swift-packages",
+                    "design-assets",
+                    "automation-scripts",
+                    "archive-reader",
+                    "legacy-client",
+                    "prototype-lab",
+                ]
+                localRepositories = repositoryNames.enumerated().map { index, name in
+                    index == 0 ? rootURL : previewRoot.appendingPathComponent(name, isDirectory: true)
+                }
+                recentRepositories = Array(localRepositories.prefix(5))
+                repositoryRecordsByPath = Dictionary(
+                    uniqueKeysWithValues: localRepositories.enumerated().map { index, url in
+                        let activityAge = TimeInterval(index * index) * 86_400
+                        let modificationAge = TimeInterval(index * 12) * 86_400
+                        let record = LocalRepositoryRecord(
+                            url: url,
+                            lastActivityAt: Date().addingTimeInterval(-activityAge),
+                            lastModifiedAt: Date().addingTimeInterval(-modificationAge)
+                        )
+                        return (record.id, record)
+                    }
+                )
+            } else {
+                localRepositories = [
+                    rootURL,
+                    rootURL.deletingLastPathComponent().appendingPathComponent("aside-music", isDirectory: true),
+                ]
+                recentRepositories = localRepositories
+            }
             if ProcessInfo.processInfo.environment["GITGATTO_RECOVERY_PREVIEW"] == "1" {
                 repositoryBackups = [
                     RepositoryBackup(

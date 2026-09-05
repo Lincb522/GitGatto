@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "المستودعات";
 "sidebar.recent" = "المستودعات الحديثة";
+"sidebar.repositories.search" = "البحث في المستودعات";
+"sidebar.repositories.clear_search" = "مسح بحث المستودعات";
+"sidebar.repositories.current" = "المستودع الحالي";
+"sidebar.repositories.switch" = "تبديل المستودع";
+"sidebar.repositories.no_match" = "لا توجد مستودعات مطابقة.";
+"sidebar.repositories.show_more" = "عرض %d إضافية";
+"sidebar.repositories.show_less" = "عرض أقل";
 "repository.section.active" = "نشط مؤخرًا";
 "repository.section.recent" = "تم التعديل مؤخرًا";
 "repository.section.earlier" = "سابقًا";
@@ -711,6 +718,7 @@
 "theme.console" = "وحدة التحكم";
 "theme.emerald" = "زمرد";
 "theme.folio" = "فوليو";
+"theme.lumen" = "المشهد المضيء";
 "console.status.ready" = "جاهز";
 "console.status.running" = "قيد التشغيل";
 "console.command.settings" = "$ الإعدادات";

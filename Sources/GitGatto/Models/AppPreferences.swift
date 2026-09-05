@@ -150,6 +150,7 @@ enum AppVisualTheme: String, CaseIterable, Identifiable, Sendable {
     case console
     case emerald
     case folio
+    case lumen
 
     var id: String {
         rawValue

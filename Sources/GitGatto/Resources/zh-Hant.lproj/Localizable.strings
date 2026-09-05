@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "儲存庫";
 "sidebar.recent" = "最近的儲存庫";
+"sidebar.repositories.search" = "搜尋儲存庫";
+"sidebar.repositories.clear_search" = "清除儲存庫搜尋";
+"sidebar.repositories.current" = "目前儲存庫";
+"sidebar.repositories.switch" = "切換儲存庫";
+"sidebar.repositories.no_match" = "沒有符合的儲存庫。";
+"sidebar.repositories.show_more" = "再顯示 %d 個";
+"sidebar.repositories.show_less" = "收起清單";
 "repository.section.active" = "最近活躍";
 "repository.section.recent" = "最近修改";
 "repository.section.earlier" = "較早";
@@ -711,6 +718,7 @@
 "theme.console" = "控制台";
 "theme.emerald" = "祖母綠";
 "theme.folio" = "對開本";
+"theme.lumen" = "曜幕";
 "console.status.ready" = "準備就緒";
 "console.status.running" = "跑步";
 "console.command.settings" = "$設置";

@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "仓库";
 "sidebar.recent" = "最近使用的仓库";
+"sidebar.repositories.search" = "搜索仓库";
+"sidebar.repositories.clear_search" = "清除仓库搜索";
+"sidebar.repositories.current" = "当前仓库";
+"sidebar.repositories.switch" = "切换仓库";
+"sidebar.repositories.no_match" = "没有匹配的仓库。";
+"sidebar.repositories.show_more" = "再显示 %d 个";
+"sidebar.repositories.show_less" = "收起列表";
 "repository.section.active" = "近期活跃";
 "repository.section.recent" = "最近修改";
 "repository.section.earlier" = "更早";
@@ -711,6 +718,7 @@
 "theme.console" = "控制台";
 "theme.emerald" = "翠影";
 "theme.folio" = "银页";
+"theme.lumen" = "曜幕";
 "console.status.ready" = "就绪";
 "console.status.running" = "执行中";
 "console.command.settings" = "$ settings";

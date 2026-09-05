@@ -43,6 +43,39 @@ struct LocalRepositoryCatalogTests {
         #expect(RepositoryScanCatalog.selected(from: candidates, paths: [older.id]).map(\.id) == [older.id])
     }
 
+    @Test("Builds a compact searchable sidebar catalog without duplicating the current repository")
+    func buildsSidebarCatalog() {
+        let now = Date(timeIntervalSince1970: 2_000_000_000)
+        let current = record("GitGatto", activityDaysAgo: 1, modifiedDaysAgo: 1, now: now)
+        let related = LocalRepositoryRecord(
+            url: URL(fileURLWithPath: "/tmp/clients/RepositoryKit", isDirectory: true),
+            lastActivityAt: now.addingTimeInterval(-2 * 86_400),
+            lastModifiedAt: now.addingTimeInterval(-2 * 86_400)
+        )
+        let unrelated = record("Website", activityDaysAgo: 90, modifiedDaysAgo: 90, now: now)
+        let sections = [
+            RepositoryCatalogSection(kind: .active, repositories: [current, related]),
+            RepositoryCatalogSection(kind: .recent, repositories: [unrelated]),
+        ]
+
+        let fullCatalog = LocalRepositoryCatalog.sidebarCatalog(
+            sections: sections,
+            currentRepositoryPath: current.id,
+            query: ""
+        )
+        #expect(fullCatalog.currentRepository?.id == current.id)
+        #expect(fullCatalog.sections.flatMap(\.repositories).map(\.id) == [related.id, unrelated.id])
+
+        let filteredCatalog = LocalRepositoryCatalog.sidebarCatalog(
+            sections: sections,
+            currentRepositoryPath: current.id,
+            query: "clients"
+        )
+        #expect(filteredCatalog.currentRepository == nil)
+        #expect(filteredCatalog.sections.map(\.kind) == [.active])
+        #expect(filteredCatalog.sections[0].repositories.map(\.id) == [related.id])
+    }
+
     private func record(
         _ name: String,
         activityDaysAgo: Double,

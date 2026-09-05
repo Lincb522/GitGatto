@@ -14,36 +14,7 @@ struct AboutGitGattoView: View {
         let theme = AppVisualTheme.resolved(themeRaw)
         let contentSize = aboutContentSize(for: theme)
         VStack(spacing: theme == .softGlass ? 10 : 0) {
-            HStack(spacing: 15) {
-                AppBrandIcon(size: 60)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    AppBrandWordmark(width: 140)
-                    Text(L10n.text("about.product"))
-                        .font(.system(size: 12))
-                        .foregroundStyle(palette.mutedInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 330, alignment: .leading)
-                }
-
-                Spacer(minLength: 10)
-
-                VStack(alignment: .trailing, spacing: 7) {
-                    HStack(spacing: 7) {
-                        AboutMetric(titleKey: "about.version", value: updateManager.currentVersion)
-                        AboutMetric(titleKey: "about.build", value: updateManager.currentBuild)
-                    }
-                    UpdateActionButton(
-                        state: updateManager.state,
-                        isEnabled: !updateManager.isConfigured || updateManager.canCheckForUpdates
-                    ) {
-                        updateManager.checkForUpdates()
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .frame(height: theme == .softGlass ? 92 : 104)
-            .modifier(AboutHeaderChrome(theme: theme))
+            aboutHeader(theme: theme)
 
             VStack(alignment: .leading, spacing: 11) {
                 HStack(spacing: 10) {
@@ -72,8 +43,7 @@ struct AboutGitGattoView: View {
                 }
             }
             .padding(14)
-            .background(palette.surface.opacity(0.18))
-            .appGlassPanel()
+            .modifier(AboutSectionChrome(theme: theme, role: .content))
 
             HStack(spacing: 10) {
                 GattoLabel("ZIJIU522", systemImage: "person.crop.circle")
@@ -104,13 +74,13 @@ struct AboutGitGattoView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 52)
-            .background(palette.sidebar.opacity(0.14))
-            .appGlassPanel(cornerRadius: 16, elevated: false)
+            .modifier(AboutSectionChrome(theme: theme, role: .footer))
         }
-        .padding(AppThemeLayout.workspaceInset)
-        .offset(y: 14)
+        .padding(.horizontal, theme == .lumen ? 14 : AppThemeLayout.workspaceInset)
+        .padding(.top, 28)
+        .padding(.bottom, theme == .lumen ? 8 : 12)
         .frame(width: contentSize.width, height: contentSize.height)
-        .background(palette.surface)
+        .background(theme == .lumen ? Color.clear : palette.surface)
         .ignoresSafeArea(.container, edges: .top)
         .environment(\.layoutDirection, .leftToRight)
         .background(AboutWindowSizeController(contentSize: contentSize))
@@ -123,12 +93,49 @@ struct AboutGitGattoView: View {
 #endif
     }
 
+    private func aboutHeader(theme: AppVisualTheme) -> some View {
+        let palette = AppPalette(theme == .emerald ? .dark : colorScheme)
+        return HStack(spacing: 15) {
+                AppBrandIcon(size: 60)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    AppBrandWordmark(width: 140)
+                    Text(L10n.text("about.product"))
+                        .font(.system(size: 12))
+                        .foregroundStyle(palette.mutedInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 330, alignment: .leading)
+                }
+
+                Spacer(minLength: 10)
+
+                VStack(alignment: .trailing, spacing: 7) {
+                    HStack(spacing: 7) {
+                        AboutMetric(titleKey: "about.version", value: updateManager.currentVersion)
+                        AboutMetric(titleKey: "about.build", value: updateManager.currentBuild)
+                    }
+                    UpdateActionButton(
+                        state: updateManager.state,
+                        isEnabled: !updateManager.isConfigured || updateManager.canCheckForUpdates
+                    ) {
+                        updateManager.checkForUpdates()
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .frame(height: theme == .softGlass ? 92 : 104)
+            .modifier(AboutHeaderChrome(theme: theme))
+            .environment(\.colorScheme, theme == .emerald ? .dark : colorScheme)
+    }
+
     private func aboutContentSize(for theme: AppVisualTheme) -> NSSize {
         switch theme {
         case .softGlass:
-            NSSize(width: 660, height: 361)
+            NSSize(width: 680, height: 410)
+        case .lumen:
+            NSSize(width: 680, height: 380)
         case .standard, .console, .emerald, .folio:
-            NSSize(width: 660, height: 341)
+            NSSize(width: 680, height: 410)
         }
     }
 }
@@ -161,8 +168,43 @@ private struct AboutHeaderChrome: ViewModifier {
     func body(content: Content) -> some View {
         if theme == .softGlass {
             content
+        } else if theme == .lumen {
+            content.overlay(alignment: .bottom) {
+                Rectangle().fill(AppPalette(colorScheme).divider).frame(height: 1)
+            }
         } else {
             content.background(AppPalette(colorScheme, theme: theme).sidebar)
+        }
+    }
+}
+
+private enum AboutSectionRole {
+    case content
+    case footer
+}
+
+private struct AboutSectionChrome: ViewModifier {
+    let theme: AppVisualTheme
+    let role: AboutSectionRole
+    @Environment(\.colorScheme) private var colorScheme
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        let palette = AppPalette(colorScheme, theme: theme)
+        if theme == .lumen {
+            content.overlay(alignment: .bottom) {
+                if role == .content {
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                }
+            }
+        } else if theme == .softGlass {
+            content.appGlassPanel(cornerRadius: role == .content ? 16 : 10, elevated: false)
+        } else if theme == .folio {
+            content.folioSurface(role == .content ? .panel : .elevated, cornerRadius: 16)
+        } else {
+            content
+                .background(palette.background)
+                .overlay(alignment: .top) { Rectangle().fill(palette.divider).frame(height: 1) }
         }
     }
 }
@@ -175,6 +217,7 @@ private struct AboutLegalButton: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
+        let radius: CGFloat = AppStyleDefaults.theme == .lumen ? 12 : AppThemeLayout.controlCornerRadius
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(gattoSymbol: document.icon)
@@ -202,9 +245,9 @@ private struct AboutLegalButton: View {
             .padding(.horizontal, 12)
             .frame(height: 54)
             .background(isHovering ? palette.raisedSurface : palette.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .stroke(palette.divider, lineWidth: 1)
             }
             .contentShape(Rectangle())
@@ -229,7 +272,7 @@ private struct AboutWindowSizeController: NSViewRepresentable {
 }
 
 private final class AboutWindowSizingView: NSView {
-    var targetSize = NSSize(width: 660, height: 341)
+    var targetSize = NSSize(width: 680, height: 410)
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()

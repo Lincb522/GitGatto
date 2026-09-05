@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "REPOSITORIOS";
 "sidebar.recent" = "Repositorios recientes";
+"sidebar.repositories.search" = "Buscar repositorios";
+"sidebar.repositories.clear_search" = "Borrar búsqueda de repositorios";
+"sidebar.repositories.current" = "Repositorio actual";
+"sidebar.repositories.switch" = "Cambiar repositorio";
+"sidebar.repositories.no_match" = "No hay repositorios coincidentes.";
+"sidebar.repositories.show_more" = "Mostrar %d más";
+"sidebar.repositories.show_less" = "Mostrar menos";
 "repository.section.active" = "Activo recientemente";
 "repository.section.recent" = "Modificado recientemente";
 "repository.section.earlier" = "Antes";
@@ -711,6 +718,7 @@
 "theme.console" = "Consola";
 "theme.emerald" = "Esmeralda";
 "theme.folio" = "Folio";
+"theme.lumen" = "Escena luminosa";
 "console.status.ready" = "LISTO";
 "console.status.running" = "CORRIENDO";
 "console.command.settings" = "$ configuración";

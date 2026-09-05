@@ -971,6 +971,8 @@ private extension View {
             emeraldSurface(level == .elevated ? .elevated : .panel, cornerRadius: 16)
         case .folio:
             folioSurface(level == .elevated ? .elevated : .panel, cornerRadius: 16)
+        case .lumen:
+            lumenSurface(level == .elevated ? .chrome : .inset, cornerRadius: 16)
         default:
             background(theme == .softGlass ? palette.surface.opacity(0.14) : palette.surface)
                 .clipShape(

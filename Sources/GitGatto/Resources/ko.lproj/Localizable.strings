@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "저장소";
 "sidebar.recent" = "최근 저장소";
+"sidebar.repositories.search" = "저장소 검색";
+"sidebar.repositories.clear_search" = "저장소 검색 지우기";
+"sidebar.repositories.current" = "현재 저장소";
+"sidebar.repositories.switch" = "저장소 전환";
+"sidebar.repositories.no_match" = "일치하는 저장소가 없습니다.";
+"sidebar.repositories.show_more" = "%d개 더 보기";
+"sidebar.repositories.show_less" = "접기";
 "repository.section.active" = "최근 활동 중";
 "repository.section.recent" = "최근 수정됨";
 "repository.section.earlier" = "이전";
@@ -711,6 +718,7 @@
 "theme.console" = "콘솔";
 "theme.emerald" = "에메랄드";
 "theme.folio" = "폴리오";
+"theme.lumen" = "루멘";
 "console.status.ready" = "준비됨";
 "console.status.running" = "달리는 중";
 "console.command.settings" = "$ 설정";

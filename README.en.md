@@ -68,6 +68,13 @@ GitGatto started with those everyday problems. It keeps the real Git and existin
 
 Every step reads actual Git, GitHub, or local state. Completed steps survive interruptions, and a failed Actions run can be passed to an Agent with its evidence. Merging, publishing a tag, and installing a release still require separate confirmation.
 
+### Change orchestration and evidence
+
+- Change Center groups work by file or diff hunk and can create multiple atomic commits. It checks the repository fingerprint and creates a recovery point first; a failed commit or verification restores the original HEAD and staging boundary.
+- Code Provenance traces a file line to its commit and, when GitHub CLI is available, adds the related pull request, issues, reviews, and checks.
+- Reproduction Capsules package the patch, untracked files, base commit, failing command, output, and tool versions as `.gatto`. Imports are validated and restored in an isolated worktree.
+- The activity ledger records Git ref and file-state changes alongside Agent processes whose working directory was inside the repository. Confidence is shown explicitly; correlation is not presented as proven responsibility.
+
 ### Regression Investigation
 
 Runs `git bisect` in an isolated worktree without switching the current workspace. Automatic mode executes a chosen verification command; manual mode marks each candidate as good, bad, or skipped. Candidate commits, exit codes, elapsed time, and output are saved with the investigation. Once the first bad commit is found, the Agent can prepare a fix, rerun verification, and open a pull request.

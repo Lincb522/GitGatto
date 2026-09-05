@@ -50,6 +50,13 @@ GitGatto nació de estos problemas cotidianos. Conserva el Git real y las herram
 
 Cada paso lee el estado real de Git, GitHub o del Mac. Los pasos terminados se conservan tras una interrupción y un fallo de Actions puede entregarse a un Agent junto con sus pruebas. Fusionar, publicar una etiqueta e instalar siguen requiriendo confirmaciones separadas.
 
+### Organización de cambios y pruebas
+
+- El centro de cambios agrupa modificaciones por archivo o bloque de Diff y puede crear varios commits atómicos. Antes verifica la huella del repositorio y crea un punto de recuperación; si falla un commit o una verificación, restaura el HEAD y el límite de staging originales.
+- La procedencia del código rastrea una línea hasta su commit y, cuando GitHub CLI está disponible, añade la Pull Request, los Issues, Reviews y Checks relacionados.
+- Las cápsulas de reproducción empaquetan el parche, archivos sin seguimiento, commit base, comando fallido, salida y versiones de herramientas como `.gatto`. La importación valida el contenido y lo restaura en un worktree aislado.
+- El registro de actividad guarda cambios de referencias Git y estados de archivos junto con procesos Agent cuyo directorio de trabajo estaba dentro del repositorio. La confianza de la relación se muestra sin presentarla como responsabilidad probada.
+
 ### Investigación de regresiones
 
 Ejecuta `git bisect` en un worktree aislado sin cambiar el área de trabajo actual. El modo automático lanza el comando de verificación elegido; el manual marca cada candidato como correcto, defectuoso u omitido. Se guardan commits candidatos, códigos de salida, duración y salida. Tras localizar el primer commit defectuoso, un Agent puede preparar la corrección, repetir la verificación y crear una Pull Request.

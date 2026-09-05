@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "リポジトリ";
 "sidebar.recent" = "最近のリポジトリ";
+"sidebar.repositories.search" = "リポジトリを検索";
+"sidebar.repositories.clear_search" = "リポジトリ検索をクリア";
+"sidebar.repositories.current" = "現在のリポジトリ";
+"sidebar.repositories.switch" = "リポジトリを切り替え";
+"sidebar.repositories.no_match" = "一致するリポジトリはありません。";
+"sidebar.repositories.show_more" = "さらに %d 件表示";
+"sidebar.repositories.show_less" = "折りたたむ";
 "repository.section.active" = "最近アクティブです";
 "repository.section.recent" = "最近変更されました";
 "repository.section.earlier" = "以前";
@@ -711,6 +718,7 @@
 "theme.console" = "コンソール";
 "theme.emerald" = "エメラルド";
 "theme.folio" = "フォリオ";
+"theme.lumen" = "光幕";
 "console.status.ready" = "準備完了";
 "console.status.running" = "ランニング中";
 "console.command.settings" = "$設定";

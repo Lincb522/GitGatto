@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "ХРАНИЛИЩЕ";
 "sidebar.recent" = "Последние репозитории";
+"sidebar.repositories.search" = "Поиск репозиториев";
+"sidebar.repositories.clear_search" = "Очистить поиск репозиториев";
+"sidebar.repositories.current" = "Текущий репозиторий";
+"sidebar.repositories.switch" = "Сменить репозиторий";
+"sidebar.repositories.no_match" = "Подходящих репозиториев нет.";
+"sidebar.repositories.show_more" = "Показать ещё %d";
+"sidebar.repositories.show_less" = "Свернуть список";
 "repository.section.active" = "Недавно активен";
 "repository.section.recent" = "Недавно изменено";
 "repository.section.earlier" = "Ранее";
@@ -711,6 +718,7 @@
 "theme.console" = "Консоль";
 "theme.emerald" = "Изумруд";
 "theme.folio" = "Фолио";
+"theme.lumen" = "Световая сцена";
 "console.status.ready" = "ГОТОВО";
 "console.status.running" = "БЕГ";
 "console.command.settings" = "$ настройки";

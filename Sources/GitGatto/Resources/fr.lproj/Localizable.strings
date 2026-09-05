@@ -9,6 +9,13 @@
 
 "sidebar.repositories" = "DÉPÔTS";
 "sidebar.recent" = "Dépôts récents";
+"sidebar.repositories.search" = "Rechercher des dépôts";
+"sidebar.repositories.clear_search" = "Effacer la recherche de dépôts";
+"sidebar.repositories.current" = "Dépôt actuel";
+"sidebar.repositories.switch" = "Changer de dépôt";
+"sidebar.repositories.no_match" = "Aucun dépôt correspondant.";
+"sidebar.repositories.show_more" = "Afficher %d de plus";
+"sidebar.repositories.show_less" = "Réduire la liste";
 "repository.section.active" = "Récemment actif";
 "repository.section.recent" = "Récemment modifié";
 "repository.section.earlier" = "Plus tôt";
@@ -711,6 +718,7 @@
 "theme.console" = "Console";
 "theme.emerald" = "Émeraude";
 "theme.folio" = "Folio";
+"theme.lumen" = "Scène lumineuse";
 "console.status.ready" = "PRÊT";
 "console.status.running" = "EN COURS";
 "console.command.settings" = "Paramètres $\nDépôt";

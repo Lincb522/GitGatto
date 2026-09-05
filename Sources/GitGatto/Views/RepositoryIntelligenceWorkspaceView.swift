@@ -1451,6 +1451,8 @@ private struct IntelligencePanelModifier: ViewModifier {
             content.emeraldSurface(elevated ? .elevated : .panel, cornerRadius: 16)
         case .folio:
             content.folioSurface(elevated ? .elevated : .panel, cornerRadius: 16)
+        case .lumen:
+            content.lumenSurface(elevated ? .chrome : .inset, cornerRadius: 14)
         case .console:
             content.appConsolePanel()
         }

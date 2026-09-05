@@ -116,122 +116,100 @@ struct WorkspaceView: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         GeometryReader { proxy in
-            let compactSidebar = proxy.size.width < 1120
+            let compactSidebar = proxy.size.width < 1200
+            let lumenSidebarCollapsed = isSidebarCollapsed
+            let lumenSidebarWidth = Binding<Double>(
+                get: { lumenSidebarCollapsed ? 64 : sidebarWidth },
+                set: { width in
+                    guard !lumenSidebarCollapsed else { return }
+                    sidebarWidth = width
+                }
+            )
+            let lumenSidebarCollapsedBinding = Binding<Bool>(
+                get: { lumenSidebarCollapsed },
+                set: { collapsed in
+                    isSidebarCollapsed = collapsed
+                }
+            )
             ZStack(alignment: .top) {
                 switch theme {
                 case .standard:
                     HorizontalResizableSplitView(
                         primaryWidth: activeSidebarWidth,
-                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : 190,
+                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : 200,
                         maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
-                        minimumSecondaryWidth: 720,
+                        minimumSecondaryWidth: 690,
                         separatorWidth: 7
                     ) {
-                        RepositorySidebar(
-                            model: model,
-                            appearanceRaw: $appearanceRaw,
-                            isCollapsed: $isSidebarCollapsed
-                        )
+                        RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
                     } secondary: {
                         VStack(spacing: 0) {
-                            if model.selectedSection != .github && model.selectedSection != .marketplace {
-                                RepositoryTopBar(model: model)
-                                Rectangle().fill(palette.divider).frame(height: 1)
-                            }
+                            RepositoryTopBar(model: model)
+                                .padding(.top, 20)
+                                .background(palette.surface)
+                            Rectangle().fill(palette.divider).frame(height: 1)
                             workspaceDetail
                         }
                         .background(palette.background)
                     }
                 case .softGlass:
-                    VStack(spacing: AppThemeLayout.panelSpacing) {
-                        HStack(spacing: AppThemeLayout.panelSpacing) {
-                            WorkspaceBrandBar(
-                                compact: compactSidebar,
-                                iconOnly: isSidebarCollapsed
-                            )
-                            .frame(width: activeSidebarWidth.wrappedValue)
-
+                    HorizontalResizableSplitView(
+                        primaryWidth: activeSidebarWidth,
+                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : 200,
+                        maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
+                        minimumSecondaryWidth: 690,
+                        separatorWidth: 7
+                    ) {
+                        RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
+                    } secondary: {
+                        VStack(spacing: 0) {
                             RepositoryTopBar(model: model)
+                            Rectangle().fill(palette.divider.opacity(0.65)).frame(height: 1)
+                            workspaceDetail
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
+                        .appGlassPanel(cornerRadius: 16)
+                        .padding(.top, 28)
+                        .padding(.trailing, 12)
+                        .padding(.bottom, 12)
+                        .padding(.leading, 5)
+                    }
+                case .emerald:
+                    emeraldLayout(palette: palette)
+                case .folio:
+                    folioLayout(palette: palette, compact: compactSidebar)
+                case .lumen:
+                    VStack(spacing: 0) {
+                        LumenWorkspaceHeader(
+                            model: model,
+                            sidebarCollapsed: lumenSidebarCollapsed
+                        )
+                        .frame(height: 94)
+                        .lumenSurface(.chrome, cornerRadius: 0)
 
                         HorizontalResizableSplitView(
-                            primaryWidth: activeSidebarWidth,
-                            minimumPrimaryWidth: isSidebarCollapsed ? 64 : 190,
-                            maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
-                            minimumSecondaryWidth: 720,
-                            separatorWidth: AppThemeLayout.panelSpacing
+                            primaryWidth: lumenSidebarWidth,
+                            minimumPrimaryWidth: lumenSidebarCollapsed ? 64 : 196,
+                            maximumPrimaryWidth: lumenSidebarCollapsed ? 64 : 320,
+                            minimumSecondaryWidth: 710,
+                            separatorWidth: 7
                         ) {
                             RepositorySidebar(
                                 model: model,
                                 appearanceRaw: $appearanceRaw,
-                                isCollapsed: $isSidebarCollapsed
+                                isCollapsed: lumenSidebarCollapsedBinding
                             )
-                                .appGlassPanel()
+                            .padding(.top, 8)
                         } secondary: {
                             workspaceDetail
-                                .background(palette.surface.opacity(0.18))
-                                .appGlassPanel()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .lumenSurface(.panel, cornerRadius: 14)
+                                .padding(.top, 16)
+                                .padding(.trailing, 16)
+                                .padding(.bottom, 16)
+                                .padding(.leading, 9)
                         }
                     }
-                    .padding(AppThemeLayout.workspaceInset)
-                case .emerald:
-                    HStack(spacing: 12) {
-                        VStack(spacing: 0) {
-                            WorkspaceBrandBar(
-                                compact: compactSidebar,
-                                iconOnly: isSidebarCollapsed
-                            )
-                            .frame(height: 72)
-                            RepositorySidebar(
-                                model: model,
-                                appearanceRaw: $appearanceRaw,
-                                isCollapsed: $isSidebarCollapsed
-                            )
-                        }
-                        .frame(width: activeSidebarWidth.wrappedValue)
-                        .environment(\.colorScheme, .dark)
-                        .background(AppPalette(.dark, theme: .emerald).sidebar)
-
-                        VStack(spacing: 12) {
-                            RepositoryTopBar(model: model)
-                                .emeraldSurface(.elevated, cornerRadius: 16)
-
-                            workspaceDetail
-                                .background(palette.surface)
-                                .emeraldSurface(.panel, cornerRadius: 16)
-                        }
-                        .padding(.vertical, 12)
-                        .padding(.trailing, 12)
-                    }
-                case .folio:
-                    HStack(spacing: 12) {
-                        RepositorySidebar(
-                            model: model,
-                            appearanceRaw: $appearanceRaw,
-                            isCollapsed: $isSidebarCollapsed
-                        )
-                        .frame(width: 58)
-                        .environment(\.colorScheme, .dark)
-
-                        VStack(spacing: 12) {
-                            HStack(spacing: 0) {
-                                WorkspaceBrandBar(compact: compactSidebar)
-                                    .frame(width: 190)
-
-                                Rectangle()
-                                    .fill(palette.divider)
-                                    .frame(width: 1, height: 34)
-
-                                RepositoryTopBar(model: model)
-                            }
-                            .folioSurface(.elevated, cornerRadius: 16)
-
-                            workspaceDetail
-                                .background(palette.surface)
-                                .folioSurface(.panel, cornerRadius: 16)
-                        }
-                    }
-                    .padding(14)
                 case .console:
                     consoleLayout(palette: palette)
                 }
@@ -366,34 +344,178 @@ struct WorkspaceView: View {
         }
     }
 
-    private func consoleLayout(palette: AppPalette) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ConsoleBrandBar(
-                    isBusy: model.activeOperation != nil || model.isCodexRunning || model.isRefreshing
-                )
-                .frame(width: 218)
-
-                Rectangle().fill(palette.divider).frame(width: 1)
+    private func emeraldLayout(palette: AppPalette) -> some View {
+        HorizontalResizableSplitView(
+            primaryWidth: activeSidebarWidth,
+            minimumPrimaryWidth: isSidebarCollapsed ? 64 : 200,
+            maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
+            minimumSecondaryWidth: 690,
+            separatorWidth: 7
+        ) {
+            RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
+                .environment(\.colorScheme, .dark)
+        } secondary: {
+            VStack(spacing: 0) {
                 RepositoryTopBar(model: model)
+                    .padding(.top, 28)
+                Rectangle().fill(palette.divider).frame(height: 1)
+                workspaceDetail
             }
-            .frame(height: 72)
+            .background(palette.background)
+        }
+    }
 
-            Rectangle().fill(palette.divider).frame(height: 1)
-
-            HStack(spacing: 0) {
-                ConsoleSectionRail(model: model)
-                    .frame(width: 88)
-                Rectangle().fill(palette.divider).frame(width: 1)
+    private func folioLayout(palette: AppPalette, compact: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 18) {
+                WorkspaceBrandBar(compact: compact, iconOnly: isSidebarCollapsed)
+                    .frame(width: isSidebarCollapsed ? 50 : 184)
+                RepositoryTopBar(model: model)
+                    .padding(.top, 18)
+            }
+            .frame(height: 88)
+            HorizontalResizableSplitView(
+                primaryWidth: activeSidebarWidth,
+                minimumPrimaryWidth: isSidebarCollapsed ? 64 : 240,
+                maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
+                minimumSecondaryWidth: 660,
+                separatorWidth: 14
+            ) {
+                RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
+            } secondary: {
                 workspaceDetail
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
+        }
+    }
 
+    private func consoleLayout(palette: AppPalette) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                AppBrandLockup(iconSize: 26, wordmarkWidth: 80, spacing: 7)
+                    .frame(width: 172, alignment: .leading)
+                    .padding(.leading, 16)
+                RepositoryTopBar(model: model)
+            }
+            .padding(.top, 24)
+            .frame(height: 68)
+            .background(palette.sidebar)
             Rectangle().fill(palette.divider).frame(height: 1)
-            ConsoleRepositoryDock(model: model, appearanceRaw: $appearanceRaw)
-                .frame(height: 54)
+            HorizontalResizableSplitView(
+                primaryWidth: activeSidebarWidth,
+                minimumPrimaryWidth: isSidebarCollapsed ? 64 : 240,
+                maximumPrimaryWidth: isSidebarCollapsed ? 64 : 340,
+                minimumSecondaryWidth: 660,
+                separatorWidth: 5
+            ) {
+                RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
+            } secondary: {
+                VStack(spacing: 0) {
+                    ConsoleWorkspaceTabs(model: model)
+                    workspaceDetail
+                }
+            }
+            if let snapshot = model.snapshot {
+                HStack(spacing: 12) {
+                    Text(snapshot.rootURL.path)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 12)
+                    Text(snapshot.branchName).lineLimit(1)
+                    RepositorySyncStatusView(state: snapshot.syncState, error: model.liveSyncError)
+                }
+                .font(.system(size: 10.5, design: .monospaced))
+                .foregroundStyle(palette.mutedInk)
+                .padding(.horizontal, 14)
+                .frame(height: 25)
+                .background(palette.sidebar)
+                .overlay(alignment: .top) { Rectangle().fill(palette.divider).frame(height: 1) }
+            }
         }
         .background(palette.background)
+    }
+
+}
+
+private struct ConsoleWorkspaceTabs: View {
+    @ObservedObject var model: WorkspaceViewModel
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var sections: [WorkspaceSection] {
+        let common: [WorkspaceSection] = [.changes, .history, .branches, .stash]
+        return common.contains(model.selectedSection) ? common : common + [model.selectedSection]
+    }
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                HStack(spacing: 0) {
+                    ForEach(sections) { section in
+                        Button { model.selectedSection = section } label: {
+                            Text(L10n.text("nav.\(section.rawValue)"))
+                                .font(.system(size: 11.5, weight: model.selectedSection == section ? .semibold : .regular, design: .monospaced))
+                                .foregroundStyle(model.selectedSection == section ? palette.ink : palette.mutedInk)
+                                .padding(.horizontal, 18)
+                                .frame(height: 36)
+                                .background(model.selectedSection == section ? palette.surface : palette.sidebar)
+                                .overlay(alignment: .bottom) {
+                                    if model.selectedSection == section {
+                                        Rectangle().fill(palette.accent).frame(height: 2)
+                                    }
+                                }
+                                .overlay(alignment: .trailing) { Rectangle().fill(palette.divider).frame(width: 1) }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(model.selectedSection == section ? .isSelected : [])
+                        .id(section)
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+            .onChange(of: model.selectedSection) { _, section in proxy.scrollTo(section, anchor: .center) }
+        }
+        .frame(height: 36)
+        .background(palette.sidebar)
+        .overlay(alignment: .bottom) { Rectangle().fill(palette.divider).frame(height: 1) }
+    }
+}
+
+private struct LumenWorkspaceHeader: View {
+    @ObservedObject var model: WorkspaceViewModel
+    let sidebarCollapsed: Bool
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = AppPalette(colorScheme)
+        HStack(spacing: 20) {
+            Group {
+                if sidebarCollapsed {
+                    AppBrandIcon(size: 36)
+                } else {
+                    AppBrandLockup(
+                        iconSize: 36,
+                        wordmarkWidth: 108,
+                        spacing: 9
+                    )
+                }
+            }
+            .frame(width: sidebarCollapsed ? 36 : 188, alignment: .leading)
+
+            Rectangle()
+                .fill(palette.divider.opacity(0.72))
+                .frame(width: 1, height: 28)
+
+            RepositoryTopBar(model: model)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 24)
+        .padding(.bottom, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -423,232 +545,6 @@ private struct WorkspaceBrandBar: View {
     }
 }
 
-private struct ConsoleBrandBar: View {
-    let isBusy: Bool
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        HStack(spacing: 6) {
-            AppBrandLockup(iconSize: 28, wordmarkWidth: 68, spacing: 6)
-                .padding(.leading, AppThemeLayout.titlebarBrandLeading)
-
-            Spacer(minLength: 0)
-
-            ConsoleBreathingLight(isBusy: isBusy)
-                .help(L10n.text(isBusy ? "console.status.running" : "console.status.ready"))
-                .accessibilityLabel(L10n.text(isBusy ? "console.status.running" : "console.status.ready"))
-        }
-        .padding(.trailing, 8)
-        .padding(.top, 18)
-        .frame(maxHeight: .infinity)
-        .background(palette.sidebar)
-    }
-}
-
-private struct ConsoleSectionRail: View {
-    @ObservedObject var model: WorkspaceViewModel
-    @Environment(\.colorScheme) private var colorScheme
-
-    private let sections: [WorkspaceSection] = [
-        .github, .marketplace, .goals, .changes, .intelligence, .history, .timeMachine, .recovery, .branches, .worktrees, .diagnostics, .codex
-    ]
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        VStack(spacing: 4) {
-            ForEach(sections) { section in
-                Button {
-                    model.selectedSection = section
-                } label: {
-                    VStack(spacing: 5) {
-                        Image(gattoSymbol: icon(for: section))
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(L10n.text("nav.\(section.rawValue)"))
-                            .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                            .lineLimit(1)
-                    }
-                    .foregroundStyle(model.selectedSection == section ? palette.accent : palette.mutedInk)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(model.selectedSection == section ? palette.accentSoft : Color.clear)
-                    .overlay(alignment: .leading) {
-                        Rectangle()
-                            .fill(model.selectedSection == section ? palette.accent : Color.clear)
-                            .frame(width: 2)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(model.selectedSection == section ? .isSelected : [])
-            }
-
-            Spacer(minLength: 0)
-
-            if let count = railCount {
-                Text(String(format: "%03d", count))
-                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                    .foregroundStyle(palette.subtleInk)
-                    .padding(.bottom, 10)
-            }
-        }
-        .padding(.top, 10)
-        .background(palette.sidebar)
-    }
-
-    private var railCount: Int? {
-        switch model.selectedSection {
-        case .github: model.githubAccountRepositories.count
-        case .marketplace: marketplaceCount
-        case .goals: model.activeProjectGoalCount
-        case .changes: model.snapshot?.changes.count
-        case .intelligence: nil
-        case .stash: model.stashes.count
-        case .history: model.commitGraph.nodes.count
-        case .timeMachine: model.repositoryFiles.count
-        case .recovery: model.repositoryBackups.count
-        case .branches: model.snapshot?.branches.count
-        case .worktrees: model.worktrees.count
-        case .diagnostics: model.repositoryDiagnostics?.attentionCount
-        case .regression: model.activeRegressionInvestigationCount
-        case .codex: nil
-        }
-    }
-
-    private func icon(for section: WorkspaceSection) -> String {
-        switch section {
-        case .github: "square.grid.2x2"
-        case .marketplace: "arrow.down.app"
-        case .goals: "checkmark.seal"
-        case .changes: "square.stack.3d.up"
-        case .intelligence: "point.3.connected.trianglepath.dotted"
-        case .stash: "archivebox"
-        case .history: "clock.arrow.circlepath"
-        case .timeMachine: "clock.badge.checkmark"
-        case .recovery: "clock.badge.checkmark"
-        case .branches: "arrow.triangle.branch"
-        case .worktrees: "rectangle.split.2x1"
-        case .diagnostics: "stethoscope"
-        case .regression: "record.circle"
-        case .codex: "sparkles"
-        }
-    }
-
-    private var marketplaceCount: Int? { nil }
-}
-
-private struct ConsoleRepositoryDock: View {
-    @ObservedObject var model: WorkspaceViewModel
-    @Binding var appearanceRaw: String
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.openSettings) private var openSettings
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        HStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Text(L10n.text("console.command.repositories"))
-                    .foregroundStyle(palette.accent)
-                Text(L10n.text("sidebar.repositories"))
-                    .foregroundStyle(palette.mutedInk)
-                Text(String(format: "%02d", model.localRepositories.count))
-                    .foregroundStyle(palette.subtleInk)
-            }
-            .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
-
-            Rectangle().fill(palette.divider).frame(width: 1, height: 24)
-
-            if model.localRepositories.isEmpty {
-                Text(L10n.text("repository.scan.empty"))
-                    .font(.system(size: 10.5, design: .monospaced))
-                    .foregroundStyle(palette.subtleInk)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(model.localRepositories, id: \.standardizedFileURL.path) { url in
-                            let isCurrent = model.snapshot?.rootURL.standardizedFileURL == url.standardizedFileURL
-                            Button {
-                                Task { await model.openRepository(url) }
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Circle()
-                                        .fill(isCurrent ? palette.accent : palette.divider)
-                                        .frame(width: 5, height: 5)
-                                    Text(url.lastPathComponent)
-                                        .lineLimit(1)
-                                }
-                                .font(.system(size: 10.5, weight: isCurrent ? .semibold : .medium, design: .monospaced))
-                                .foregroundStyle(isCurrent ? palette.ink : palette.mutedInk)
-                                .padding(.horizontal, 9)
-                                .frame(height: 28)
-                                .background(isCurrent ? palette.accentSoft : palette.raisedSurface)
-                                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                        .stroke(isCurrent ? palette.accent : palette.divider, lineWidth: 1)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .help(url.path)
-                        }
-                    }
-                }
-            }
-
-            Spacer(minLength: 8)
-
-            Button {
-                openWindow(id: "repository-scanner")
-            } label: {
-                GattoIcon(
-                    symbol: model.isScanningRepositories ? "arrow.triangle.2.circlepath" : "folder.badge.plus",
-                    size: 24
-                )
-                    .frame(width: 30, height: 30)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(model.isScanningRepositories ? palette.accent : palette.ink)
-            .help(L10n.text("repository.scan.open"))
-
-            Menu {
-                ForEach(AppAppearance.allCases) { appearance in
-                    Button(L10n.text("appearance.\(appearance.rawValue)")) {
-                        appearanceRaw = appearance.rawValue
-                    }
-                }
-            } label: {
-                Image(gattoSymbol: "circle.lefthalf.filled")
-                    .frame(width: 28, height: 28)
-            }
-            .menuStyle(.borderlessButton)
-            .frame(width: 30)
-
-            Button {
-                openSettings()
-            } label: {
-                Image(gattoSymbol: "gearshape")
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(palette.mutedInk)
-            .help(L10n.text("settings.title"))
-
-            Button {
-                openWindow(id: "about")
-            } label: {
-                Image(gattoSymbol: "info.circle")
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(palette.mutedInk)
-            .help(L10n.text("about.title"))
-        }
-        .padding(.horizontal, 12)
-        .background(palette.sidebar)
-    }
-}
-
 private struct RepositoryTopBar: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
@@ -657,118 +553,25 @@ private struct RepositoryTopBar: View {
     @ViewBuilder
     var body: some View {
         let palette = AppPalette(colorScheme)
-        if AppVisualTheme.resolved(themeRaw) == .standard
-            || AppVisualTheme.resolved(themeRaw) == .emerald
-            || AppVisualTheme.resolved(themeRaw) == .folio {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(model.repositoryName ?? L10n.text("app.name"))
-                        .font(.system(size: 14.5, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-
-                    if let path = model.snapshot?.rootURL.path {
-                        Text(path)
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(palette.subtleInk)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    } else {
-                        Text(L10n.text("app.subtitle"))
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(palette.subtleInk)
-                    }
-                }
-                .frame(maxWidth: 220, alignment: .leading)
-
-                if let snapshot = model.snapshot {
-                    BranchQuickSwitcher(model: model, snapshot: snapshot)
-                    RepositorySyncStatusView(
-                        state: snapshot.syncState,
-                        error: model.liveSyncError
-                    )
-                }
-
-                Spacer(minLength: 16)
-                repositoryActions(palette: palette, compact: false)
-            }
-            .padding(.leading, 18)
-            .padding(.trailing, 16)
-            .frame(height: AppThemeLayout.topBarHeight)
-            .background(palette.surface)
-        } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
+        if AppVisualTheme.resolved(themeRaw) == .lumen {
             GeometryReader { proxy in
-            let compact = proxy.size.width < 820
-            HStack(spacing: 12) {
-                HStack(spacing: compact ? 9 : 12) {
+                let compact = proxy.size.width < 860
+                HStack(spacing: compact ? 10 : 14) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(model.repositoryName ?? L10n.text("app.name"))
-                            .font(.system(size: 14.5, weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
                             .foregroundStyle(palette.ink)
                             .lineLimit(1)
 
                         if !compact, let path = model.snapshot?.rootURL.path {
                             Text(path)
-                                .font(.system(size: 10.5, weight: .regular))
-                                .foregroundStyle(palette.subtleInk)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        } else if !compact {
-                            Text(L10n.text("app.subtitle"))
                                 .font(.system(size: 10.5))
                                 .foregroundStyle(palette.subtleInk)
-                        }
-                    }
-                    .frame(width: compact ? 124 : 190, alignment: .leading)
-
-                    if let snapshot = model.snapshot {
-                        BranchQuickSwitcher(model: model, snapshot: snapshot)
-
-                        RepositorySyncStatusView(
-                            state: snapshot.syncState,
-                            error: model.liveSyncError
-                        )
-                    }
-                }
-                .padding(.horizontal, 14)
-                .frame(width: compact ? 350 : 450, height: AppThemeLayout.topBarHeight)
-                .background(palette.sidebar.opacity(0.14))
-                .appGlassPanel(cornerRadius: 16, elevated: false)
-
-                Spacer(minLength: 0)
-
-                repositoryActions(palette: palette, compact: compact)
-                .padding(.horizontal, 10)
-                .frame(height: AppThemeLayout.topBarHeight)
-                .background(palette.sidebar.opacity(0.14))
-                .appGlassPanel(cornerRadius: 16, elevated: false)
-                .fixedSize(horizontal: true, vertical: false)
-            }
-        }
-        .frame(height: AppThemeLayout.topBarHeight)
-        } else {
-            GeometryReader { proxy in
-                let compact = proxy.size.width < 820
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 7) {
-                            Text(L10n.text("console.command.git"))
-                                .foregroundStyle(palette.accent)
-                            Text(model.repositoryName ?? L10n.text("app.name"))
-                                .foregroundStyle(palette.ink)
-                                .lineLimit(1)
-                        }
-                        .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
-
-                        if !compact, let path = model.snapshot?.rootURL.path {
-                            Text(path)
-                                .font(.system(size: 9.5, design: .monospaced))
-                                .foregroundStyle(palette.subtleInk)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                         }
                     }
-                    .frame(maxWidth: compact ? 150 : 250, alignment: .leading)
+                    .frame(maxWidth: compact ? 150 : 230, alignment: .leading)
 
                     if let snapshot = model.snapshot {
                         BranchQuickSwitcher(model: model, snapshot: snapshot)
@@ -781,21 +584,122 @@ private struct RepositoryTopBar: View {
                     Spacer(minLength: 8)
                     repositoryActions(palette: palette, compact: compact)
                 }
+                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(height: AppThemeLayout.topBarHeight)
+        } else if AppVisualTheme.resolved(themeRaw) == .console {
+            GeometryReader { proxy in
+                HStack(spacing: 12) {
+                    Text(model.repositoryName ?? L10n.text("app.name"))
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(palette.ink)
+                        .lineLimit(1)
+                        .frame(maxWidth: 200, alignment: .leading)
+                    if let snapshot = model.snapshot {
+                        BranchQuickSwitcher(model: model, snapshot: snapshot)
+                    }
+                    Spacer(minLength: 4)
+                    repositoryActions(palette: palette, compact: true, iconOnly: proxy.size.width < 790)
+                }
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(height: 42)
+        } else if AppVisualTheme.resolved(themeRaw) == .emerald {
+            GeometryReader { proxy in
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        Text(L10n.text("nav.\(model.selectedSection.rawValue)"))
+                            .font(.system(size: 21, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                        Spacer(minLength: 8)
+                        repositoryActions(palette: palette, compact: true, iconOnly: proxy.size.width < 940)
+                    }
+                    HStack(spacing: 10) {
+                        Text(model.repositoryName ?? L10n.text("app.name"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(palette.mutedInk)
+                            .lineLimit(1)
+                        if let snapshot = model.snapshot {
+                            BranchQuickSwitcher(model: model, snapshot: snapshot)
+                            RepositorySyncStatusView(state: snapshot.syncState, error: model.liveSyncError)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 18)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(height: 102)
+        } else if AppVisualTheme.resolved(themeRaw) == .folio {
+            GeometryReader { proxy in
+                HStack(spacing: 14) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(L10n.text("nav.\(model.selectedSection.rawValue)"))
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                            .lineLimit(1)
+                        Text(model.repositoryName ?? L10n.text("app.name"))
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(palette.mutedInk)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: 240, alignment: .leading)
+                    if let snapshot = model.snapshot {
+                        BranchQuickSwitcher(model: model, snapshot: snapshot)
+                        RepositorySyncStatusView(state: snapshot.syncState, error: model.liveSyncError)
+                    }
+                    Spacer(minLength: 4)
+                    repositoryActions(palette: palette, compact: true, iconOnly: proxy.size.width < 820)
+                }
+                .padding(.trailing, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(height: 62)
+        } else {
+            GeometryReader { proxy in
+                let compact = proxy.size.width < 860
+                HStack(spacing: compact ? 8 : 14) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(model.repositoryName ?? L10n.text("app.name"))
+                            .font(.system(size: 14.5, weight: .semibold))
+                            .foregroundStyle(palette.ink)
+                            .lineLimit(1)
+                        if !compact, let path = model.snapshot?.rootURL.path {
+                            Text(path)
+                                .font(.system(size: 10.5))
+                                .foregroundStyle(palette.subtleInk)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
+                    .frame(maxWidth: compact ? 140 : 240, alignment: .leading)
+                    if let snapshot = model.snapshot {
+                        BranchQuickSwitcher(model: model, snapshot: snapshot)
+                        RepositorySyncStatusView(state: snapshot.syncState, error: model.liveSyncError)
+                    }
+                    Spacer(minLength: 4)
+                    repositoryActions(palette: palette, compact: compact, iconOnly: proxy.size.width < 790)
+                }
                 .padding(.horizontal, 14)
-                .frame(maxHeight: .infinity)
-                .background(palette.surface)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(height: AppThemeLayout.topBarHeight)
         }
     }
 
-    private func repositoryActions(palette: AppPalette, compact: Bool) -> some View {
+    private func repositoryActions(palette: AppPalette, compact: Bool, iconOnly: Bool = false) -> some View {
         HStack(spacing: compact ? 9 : 12) {
             if model.snapshot != nil {
                 RemoteSyncButton(
                     titleKey: "action.pull",
                     activity: .pull,
                     compact: compact,
+                    iconOnly: iconOnly,
                     isActive: model.activeOperation == .pull,
                     isDisabled: model.activeOperation != nil,
                     completionID: model.notice?.message == L10n.text("notice.pulled")
@@ -809,6 +713,7 @@ private struct RepositoryTopBar: View {
                     titleKey: "action.push",
                     activity: .push,
                     compact: compact,
+                    iconOnly: iconOnly,
                     isActive: model.activeOperation == .push || model.activeOperation == .commitAndPush,
                     isDisabled: model.activeOperation != nil,
                     completionID: model.notice?.message == L10n.text("notice.pushed")
@@ -834,11 +739,17 @@ private struct RepositoryTopBar: View {
                 }
             }
 
-            Button(L10n.text("action.open_repository")) {
-                model.chooseRepository()
+            if iconOnly {
+                ToolbarIconButton(systemName: "folder.badge.plus", helpKey: "action.open_repository") {
+                    model.chooseRepository()
+                }
+            } else {
+                Button(L10n.text("action.open_repository")) {
+                    model.chooseRepository()
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .fixedSize(horizontal: true, vertical: false)
             }
-            .buttonStyle(SecondaryButtonStyle())
-            .fixedSize(horizontal: true, vertical: false)
         }
     }
 }
@@ -977,6 +888,7 @@ private struct RemoteSyncButton: View {
     let titleKey: String
     let activity: TaskButtonActivityKind
     let compact: Bool
+    var iconOnly = false
     let isActive: Bool
     let isDisabled: Bool
     let completionID: UUID?
@@ -992,11 +904,11 @@ private struct RemoteSyncButton: View {
     }
 
     private var width: CGFloat {
-        compact ? 108 : 120
+        iconOnly ? 40 : (compact ? 108 : 120)
     }
 
     private var leadingPlateWidth: CGFloat {
-        isExpanded ? width - 6 : (compact ? 36 : 42)
+        iconOnly ? 32 : (isExpanded ? width - 6 : (compact ? 36 : 42))
     }
 
     private var cornerRadius: CGFloat {
@@ -1006,66 +918,98 @@ private struct RemoteSyncButton: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(palette.raisedSurface)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(palette.divider, lineWidth: 1)
-                    }
-
-                Text(L10n.text(titleKey))
-                    .font(.system(size: compact ? 10.5 : 11.5, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity)
-                    .offset(x: compact ? 8 : 10)
-
-                RoundedRectangle(
-                    cornerRadius: max(3, cornerRadius - 2),
-                    style: .continuous
-                )
-                .fill(showsCompletion ? palette.success : (isExpanded ? palette.primary : palette.primarySoft))
-                .frame(width: leadingPlateWidth, height: 32)
-                .overlay {
-                    if isActive || showsCompletion {
-                        HStack(spacing: 7) {
-                            if showsCompletion {
-                                GattoIcon(symbol: "checkmark", size: 15)
-                            } else {
-                                CloneActivityGlyph(
-                                    systemImage: syncSymbol,
-                                    tint: Color.white,
-                                    travelsUp: activity == .push
-                                )
-                            }
-                            Text(buttonTitle)
-                                .lineLimit(1)
-                        }
-                        .font(.system(size: compact ? 10 : 11, weight: .semibold))
-                        .foregroundStyle(Color.white)
-                        .padding(.horizontal, 9)
+            if [.console, .emerald, .folio].contains(AppStyleDefaults.theme) {
+                HStack(spacing: 7) {
+                    if showsCompletion {
+                        GattoIcon(symbol: "checkmark", size: 16)
+                    } else if isActive {
+                        CloneActivityGlyph(systemImage: syncSymbol, tint: palette.primary, travelsUp: activity == .push)
+                            .frame(width: 18, height: 18)
                     } else {
-                        GattoIcon(symbol: syncSymbol, size: compact ? 17 : 19)
-                            .foregroundStyle(isExpanded ? Color.white : palette.primary)
+                        GattoIcon(symbol: syncSymbol, size: 17)
+                    }
+                    if !iconOnly {
+                        Text(buttonTitle)
+                            .font(.system(size: 11.5, weight: .medium,
+                                          design: AppStyleDefaults.theme == .console ? .monospaced : .default))
+                            .lineLimit(1)
                     }
                 }
+                .foregroundStyle(showsCompletion ? palette.success : palette.ink)
+                .padding(.horizontal, iconOnly ? 9 : 12)
+                .frame(height: AppStyleDefaults.theme == .console ? 30 : 34)
+                .background(AppStyleDefaults.theme == .folio ? palette.raisedSurface : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 .overlay {
                     if isActive {
-                        CloneProgressBorder(
-                            tint: Color.white.opacity(0.92),
-                            cornerRadius: max(3, cornerRadius - 2)
-                        )
+                        CloneProgressBorder(tint: palette.primary, cornerRadius: cornerRadius)
                     }
                 }
-                .padding(.leading, 3)
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: isExpanded)
+                .fixedSize(horizontal: true, vertical: false)
+                .contentShape(Rectangle())
+            } else {
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(palette.raisedSurface)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                                .stroke(palette.divider, lineWidth: 1)
+                        }
+
+                    Text(iconOnly ? "" : L10n.text(titleKey))
+                        .font(.system(size: compact ? 10.5 : 11.5, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
+                        .offset(x: compact ? 8 : 10)
+
+                    RoundedRectangle(
+                        cornerRadius: max(3, cornerRadius - 2),
+                        style: .continuous
+                    )
+                    .fill(showsCompletion ? palette.success : (isExpanded ? palette.primary : palette.primarySoft))
+                    .frame(width: leadingPlateWidth, height: 32)
+                    .overlay {
+                        if isActive || showsCompletion {
+                            HStack(spacing: 7) {
+                                if showsCompletion {
+                                    GattoIcon(symbol: "checkmark", size: 15)
+                                } else {
+                                    CloneActivityGlyph(
+                                        systemImage: syncSymbol,
+                                        tint: Color.white,
+                                        travelsUp: activity == .push
+                                    )
+                                }
+                                if !iconOnly {
+                                    Text(buttonTitle).lineLimit(1)
+                                }
+                            }
+                            .font(.system(size: compact ? 10 : 11, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, iconOnly ? 4 : 9)
+                        } else {
+                            GattoIcon(symbol: syncSymbol, size: compact ? 17 : 19)
+                                .foregroundStyle(isExpanded ? Color.white : palette.primary)
+                        }
+                    }
+                    .overlay {
+                        if isActive {
+                            CloneProgressBorder(
+                                tint: Color.white.opacity(0.92),
+                                cornerRadius: max(3, cornerRadius - 2)
+                            )
+                        }
+                    }
+                    .padding(.leading, 3)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: isExpanded)
+                }
+                .frame(width: width, height: 38)
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             }
-            .frame(width: width, height: 38)
-            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-        .allowsHitTesting(!isDisabled)
+        .disabled(isDisabled)
         .opacity(isDisabled && !isActive ? 0.42 : 1)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: isActive)
         .onAppear {

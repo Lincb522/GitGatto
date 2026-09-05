@@ -50,6 +50,13 @@ GitGatto est parti de ces problèmes quotidiens. Il conserve le vrai Git et les 
 
 Chaque étape lit l'état réel de Git, GitHub ou du Mac. Les étapes terminées sont conservées après une interruption ; un échec Actions peut être transmis à un Agent avec ses preuves. La fusion, la publication d'un tag et l'installation demandent toujours une confirmation distincte.
 
+### Organisation des changements et preuves
+
+- Le centre des changements classe les modifications par fichier ou bloc de Diff et peut créer plusieurs commits atomiques. Il vérifie l’empreinte du dépôt et crée un point de restauration avant l’exécution ; tout échec de commit ou de vérification restaure le HEAD et la limite de staging d’origine.
+- La provenance du code remonte d’une ligne au commit et, si GitHub CLI est disponible, ajoute la Pull Request, les Issues, les Reviews et les Checks associés.
+- Les capsules de reproduction regroupent patch, fichiers non suivis, commit de base, commande en échec, sortie et versions des outils dans un fichier `.gatto`. L’import est vérifié puis restauré dans un worktree isolé.
+- Le journal d’activité conserve les changements de références Git et d’état des fichiers avec les processus Agent dont le dossier de travail se trouvait dans le dépôt. Le niveau de corrélation est indiqué sans l’assimiler à une responsabilité prouvée.
+
 ### Recherche de régression
 
 Exécute `git bisect` dans un worktree isolé sans changer l'espace de travail courant. Le mode automatique lance une commande de vérification ; le mode manuel classe chaque candidat comme bon, défectueux ou ignoré. Commits candidats, codes de sortie, durées et sorties sont conservés. Une fois le premier commit défectueux trouvé, un Agent peut préparer la correction, relancer la vérification et ouvrir une Pull Request.

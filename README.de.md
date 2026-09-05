@@ -50,6 +50,13 @@ GitGatto entstand aus diesen praktischen Problemen. Das echte Git und vorhandene
 
 Jeder Schritt liest den tatsächlichen Zustand von Git, GitHub oder dem Mac. Abgeschlossene Schritte bleiben nach einer Unterbrechung erhalten; ein fehlgeschlagener Actions-Lauf kann mitsamt Nachweisen an einen Agent übergeben werden. Merge, Veröffentlichung eines Tags und Installation benötigen weiterhin eine eigene Bestätigung.
 
+### Änderungsplanung und Nachweise
+
+- Das Change Center ordnet Änderungen nach Datei oder Diff-Block und kann daraus mehrere atomare Commits erstellen. Vorher werden Repository-Fingerabdruck und Wiederherstellungspunkt geprüft; schlägt ein Commit oder Test fehl, werden HEAD und Staging-Grenze zurückgesetzt.
+- Code Provenance verfolgt eine Dateizeile bis zum Commit und ergänzt bei verfügbarem GitHub CLI den zugehörigen Pull Request, Issues, Reviews und Checks.
+- Reproduktionskapseln bündeln Patch, nicht verfolgte Dateien, Basis-Commit, fehlgeschlagenen Befehl, Ausgabe und Werkzeugversionen als `.gatto`. Beim Import werden die Inhalte geprüft und in einem isolierten Worktree wiederhergestellt.
+- Das Aktivitätsprotokoll speichert Änderungen an Git-Referenzen und Dateizuständen zusammen mit Agent-Prozessen, deren Arbeitsverzeichnis im Repository lag. Die Zuordnungsstärke wird ausgewiesen; Korrelation gilt nicht als bewiesene Verantwortung.
+
 ### Regressionssuche
 
 `git bisect` läuft in einem isolierten worktree, ohne den aktuellen Arbeitsbereich umzuschalten. Der automatische Modus führt einen gewählten Prüfbefehl aus, der manuelle Modus bewertet Kandidaten als korrekt, fehlerhaft oder übersprungen. Kandidaten, Exit-Codes, Laufzeit und Ausgabe werden gespeichert. Nach dem ersten fehlerhaften Commit kann ein Agent die Korrektur vorbereiten, erneut prüfen und einen Pull Request erstellen.

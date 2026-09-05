@@ -57,7 +57,7 @@ struct CodeDocumentView: View {
     private func codeBackground(_ palette: AppPalette) -> Color {
         switch theme {
         case .standard: palette.background
-        case .emerald, .folio: palette.surface
+        case .emerald, .folio, .lumen: palette.surface
         case .softGlass: palette.background.opacity(0.24)
         case .console: palette.background
         }
@@ -144,7 +144,7 @@ private struct CodeSurfaceLine: View {
     private func gutterBackground(_ palette: AppPalette) -> Color {
         switch theme {
         case .standard: palette.sidebar.opacity(0.60)
-        case .emerald, .folio: palette.background.opacity(0.72)
+        case .emerald, .folio, .lumen: palette.background.opacity(0.72)
         case .softGlass: palette.sidebar.opacity(0.22)
         case .console: palette.sidebar.opacity(0.72)
         }

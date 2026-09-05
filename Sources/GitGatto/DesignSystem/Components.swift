@@ -140,9 +140,23 @@ struct PrimaryButtonStyle: ButtonStyle {
                 .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(Color.white)
                 .padding(.horizontal, 14)
-                .frame(height: 32)
+                .frame(height: AppStyleDefaults.theme == .standard ? 30 : 34)
                 .background(palette.primary.opacity(configuration.isPressed ? 0.78 : 1))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
+                .scaleEffect(configuration.isPressed ? 0.98 : 1)
+                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+        case .lumen:
+            configuration.label
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 16)
+                .frame(height: 34)
+                .background(palette.primary.opacity(configuration.isPressed ? 0.78 : 0.96))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                }
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
                 .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
         case .softGlass:
@@ -194,12 +208,24 @@ struct SecondaryButtonStyle: ButtonStyle {
                 .font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(palette.ink)
                 .padding(.horizontal, 12)
-                .frame(height: 30)
-                .background(configuration.isPressed ? palette.divider : palette.raisedSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .frame(height: AppStyleDefaults.theme == .standard ? 28 : 32)
+                .background(configuration.isPressed ? palette.divider : (AppStyleDefaults.theme == .emerald ? Color.clear : palette.raisedSurface))
+                .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                         .stroke(palette.divider, lineWidth: 1)
+                }
+        case .lumen:
+            configuration.label
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(palette.ink)
+                .padding(.horizontal, 13)
+                .frame(height: 32)
+                .background(configuration.isPressed ? palette.primarySoft : palette.raisedSurface.opacity(0.74))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(configuration.isPressed ? palette.primary.opacity(0.42) : palette.divider, lineWidth: 1)
                 }
         case .softGlass:
             configuration.label
@@ -326,12 +352,15 @@ struct SearchField: View {
             }
         }
         .padding(.horizontal, 10)
-        .frame(height: theme == .softGlass ? 34 : 30)
+        .frame(height: theme == .softGlass || theme == .lumen ? 34 : 30)
         .background {
             switch theme {
             case .standard, .emerald, .folio:
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                     .fill(palette.raisedSurface)
+            case .lumen:
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(palette.raisedSurface.opacity(0.76))
             case .softGlass:
                 RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                     .fill(.ultraThinMaterial)

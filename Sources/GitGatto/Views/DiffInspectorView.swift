@@ -14,62 +14,77 @@ struct DiffInspectorView: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
-            HStack(spacing: 11) {
-                if let change {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
-                            .fill(palette.primarySoft)
-                        Image(gattoSymbol: changeIcon(for: change.path))
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(palette.primary)
-                    }
-                    .frame(width: 34, height: 34)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(URL(fileURLWithPath: change.path).lastPathComponent)
-                            .font(.system(size: 13.5, weight: .semibold, design: theme == .console ? .monospaced : .default))
+            GeometryReader { proxy in
+                let compactHeader = [.console, .emerald, .folio].contains(theme) && proxy.size.width < 540
+                HStack(spacing: theme == .console ? 8 : 11) {
+                    if let change {
+                        if !compactHeader {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
+                                    .fill(palette.primarySoft)
+                                Image(gattoSymbol: changeIcon(for: change.path))
+                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .foregroundStyle(palette.primary)
+                            }
+                            .frame(width: theme == .console ? 24 : 34, height: theme == .console ? 24 : 34)
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(URL(fileURLWithPath: change.path).lastPathComponent)
+                                .font(.system(size: theme == .folio ? 16 : (theme == .console ? 11.5 : 13.5), weight: .semibold, design: theme == .console ? .monospaced : .default))
+                                .foregroundStyle(palette.ink)
+                                .lineLimit(1)
+                            if theme != .console {
+                                Text(change.path)
+                                    .font(.system(size: 10.5, design: .monospaced))
+                                    .foregroundStyle(palette.subtleInk)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                            }
+                        }
+                        Spacer()
+                        if previewURL != nil {
+                            Picker("", selection: $presentation) {
+                                Text(L10n.text("media.preview")).tag(Presentation.preview)
+                                Text(L10n.text("media.changes")).tag(Presentation.changes)
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: compactHeader ? 115 : 150)
+                        }
+                        if let document, !compactHeader {
+                            HStack(spacing: 8) {
+                                Text("+\(document.lines.filter { $0.kind.isAddition }.count)")
+                                    .foregroundStyle(palette.success)
+                                Text("−\(document.lines.filter { $0.kind.isDeletion }.count)")
+                                    .foregroundStyle(palette.danger)
+                            }
+                            .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                        }
+                        if compactHeader {
+                            GattoIcon(symbol: change.isStaged ? "checkmark.circle" : "circle", size: 17)
+                                .foregroundStyle(change.isStaged ? palette.success : palette.mutedInk)
+                                .help(L10n.text(change.isStaged ? "changes.staged_single" : "changes.unstaged_single"))
+                                .accessibilityLabel(L10n.text(change.isStaged ? "changes.staged_single" : "changes.unstaged_single"))
+                        } else {
+                            Text(L10n.text(change.isStaged ? "changes.staged_single" : "changes.unstaged_single"))
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .foregroundStyle(change.isStaged ? palette.success : palette.primary)
+                                .padding(.horizontal, 8)
+                                .frame(height: 23)
+                                .background(change.isStaged ? palette.successSoft : palette.primarySoft)
+                                .clipShape(Capsule())
+                        }
+                    } else {
+                        Text(L10n.text("diff.title"))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(palette.ink)
-                            .lineLimit(1)
-                        Text(change.path)
-                            .font(.system(size: 10.5, design: .monospaced))
-                            .foregroundStyle(palette.subtleInk)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
+                        Spacer()
                     }
-                    Spacer()
-                    if previewURL != nil {
-                        Picker("", selection: $presentation) {
-                            Text(L10n.text("media.preview")).tag(Presentation.preview)
-                            Text(L10n.text("media.changes")).tag(Presentation.changes)
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 150)
-                    }
-                    if let document {
-                        HStack(spacing: 8) {
-                            Text("+\(document.lines.filter { $0.kind.isAddition }.count)")
-                                .foregroundStyle(palette.success)
-                            Text("−\(document.lines.filter { $0.kind.isDeletion }.count)")
-                                .foregroundStyle(palette.danger)
-                        }
-                        .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                    }
-                    Text(L10n.text(change.isStaged ? "changes.staged_single" : "changes.unstaged_single"))
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(change.isStaged ? palette.success : palette.primary)
-                        .padding(.horizontal, 8)
-                        .frame(height: 23)
-                        .background(change.isStaged ? palette.successSoft : palette.primarySoft)
-                        .clipShape(Capsule())
-                } else {
-                    Text(L10n.text("diff.title"))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                    Spacer()
                 }
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 62)
+            .frame(height: theme == .console ? 38 : (theme == .folio ? 74 : (theme == .emerald ? 78 : 62)))
             .background(theme == .softGlass ? palette.surface.opacity(0.15) : palette.surface)
 
             Rectangle()
@@ -94,10 +109,10 @@ struct DiffInspectorView: View {
             } else {
                 GattoLoadingState(text: L10n.text("loading.generic"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(palette.background)
+                .background(theme == .folio ? palette.surface : palette.background)
             }
         }
-        .background(palette.background)
+        .background(theme == .folio ? palette.surface : palette.background)
         .onChange(of: change?.id) { _, _ in
             presentation = .preview
         }
@@ -159,7 +174,7 @@ struct DiffCodeView: View {
                 Rectangle().fill(palette.divider).frame(height: 1)
                 DiffSurfaceStatusBar(document: document, theme: theme)
             }
-            .background(theme == .softGlass ? palette.background.opacity(0.22) : palette.background)
+            .background(theme == .softGlass ? palette.background.opacity(0.22) : (theme == .folio ? palette.surface : palette.background))
         }
     }
 }
@@ -303,7 +318,7 @@ private struct DiffLineView: View {
     private func gutterBackground(_ palette: AppPalette) -> Color {
         switch theme {
         case .standard: palette.sidebar.opacity(0.62)
-        case .emerald, .folio: palette.background.opacity(0.72)
+        case .emerald, .folio, .lumen: palette.background.opacity(0.72)
         case .softGlass: palette.sidebar.opacity(0.20)
         case .console: palette.sidebar.opacity(0.76)
         }

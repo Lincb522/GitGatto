@@ -522,6 +522,8 @@ private extension View {
             emeraldSurface(elevated ? .elevated : .panel, cornerRadius: 14)
         case .folio:
             folioSurface(elevated ? .elevated : .panel, cornerRadius: 14)
+        case .lumen:
+            lumenSurface(elevated ? .chrome : .inset, cornerRadius: 14)
         case .console:
             appConsolePanel()
         case .standard:

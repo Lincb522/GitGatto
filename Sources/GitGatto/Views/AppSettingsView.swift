@@ -37,6 +37,8 @@ struct AppSettingsView: View {
                 emeraldLayout(palette)
             case .folio:
                 folioLayout(palette)
+            case .lumen:
+                lumenLayout(palette)
             }
         }
         .frame(minWidth: 820, minHeight: 650)
@@ -51,407 +53,195 @@ struct AppSettingsView: View {
     }
 
     private func standardLayout(_ palette: AppPalette) -> some View {
-        HStack(spacing: 0) {
-            standardSidebar(palette)
-                .frame(width: 216)
+        VStack(spacing: 0) {
+            settingsWindowBar(palette)
+            settingsCategoryBar(palette, iconLabels: true)
+                .padding(.bottom, 10)
                 .background(palette.sidebar)
+            Rectangle().fill(palette.divider).frame(height: 1)
+            settingsContent(palette, includesPageTitle: false)
+                .background(palette.background)
+        }
+    }
 
-            Rectangle()
-                .fill(palette.divider)
-                .frame(width: 1)
-
+    private func softGlassLayout(_ palette: AppPalette) -> some View {
+        HStack(spacing: 0) {
+            settingsIndex(palette)
+                .frame(width: 202)
+            Rectangle().fill(palette.divider.opacity(0.65)).frame(width: 1)
             VStack(spacing: 0) {
-                HStack(spacing: 12) {
-                    Text(L10n.text(selectedPage.titleKey))
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-
-                    Spacer()
-                    savedState(palette)
-                    saveButton
-                }
-                .padding(.horizontal, 22)
-                .frame(height: 64)
-                .background(palette.surface)
-
-                Rectangle()
-                    .fill(palette.divider)
-                    .frame(height: 1)
-
+                settingsPageBar(palette)
                 settingsContent(palette, includesPageTitle: false)
-                    .background(palette.background)
+            }
+            .padding(.trailing, 8)
+        }
+    }
+
+    private func emeraldLayout(_ palette: AppPalette) -> some View {
+        HStack(spacing: 0) {
+            settingsIndex(AppPalette(.dark, theme: .emerald))
+                .frame(width: 216)
+                .background(AppPalette(.dark, theme: .emerald).sidebar)
+                .environment(\.colorScheme, .dark)
+            VStack(spacing: 0) {
+                settingsPageBar(palette)
+                Rectangle().fill(palette.divider).frame(height: 1)
+                settingsContent(palette, includesPageTitle: false)
+            }
+            .background(palette.background)
+        }
+    }
+
+    private func folioLayout(_ palette: AppPalette) -> some View {
+        VStack(spacing: 0) {
+            settingsWindowBar(palette)
+            settingsCategoryBar(palette, iconLabels: false)
+                .padding(.bottom, 16)
+            settingsContent(palette, includesPageTitle: false)
+                .folioSurface(.panel, cornerRadius: 16)
+                .padding(.horizontal, 18)
+                .padding(.bottom, 18)
+        }
+        .background(palette.background)
+    }
+
+    private func settingsWindowBar(_ palette: AppPalette) -> some View {
+        HStack(spacing: 16) {
+            AppBrandLockup(iconSize: 30, wordmarkWidth: 88, spacing: 7)
+            Text(L10n.text("settings.title"))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(palette.mutedInk)
+            Spacer(minLength: 12)
+            savedState(palette)
+            saveButton
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 18)
+        .frame(height: 78)
+        .background(palette.sidebar)
+    }
+
+    private func settingsPageBar(_ palette: AppPalette) -> some View {
+        HStack(spacing: 12) {
+            Text(L10n.text(selectedPage.titleKey))
+                .font(.system(size: 17, weight: .semibold,
+                              design: AppStyleDefaults.theme == .console ? .monospaced : .default))
+                .foregroundStyle(palette.ink)
+            Spacer(minLength: 12)
+            savedState(palette)
+            saveButton
+        }
+        .padding(.horizontal, 26)
+        .padding(.top, 18)
+        .frame(height: 82)
+    }
+
+    private func settingsIndex(_ palette: AppPalette) -> some View {
+        let theme = AppStyleDefaults.theme
+        return VStack(alignment: .leading, spacing: 0) {
+            AppBrandLockup(iconSize: 30, wordmarkWidth: 88, spacing: 7)
+                .padding(.leading, 20)
+                .padding(.top, 18)
+                .frame(height: 82)
+            ScrollView(.vertical) {
+                VStack(spacing: theme == .console ? 2 : 6) {
+                    ForEach(SettingsPage.allCases) { page in
+                        Button { select(page) } label: {
+                            HStack(spacing: 10) {
+                                Image(gattoSymbol: page.icon)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .frame(width: 22)
+                                Text(L10n.text(page.titleKey))
+                                    .font(.system(size: 12.5, weight: selectedPage == page ? .semibold : .medium,
+                                                  design: theme == .console ? .monospaced : .default))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Spacer(minLength: 0)
+                            }
+                            .foregroundStyle(selectedPage == page ? palette.ink : palette.mutedInk)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, theme == .console ? 10 : 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(selectedPage == page ? palette.raisedSurface : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.bottom, 16)
             }
         }
     }
 
-    private func standardSidebar(_ palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            AppBrandLockup(iconSize: 36, wordmarkWidth: 100, spacing: 8)
-                .padding(.leading, 20)
-                .padding(.top, 22)
-                .frame(height: 82, alignment: .leading)
-
-            VStack(spacing: 4) {
+    private func settingsCategoryBar(_ palette: AppPalette, iconLabels: Bool) -> some View {
+        ScrollView(.horizontal, showsIndicators: true) {
+            HStack(spacing: iconLabels ? 8 : 6) {
                 ForEach(SettingsPage.allCases) { page in
-                    Button {
-                        select(page)
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(gattoSymbol: page.icon)
-                                .font(.system(size: 13, weight: .semibold))
-                                .frame(width: 18)
-                                .foregroundStyle(selectedPage == page ? palette.primary : palette.mutedInk)
-                            Text(L10n.text(page.titleKey))
-                                .font(.system(size: 12.5, weight: selectedPage == page ? .semibold : .medium))
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
+                    Button { select(page) } label: {
+                        Group {
+                            if iconLabels {
+                                VStack(spacing: 7) {
+                                    Image(gattoSymbol: page.icon)
+                                        .font(.system(size: 20, weight: .regular))
+                                    Text(L10n.text(page.titleKey))
+                                        .font(.system(size: 11.5, weight: selectedPage == page ? .semibold : .medium))
+                                }
+                                .padding(.horizontal, 12)
+                                .frame(minWidth: 78, minHeight: 64)
+                            } else {
+                                HStack(spacing: 7) {
+                                    Image(gattoSymbol: page.icon).font(.system(size: 12))
+                                    Text(L10n.text(page.titleKey)).font(.system(size: 12, weight: .medium))
+                                }
+                                .padding(.horizontal, 14)
+                                .frame(height: 36)
+                            }
                         }
-                        .foregroundStyle(selectedPage == page ? palette.ink : palette.mutedInk)
-                        .padding(.horizontal, 12)
-                        .frame(height: 38)
-                        .background(selectedPage == page ? palette.primarySoft : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .fixedSize(horizontal: true, vertical: false)
+                        .foregroundStyle(selectedPage == page ? (iconLabels ? palette.primary : palette.surface) : palette.mutedInk)
+                        .background(selectedPage == page ? (iconLabels ? palette.primarySoft : palette.ink) : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: iconLabels ? 8 : 16))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.top, 8)
-
-            Spacer()
+            .padding(.horizontal, 22)
         }
     }
 
-    private func softGlassLayout(_ palette: AppPalette) -> some View {
-        VStack(spacing: 12) {
-            glassWindowBar(palette)
-                .appGlassPanel()
-
-            glassNavigation(palette)
-                .appGlassPanel(cornerRadius: 14, elevated: false)
-
-            settingsContent(palette, includesPageTitle: true)
-                .appGlassPanel()
-        }
-        .padding(12)
-    }
-
-    private func emeraldLayout(_ palette: AppPalette) -> some View {
-        let sidebarPalette = AppPalette(.dark)
-        return HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 14) {
-                AppBrandLockup(iconSize: 36, wordmarkWidth: 98, spacing: 8)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 22)
-                    .frame(height: 82, alignment: .leading)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 5) {
-                        ForEach(SettingsPage.allCases) { page in
-                            Button {
-                                select(page)
-                            } label: {
-                                HStack(spacing: 10) {
-                                    Image(gattoSymbol: page.icon)
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .frame(width: 22, height: 22)
-                                    Text(L10n.text(page.titleKey))
-                                        .font(.system(size: 11.5, weight: selectedPage == page ? .semibold : .medium))
-                                    Spacer(minLength: 0)
-                                    if selectedPage == page {
-                                        Circle()
-                                            .fill(sidebarPalette.accent)
-                                            .frame(width: 6, height: 6)
-                                    }
-                                }
-                                .foregroundStyle(selectedPage == page ? sidebarPalette.ink : sidebarPalette.mutedInk)
-                                .padding(.horizontal, 12)
-                                .frame(height: 40)
-                                .background(selectedPage == page ? sidebarPalette.raisedSurface : Color.clear)
-                                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
-                        }
-                    }
-                    .padding(.horizontal, 10)
-                }
-
-                HStack(spacing: 8) {
-                    savedState(sidebarPalette)
-                    Spacer(minLength: 0)
-                    saveButton
-                }
-                .padding(10)
-            }
-            .frame(width: 220)
-            .background(sidebarPalette.sidebar)
-            .emeraldSurface(.dark, cornerRadius: 16)
-            .environment(\.colorScheme, .dark)
-
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    Image(gattoSymbol: selectedPage.icon)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(palette.accent)
-                        .frame(width: 38, height: 38)
-                        .background(palette.accentSoft)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    Text(L10n.text(selectedPage.titleKey))
-                        .font(.system(size: 19, weight: .bold, design: .rounded))
-                        .foregroundStyle(palette.ink)
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 16)
-                .frame(height: 64)
-                .emeraldSurface(.elevated, cornerRadius: 16)
-
-                settingsContent(palette, includesPageTitle: false)
-                    .padding(6)
-                    .emeraldSurface(.panel, cornerRadius: 16)
-            }
-        }
-        .padding(12)
-    }
-
-    private func folioLayout(_ palette: AppPalette) -> some View {
-        HStack(spacing: 12) {
-            folioSettingsRail()
-                .frame(width: 58)
-
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    AppBrandLockup(iconSize: 34, wordmarkWidth: 92, spacing: 7)
-
-                    Rectangle()
-                        .fill(palette.divider)
-                        .frame(width: 1, height: 28)
-
-                    Image(gattoSymbol: selectedPage.icon)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(palette.accent)
-                        .frame(width: 34, height: 34)
-                        .background(palette.accentSoft)
-                        .clipShape(Circle())
-
-                    Text(L10n.text(selectedPage.titleKey))
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .foregroundStyle(palette.ink)
-
-                    Spacer(minLength: 0)
-                    savedState(palette)
-                    saveButton
-                }
-                .padding(.horizontal, 16)
-                .frame(height: 68)
-                .folioSurface(.elevated, cornerRadius: 16)
-
-                settingsContent(palette, includesPageTitle: false)
-                    .padding(6)
-                    .folioSurface(.panel, cornerRadius: 16)
-            }
-        }
-        .padding(14)
-    }
-
-    private func folioSettingsRail() -> some View {
-        let railPalette = AppPalette(
-            .dark,
-            theme: .folio,
-            accentChoice: AppAccentChoice(rawValue: accentRaw) ?? .blue,
-            customAccentHex: customAccentHex
-        )
-        return VStack(spacing: 7) {
-            ForEach(SettingsPage.allCases) { page in
-                Button {
-                    select(page)
-                } label: {
-                    Image(gattoSymbol: page.icon)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(selectedPage == page ? railPalette.sidebar : railPalette.ink)
-                        .frame(width: 38, height: 38)
-                        .background(selectedPage == page ? railPalette.ink : Color.clear)
-                        .clipShape(Circle())
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help(L10n.text(page.titleKey))
-                .accessibilityLabel(L10n.text(page.titleKey))
-                .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
-            }
-
-            Spacer(minLength: 0)
-
-            Circle()
-                .fill(model.isCodexRunning ? railPalette.warning : railPalette.success)
-                .frame(width: 7, height: 7)
-                .padding(.bottom, 5)
-                .accessibilityHidden(true)
-        }
-        .padding(.top, 54)
-        .padding(.bottom, 10)
-        .frame(maxHeight: .infinity)
-        .background(railPalette.sidebar)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
-        }
-        .environment(\.colorScheme, .dark)
-    }
-
-    private func consoleLayout(_ palette: AppPalette) -> some View {
+    private func lumenLayout(_ palette: AppPalette) -> some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                AppBrandLockup(iconSize: 30, wordmarkWidth: 76, spacing: 7)
-                    .padding(.leading, AppThemeLayout.titlebarBrandLeading)
-
+            HStack(spacing: 22) {
+                AppBrandLockup(iconSize: 36, wordmarkWidth: 108, spacing: 9)
                 Rectangle().fill(palette.divider).frame(width: 1, height: 26)
-
-                Text(L10n.text("console.command.settings"))
-                    .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(palette.accent)
-
-                Spacer()
-
-                HStack(spacing: 6) {
-                    ConsoleBreathingLight(isBusy: model.isCodexRunning)
-                    Text(L10n.text(model.isCodexRunning ? "console.status.running" : "console.status.ready"))
-                        .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(model.isCodexRunning ? palette.warning : palette.success)
-                }
-                .padding(.trailing, 14)
+                Text(L10n.text("settings.title"))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                Spacer(minLength: 12)
+                savedState(palette)
+                saveButton
             }
-            .padding(.top, 18)
-            .frame(height: 72)
-            .background(palette.sidebar)
+            .padding(.horizontal, 26)
+            .padding(.top, 24)
+            .padding(.bottom, 8)
+            .frame(height: 94)
+            .lumenSurface(.chrome, cornerRadius: 0)
 
-            Rectangle().fill(palette.divider).frame(height: 1)
+            lumenSettingsNavigation(palette)
 
-            HStack(spacing: 0) {
-                consoleSettingsRail(palette)
-                    .frame(width: 82)
-
-                Rectangle().fill(palette.divider).frame(width: 1)
-
-                settingsContent(palette, includesPageTitle: true)
-                    .background(palette.background)
-
-                Rectangle().fill(palette.divider).frame(width: 1)
-
-                consoleSettingsStatus(palette)
-                    .frame(width: 188)
-            }
+            settingsContent(palette, includesPageTitle: false)
+                .lumenSurface(.panel, cornerRadius: 14)
+                .padding(18)
         }
+        .ignoresSafeArea(.container, edges: .top)
     }
 
-    private func consoleSettingsRail(_ palette: AppPalette) -> some View {
-        VStack(spacing: 4) {
-            ForEach(SettingsPage.allCases) { page in
-                Button {
-                    select(page)
-                } label: {
-                    VStack(spacing: 5) {
-                        Image(gattoSymbol: page.icon)
-                            .font(.system(size: 13, weight: .semibold))
-                        Text(L10n.text(page.titleKey))
-                            .font(.system(size: 8.5, weight: .medium, design: .monospaced))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.72)
-                    }
-                    .foregroundStyle(selectedPage == page ? palette.accent : palette.mutedInk)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(selectedPage == page ? palette.accentSoft : Color.clear)
-                    .overlay(alignment: .leading) {
-                        Rectangle()
-                            .fill(selectedPage == page ? palette.accent : Color.clear)
-                            .frame(width: 2)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(L10n.text(page.titleKey))
-                .accessibilityLabel(L10n.text(page.titleKey))
-                .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.top, 10)
-        .background(palette.sidebar)
-    }
-
-    private func consoleSettingsStatus(_ palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(L10n.text(selectedPage.titleKey).uppercased())
-                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
-                .foregroundStyle(palette.accent)
-
-            consoleStatusRow(
-                title: L10n.text("settings.appearance.mode_control"),
-                value: L10n.text("appearance.\(appearanceRaw)"),
-                palette: palette
-            )
-            consoleStatusRow(
-                title: L10n.text("settings.appearance.theme_section"),
-                value: L10n.text("theme.console"),
-                palette: palette
-            )
-            consoleStatusRow(
-                title: L10n.text("settings.appearance.accent_section"),
-                value: L10n.text("accent.\(accentRaw)"),
-                palette: palette
-            )
-
-            Spacer(minLength: 10)
-            savedState(palette)
-            saveButton
-                .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .padding(16)
-        .background(palette.sidebar)
-    }
-
-    private func consoleStatusRow(title: String, value: String, palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                .foregroundStyle(palette.subtleInk)
-            Text(value)
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
-                .foregroundStyle(palette.ink)
-                .lineLimit(2)
-        }
-    }
-
-    private func glassWindowBar(_ palette: AppPalette) -> some View {
-        HStack(spacing: 12) {
-            AppBrandLockup(iconSize: 38, wordmarkWidth: 102, spacing: 8)
-
-            Rectangle()
-                .fill(palette.divider)
-                .frame(width: 1, height: 26)
-
-            Text(L10n.text("settings.title"))
-                .font(.system(size: 14.5, weight: .semibold))
-                .foregroundStyle(palette.ink)
-
-            Spacer()
-            savedState(palette)
-            saveButton
-        }
-        .padding(.leading, 10)
-        .padding(.trailing, 16)
-        .padding(.top, 18)
-        .frame(height: 78)
-    }
-
-    private func glassNavigation(_ palette: AppPalette) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+    private func lumenSettingsNavigation(_ palette: AppPalette) -> some View {
+        ScrollView(.horizontal) {
             HStack(spacing: 6) {
                 ForEach(SettingsPage.allCases) { page in
                     Button {
@@ -459,25 +249,50 @@ struct AppSettingsView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(gattoSymbol: page.icon)
-                                .font(.system(size: 12.5, weight: .semibold))
+                                .font(.system(size: 14, weight: .medium))
+                                .frame(width: 20, height: 20)
                             Text(L10n.text(page.titleKey))
-                                .font(.system(size: 12, weight: selectedPage == page ? .semibold : .medium))
-                                .lineLimit(1)
+                                .font(.system(size: 12.5, weight: selectedPage == page ? .semibold : .medium))
+                                .fixedSize()
                         }
                         .foregroundStyle(selectedPage == page ? palette.ink : palette.mutedInk)
                         .padding(.horizontal, 12)
-                        .frame(minWidth: 92, minHeight: 38)
-                        .background(selectedPage == page ? palette.primarySoft : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .frame(height: 48)
                         .contentShape(Rectangle())
+                        .overlay(alignment: .bottom) {
+                            if selectedPage == page {
+                                Capsule().fill(palette.primary).frame(height: 2)
+                                    .padding(.horizontal, 12)
+                            }
+                        }
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(selectedPage == page ? .isSelected : [])
                 }
             }
-            .padding(.horizontal, 7)
+            .padding(.horizontal, 18)
         }
-        .frame(height: 52)
+        .scrollIndicators(.hidden)
+        .frame(height: 48)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(palette.divider).frame(height: 1)
+        }
+    }
+
+    private func consoleLayout(_ palette: AppPalette) -> some View {
+        HStack(spacing: 0) {
+            settingsIndex(palette)
+                .frame(width: 190)
+                .background(palette.sidebar)
+            Rectangle().fill(palette.divider).frame(width: 1)
+            VStack(spacing: 0) {
+                settingsPageBar(palette)
+                    .background(palette.surface)
+                Rectangle().fill(palette.divider).frame(height: 1)
+                settingsContent(palette, includesPageTitle: false)
+                    .background(palette.background)
+            }
+        }
     }
 
     private func settingsContent(_ palette: AppPalette, includesPageTitle: Bool) -> some View {
@@ -756,282 +571,213 @@ private struct ThemeChoiceButton: View {
 private struct ThemeLayoutPreview: View {
     let theme: AppVisualTheme
     let palette: AppPalette
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         switch theme {
-        case .standard:
-            HStack(spacing: 0) {
-                VStack(spacing: 6) {
-                    HStack(spacing: 4) {
-                        Circle().fill(palette.primary).frame(width: 7, height: 7)
-                        RoundedRectangle(cornerRadius: 2).fill(palette.ink).frame(width: 25, height: 4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    ForEach(0 ..< 3, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(index == 0 ? palette.primarySoft : Color.clear)
-                            .frame(height: 13)
-                            .overlay(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(index == 0 ? palette.primary : palette.mutedInk.opacity(0.56))
-                                    .frame(width: index == 0 ? 30 : 24, height: 3)
-                                    .padding(.leading, 6)
-                            }
+        case .standard, .softGlass:
+            HStack(spacing: theme == .softGlass ? 6 : 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(palette.ink)
+                        .frame(width: 32, height: 5)
+                        .padding(.vertical, 8)
+                    ForEach(0 ..< 4, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(index == 0 ? palette.primary.opacity(0.55) : palette.mutedInk.opacity(0.28))
+                            .frame(width: index == 0 ? 38 : 28, height: 6)
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(8)
-                .frame(width: 70)
+                .padding(.horizontal, 7)
+                .frame(width: 54)
                 .background(palette.sidebar)
-
-                Rectangle().fill(palette.divider).frame(width: 1)
-
                 VStack(spacing: 0) {
                     HStack {
-                        RoundedRectangle(cornerRadius: 2).fill(palette.ink).frame(width: 50, height: 5)
-                        Spacer()
-                        RoundedRectangle(cornerRadius: 4).fill(palette.primary).frame(width: 40, height: 12)
+                        RoundedRectangle(cornerRadius: 2).fill(palette.ink).frame(width: 30, height: 4)
+                        Spacer(minLength: 0)
+                        RoundedRectangle(cornerRadius: 3).fill(palette.primary).frame(width: 18, height: 10)
                     }
                     .padding(8)
                     Rectangle().fill(palette.divider).frame(height: 1)
-                    VStack(spacing: 7) {
-                        RoundedRectangle(cornerRadius: 3).fill(palette.raisedSurface).frame(height: 18)
-                        RoundedRectangle(cornerRadius: 3).fill(palette.raisedSurface).frame(height: 18)
+                    HStack(spacing: 0) {
+                        palette.raisedSurface.frame(width: 38)
+                        Rectangle().fill(palette.divider).frame(width: 1)
+                        palette.surface
                     }
-                    .padding(8)
                 }
-                .background(palette.background)
+                .background(theme == .softGlass ? (colorScheme == .dark ? Color.black.opacity(0.4) : Color.white.opacity(0.7)) : palette.background)
+                .clipShape(RoundedRectangle(cornerRadius: theme == .softGlass ? 7 : 0))
+                .padding(.vertical, theme == .softGlass ? 8 : 0)
+                .padding(.trailing, theme == .softGlass ? 7 : 0)
             }
-        case .softGlass:
-            ZStack {
-                LinearGradient(
-                    colors: [palette.background, palette.primarySoft.opacity(0.72)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                VStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(palette.raisedSurface)
-                        .frame(height: 20)
-                        .overlay(alignment: .leading) {
-                            HStack(spacing: 4) {
-                                Circle().fill(palette.primary).frame(width: 7, height: 7)
-                                RoundedRectangle(cornerRadius: 2).fill(palette.ink).frame(width: 28, height: 4)
-                            }
-                            .padding(.leading, 7)
-                        }
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(palette.surface)
-                        .frame(height: 15)
-                        .overlay {
-                            HStack(spacing: 8) {
-                                ForEach(0 ..< 4, id: \.self) { index in
-                                    Capsule()
-                                        .fill(index == 0 ? palette.primary : palette.mutedInk.opacity(0.38))
-                                        .frame(width: index == 0 ? 22 : 16, height: 3)
-                                }
-                            }
-                        }
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(palette.raisedSurface)
-                        .overlay {
-                            HStack(spacing: 7) {
-                                RoundedRectangle(cornerRadius: 4).fill(palette.surface).frame(width: 55)
-                                RoundedRectangle(cornerRadius: 4).fill(palette.surface)
-                            }
-                            .padding(7)
-                        }
-                }
-                .padding(8)
-            }
+            .background(palette.background)
         case .emerald:
-            ZStack {
-                LinearGradient(
-                    colors: [palette.accent.opacity(0.78), palette.background],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                HStack(spacing: 7) {
-                    VStack(spacing: 5) {
-                        HStack(spacing: 3) {
-                            Circle().fill(palette.accent).frame(width: 6, height: 6)
-                            RoundedRectangle(cornerRadius: 2).fill(Color.white.opacity(0.86)).frame(width: 24, height: 4)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        ForEach(0 ..< 4, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(index == 0 ? Color.white.opacity(0.14) : Color.clear)
-                                .frame(height: 11)
-                                .overlay(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(index == 0 ? palette.accent : Color.white.opacity(0.45))
-                                        .frame(width: index == 0 ? 24 : 18, height: 3)
-                                        .padding(.leading, 5)
-                                }
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(7)
-                    .frame(width: 56)
-                    .background(OKLCHColor(0.145, 0.045, 155).color)
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-
-                    VStack(spacing: 6) {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(palette.raisedSurface)
-                            .frame(height: 19)
-                        HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 7).fill(palette.raisedSurface)
-                            VStack(spacing: 6) {
-                                RoundedRectangle(cornerRadius: 7).fill(palette.accentSoft)
-                                RoundedRectangle(cornerRadius: 7).fill(palette.raisedSurface)
-                            }
-                        }
-                    }
-                    .padding(7)
-                    .background(palette.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
-                .padding(8)
-            }
-        case .folio:
-            ZStack {
-                palette.background
-
-                HStack(spacing: 7) {
-                    VStack(spacing: 5) {
-                        Circle()
-                            .fill(Color.white.opacity(0.92))
-                            .frame(width: 14, height: 14)
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(OKLCHColor(0.205, 0.008, 255).color)
-                                    .frame(width: 7, height: 3)
-                            }
-
-                        ForEach(0 ..< 3, id: \.self) { index in
-                            Circle()
-                                .fill(index == 0 ? Color.white.opacity(0.92) : Color.clear)
-                                .frame(width: 13, height: 13)
-                                .overlay {
-                                    Circle()
-                                        .fill(
-                                            index == 0
-                                                ? OKLCHColor(0.205, 0.008, 255).color
-                                                : Color.white.opacity(0.58)
-                                        )
-                                        .frame(width: 4, height: 4)
-                                }
-                        }
-
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.vertical, 6)
-                    .frame(width: 30)
-                    .background(OKLCHColor(0.205, 0.008, 255).color)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-                    VStack(spacing: 6) {
-                        HStack(spacing: 5) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(palette.ink)
-                                .frame(width: 42, height: 5)
-                            Spacer(minLength: 0)
-                            Circle()
-                                .fill(palette.accentSoft)
-                                .frame(width: 14, height: 14)
-                        }
-                        .padding(.horizontal, 7)
-                        .frame(height: 22)
-                        .background(palette.raisedSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-
-                        HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(palette.raisedSurface)
-                            VStack(spacing: 6) {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(palette.accentSoft)
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(palette.raisedSurface)
-                            }
-                        }
-                    }
-                }
-                .padding(8)
-            }
-        case .console:
-            VStack(spacing: 0) {
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(palette.success)
-                        .frame(width: 5, height: 5)
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(palette.accent)
-                        .frame(width: 28, height: 3)
-                    Spacer()
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(palette.mutedInk.opacity(0.68))
-                        .frame(width: 34, height: 3)
-                }
-                .padding(.horizontal, 7)
-                .frame(height: 18)
-                .background(palette.sidebar)
-
-                Rectangle().fill(palette.divider).frame(height: 1)
-
-                HStack(spacing: 0) {
-                    VStack(spacing: 4) {
-                        ForEach(0 ..< 4, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 1)
-                                .fill(index == 0 ? palette.accentSoft : Color.clear)
-                                .frame(height: 12)
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 1)
-                                        .fill(index == 0 ? palette.accent : palette.mutedInk.opacity(0.42))
-                                        .frame(width: 8, height: 3)
-                                }
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(4)
-                    .frame(width: 28)
-                    .background(palette.sidebar)
-
-                    Rectangle().fill(palette.divider).frame(width: 1)
-
-                    VStack(spacing: 5) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(palette.raisedSurface)
-                            .frame(height: 18)
-                        HStack(spacing: 5) {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(palette.surface)
-                                .frame(width: 54)
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(palette.surface)
-                        }
-                    }
-                    .padding(6)
-                    .background(palette.background)
-                }
-
-                Rectangle().fill(palette.divider).frame(height: 1)
-
-                HStack(spacing: 4) {
-                    ForEach(0 ..< 3, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(index == 0 ? palette.accentSoft : palette.raisedSurface)
-                            .frame(width: index == 0 ? 36 : 25, height: 7)
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Capsule().fill(Color.white).frame(width: 30, height: 5).padding(.vertical, 10)
+                    ForEach(0 ..< 4, id: \.self) { index in
+                        Capsule().fill(Color.white.opacity(index == 0 ? 0.75 : 0.25)).frame(width: 28, height: 5)
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 6)
-                .frame(height: 14)
-                .background(palette.sidebar)
+                .padding(.horizontal, 8)
+                .frame(width: 52)
+                .background(AppPalette(.dark, theme: .emerald).sidebar)
+                VStack(alignment: .leading, spacing: 8) {
+                    Capsule().fill(palette.ink).frame(width: 42, height: 6).padding(.top, 10)
+                    Capsule().fill(palette.mutedInk.opacity(0.4)).frame(width: 34, height: 3)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    HStack(spacing: 8) {
+                        palette.background
+                        VStack(spacing: 7) {
+                            ForEach(0 ..< 3, id: \.self) { _ in Capsule().fill(palette.divider).frame(height: 4) }
+                            Spacer(minLength: 0)
+                            RoundedRectangle(cornerRadius: 3).fill(palette.raisedSurface).frame(height: 25)
+                        }
+                        .frame(width: 34)
+                    }
+                }
+                .padding(.horizontal, 9)
+                .padding(.bottom, 8)
             }
             .background(palette.background)
+        case .folio:
+            VStack(spacing: 7) {
+                HStack {
+                    Capsule().fill(palette.ink).frame(width: 36, height: 5)
+                    Spacer()
+                    Capsule().fill(palette.raisedSurface).frame(width: 45, height: 13)
+                }
+                .frame(height: 18)
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(0 ..< 4, id: \.self) { index in
+                            HStack(spacing: 4) {
+                                Circle().fill(palette.mutedInk).frame(width: 4, height: 4)
+                                Capsule().fill(palette.mutedInk.opacity(0.55)).frame(height: 3)
+                            }
+                            .padding(4)
+                            .background(index == 0 ? palette.raisedSurface : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .frame(width: 38)
+                    VStack(spacing: 6) {
+                        HStack(spacing: 4) {
+                            ForEach(0 ..< 3, id: \.self) { _ in RoundedRectangle(cornerRadius: 3).fill(palette.surface).frame(height: 16) }
+                        }
+                        HStack(spacing: 6) {
+                            RoundedRectangle(cornerRadius: 6).fill(palette.surface)
+                            RoundedRectangle(cornerRadius: 6).fill(palette.surface).frame(width: 32)
+                        }
+                    }
+                }
+            }
+            .padding(8)
+            .background(palette.background)
+        case .lumen:
+            ZStack {
+                palette.background
+                RadialGradient(
+                    colors: [palette.danger.opacity(0.24), .clear],
+                    center: .topLeading,
+                    startRadius: 2,
+                    endRadius: 110
+                )
+                RadialGradient(
+                    colors: [palette.accent.opacity(0.22), .clear],
+                    center: .topTrailing,
+                    startRadius: 4,
+                    endRadius: 120
+                )
+
+                VStack(spacing: 0) {
+                    HStack(spacing: 6) {
+                        Circle().fill(palette.primary).frame(width: 7, height: 7)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(palette.ink)
+                            .frame(width: 30, height: 4)
+                        Spacer(minLength: 0)
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(palette.raisedSurface.opacity(0.84))
+                            .frame(width: 44, height: 13)
+                    }
+                    .padding(.horizontal, 7)
+                    .frame(height: 22)
+                    .background(palette.raisedSurface.opacity(0.76))
+
+
+                    HStack(spacing: 6) {
+                        VStack(spacing: 4) {
+                            ForEach(0 ..< 4, id: \.self) { index in
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(index == 0 ? palette.primarySoft : Color.clear)
+                                    .frame(height: 10)
+                                    .overlay(alignment: .leading) {
+                                        Circle()
+                                            .fill(index == 0 ? palette.primary : palette.mutedInk.opacity(0.45))
+                                            .frame(width: 4, height: 4)
+                                            .padding(.leading, 5)
+                                    }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(5)
+                        .frame(width: 48)
+
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(palette.surface)
+                            .padding(.vertical, 7)
+                            .padding(.trailing, 7)
+                    }
+                }
+
+            }
+        case .console:
+            VStack(spacing: 0) {
+                HStack {
+                    Capsule().fill(palette.ink).frame(width: 28, height: 4)
+                    Spacer()
+                    Capsule().fill(palette.accent).frame(width: 22, height: 3)
+                }
+                .padding(7)
+                .background(palette.sidebar)
+                Rectangle().fill(palette.divider).frame(height: 1)
+                HStack(spacing: 1) {
+                    VStack(spacing: 9) {
+                        ForEach(0 ..< 5, id: \.self) { _ in Rectangle().fill(palette.mutedInk).frame(width: 6, height: 6) }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.top, 8)
+                    .frame(width: 18)
+                    .background(palette.sidebar)
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(0 ..< 3, id: \.self) { index in
+                            Rectangle().fill(palette.mutedInk.opacity(0.4)).frame(width: index == 0 ? 26 : 18, height: 3)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(7)
+                    .frame(width: 42)
+                    .background(palette.sidebar)
+                    VStack(spacing: 1) {
+                        HStack(spacing: 1) {
+                            palette.surface.frame(width: 34)
+                            palette.sidebar
+                        }
+                        .frame(height: 15)
+                        HStack(spacing: 1) {
+                            palette.surface.frame(width: 36)
+                            palette.background
+                        }
+                    }
+                }
+                Rectangle().fill(palette.sidebar).frame(height: 9)
+            }
+            .background(palette.divider)
+
         }
     }
 }
@@ -1822,53 +1568,44 @@ private struct SettingsSection<Content: View>: View {
             }
         case .console:
             VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 7) {
-                    Text(">")
-                        .foregroundStyle(palette.accent)
-                    Text(L10n.text(titleKey))
-                        .foregroundStyle(palette.ink)
-                }
-                .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
-
-                VStack(alignment: .leading, spacing: 14) { content }
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(palette.accent)
+                VStack(alignment: .leading, spacing: 12) { content }
             }
-            .padding(14)
-            .background(palette.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(palette.divider, lineWidth: 1)
-            }
+            .padding(.vertical, 18)
+            .overlay(alignment: .bottom) { Rectangle().fill(palette.divider).frame(height: 1) }
         case .emerald:
-            VStack(alignment: .leading, spacing: 15) {
-                HStack(spacing: 8) {
-                    Circle().fill(palette.accent).frame(width: 7, height: 7)
-                    Text(L10n.text(titleKey))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                }
-                VStack(alignment: .leading, spacing: 14) { content }
+            VStack(alignment: .leading, spacing: 20) {
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                VStack(alignment: .leading, spacing: 18) { content }
             }
-            .padding(17)
-            .emeraldSurface(.elevated, cornerRadius: 16)
+            .padding(.vertical, 24)
+            .overlay(alignment: .bottom) { Rectangle().fill(palette.divider).frame(height: 1) }
         case .folio:
-            VStack(alignment: .leading, spacing: 15) {
-                HStack(spacing: 8) {
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(palette.accent)
-                        .frame(width: 4, height: 16)
-                    Text(L10n.text(titleKey))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                }
-                VStack(alignment: .leading, spacing: 14) { content }
+            HStack(alignment: .top, spacing: 22) {
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(palette.mutedInk)
+                    .frame(width: 118, alignment: .leading)
+                VStack(alignment: .leading, spacing: 18) { content }
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(17)
-            .background(palette.raisedSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(palette.divider.opacity(0.78), lineWidth: 1)
+            .padding(.vertical, 22)
+            .overlay(alignment: .bottom) { Rectangle().fill(palette.divider).frame(height: 1) }
+        case .lumen:
+            VStack(alignment: .leading, spacing: 18) {
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                VStack(alignment: .leading, spacing: 18) { content }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 20)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(palette.divider).frame(height: 1)
             }
         case .standard:
             HStack(alignment: .top, spacing: 26) {
