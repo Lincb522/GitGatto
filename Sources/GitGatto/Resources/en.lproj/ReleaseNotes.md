@@ -14,3 +14,7 @@
 - The repository switcher supports search and activity-based groups, keeps the current repository visible, and allows older groups to collapse.
 - Theme previews in Settings reflect their layouts. Secondary text has higher contrast, and action controls accommodate longer labels in narrow windows.
 - Update failures retain underlying errors and recovery suggestions, with a specific message when the update helper times out during startup.
+
+## Fixed
+
+- Fixed Agent tasks, Homebrew installation, and regression checks remaining in a loading state while concurrent commands waited for output.
