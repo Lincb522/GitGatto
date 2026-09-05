@@ -54,7 +54,28 @@ jobs:
         run: swift build --build-tests
 
       - name: Test
-        run: swift test --skip-build
+        timeout-minutes: 10
+        run: |
+          mkdir -p "$RUNNER_TEMP/test-diagnostics"
+          (
+            sleep 120
+            ps -axo pid,ppid,etime,state,command > "$RUNNER_TEMP/test-diagnostics/processes.txt"
+            for pid in $(pgrep -f 'swiftpm-testing-helper.*GitGattoPackageTests|GitGattoPackageTests.xctest/Contents/MacOS/GitGattoPackageTests'); do
+              sample "$pid" 3 -file "$RUNNER_TEMP/test-diagnostics/sample-$pid.txt" || true
+            done
+          ) &
+          sampler=$!
+          trap 'kill "$sampler" 2>/dev/null || true' EXIT
+          set -o pipefail
+          swift test --skip-build 2>&1 | tee "$RUNNER_TEMP/test-diagnostics/tests.log"
+
+      - name: Upload test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics
+          path: ${{ runner.temp }}/test-diagnostics
+          retention-days: 7
 
       - name: Package ad-hoc signed app
         run: ./scripts/package-macos.sh "$RUNNER_TEMP/dist"
