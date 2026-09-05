@@ -73,8 +73,16 @@ jobs:
         timeout-minutes: 2
         run: |
           set -o pipefail
-          LIBDISPATCH_COOPERATIVE_POOL_STRICT=1 swift test --skip-build --filter IndependentAILaneTests \
+          BIN_DIR="$(swift build --show-bin-path)"
+          TEST_BUNDLE="$BIN_DIR/GitGattoPackageTests.xctest/Contents/MacOS/GitGattoPackageTests"
+          TEST_HELPER="$(dirname "$(xcrun --find swift)")/../libexec/swift/pm/swiftpm-testing-helper"
+          FRAMEWORKS="$(xcrun --sdk macosx --show-sdk-platform-path)/Developer/Library/Frameworks"
+          # Constrain the tests, not SwiftPM's own manifest loading subprocesses.
+          LIBDISPATCH_COOPERATIVE_POOL_STRICT=1 DYLD_FRAMEWORK_PATH="$FRAMEWORKS" \
+            "$TEST_HELPER" --test-bundle-path "$TEST_BUNDLE" "$TEST_BUNDLE" \
+            --testing-library swift-testing --filter IndependentAILaneTests \
             2>&1 | tee "$RUNNER_TEMP/test-diagnostics/agent-lanes.log"
+          grep -E 'Test run with 2 tests.*passed' "$RUNNER_TEMP/test-diagnostics/agent-lanes.log"
 
       - name: Upload test diagnostics
         if: failure()
