@@ -2,16 +2,25 @@ import AppKit
 import SwiftUI
 
 struct MonitoringMenuBarLabel: View {
-    @ObservedObject var engine: MonitoringEngine
+    let engine: MonitoringEngine
+    @State private var overallState: MonitoringOverallState
+
+    init(engine: MonitoringEngine) {
+        self.engine = engine
+        _overallState = State(initialValue: engine.overallState)
+    }
 
     var body: some View {
         GattoIcon(symbol: iconName, size: 16)
             .frame(width: 18, height: 18)
-            .accessibilityLabel(L10n.text(engine.overallState.localizationKey))
+            .accessibilityLabel(L10n.text(overallState.localizationKey))
+            .onReceive(engine.overallStatePublisher) { state in
+                if overallState != state { overallState = state }
+            }
     }
 
     private var iconName: String {
-        switch engine.overallState {
+        switch overallState {
         case .paused: "pause"
         case .healthy, .monitoring: "dot.radiowaves.left.and.right"
         case .attention: "exclamationmark.triangle.fill"

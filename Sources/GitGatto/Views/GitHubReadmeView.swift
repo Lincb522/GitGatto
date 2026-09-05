@@ -2,6 +2,12 @@ import SwiftUI
 import WebKit
 
 final class GitHubReadmeWebView: WKWebView {
+    struct Content: Equatable {
+        let document: GitHubReadmeDocument
+        let colorScheme: ColorScheme
+    }
+
+    var loadedContent: Content?
     var onScrollAwayFromTop: () -> Void = {}
 
     private var accumulatedScrollDistance: CGFloat = 0
@@ -26,29 +32,69 @@ final class GitHubReadmeWebView: WKWebView {
     }
 }
 
+@MainActor
+final class GitHubReadmeRendererCache: NSObject, ObservableObject, WKNavigationDelegate {
+    struct Lease {
+        let id: UUID
+        let webView: GitHubReadmeWebView
+    }
+
+    private var idleRenderer: GitHubReadmeWebView?
+    private var currentLeaseID: UUID?
+
+    func acquire(for content: GitHubReadmeWebView.Content) -> Lease {
+        let webView: GitHubReadmeWebView
+        if let idleRenderer, idleRenderer.loadedContent == content {
+            webView = idleRenderer
+        } else {
+            let configuration = WKWebViewConfiguration()
+            configuration.websiteDataStore = .nonPersistent()
+            configuration.defaultWebpagePreferences.allowsContentJavaScript = false
+            configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+            webView = GitHubReadmeWebView(frame: .zero, configuration: configuration)
+            webView.setValue(false, forKey: "drawsBackground")
+        }
+        idleRenderer = nil
+        let lease = Lease(id: UUID(), webView: webView)
+        currentLeaseID = lease.id
+        return lease
+    }
+
+    func release(_ lease: Lease) {
+        // An outgoing card can finish its transition after the new card mounts.
+        guard lease.id == currentLeaseID else { return }
+        lease.webView.pauseAllMediaPlayback(completionHandler: nil)
+        lease.webView.navigationDelegate = self
+        idleRenderer = lease.webView
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        (webView as? GitHubReadmeWebView)?.loadedContent = nil
+    }
+}
+
 struct GitHubReadmeView: NSViewRepresentable {
     let document: GitHubReadmeDocument
     let colorScheme: ColorScheme
+    let rendererCache: GitHubReadmeRendererCache
     let onScrollAwayFromTop: () -> Void
     let onOpenLink: (URL) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
+            rendererCache: rendererCache,
             onOpenLink: onOpenLink,
             linkBaseURL: document.linkBaseURL
         )
     }
 
     func makeNSView(context: Context) -> GitHubReadmeWebView {
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .nonPersistent()
-        configuration.defaultWebpagePreferences.allowsContentJavaScript = false
-        configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
-
-        let webView = GitHubReadmeWebView(frame: .zero, configuration: configuration)
+        let lease = rendererCache.acquire(for: .init(document: document, colorScheme: colorScheme))
+        context.coordinator.lease = lease
+        let webView = lease.webView
         webView.onScrollAwayFromTop = onScrollAwayFromTop
+        webView.resetScrollDetection()
         webView.navigationDelegate = context.coordinator
-        webView.setValue(false, forKey: "drawsBackground")
         return webView
     }
 
@@ -56,9 +102,9 @@ struct GitHubReadmeView: NSViewRepresentable {
         webView.onScrollAwayFromTop = onScrollAwayFromTop
         context.coordinator.onOpenLink = onOpenLink
         context.coordinator.linkBaseURL = document.linkBaseURL
-        let key = "\(document.html.hashValue):\(colorScheme == .dark)"
-        guard context.coordinator.loadedKey != key else { return }
-        context.coordinator.loadedKey = key
+        let content = GitHubReadmeWebView.Content(document: document, colorScheme: colorScheme)
+        guard webView.loadedContent != content else { return }
+        webView.loadedContent = content
         webView.resetScrollDetection()
         webView.loadHTMLString(pageHTML, baseURL: document.linkBaseURL)
     }
@@ -66,6 +112,10 @@ struct GitHubReadmeView: NSViewRepresentable {
     static func dismantleNSView(_ webView: GitHubReadmeWebView, coordinator: Coordinator) {
         webView.onScrollAwayFromTop = {}
         webView.navigationDelegate = nil
+        if let lease = coordinator.lease {
+            coordinator.rendererCache.release(lease)
+            coordinator.lease = nil
+        }
     }
 
     private var pageHTML: String {
@@ -176,14 +226,17 @@ struct GitHubReadmeView: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
-        var loadedKey: String?
+        let rendererCache: GitHubReadmeRendererCache
+        var lease: GitHubReadmeRendererCache.Lease?
         var onOpenLink: (URL) -> Void
         var linkBaseURL: URL
 
         init(
+            rendererCache: GitHubReadmeRendererCache,
             onOpenLink: @escaping (URL) -> Void,
             linkBaseURL: URL
         ) {
+            self.rendererCache = rendererCache
             self.onOpenLink = onOpenLink
             self.linkBaseURL = linkBaseURL
         }
@@ -208,6 +261,10 @@ struct GitHubReadmeView: NSViewRepresentable {
                 onOpenLink(url)
             }
             decisionHandler(.cancel)
+        }
+
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            (webView as? GitHubReadmeWebView)?.loadedContent = nil
         }
 
         private static func isSamePageReference(_ url: URL, baseURL: URL) -> Bool {

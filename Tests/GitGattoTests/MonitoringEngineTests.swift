@@ -8,6 +8,32 @@ import Testing
 @Suite("Monitoring engine")
 struct MonitoringEngineTests {
     @MainActor
+    @Test("Menu bar receives state changes without channel timestamp redraws")
+    func menuBarStateDeduplicatesChannelUpdates() {
+        let engine = MonitoringEngine()
+        var states: [MonitoringOverallState] = []
+        let observation = engine.overallStatePublisher.sink { states.append($0) }
+        var channelUpdates = 0
+        let channelObservation = engine.$channels.dropFirst().sink { _ in channelUpdates += 1 }
+
+        for _ in 0..<100 { engine.markHealthy(.workingTree) }
+        #expect(states == [.healthy])
+        #expect(channelUpdates == 100)
+        #expect(engine.channels.first { $0.category == .workingTree }?.lastUpdatedAt != nil)
+
+        engine.markMonitoring(.remote)
+        engine.markMonitoring(.remote)
+        engine.markAttention(.workingTree, error: "Repository unavailable")
+        engine.markHealthy(.remote)
+        engine.markHealthy(.workingTree)
+        var preferences = AppPreferences()
+        preferences.monitoringEngineEnabled = false
+        engine.configure(preferences: preferences, repositories: [])
+        #expect(states == [.healthy, .monitoring, .attention, .healthy, .paused])
+        withExtendedLifetime((observation, channelObservation)) {}
+    }
+
+    @MainActor
     @Test("Repeated monitoring configuration does not publish unchanged state")
     func unchangedConfigurationIsSilent() {
         let engine = MonitoringEngine()

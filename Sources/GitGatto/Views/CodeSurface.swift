@@ -15,21 +15,22 @@ struct CodeDocumentView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        let lines = content.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let lines = CodeLineCache.shared.lines(for: content)
         let gutterWidth = max(48, CGFloat(String(max(1, lines.count)).count * 8 + 24))
 
         VStack(spacing: 0) {
             GeometryReader { proxy in
                 ScrollView([.horizontal, .vertical]) {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                        ForEach(lines.indices, id: \.self) { index in
                             CodeSurfaceLine(
                                 number: index + 1,
-                                text: line,
+                                text: lines[index],
                                 fileName: fileName,
                                 gutterWidth: gutterWidth,
                                 highlightsSyntax: syntaxHighlighting,
-                                theme: theme
+                                theme: theme,
+                                palette: palette
                             )
                         }
                     }
@@ -64,14 +65,44 @@ struct CodeDocumentView: View {
     }
 }
 
+final class CodeLineCache: @unchecked Sendable {
+    static let shared = CodeLineCache()
+
+    private final class Entry {
+        let lines: [String]
+
+        init(content: String) {
+            lines = content.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        }
+    }
+
+    private let storage = NSCache<NSString, Entry>()
+
+    init() {
+        storage.countLimit = 4
+        storage.totalCostLimit = 8 * 1_024 * 1_024
+    }
+
+    func lines(for content: String) -> [String] {
+        let key = content as NSString
+        if let entry = storage.object(forKey: key) { return entry.lines }
+        let entry = Entry(content: content)
+        // Include the key and per-line storage, not just the source byte count.
+        let cost = content.utf8.count * 2 + entry.lines.count * MemoryLayout<String>.stride
+        if cost <= storage.totalCostLimit {
+            storage.setObject(entry, forKey: key, cost: cost)
+        }
+        return entry.lines
+    }
+}
+
 struct SyntaxHighlightedCodeLine: View {
     let text: String
     let fileName: String
+    let palette: AppPalette
     var highlightsSyntax = true
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let palette = AppPalette(colorScheme)
         if highlightsSyntax {
             highlightedText(palette)
                 .textSelection(.enabled)
@@ -99,12 +130,11 @@ private struct CodeSurfaceLine: View {
     let gutterWidth: CGFloat
     let highlightsSyntax: Bool
     let theme: AppVisualTheme
+    let palette: AppPalette
 
-    @Environment(\.colorScheme) private var colorScheme
     @State private var hovering = false
 
     var body: some View {
-        let palette = AppPalette(colorScheme)
         HStack(alignment: .top, spacing: 0) {
             HStack(spacing: 7) {
                 if hovering {
@@ -127,6 +157,7 @@ private struct CodeSurfaceLine: View {
             SyntaxHighlightedCodeLine(
                 text: text,
                 fileName: fileName,
+                palette: palette,
                 highlightsSyntax: highlightsSyntax
             )
             .padding(.leading, 14)

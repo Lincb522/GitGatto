@@ -4,6 +4,7 @@ import SwiftUI
 struct GitHubWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @ObservedObject var downloads: AppDownloadManager
+    let readmeRendererCache: GitHubReadmeRendererCache
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
@@ -996,6 +997,7 @@ struct GitHubWorkspaceView: View {
                     GitHubReadmeView(
                         document: document,
                         colorScheme: colorScheme,
+                        rendererCache: readmeRendererCache,
                         onScrollAwayFromTop: {
                             setRepositoryHeaderCollapsed(true)
                         },

@@ -27,9 +27,6 @@ struct BranchesWorkspaceView: View {
                     .background(palette.background)
             }
         }
-        .task {
-            model.refreshGitTools()
-        }
     }
 
     private var theme: AppVisualTheme {

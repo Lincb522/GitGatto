@@ -267,11 +267,11 @@ private struct StashInspector: View {
     @State private var isConfirmingDrop = false
 
     private var diffStats: (files: Int, additions: Int, deletions: Int) {
-        guard let lines = model.stashDiffDocument?.lines else { return (0, 0, 0) }
+        guard let document = model.stashDiffDocument else { return (0, 0, 0) }
         return (
-            lines.filter { $0.text.hasPrefix("diff --git ") }.count,
-            lines.filter { $0.kind == .addition }.count,
-            lines.filter { $0.kind == .deletion }.count
+            document.fileCount,
+            document.additionCount,
+            document.deletionCount
         )
     }
 

@@ -204,6 +204,29 @@ struct GitRepositoryReferenceServiceTests {
     }
 
     @MainActor
+    @Test("Returning to branches refreshes references changed outside the app")
+    func refreshesReferencesOnNavigation() async throws {
+        let fixture = try makeReferenceRepository()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let model = WorkspaceViewModel(service: GitRepositoryService())
+        model.appPreferences.monitoringEngineEnabled = false
+        model.appPreferences.repositoryBackupEnabled = false
+        await model.openRepository(fixture.repository)
+        model.selectedSection = .branches
+        try await waitUntil {
+            !model.isLoadingGitTools && !model.gitReferenceSnapshot.references.isEmpty
+        }
+        model.selectedSection = .github
+        try referenceGit(["tag", "created-while-away"], at: fixture.repository)
+        model.selectedSection = .branches
+        try await waitUntil {
+            !model.isLoadingGitTools
+                && model.gitReferenceSnapshot.tags.contains { $0.name == "created-while-away" }
+        }
+        model.selectedSection = .github
+    }
+
+    @MainActor
     private func render<Content: View>(_ content: Content, width: CGFloat, height: CGFloat) throws -> Data {
         let hostingView = NSHostingView(rootView: content)
         hostingView.frame = NSRect(x: 0, y: 0, width: width, height: height)

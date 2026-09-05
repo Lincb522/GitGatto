@@ -33,6 +33,20 @@ final class MonitoringEngine: ObservableObject {
     }
 
     var overallState: MonitoringOverallState {
+        Self.overallState(isEnabled: isEnabled, channels: channels)
+    }
+
+    var overallStatePublisher: AnyPublisher<MonitoringOverallState, Never> {
+        $isEnabled.combineLatest($channels)
+            .map { Self.overallState(isEnabled: $0, channels: $1) }
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+    }
+
+    private static func overallState(
+        isEnabled: Bool,
+        channels: [MonitoringChannelSnapshot]
+    ) -> MonitoringOverallState {
         guard isEnabled, channels.contains(where: \.isEnabled) else { return .paused }
         if channels.contains(where: { $0.isEnabled && $0.state == .attention }) {
             return .attention

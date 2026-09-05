@@ -8,6 +8,7 @@ struct WorkspaceView: View {
     @StateObject private var developerToolsModel = DeveloperToolsViewModel()
     @StateObject private var downloads = AppDownloadManager()
     @StateObject private var intelligenceModel = RepositoryIntelligenceViewModel()
+    @StateObject private var readmeRendererCache = GitHubReadmeRendererCache()
     @State private var didReportInitialContentReady = false
     @State private var showsCommandPalette = false
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
@@ -290,7 +291,7 @@ struct WorkspaceView: View {
     @ViewBuilder
     private var workspaceDetail: some View {
         if model.selectedSection == .github {
-            GitHubWorkspaceView(model: model, downloads: downloads)
+            GitHubWorkspaceView(model: model, downloads: downloads, readmeRendererCache: readmeRendererCache)
         } else if model.selectedSection == .marketplace {
             GitHubMarketplaceView(
                 model: marketplaceModel,
@@ -331,7 +332,7 @@ struct WorkspaceView: View {
             case .goals:
                 ProjectGoalsWorkspaceView(model: model)
             case .github:
-                GitHubWorkspaceView(model: model, downloads: downloads)
+                GitHubWorkspaceView(model: model, downloads: downloads, readmeRendererCache: readmeRendererCache)
             case .marketplace:
                 GitHubMarketplaceView(
                     model: marketplaceModel,

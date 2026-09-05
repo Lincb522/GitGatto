@@ -334,6 +334,25 @@ struct DiffLine: Identifiable, Sendable {
 struct DiffDocument: Sendable {
     let path: String
     let lines: [DiffLine]
+    let fileCount: Int
+    let additionCount: Int
+    let deletionCount: Int
+
+    init(path: String, lines: [DiffLine]) {
+        self.path = path
+        self.lines = lines
+        var files = 0
+        var additions = 0
+        var deletions = 0
+        for line in lines {
+            if line.text.hasPrefix("diff --git ") { files += 1 }
+            if line.kind == .addition { additions += 1 }
+            if line.kind == .deletion { deletions += 1 }
+        }
+        fileCount = files
+        additionCount = additions
+        deletionCount = deletions
+    }
 }
 
 enum OperationKind: Sendable, Equatable {

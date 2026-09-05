@@ -53,9 +53,9 @@ struct DiffInspectorView: View {
                         }
                         if let document, !compactHeader {
                             HStack(spacing: 8) {
-                                Text("+\(document.lines.filter { $0.kind.isAddition }.count)")
+                                Text("+\(document.additionCount)")
                                     .foregroundStyle(palette.success)
-                                Text("−\(document.lines.filter { $0.kind.isDeletion }.count)")
+                                Text("−\(document.deletionCount)")
                                     .foregroundStyle(palette.danger)
                             }
                             .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
@@ -158,6 +158,7 @@ struct DiffCodeView: View {
                                     line: line,
                                     fileName: document.path,
                                     theme: theme,
+                                    palette: palette,
                                     onSelect: onSelectLine
                                 )
                             }
@@ -183,12 +184,11 @@ private struct DiffLineView: View {
     let line: DiffLine
     let fileName: String
     let theme: AppVisualTheme
+    let palette: AppPalette
     let onSelect: ((DiffLine) -> Void)?
-    @Environment(\.colorScheme) private var colorScheme
     @State private var hovering = false
 
     var body: some View {
-        let palette = AppPalette(colorScheme)
         HStack(spacing: 0) {
             Text(statusSymbol)
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -216,6 +216,7 @@ private struct DiffLineView: View {
                     SyntaxHighlightedCodeLine(
                         text: codeText,
                         fileName: fileName,
+                        palette: palette,
                         highlightsSyntax: true
                     )
                 } else {
@@ -335,9 +336,9 @@ private struct DiffSurfaceStatusBar: View {
         HStack(spacing: 12) {
             GattoLabel(CodeSyntax.languageName(for: document.path), systemImage: "arrow.left.arrow.right.square")
             Spacer()
-            Text("+\(document.lines.filter { $0.kind.isAddition }.count)")
+            Text("+\(document.additionCount)")
                 .foregroundStyle(palette.success)
-            Text("−\(document.lines.filter { $0.kind.isDeletion }.count)")
+            Text("−\(document.deletionCount)")
                 .foregroundStyle(palette.danger)
             Text(L10n.format("code_surface.lines", document.lines.count))
         }
@@ -350,8 +351,6 @@ private struct DiffSurfaceStatusBar: View {
 }
 
 private extension DiffLineKind {
-    var isAddition: Bool { if case .addition = self { true } else { false } }
-    var isDeletion: Bool { if case .deletion = self { true } else { false } }
     var isCode: Bool {
         switch self {
         case .context, .addition, .deletion: true

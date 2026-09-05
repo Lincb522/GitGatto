@@ -377,9 +377,9 @@ private struct CommitInspector: View {
     private var diffStats: (files: Int, additions: Int, deletions: Int) {
         guard let document else { return (0, 0, 0) }
         return (
-            document.lines.filter { $0.text.hasPrefix("diff --git ") }.count,
-            document.lines.filter { $0.kind == .addition }.count,
-            document.lines.filter { $0.kind == .deletion }.count
+            document.fileCount,
+            document.additionCount,
+            document.deletionCount
         )
     }
 

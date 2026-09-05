@@ -564,7 +564,8 @@ private struct FileBlameView: View {
                                 .padding(.top, startsGroup ? 5 : 0)
                             SyntaxHighlightedCodeLine(
                                 text: line.text,
-                                fileName: line.sourcePath
+                                fileName: line.sourcePath,
+                                palette: palette
                             )
                                 .padding(.leading, 11)
                                 .padding(.top, startsGroup ? 5 : 0)

@@ -10,6 +10,11 @@ on:
         description: "Existing release tag"
         required: true
         type: string
+      notarize:
+        description: "Submit this release for notarization"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -26,7 +31,7 @@ jobs:
       CODESIGN_IDENTITY: "Developer ID Application: chengbo lin (7VJKFX4HF8)"
       MACOS_DEVELOPER_ID_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
       MACOS_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.MACOS_DEVELOPER_ID_P12_PASSWORD }}
-      # Optional: when all three are present the release is notarized and stapled.
+      # Notarization requires an explicit request and all three credentials.
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
@@ -54,16 +59,16 @@ jobs:
           done
 
           NOTARIZE=false
-          if [[ -n "${APP_STORE_CONNECT_KEY_ID:-}" || -n "${APP_STORE_CONNECT_ISSUER_ID:-}" || -n "${APP_STORE_CONNECT_PRIVATE_KEY_BASE64:-}" ]]; then
+          if [[ "${{ inputs.notarize }}" == "true" ]]; then
             for variable in APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_PRIVATE_KEY_BASE64; do
               if [[ -z "${(P)variable:-}" ]]; then
-                print -u2 "Notarization is partially configured; missing secret: $variable"
+                print -u2 "Notarization was requested; missing secret: $variable"
                 exit 1
               fi
             done
             NOTARIZE=true
           else
-            print "::warning::App Store Connect secrets are not configured; the DMG will be signed but not notarized."
+            print "Notarization was not requested; the DMG will be signed but not notarized."
           fi
 
           SIGN_APPCAST=false

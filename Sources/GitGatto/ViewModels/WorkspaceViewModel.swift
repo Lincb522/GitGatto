@@ -7558,7 +7558,6 @@ final class WorkspaceViewModel: ObservableObject {
                 await self?.reloadRepositoryBackups()
             }
         case .branches:
-            guard force || gitReferenceSnapshot == .empty else { return }
             refreshGitTools()
         default:
             break
