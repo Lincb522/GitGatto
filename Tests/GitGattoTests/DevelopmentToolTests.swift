@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Darwin
 import Foundation
 import SwiftUI
@@ -135,17 +136,17 @@ struct DevelopmentToolTests {
 
     @Test("Agent configuration status is explicit and removed from the displayed result")
     func parsesAgentConfigurationStatus() {
-        let complete = CodexService.developmentToolResult(CodexRunResult(
+        let complete = CodexService.installerResult(CodexRunResult(
             response: "GitHub CLI verified. Existing account token is invalid.\nGITGATTO_RESULT: COMPLETE",
             commandCount: 2,
             fileChangeCount: 0
         ))
-        let blocked = CodexService.developmentToolResult(CodexRunResult(
+        let blocked = CodexService.installerResult(CodexRunResult(
             response: "Plugin registration needs user action.\nGITGATTO_RESULT: ACTION_REQUIRED",
             commandCount: 1,
             fileChangeCount: 0
         ))
-        let unstructured = CodexService.developmentToolResult(CodexRunResult(
+        let unstructured = CodexService.installerResult(CodexRunResult(
             response: "Installed",
             commandCount: 1,
             fileChangeCount: 0
@@ -692,6 +693,40 @@ struct DevelopmentToolTests {
         #expect(status.updateAvailability == .current)
         #expect(status.retryOperation == .upgrade)
         #expect(status.detail == L10n.text("developer_tools.configuration.action_required"))
+
+        let updateChecks = await fixture.updateCheckCount
+        model.refresh()
+        try await waitUntilAsync { await fixture.updateCheckCount > updateChecks }
+        try await waitUntil {
+            !model.isRefreshing && !model.isCheckingUpdates
+                && model.status(for: tool).updateAvailability == .current
+        }
+        #expect(model.status(for: tool).state == .actionRequired)
+        #expect(model.status(for: tool).detail == status.detail)
+        #expect(model.status(for: tool).retryOperation == .upgrade)
+    }
+
+    @Test("An older update scan cannot overwrite an upgrade completed while it was waiting")
+    @MainActor
+    func ignoresUpdateResultsFromBeforeAnOperation() async throws {
+        let fixture = DevelopmentToolInstallFixture()
+        let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
+        await fixture.seedInstalled(tool.id)
+        let model = DeveloperToolsViewModel(installer: fixture, probe: fixture,
+                                            updateChecker: fixture, environmentConfigurator: fixture)
+        model.refresh()
+        try await waitUntil { model.status(for: tool).updateAvailability == .available && !model.isCheckingUpdates }
+        model.changeCategory(.updates)
+        await fixture.holdNextUpdateCheck()
+        model.checkForUpdates()
+        try await waitUntilAsync { await fixture.hasHeldUpdateCheck }
+        #expect(model.filteredTools.contains { $0.id == tool.id })
+        model.upgrade(tool)
+        try await waitUntil { !model.isQueuedOrRunning(tool) && model.status(for: tool).version == "3.8.0" }
+        await fixture.releaseUpdateCheck()
+        try await waitUntil { !model.isCheckingUpdates }
+        #expect(model.status(for: tool).updateAvailability == .current)
+        #expect(model.status(for: tool).version == "3.8.0")
     }
 
     @Test("Agent operations run in bounded parallel lanes and continue the queue")
@@ -824,6 +859,10 @@ struct DevelopmentToolTests {
     @Test("Developer tool updates render without clipping at the default window size")
     @MainActor
     func rendersDeveloperToolUpdates() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let downloads = AppDownloadManager(appSupportDirectory: root,
+                                           downloadDirectory: root.appendingPathComponent("Downloads"))
         let fixture = DevelopmentToolInstallFixture()
         let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
         await fixture.seedInstalled(tool.id)
@@ -833,7 +872,7 @@ struct DevelopmentToolTests {
             updateChecker: fixture,
             environmentConfigurator: fixture
         )
-        developerTools.refresh()
+        developerTools.loadIfNeeded()
         try await waitUntil {
             developerTools.status(for: tool).updateAvailability == .available
         }
@@ -842,7 +881,7 @@ struct DevelopmentToolTests {
         let view = GitHubMarketplaceView(
             model: GitHubMarketplaceViewModel(),
             developerTools: developerTools,
-            downloads: AppDownloadManager(),
+            downloads: downloads,
             showsDeveloperToolsInitially: true
         )
         .frame(width: 1_416, height: 876)
@@ -858,9 +897,58 @@ struct DevelopmentToolTests {
         #expect(representation.pixelsWide == 1_416)
         #expect(representation.pixelsHigh == 876)
 
+        try await verifyCenterRendering(
+            GitHubMarketplaceView(model: GitHubMarketplaceViewModel(), developerTools: developerTools,
+                                  downloads: downloads, showsDeveloperToolsInitially: true),
+            name: "tools"
+        )
+        await fixture.requireUserConfigurationAction()
+        developerTools.upgrade(tool)
+        try await waitUntil { developerTools.status(for: tool).state == .actionRequired }
+        try await verifyCenterRendering(
+            GitHubMarketplaceView(model: GitHubMarketplaceViewModel(), developerTools: developerTools,
+                                  downloads: downloads, showsDeveloperToolsInitially: true),
+            name: "tools-action-required"
+        )
         if let outputPath = ProcessInfo.processInfo.environment["GITGATTO_UI_SNAPSHOT_PATH"] {
             let data = try #require(representation.representation(using: .png, properties: [:]))
             try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
+        }
+    }
+
+    @Test("Streaming installation progress updates only the selected tool detail")
+    @MainActor
+    func isolatesProgressRendering() async throws {
+        let fixture = DevelopmentToolInstallFixture()
+        await fixture.holdInstallation()
+        let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
+        let model = DeveloperToolsViewModel(installer: fixture, probe: fixture,
+                                           updateChecker: fixture, environmentConfigurator: fixture)
+        model.select(tool)
+        let catalog = DeveloperToolsObservation(model: model, scope: .catalog)
+        let detail = DeveloperToolsObservation(model: model, scope: .selectedTool)
+        var catalogChanges = 0
+        var detailChanges = 0
+        let catalogSubscription = catalog.objectWillChange.sink { catalogChanges += 1 }
+        let detailSubscription = detail.objectWillChange.sink { detailChanges += 1 }
+        defer { catalogSubscription.cancel(); detailSubscription.cancel() }
+        do {
+            model.install(tool)
+            try await waitUntilAsync { await fixture.hasHeldInstallation }
+            let previousCatalogChanges = catalogChanges
+            let previousDetailChanges = detailChanges
+            for index in 0..<100 {
+                await fixture.reportInstallationProgress("Installing file \(index)")
+            }
+            #expect(catalogChanges == previousCatalogChanges)
+            #expect(detailChanges == previousDetailChanges + 100)
+            print("CENTERS_RENDER_MEASURE progress_events=100 catalog_invalidations=\(catalogChanges - previousCatalogChanges) detail_invalidations=\(detailChanges - previousDetailChanges)")
+            await fixture.releaseInstallation()
+            try await waitUntil { model.status(for: tool).state == .installed }
+            #expect(catalogChanges > previousCatalogChanges)
+        } catch {
+            await fixture.releaseInstallation()
+            throw error
         }
     }
 
@@ -1058,6 +1146,34 @@ private actor DevelopmentToolInstallFixture:
     private(set) var configuredExecutableNames: [String] = []
     private(set) var authorizationCount = 0
     private(set) var installAttemptCount = 0
+    private(set) var updateCheckCount = 0
+    private var holdsInstallation = false
+    private var heldInstallation: CheckedContinuation<Void, Never>?
+    private var installationProgress: (@Sendable (AgentInstallProgress) async -> Void)?
+    var hasHeldInstallation: Bool { heldInstallation != nil }
+
+    func holdInstallation() { holdsInstallation = true }
+
+    func reportInstallationProgress(_ message: String) async {
+        await installationProgress?(AgentInstallProgress(.installing, detail: message))
+    }
+
+    func releaseInstallation() {
+        holdsInstallation = false
+        heldInstallation?.resume()
+        heldInstallation = nil
+        installationProgress = nil
+    }
+    private var holdsNextUpdateCheck = false
+    private var heldUpdateCheck: CheckedContinuation<Void, Never>?
+    var hasHeldUpdateCheck: Bool { heldUpdateCheck != nil }
+
+    func holdNextUpdateCheck() { holdsNextUpdateCheck = true }
+
+    func releaseUpdateCheck() {
+        heldUpdateCheck?.resume()
+        heldUpdateCheck = nil
+    }
     private var requiresSystemAuthorization = false
     private var isSystemAuthorized = false
     private var cancelsAuthorization = false
@@ -1122,7 +1238,8 @@ private actor DevelopmentToolInstallFixture:
     }
 
     func checkUpdates(for tools: [DevelopmentTool]) async -> [String: DevelopmentToolUpdateResult] {
-        Dictionary(uniqueKeysWithValues: tools.map { tool in
+        updateCheckCount += 1
+        let results = Dictionary(uniqueKeysWithValues: tools.map { tool in
             let installed = installedToolIDs.contains(tool.id)
             let upgraded = upgradedToolIDs.contains(tool.id)
             let result: DevelopmentToolUpdateResult
@@ -1149,6 +1266,11 @@ private actor DevelopmentToolInstallFixture:
             }
             return (tool.id, result)
         })
+        if holdsNextUpdateCheck {
+            holdsNextUpdateCheck = false
+            await withCheckedContinuation { heldUpdateCheck = $0 }
+        }
+        return results
     }
 
     func run(
@@ -1191,6 +1313,10 @@ private actor DevelopmentToolInstallFixture:
         await progress(AgentInstallProgress(.preparing))
         await progress(AgentInstallProgress(.inspecting))
         await progress(AgentInstallProgress(.installing))
+        if holdsInstallation {
+            installationProgress = progress
+            await withCheckedContinuation { heldInstallation = $0 }
+        }
         if requiresSystemAuthorization, !isSystemAuthorized {
             return CodexRunResult(
                 response: "Homebrew permission denied for /usr/local/Cellar",

@@ -3,6 +3,7 @@ import Darwin
 import Foundation
 
 protocol RepositoryBackupServing: Sendable {
+    func inventory(retainingPerRepository limit: Int) async throws -> RepositoryBackupInventory
     func loadBackups() async throws -> [RepositoryBackup]
     func createBackup(
         for repositoryURL: URL,
@@ -31,7 +32,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     private let decoder: JSONDecoder
     private var activeStorageOperations = 0
     private var isMigratingStorage = false
-    private var activeStagingDirectoryNames = Set<String>()
+    private var storageWaiters: [(id: UUID, continuation: CheckedContinuation<Void, Error>)] = []
 
     nonisolated static func defaultRootURL(fileManager: FileManager = .default) -> URL {
         fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -59,10 +60,32 @@ actor RepositoryBackupService: RepositoryBackupServing {
     }
 
     func loadBackups() async throws -> [RepositoryBackup] {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         try recoverInterruptedTransactions()
         return try manifests().map(\.backup).sorted { $0.createdAt > $1.createdAt }
+    }
+
+    func inventory(retainingPerRepository limit: Int) async throws -> RepositoryBackupInventory {
+        try await beginStorageOperation()
+        defer { endStorageOperation() }
+        try recoverInterruptedTransactions()
+        let retention = RepositoryBackupPolicy.clampedRetentionCount(limit)
+        let groups = Dictionary(grouping: try manifests(), by: \.backup.repositoryPath)
+        var retained: [RepositoryBackup] = []
+        for values in groups.values {
+            let ordered = values.sorted { $0.backup.createdAt > $1.backup.createdAt }
+            retained.append(contentsOf: ordered.prefix(retention).map(\.backup))
+            for obsolete in ordered.dropFirst(retention) {
+                try Task.checkCancellation()
+                try fileManager.removeItem(at: backupDirectory(for: obsolete.backup))
+            }
+        }
+        return RepositoryBackupInventory(
+            backups: retained.sorted { $0.createdAt > $1.createdAt },
+            storedByteCount: try recursiveByteCount(at: rootURL),
+            directoryURL: rootURL
+        )
     }
 
     func createBackup(
@@ -70,7 +93,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
         reason: RepositoryBackupReason,
         policy: RepositoryBackupPolicy
     ) async throws -> RepositoryBackup? {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         let repository = repositoryURL.standardizedFileURL.resolvingSymlinksInPath()
         guard fileManager.fileExists(atPath: repository.appendingPathComponent(".git").path) else {
@@ -106,10 +129,8 @@ actor RepositoryBackupService: RepositoryBackupServing {
         let stagingURL = rootURL.appendingPathComponent(".\(directoryName).staging", isDirectory: true)
         let finalURL = rootURL.appendingPathComponent(directoryName, isDirectory: true)
         try fileManager.createDirectory(at: stagingURL, withIntermediateDirectories: true)
-        activeStagingDirectoryNames.insert(stagingURL.lastPathComponent)
         var completed = false
         defer {
-            activeStagingDirectoryNames.remove(stagingURL.lastPathComponent)
             if !completed {
                 try? fileManager.removeItem(at: stagingURL)
             }
@@ -121,6 +142,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
         var omittedPaths: [String] = []
         var copiedBytes: Int64 = 0
         for path in state.changedPaths where !state.deletedPaths.contains(path) {
+            try Task.checkCancellation()
             let source = try containedURL(path: path, in: repository)
             let values = try? source.resourceValues(forKeys: [.fileSizeKey, .isDirectoryKey])
             let fileSize = Int64(values?.fileSize ?? 0)
@@ -202,6 +224,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
         )
         try writeCommitMarker(for: backup, in: stagingURL)
         try synchronizeTree(at: stagingURL)
+        try Task.checkCancellation()
         try fileManager.moveItem(at: stagingURL, to: finalURL)
         completed = true
         try synchronizeFileSystemItem(at: rootURL)
@@ -215,7 +238,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
         after backup: RepositoryBackup,
         in repositoryURL: URL
     ) async throws -> RepositoryProtectionAssessment {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         let repository = repositoryURL.standardizedFileURL.resolvingSymlinksInPath()
         guard repository.path == backup.repositoryPath else {
@@ -263,42 +286,50 @@ actor RepositoryBackupService: RepositoryBackupServing {
     }
 
     func restore(_ backup: RepositoryBackup, to destinationURL: URL) async throws -> URL {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         let destination = destinationURL.standardizedFileURL
-        guard !fileManager.fileExists(atPath: destination.path) else {
+        guard !Self.itemExists(at: destination, fileManager: fileManager) else {
             throw RepositoryBackupError.destinationExists
         }
         let manifest = try manifest(for: backup)
         let backupURL = try backupDirectory(for: backup)
         let parent = destination.deletingLastPathComponent()
         try fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
+        let staging = parent.appendingPathComponent(".GitGatto-Restore-\(UUID().uuidString)")
+        defer {
+            if fileManager.fileExists(atPath: staging.path) {
+                try? fileManager.removeItem(at: staging)
+            }
+        }
 
         if let bundleFileName = manifest.bundleFileName {
-            let bundleURL = backupURL.appendingPathComponent(bundleFileName)
+            let bundleURL = try containedURL(path: bundleFileName, in: backupURL)
             guard fileManager.fileExists(atPath: bundleURL.path) else {
                 throw RepositoryBackupError.backupMissing
             }
             _ = try await runner.run(
                 at: parent,
-                arguments: ["clone", bundleURL.path, destination.path]
+                arguments: ["clone", bundleURL.path, staging.path]
             )
             if let headSHA = backup.headSHA {
                 _ = try await runner.run(
-                    at: destination,
-                    arguments: ["reset", "--hard", headSHA]
+                    at: staging,
+                    arguments: backup.branchName.map { ["checkout", "-B", $0, headSHA] }
+                        ?? ["checkout", "--detach", headSHA]
                 )
             }
         } else {
-            try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
-            _ = try await runner.run(at: destination, arguments: ["init"])
+            try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
+            _ = try await runner.run(at: staging, arguments: ["init"])
         }
 
         let workspaceURL = backupURL.appendingPathComponent("workspace", isDirectory: true)
         for path in manifest.copiedPaths {
+            try Task.checkCancellation()
             let source = try containedURL(path: path, in: workspaceURL)
-            let target = try containedURL(path: path, in: destination)
-            if fileManager.fileExists(atPath: target.path) {
+            let target = try containedURL(path: path, in: staging)
+            if Self.itemExists(at: target, fileManager: fileManager) {
                 try fileManager.removeItem(at: target)
             }
             try fileManager.createDirectory(
@@ -308,16 +339,25 @@ actor RepositoryBackupService: RepositoryBackupServing {
             try fileManager.copyItem(at: source, to: target)
         }
         for path in manifest.deletedPaths {
-            let target = try containedURL(path: path, in: destination)
-            if fileManager.fileExists(atPath: target.path) {
+            try Task.checkCancellation()
+            let target = try containedURL(path: path, in: staging)
+            if Self.itemExists(at: target, fileManager: fileManager) {
                 try fileManager.removeItem(at: target)
             }
         }
+        try Task.checkCancellation()
+        try synchronizeTree(at: staging)
+        try Task.checkCancellation()
+        guard !Self.itemExists(at: destination, fileManager: fileManager) else {
+            throw RepositoryBackupError.destinationExists
+        }
+        try fileManager.moveItem(at: staging, to: destination)
+        try synchronizeFileSystemItem(at: parent)
         return destination
     }
 
     func delete(_ backup: RepositoryBackup) async throws {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         let directory = try backupDirectory(for: backup)
         guard fileManager.fileExists(atPath: directory.path) else {
@@ -327,7 +367,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     }
 
     func deleteBackups(forRepositoryPath repositoryPath: String?) async throws {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         let candidates = try manifests().filter { manifest in
             repositoryPath == nil || manifest.backup.repositoryPath == repositoryPath
@@ -341,7 +381,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     }
 
     func pruneBackups(retainingPerRepository limit: Int) async throws {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         let retentionCount = RepositoryBackupPolicy.clampedRetentionCount(limit)
         let repositoryPaths = try Set(manifests().map(\.backup.repositoryPath))
@@ -351,7 +391,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     }
 
     func directory(for backup: RepositoryBackup) async throws -> URL {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         let directory = try backupDirectory(for: backup)
         guard fileManager.fileExists(atPath: directory.path) else {
@@ -361,7 +401,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     }
 
     func storageByteCount() async throws -> Int64 {
-        try beginStorageOperation()
+        try await beginStorageOperation()
         defer { endStorageOperation() }
         guard fileManager.fileExists(atPath: rootURL.path) else { return 0 }
         return try recursiveByteCount(at: rootURL)
@@ -435,13 +475,44 @@ actor RepositoryBackupService: RepositoryBackupServing {
         return destination
     }
 
-    private func beginStorageOperation() throws {
+    private func beginStorageOperation() async throws {
+        try Task.checkCancellation()
         guard !isMigratingStorage else { throw RepositoryBackupError.storageBusy }
-        activeStorageOperations += 1
+        if activeStorageOperations == 0 {
+            activeStorageOperations = 1
+            return
+        }
+        let id = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                guard !Task.isCancelled else {
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+                storageWaiters.append((id, continuation))
+            }
+        } onCancel: {
+            Task { await self.cancelStorageWaiter(id) }
+        }
+        do {
+            try Task.checkCancellation()
+        } catch {
+            endStorageOperation()
+            throw error
+        }
     }
 
     private func endStorageOperation() {
-        activeStorageOperations = max(0, activeStorageOperations - 1)
+        if storageWaiters.isEmpty {
+            activeStorageOperations = 0
+        } else {
+            storageWaiters.removeFirst().continuation.resume()
+        }
+    }
+
+    private func cancelStorageWaiter(_ id: UUID) {
+        guard let index = storageWaiters.firstIndex(where: { $0.id == id }) else { return }
+        storageWaiters.remove(at: index).continuation.resume(throwing: CancellationError())
     }
 
     private static func isNested(_ candidate: URL, inside root: URL) -> Bool {
@@ -457,7 +528,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
         ).filter { $0.lastPathComponent.hasSuffix(".staging") }
 
         var changedStorage = false
-        for stagingURL in candidates where !activeStagingDirectoryNames.contains(stagingURL.lastPathComponent) {
+        for stagingURL in candidates {
             guard let manifest = committedManifest(in: stagingURL),
                   stagingURL.lastPathComponent == ".\(manifest.backup.directoryName).staging"
             else {
@@ -748,7 +819,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
         guard let enumerator = fileManager.enumerator(
             at: url,
             includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
-            options: [.skipsHiddenFiles]
+            options: []
         ) else { return 0 }
         var total: Int64 = 0
         for case let item as URL in enumerator {

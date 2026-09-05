@@ -16,7 +16,7 @@ actor ChangeIntentService: ChangeIntentServing {
 
     init(
         runner: GitCommandRunner = GitCommandRunner(),
-        backupService: any RepositoryBackupServing = RepositoryBackupService()
+        backupService: any RepositoryBackupServing
     ) {
         self.runner = runner
         self.backupService = backupService

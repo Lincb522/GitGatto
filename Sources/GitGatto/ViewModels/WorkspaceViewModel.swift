@@ -234,7 +234,7 @@ final class WorkspaceViewModel: ObservableObject {
     private let projectGoalRuntime: ProjectGoalRuntime
     private let regressionInvestigationStore: any RegressionInvestigationStoring
     private let regressionInvestigationRuntime: RegressionInvestigationRuntime
-    private let repositoryBackupService: any RepositoryBackupServing
+    let repositoryBackupService: any RepositoryBackupServing
     private var hasStarted = false
     private var diffTask: Task<Void, Never>?
     private var selectedSectionDetailsTask: Task<Void, Never>?
@@ -3115,15 +3115,12 @@ final class WorkspaceViewModel: ObservableObject {
         isLoadingRepositoryBackups = true
         defer { isLoadingRepositoryBackups = false }
         do {
-            try await repositoryBackupService.pruneBackups(
+            let inventory = try await repositoryBackupService.inventory(
                 retainingPerRepository: appPreferences.repositoryBackupPolicy.retentionCount
             )
-            async let backups = repositoryBackupService.loadBackups()
-            async let byteCount = repositoryBackupService.storageByteCount()
-            let directory = await repositoryBackupService.storageDirectory()
-            repositoryBackups = try await backups
-            repositoryBackupStorageBytes = try await byteCount
-            repositoryBackupDirectoryURL = directory
+            repositoryBackups = inventory.backups
+            repositoryBackupStorageBytes = inventory.storedByteCount
+            repositoryBackupDirectoryURL = inventory.directoryURL
             reconcileRepositoryProtectionBaselines()
             if let selectedRepositoryBackupID,
                !repositoryBackups.contains(where: { $0.id == selectedRepositoryBackupID })
@@ -3649,15 +3646,12 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func refreshRepositoryBackupInventory(selecting id: UUID?) async {
         do {
-            try await repositoryBackupService.pruneBackups(
+            let inventory = try await repositoryBackupService.inventory(
                 retainingPerRepository: appPreferences.repositoryBackupPolicy.retentionCount
             )
-            async let backups = repositoryBackupService.loadBackups()
-            async let byteCount = repositoryBackupService.storageByteCount()
-            let directory = await repositoryBackupService.storageDirectory()
-            repositoryBackups = try await backups
-            repositoryBackupStorageBytes = try await byteCount
-            repositoryBackupDirectoryURL = directory
+            repositoryBackups = inventory.backups
+            repositoryBackupStorageBytes = inventory.storedByteCount
+            repositoryBackupDirectoryURL = inventory.directoryURL
             reconcileRepositoryProtectionBaselines()
             if let id {
                 selectedRepositoryBackupID = id

@@ -2326,3 +2326,5 @@
 "intelligence.provenance.chain.evidence" = "关联证据";
 "intelligence.provenance.chain.evidence.value" = "%d 条记录";
 "process.error.timeout" = "进程 %@ 未在限定时间内完成。";
+
+"installer.error.incomplete" = "安裝或必要設定尚未完成。請查看結果後重試。";

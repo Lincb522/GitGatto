@@ -47,7 +47,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
     private var agentTask: Task<Void, Never>?
 
     init(
-        intentService: any ChangeIntentServing = ChangeIntentService(),
+        intentService: any ChangeIntentServing,
         provenanceService: any CodeProvenanceServing = CodeProvenanceService(),
         capsuleService: any ReproductionCapsuleServing = ReproductionCapsuleService(),
         activityLedger: any RepositoryActivityLedgerServing = RepositoryActivityLedger.shared,

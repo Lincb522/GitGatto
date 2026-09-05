@@ -23,6 +23,12 @@ struct RepositoryBackup: Identifiable, Codable, Sendable, Equatable {
     let directoryName: String
 }
 
+struct RepositoryBackupInventory: Sendable, Equatable {
+    let backups: [RepositoryBackup]
+    let storedByteCount: Int64
+    let directoryURL: URL
+}
+
 struct RepositoryBackupPolicy: Sendable, Equatable {
     static let maximumRetentionCount = 3
 

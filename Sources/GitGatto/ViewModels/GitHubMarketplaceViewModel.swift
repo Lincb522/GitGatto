@@ -177,11 +177,14 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         let platform = platform
         let github = github
         loadMoreTask?.cancel()
+        isLoadingMore = true
         loadMoreTask = Task {
-            isLoadingMore = true
+            guard !Task.isCancelled else { return }
             defer {
-                isLoadingMore = false
-                loadMoreTask = nil
+                if !Task.isCancelled {
+                    isLoadingMore = false
+                    loadMoreTask = nil
+                }
             }
             do {
                 let batch = try await Self.searchRepositories(
@@ -202,6 +205,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
+                guard !Task.isCancelled else { return }
                 self.error = L10n.format("marketplace.error.search", error.localizedDescription)
             }
         }
@@ -240,7 +244,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         isUpdatingStar = true
         starTask = Task {
             defer {
-                if selectedApplication?.id == application.id {
+                if !Task.isCancelled, selectedApplication?.id == application.id {
                     isUpdatingStar = false
                     starTask = nil
                 }
@@ -252,13 +256,13 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                guard selectedApplication?.id == application.id else { return }
+                guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
                 starError = L10n.format("marketplace.error.favorite", error.localizedDescription)
             }
         }
         detailsTask = Task {
             defer {
-                if selectedApplication?.id == application.id {
+                if !Task.isCancelled, selectedApplication?.id == application.id {
                     isLoadingDetails = false
                     detailsTask = nil
                 }
@@ -284,7 +288,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                guard selectedApplication?.id == application.id else { return }
+                guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
                 let details = MarketplaceApplicationDetails.fallback(
                     description: application.repository.description
                 )
@@ -309,7 +313,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         let github = self.github
         detailTask = Task {
             defer {
-                if selectedApplication?.id == application.id {
+                if !Task.isCancelled, selectedApplication?.id == application.id {
                     isLoadingReleases = false
                     detailTask = nil
                 }
@@ -330,7 +334,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                guard selectedApplication?.id == application.id else { return }
+                guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
                 detailError = L10n.format("marketplace.error.releases", error.localizedDescription)
             }
         }
@@ -484,7 +488,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         starError = nil
         starTask = Task {
             defer {
-                if selectedApplication?.id == application.id {
+                if !Task.isCancelled, selectedApplication?.id == application.id {
                     isUpdatingStar = false
                     starTask = nil
                 }
@@ -500,7 +504,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                guard selectedApplication?.id == application.id else { return }
+                guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
                 starError = L10n.format("marketplace.error.favorite", error.localizedDescription)
             }
         }
@@ -605,11 +609,14 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         let github = self.github
         let platform = self.platform
         loadMoreTask?.cancel()
+        isLoadingMore = true
         loadMoreTask = Task {
-            isLoadingMore = true
+            guard !Task.isCancelled else { return }
             defer {
-                isLoadingMore = false
-                loadMoreTask = nil
+                if !Task.isCancelled {
+                    isLoadingMore = false
+                    loadMoreTask = nil
+                }
             }
             do {
                 let repositories = try await github.starredRepositories(page: nextPage)
@@ -627,6 +634,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
+                guard !Task.isCancelled else { return }
                 self.error = L10n.format("marketplace.error.search", error.localizedDescription)
             }
         }
@@ -860,6 +868,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             var pageValues: [Int: MarketplaceApplication] = [:]
             var completedCount = 0
             let publishResults = {
+                guard !Task.isCancelled, self.platform == platform else { return }
                 var known = existingIDs
                 let orderedPage = pageValues
                     .sorted { $0.key < $1.key }

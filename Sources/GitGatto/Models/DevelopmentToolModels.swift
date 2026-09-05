@@ -1070,6 +1070,23 @@ struct DevelopmentToolStatus: Sendable, Equatable {
     var isUpdatePinned = false
     var updateDetail: String?
 
+    mutating func applyDiscovery(_ result: DevelopmentToolProbeResult) {
+        isInstalled = result.isInstalled
+        version = result.version
+        operation = nil
+        if state != .actionRequired, state != .failed {
+            state = result.isInstalled ? .installed : .idle
+            if result.isInstalled { detail = nil }
+        }
+        if !result.isInstalled {
+            updateAvailability = .unknown
+            latestVersion = nil
+            updatePackageName = nil
+            isUpdatePinned = false
+            updateDetail = nil
+        }
+    }
+
     var canUpgrade: Bool {
         isInstalled
             && updateAvailability == .available

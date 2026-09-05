@@ -1,7 +1,13 @@
 import SwiftUI
 
 struct RepositoryRecoveryView: View {
-    @ObservedObject var model: WorkspaceViewModel
+    @StateObject private var observation: RepositoryRecoveryObservation
+
+    init(model: WorkspaceViewModel) {
+        _observation = StateObject(wrappedValue: RepositoryRecoveryObservation(model: model))
+    }
+
+    private var model: WorkspaceViewModel { observation.model }
     @Environment(\.colorScheme) private var colorScheme
     @State private var pendingDeletion: BackupDeletionTarget?
 
@@ -12,8 +18,15 @@ struct RepositoryRecoveryView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
             metrics(palette)
             Rectangle().fill(palette.divider).frame(height: 1)
-            if let incident = model.repositoryProtectionIncidents.first {
-                protectionIncident(incident, palette: palette)
+            if !model.repositoryProtectionIncidents.isEmpty {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(model.repositoryProtectionIncidents) { incident in
+                            protectionIncident(incident, palette: palette)
+                        }
+                    }
+                }
+                .frame(maxHeight: 180)
                 Rectangle().fill(palette.divider).frame(height: 1)
             }
 
@@ -241,7 +254,7 @@ struct RepositoryRecoveryView: View {
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
-            .disabled(model.snapshot == nil || model.activeRepositoryBackupPath != nil)
+            .disabled(model.snapshot == nil || model.activeRepositoryBackupPath != nil || model.isMigratingRepositoryBackupStorage)
         }
         .padding(.horizontal, 18)
         .frame(height: 64)
@@ -461,13 +474,13 @@ struct RepositoryRecoveryView: View {
                             model.restoreRepositoryBackup(backup)
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .disabled(model.activeRepositoryBackupPath != nil)
+                        .disabled(model.activeRepositoryBackupPath != nil || model.isMigratingRepositoryBackupStorage)
 
                         Button(L10n.text("recovery.action.delete"), role: .destructive) {
                             pendingDeletion = .backup(backup)
                         }
                         .buttonStyle(SecondaryButtonStyle())
-                        .disabled(model.activeRepositoryBackupPath != nil)
+                        .disabled(model.activeRepositoryBackupPath != nil || model.isMigratingRepositoryBackupStorage)
 
                         Button(L10n.text("recovery.action.reveal_backup")) {
                             model.revealRepositoryBackup(backup)
@@ -568,10 +581,7 @@ struct RepositoryRecoveryView: View {
     }
 
     private func backupSlotKey(_ backup: RepositoryBackup) -> String {
-        let repositoryBackups = model.repositoryBackups
-            .filter { $0.repositoryPath == backup.repositoryPath }
-            .sorted { $0.createdAt > $1.createdAt }
-        return switch repositoryBackups.firstIndex(where: { $0.id == backup.id }) {
+        return switch observation.slots[backup.id] {
         case 0: "recovery.slot.latest"
         case 1: "recovery.slot.previous"
         default: "recovery.slot.older"

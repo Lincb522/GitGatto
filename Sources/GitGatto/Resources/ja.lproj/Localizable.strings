@@ -2326,3 +2326,5 @@
 "intelligence.provenance.chain.evidence" = "Related evidence";
 "intelligence.provenance.chain.evidence.value" = "%d records";
 "process.error.timeout" = "The %@ process did not finish within the allowed time.";
+
+"installer.error.incomplete" = "インストールまたは必要な設定が完了していません。結果を確認して再試行してください。";

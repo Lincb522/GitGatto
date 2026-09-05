@@ -28,9 +28,11 @@ struct RepositoryIntelligenceTests {
             encoding: .utf8
         )
 
-        let service = ChangeIntentService(
-            backupService: RepositoryBackupService(rootURL: fixture.backups)
-        )
+        let backupStorage = RepositoryBackupService(rootURL: fixture.backups)
+        let workspace = await WorkspaceViewModel(repositoryBackupService: backupStorage)
+        let service = await ChangeIntentService(backupService: workspace.repositoryBackupService)
+        let migratedDirectory = fixture.root.appendingPathComponent("migrated-backups")
+        _ = try await backupStorage.migrateStorage(to: migratedDirectory)
         var plan = try await service.makePlan(in: fixture.repository)
         #expect(plan.units.count == 2)
         let first = try #require(plan.units.first)
@@ -57,7 +59,11 @@ struct RepositoryIntelligenceTests {
         let subjects = try fixture.gitOutput(["log", "-2", "--format=%s"])
             .split(separator: "\n").map(String.init)
         #expect(subjects == ["fix: update second intent", "feat: update first intent"])
-        #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.backups.path).isEmpty == false)
+        await workspace.reloadRepositoryBackups()
+        #expect(await workspace.repositoryBackups.count == 1)
+        #expect(await workspace.repositoryBackupDirectoryURL == migratedDirectory)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: migratedDirectory.path).isEmpty == false)
+        #expect(!FileManager.default.fileExists(atPath: fixture.backups.path))
     }
 
     @Test("Rejects Agent plans that omit or duplicate a change unit")

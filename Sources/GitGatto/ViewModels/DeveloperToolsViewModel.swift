@@ -24,6 +24,9 @@ final class DeveloperToolsViewModel: ObservableObject {
     private var refreshTask: Task<Void, Never>?
     private var updateTask: Task<Void, Never>?
     private var hasLoaded = false
+    private var refreshID: UUID?
+    private var updateID: UUID?
+    private var operationRevisions: [String: Int] = [:]
 
     init(
         installer: (any CodexServing)? = nil,
@@ -169,72 +172,93 @@ final class DeveloperToolsViewModel: ObservableObject {
     func refresh() {
         refreshTask?.cancel()
         updateTask?.cancel()
+        updateID = nil
+        updateTask = nil
+        isCheckingUpdates = false
+        let id = UUID()
+        refreshID = id
+        isRefreshing = true
         let probe = self.probe
         refreshTask = Task {
-            isRefreshing = true
             let tools = DevelopmentTool.catalog
             let batchSize = 8
             for start in stride(from: 0, to: tools.count, by: batchSize) {
-                guard !Task.isCancelled else { break }
+                guard !Task.isCancelled, refreshID == id else { return }
                 let end = min(start + batchSize, tools.count)
-                await withTaskGroup(of: (String, DevelopmentToolProbeResult).self) { group in
+                let revisions = operationRevisions
+                let results = await withTaskGroup(of: (String, DevelopmentToolProbeResult).self) { group in
                     for tool in tools[start..<end] {
-                        group.addTask {
-                            (tool.id, await probe.probe(tool))
-                        }
+                        group.addTask { (tool.id, await probe.probe(tool)) }
                     }
-                    for await (id, result) in group {
+                    var results: [String: DevelopmentToolProbeResult] = [:]
+                    for await (toolID, result) in group {
                         guard !Task.isCancelled else {
                             group.cancelAll()
-                            return
+                            return results
                         }
-                        var status = statuses[id] ?? DevelopmentToolStatus()
-                        guard status.state != .queued, status.state != .installing else { continue }
-                        status.isInstalled = result.isInstalled
-                        status.version = result.version
-                        status.state = result.isInstalled ? .installed : .idle
-                        status.operation = nil
-                        if result.isInstalled { status.detail = nil }
-                        statuses[id] = status
+                        results[toolID] = result
                     }
+                    return results
                 }
+                guard !Task.isCancelled, refreshID == id else { return }
+                var updated = statuses
+                for (toolID, result) in results {
+                    guard operationRevisions[toolID] == revisions[toolID] else { continue }
+                    var status = updated[toolID] ?? DevelopmentToolStatus()
+                    guard status.state != .queued, status.state != .installing else { continue }
+                    status.applyDiscovery(result)
+                    updated[toolID] = status
+                }
+                if statuses != updated { statuses = updated }
             }
+            guard !Task.isCancelled, refreshID == id else { return }
             isRefreshing = false
+            refreshID = nil
             refreshTask = nil
-            guard !Task.isCancelled else { return }
             checkForUpdates()
         }
     }
 
     func checkForUpdates() {
         updateTask?.cancel()
+        let id = UUID()
+        updateID = id
         let installedTools = DevelopmentTool.catalog.filter { status(for: $0).isInstalled }
         guard !installedTools.isEmpty else {
+            isCheckingUpdates = false
+            updateTask = nil
+            updateID = nil
             keepSelectionVisible()
             return
         }
+        var checking = statuses
         for tool in installedTools {
-            var status = statuses[tool.id] ?? DevelopmentToolStatus()
+            var status = checking[tool.id] ?? DevelopmentToolStatus()
             guard status.state != .queued, status.state != .installing else { continue }
-            status.updateAvailability = .checking
+            if status.updateAvailability != .available, status.updateAvailability != .current {
+                status.updateAvailability = .checking
+            }
             status.updateDetail = nil
-            statuses[tool.id] = status
+            checking[tool.id] = status
         }
-
+        if statuses != checking { statuses = checking }
+        isCheckingUpdates = true
         let checker = updateChecker
+        let revisions = operationRevisions
         updateTask = Task {
-            isCheckingUpdates = true
             let results = await checker.checkUpdates(for: installedTools)
-            guard !Task.isCancelled else {
-                isCheckingUpdates = false
-                updateTask = nil
-                return
-            }
+            guard !Task.isCancelled, updateID == id else { return }
+            var updated = statuses
             for tool in installedTools {
-                guard let result = results[tool.id], !isQueuedOrRunning(tool) else { continue }
-                apply(result, to: tool)
+                guard let result = results[tool.id], !isQueuedOrRunning(tool),
+                      operationRevisions[tool.id] == revisions[tool.id] else { continue }
+                var status = updated[tool.id] ?? DevelopmentToolStatus()
+                applyUpdate(result, to: &status)
+                updated[tool.id] = status
             }
+            if statuses != updated { statuses = updated }
             isCheckingUpdates = false
+            updateID = nil
             updateTask = nil
             reconcileUpgradeSelection()
             keepSelectionVisible()
@@ -303,6 +327,7 @@ final class DeveloperToolsViewModel: ObservableObject {
             operation: operation,
             authorizationRequest: authorizationRequest
         )
+        operationRevisions[tool.id, default: 0] += 1
         queuedOperations.append(item)
 
         var status = startingStatus
@@ -679,12 +704,6 @@ final class DeveloperToolsViewModel: ObservableObject {
         case .upgrade:
             L10n.text("developer_tools.upgrade.phase.\(phase.rawValue)")
         }
-    }
-
-    private func apply(_ result: DevelopmentToolUpdateResult, to tool: DevelopmentTool) {
-        var status = statuses[tool.id] ?? DevelopmentToolStatus()
-        applyUpdate(result, to: &status)
-        statuses[tool.id] = status
     }
 
     private func applyUpdate(_ result: DevelopmentToolUpdateResult, to status: inout DevelopmentToolStatus) {

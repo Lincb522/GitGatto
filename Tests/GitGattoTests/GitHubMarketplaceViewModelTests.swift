@@ -1,10 +1,30 @@
 import Combine
 import Foundation
 import Testing
+import SwiftUI
 @testable import GitGatto
 
 @Suite("GitHub app catalog")
 struct GitHubMarketplaceViewModelTests {
+    @Test("Application catalog and details render at narrow and wide widths")
+    @MainActor
+    func rendersApplicationCatalog() async throws {
+        let fixture = try PaginatedMarketplaceGitHubFixture()
+        let model = GitHubMarketplaceViewModel(github: fixture, automaticallyTranslates: false)
+        model.loadIfNeeded()
+        for await loading in model.$isLoading.values {
+            if !loading { break }
+        }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try await verifyCenterRendering(
+            GitHubMarketplaceView(model: model, developerTools: DeveloperToolsViewModel(),
+                                  downloads: AppDownloadManager(appSupportDirectory: root,
+                                      downloadDirectory: root.appendingPathComponent("Downloads"))),
+            name: "applications"
+        )
+    }
+
     @Test(
         "Finds an exact low-star app and publishes it before all release probes finish",
         .timeLimit(.minutes(2))
@@ -77,6 +97,8 @@ struct GitHubMarketplaceViewModelTests {
         #expect(resultPublicationCount <= 10)
         #expect(model.canLoadMore)
 
+        model.loadMore()
+        #expect(model.isLoadingMore)
         model.loadMore()
         for await applications in model.$applications.values {
             if applications.count == 32 { break }

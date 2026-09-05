@@ -29,10 +29,6 @@ actor MacApplicationInstaller {
 
     func install(_ archiveURL: URL, replacingExisting: Bool) async throws -> URL {
         let lower = archiveURL.lastPathComponent.lowercased()
-        if lower.hasSuffix(".pkg") {
-            _ = await MainActor.run { NSWorkspace.shared.open(archiveURL) }
-            return archiveURL
-        }
         if lower.hasSuffix(".dmg") {
             return try await installDMG(archiveURL, replacingExisting: replacingExisting)
         }
@@ -51,9 +47,17 @@ actor MacApplicationInstaller {
             throw MacApplicationInstallerError.commandFailed(L10n.text("installer.error.mount"))
         }
         let mountURL = URL(fileURLWithPath: mountPath, isDirectory: true)
-        defer { Task { try? await self.run("/usr/bin/hdiutil", ["detach", mountPath]) } }
-        let app = try findApplication(in: mountURL)
-        return try copyApplication(app, replacingExisting: replacingExisting)
+        let result: Result<URL, Error>
+        do {
+            try Task.checkCancellation()
+            let app = try findApplication(in: mountURL)
+            result = .success(try copyApplication(app, replacingExisting: replacingExisting))
+        } catch {
+            result = .failure(error)
+        }
+        let cleanup = Task { try await self.run("/usr/bin/hdiutil", ["detach", mountPath]) }
+        _ = try await cleanup.value
+        return try result.get()
     }
 
     private func installZIP(_ url: URL, replacingExisting: Bool) async throws -> URL {
@@ -79,69 +83,45 @@ actor MacApplicationInstaller {
     }
 
     private func copyApplication(_ app: URL, replacingExisting: Bool) throws -> URL {
+        try Task.checkCancellation()
         try fileManager.createDirectory(at: applicationsDirectory, withIntermediateDirectories: true)
         let destination = applicationsDirectory.appendingPathComponent(app.lastPathComponent, isDirectory: true)
-        if fileManager.fileExists(atPath: destination.path) {
-            guard replacingExisting else {
+        let existing = fileManager.fileExists(atPath: destination.path)
+        if existing {
+            guard replacingExisting,
+                  let sourceID = Bundle(url: app)?.bundleIdentifier,
+                  sourceID == Bundle(url: destination)?.bundleIdentifier else {
                 throw MacApplicationInstallerError.destinationExists(app.lastPathComponent)
             }
-            try fileManager.removeItem(at: destination)
         }
-        try fileManager.copyItem(at: app, to: destination)
+        let operationID = UUID().uuidString
+        let staging = applicationsDirectory.appendingPathComponent(".GitGatto-Install-\(operationID).app")
+        let previous = applicationsDirectory.appendingPathComponent(".GitGatto-Previous-\(operationID).app")
+        defer {
+            if fileManager.fileExists(atPath: staging.path) {
+                try? fileManager.removeItem(at: staging)
+            }
+        }
+        try fileManager.copyItem(at: app, to: staging)
+        try Task.checkCancellation()
+        if existing { try fileManager.moveItem(at: destination, to: previous) }
+        do {
+            try fileManager.moveItem(at: staging, to: destination)
+        } catch {
+            if existing { try fileManager.moveItem(at: previous, to: destination) }
+            throw error
+        }
+        if existing { try fileManager.removeItem(at: previous) }
         return destination
     }
 
     @discardableResult
     private func run(_ executable: String, _ arguments: [String]) async throws -> Data {
-        try await Task.detached(priority: .userInitiated) {
-            try Self.runBlocking(executable, arguments)
-        }.value
+        try await ExternalProcessRunner().run(
+            executable: URL(fileURLWithPath: executable),
+            arguments: arguments,
+            input: Data(),
+            timeout: .seconds(300)
+        ).standardOutput
     }
-
-    private static func runBlocking(_ executable: String, _ arguments: [String]) throws -> Data {
-        let process = Process()
-        let output = Pipe()
-        let error = Pipe()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        process.standardOutput = output
-        process.standardError = error
-        // A DMG with a license agreement makes hdiutil prompt on stdin; EOF fails fast instead of hanging.
-        process.standardInput = FileHandle.nullDevice
-        try process.run()
-
-        // Drain both pipes while the child runs so output larger than the pipe buffer cannot deadlock it.
-        let outputBox = InstallerDataBox()
-        let errorBox = InstallerDataBox()
-        let reads = DispatchGroup()
-        reads.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            outputBox.set(output.fileHandleForReading.readDataToEndOfFile())
-            reads.leave()
-        }
-        reads.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            errorBox.set(error.fileHandleForReading.readDataToEndOfFile())
-            reads.leave()
-        }
-        process.waitUntilExit()
-        reads.wait()
-
-        guard process.terminationStatus == 0 else {
-            let message = String(decoding: errorBox.value, as: UTF8.self)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            throw MacApplicationInstallerError.commandFailed(
-                message.isEmpty ? "\(executable) exited with status \(process.terminationStatus)" : message
-            )
-        }
-        return outputBox.value
-    }
-}
-
-private final class InstallerDataBox: @unchecked Sendable {
-    private let lock = NSLock()
-    private var storage = Data()
-
-    var value: Data { lock.withLock { storage } }
-    func set(_ value: Data) { lock.withLock { storage = value } }
 }

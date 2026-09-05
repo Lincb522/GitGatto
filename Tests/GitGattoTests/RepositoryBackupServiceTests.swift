@@ -427,6 +427,76 @@ struct RepositoryBackupServiceTests {
         #expect(try git(["status", "--porcelain"], at: restored).contains("tracked.txt"))
     }
 
+    @Test("A failed restore does not expose a partial destination or block a retry")
+    func failedRestoreLeavesDestinationAvailable() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let service = RepositoryBackupService(rootURL: fixture.root.appendingPathComponent("backups"))
+        try "changed\n".write(
+            to: fixture.repository.appendingPathComponent("tracked.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let backup = try #require(await service.createBackup(
+            for: fixture.repository, reason: .manual, policy: .standard
+        ))
+        let backupDirectory = try await service.directory(for: backup)
+        let preservedFile = backupDirectory.appendingPathComponent("workspace/tracked.txt")
+        let preservedData = try Data(contentsOf: preservedFile)
+        try FileManager.default.removeItem(at: preservedFile)
+        let destination = fixture.root.appendingPathComponent("recovered")
+
+        await #expect(throws: (any Error).self) {
+            try await service.restore(backup, to: destination)
+        }
+        #expect(!FileManager.default.fileExists(atPath: destination.path))
+        try preservedData.write(to: preservedFile)
+        let restored = try await service.restore(backup, to: destination)
+        #expect(try Data(contentsOf: restored.appendingPathComponent("tracked.txt")) == preservedData)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: fixture.root.path)
+            .allSatisfy { !$0.hasPrefix(".GitGatto-Restore-") })
+    }
+
+    @Test("Concurrent backups publish one consistent retained inventory including dotfiles")
+    func concurrentBackupInventory() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let service = RepositoryBackupService(rootURL: fixture.root.appendingPathComponent("backups"))
+        let hidden = Data(repeating: 42, count: 16_384)
+        try hidden.write(to: fixture.repository.appendingPathComponent(".test-data"))
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<5 {
+                group.addTask {
+                    _ = try await service.createBackup(for: fixture.repository, reason: .manual, policy: .standard)
+                }
+            }
+            try await group.waitForAll()
+        }
+        let inventory = try await service.inventory(retainingPerRepository: 3)
+        #expect(inventory.backups.count == 3)
+        #expect(inventory.storedByteCount >= Int64(hidden.count * 3))
+        #expect(inventory.storedByteCount == (try await service.storageByteCount()))
+        for backup in inventory.backups {
+            let restored = try await service.restore(backup, to: fixture.root.appendingPathComponent(backup.directoryName))
+            #expect(try Data(contentsOf: restored.appendingPathComponent(".test-data")) == hidden)
+        }
+    }
+
+    @Test("Cancelling a restore leaves the storage usable and no partial destination")
+    func cancelledRestoreReleasesStorage() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let service = RepositoryBackupService(rootURL: fixture.root.appendingPathComponent("backups"))
+        let backup = try #require(await service.createBackup(for: fixture.repository, reason: .manual, policy: .standard))
+        let destination = fixture.root.appendingPathComponent("recovered")
+        let task = Task { try await service.restore(backup, to: destination) }
+        task.cancel()
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(!FileManager.default.fileExists(atPath: destination.path))
+        let restored = try await service.restore(backup, to: destination)
+        #expect(try git(["branch", "--show-current"], at: restored) == "main")
+    }
+
     @Test("A clean repository still gets an Agent checkpoint")
     func createsAgentCheckpointForCleanRepository() async throws {
         let fixture = try BackupFixture()
@@ -714,6 +784,7 @@ struct RepositoryBackupServiceTests {
         #expect(representation.pixelsWide == 1_416)
         #expect(representation.pixelsHigh == 876)
         #expect(model.repositoryBackups.count == 3)
+        try await verifyCenterRendering(RepositoryRecoveryView(model: model), name: "recovery")
         if let outputPath = ProcessInfo.processInfo.environment["GITGATTO_RECOVERY_UI_SNAPSHOT_PATH"] {
             let data = try #require(representation.representation(using: .png, properties: [:]))
             try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
@@ -781,6 +852,10 @@ private actor RecordingRepositoryBackupService: RepositoryBackupServing {
     init(backing: RepositoryBackupService, createDelay: Duration? = nil) {
         self.backing = backing
         self.createDelay = createDelay
+    }
+
+    func inventory(retainingPerRepository limit: Int) async throws -> RepositoryBackupInventory {
+        try await backing.inventory(retainingPerRepository: limit)
     }
 
     func loadBackups() async throws -> [RepositoryBackup] {

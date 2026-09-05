@@ -7,7 +7,7 @@ struct WorkspaceView: View {
     @StateObject private var marketplaceModel = GitHubMarketplaceViewModel()
     @StateObject private var developerToolsModel = DeveloperToolsViewModel()
     @StateObject private var downloads = AppDownloadManager()
-    @StateObject private var intelligenceModel = RepositoryIntelligenceViewModel()
+    @StateObject private var intelligenceModel: RepositoryIntelligenceViewModel
     @StateObject private var readmeRendererCache = GitHubReadmeRendererCache()
     @State private var didReportInitialContentReady = false
     @State private var showsCommandPalette = false
@@ -27,6 +27,9 @@ struct WorkspaceView: View {
         self.model = model
         self.onInitialContentReady = onInitialContentReady
         self.canCaptureSnapshot = canCaptureSnapshot
+        _intelligenceModel = StateObject(wrappedValue: RepositoryIntelligenceViewModel(
+            intentService: ChangeIntentService(backupService: model.repositoryBackupService)
+        ))
     }
 
     private var appearance: AppAppearance {
