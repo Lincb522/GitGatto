@@ -331,7 +331,8 @@
 "update.status.checking" = "アップデートをチェックしています…";
 "update.status.current" = "GitGatto は最新です";
 "update.status.available" = "GitGatto %@ is available";
-"update.status.failed" = "アップデートをチェックできませんでした";
+"update.status.failed" = "アップデートは完了しませんでした";
+"update.error.helper_startup_timeout" = "更新ヘルパーの起動がタイムアウトしました。Mac を再起動して再試行してください。解決しない場合は、GitHub から最新版をダウンロードしてアプリを置き換えてください。";
 "update.release_notes.title" = "リリースノート";
 "update.release_notes.source.github" = "GitHub リリース";
 "update.release_notes.source.bundled" = "現在のバージョン";

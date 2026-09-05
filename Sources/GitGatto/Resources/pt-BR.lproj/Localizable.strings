@@ -331,7 +331,8 @@
 "update.status.checking" = "Verificando atualizações…";
 "update.status.current" = "GitGatto está atualizado";
 "update.status.available" = "GitGatto %@ está disponível";
-"update.status.failed" = "Não foi possível verificar atualizações";
+"update.status.failed" = "A atualização não foi concluída";
+"update.error.helper_startup_timeout" = "O assistente de atualização não iniciou a tempo. Reinicie o Mac e tente novamente. Se o problema persistir, baixe a versão mais recente do GitHub e substitua o aplicativo.";
 "update.release_notes.title" = "Notas de versão";
 "update.release_notes.source.github" = "GitHub Lançamentos";
 "update.release_notes.source.bundled" = "Versão Atual";

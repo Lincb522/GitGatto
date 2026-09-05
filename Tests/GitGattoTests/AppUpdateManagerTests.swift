@@ -64,4 +64,53 @@ struct AppUpdateManagerTests {
         #expect(message.contains("Operation not permitted"))
         #expect(message.contains("SUSparkleErrorDomain · \(SUError.installationError.rawValue)"))
     }
+
+    @Test("Preserves nested installer failures and their recovery action")
+    @MainActor
+    func preservesNestedInstallationFailure() {
+        let cause = NSError(domain: NSPOSIXErrorDomain, code: 1, userInfo: [
+            NSLocalizedDescriptionKey: "Operation not permitted",
+            NSLocalizedRecoverySuggestionErrorKey: "Allow this app in App Management."
+        ])
+        let installer = NSError(domain: SUSparkleErrorDomain, code: 10, userInfo: [
+            NSLocalizedDescriptionKey: "Installer failed",
+            NSUnderlyingErrorKey: cause
+        ])
+        let error = NSError(domain: SUSparkleErrorDomain, code: 4005, userInfo: [
+            NSLocalizedDescriptionKey: "Installer failed",
+            NSUnderlyingErrorKey: installer
+        ])
+
+        let message = AppUpdateManager.failureMessage(for: error)
+        #expect(message.contains("Operation not permitted"))
+        #expect(message.contains("Allow this app in App Management."))
+        #expect(message.contains("SUSparkleErrorDomain · 4005 → SUSparkleErrorDomain · 10 → NSPOSIXErrorDomain · 1"))
+        #expect(message.components(separatedBy: "Installer failed").count == 2)
+        #expect(!message.contains(L10n.text("update.error.helper_startup_timeout")))
+    }
+
+    @Test("Explains the reproduced helper startup timeout without treating every installer error as a timeout")
+    @MainActor
+    func explainsHelperStartupTimeout() {
+        let cause = NSError(domain: SUSparkleErrorDomain, code: 10, userInfo: [
+            NSLocalizedDescriptionKey: "Timeout: agent connection was never initiated"
+        ])
+        let error = NSError(domain: SUSparkleErrorDomain, code: 4005, userInfo: [
+            NSLocalizedDescriptionKey: "An error occurred while running the updater.",
+            NSUnderlyingErrorKey: cause
+        ])
+        let message = AppUpdateManager.failureMessage(for: error)
+        let localizedRecoveryMessages = AppLanguage.allCases.filter { $0 != .system }.map {
+            L10n.bundle(preferredLanguages: $0.preferredLanguages).localizedString(
+                forKey: "update.error.helper_startup_timeout", value: nil, table: nil
+            )
+        }
+        #expect(localizedRecoveryMessages.contains(where: { message.hasPrefix($0) }))
+        #expect(message.contains("Timeout: agent connection was never initiated"))
+        guard case let .failed(detail) = AppUpdateManager.stateAfterAborting(with: error) else {
+            Issue.record("A helper startup timeout must remain a failed update.")
+            return
+        }
+        #expect(detail.contains("Timeout: agent connection was never initiated"))
+    }
 }

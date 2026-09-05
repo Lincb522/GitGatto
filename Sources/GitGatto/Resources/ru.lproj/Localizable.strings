@@ -331,7 +331,8 @@
 "update.status.checking" = "Проверка обновлений…";
 "update.status.current" = "GitGatto обновлен";
 "update.status.available" = "GitGatto %@ доступен";
-"update.status.failed" = "Не удалось проверить наличие обновлений.";
+"update.status.failed" = "Обновление не завершено";
+"update.error.helper_startup_timeout" = "Время запуска помощника обновления истекло. Перезагрузите Mac и повторите попытку. Если ошибка повторится, скачайте последнюю версию с GitHub и замените приложение.";
 "update.release_notes.title" = "Примечания к выпуску";
 "update.release_notes.source.github" = "GitHub Релизы";
 "update.release_notes.source.bundled" = "Текущая версия";

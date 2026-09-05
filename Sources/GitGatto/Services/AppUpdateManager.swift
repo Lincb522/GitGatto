@@ -135,21 +135,36 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
     }
 
     static func failureMessage(for error: NSError) -> String {
-        var details = [error.localizedDescription]
-        if let reason = error.localizedFailureReason, !details.contains(reason) {
-            details.append(reason)
+        let chain = errorChain(for: error)
+        var details: [String] = []
+        if chain.contains(where: {
+            $0.domain == SUSparkleErrorDomain
+                && $0.localizedDescription.contains("Timeout: agent connection was never initiated")
+        }) {
+            details.append(L10n.text("update.error.helper_startup_timeout"))
         }
-        if let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError {
-            let description = underlying.localizedDescription
-            if !details.contains(description) {
-                details.append(description)
-            }
-            if let reason = underlying.localizedFailureReason, !details.contains(reason) {
-                details.append(reason)
+        for item in chain {
+            for detail in [
+                item.localizedDescription,
+                item.localizedFailureReason,
+                item.localizedRecoverySuggestion
+            ].compactMap({ $0 }) where !detail.isEmpty && !details.contains(detail) {
+                details.append(detail)
             }
         }
-        details.append("\(error.domain) · \(error.code)")
+        details.append(chain.map { "\($0.domain) · \($0.code)" }.joined(separator: " → "))
         return details.joined(separator: "\n")
+    }
+
+    private static func errorChain(for error: NSError) -> [NSError] {
+        var chain: [NSError] = []
+        var visited: Set<ObjectIdentifier> = []
+        var current: NSError? = error
+        while let item = current, visited.insert(ObjectIdentifier(item)).inserted, chain.count < 16 {
+            chain.append(item)
+            current = item.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        return chain
     }
 
     static func hasUpdateConfiguration(_ info: [String: Any]) -> Bool {

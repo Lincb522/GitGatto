@@ -331,7 +331,8 @@
 "update.status.checking" = "正在检查更新…";
 "update.status.current" = "GitGatto 已是最新版本";
 "update.status.available" = "GitGatto %@ 可用";
-"update.status.failed" = "无法检查更新";
+"update.status.failed" = "更新未完成";
+"update.error.helper_startup_timeout" = "更新助手启动超时。请重启 Mac 后重试；仍失败时，可从 GitHub 下载最新版覆盖安装。";
 "update.release_notes.title" = "更新日志";
 "update.release_notes.source.github" = "GitHub Releases";
 "update.release_notes.source.bundled" = "当前版本";
