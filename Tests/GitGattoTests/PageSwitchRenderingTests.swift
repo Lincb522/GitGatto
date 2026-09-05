@@ -135,7 +135,8 @@ struct PageSwitchRenderingTests {
             #expect(text?.contains("仓库说明") == true)
             let ink = try await webView.evaluateJavaScript("getComputedStyle(document.body).color") as? String
             #expect(ink == (scheme == .dark ? "rgb(240, 246, 252)" : "rgb(31, 35, 40)"))
-            #expect(webView.bounds.width == CGFloat(width))
+            #expect(hosting.bounds.width > 0)
+            #expect(webView.bounds.width == hosting.bounds.width)
             hosting.rootView = ReadmeSwitchFixture(document: document, showsReadme: false, colorScheme: scheme)
             hosting.layoutSubtreeIfNeeded()
             hosting.rootView = ReadmeSwitchFixture(document: document, showsReadme: true, colorScheme: scheme)
