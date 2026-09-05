@@ -122,6 +122,34 @@ struct RepositoryBackupServiceTests {
     }
 
     @MainActor
+    @Test("Read failures are retried once without reporting corruption or replacing a good baseline")
+    func distinguishesReadFailuresFromRepositoryLoss() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let backing = RepositoryBackupService(rootURL: fixture.root.appendingPathComponent("backups"))
+        let service = RecordingRepositoryBackupService(backing: backing)
+        let model = WorkspaceViewModel(repositoryBackupService: service)
+        model.appPreferences.repositoryBackupEnabled = true
+        model.appPreferences.externalRepositoryProtectionEnabled = true
+        await model.createExternalRepositoryProtectionBaseline(for: fixture.repository)
+        let baseline = try #require(try await backing.loadBackups().first)
+        await service.setAssessmentFailures(2)
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+        #expect(await service.assessCallCount == 2)
+        #expect(model.repositoryProtectionError != nil)
+        #expect(model.repositoryProtectionIncidents.isEmpty)
+        #expect(try await backing.loadBackups().first?.id == baseline.id)
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+        #expect(await service.assessCallCount == 3)
+        #expect(model.repositoryProtectionError == nil)
+        await service.setAssessmentFailures(1)
+        await model.auditExternalRepositoryChange(for: fixture.repository)
+        #expect(await service.assessCallCount == 5)
+        #expect(model.repositoryProtectionError == nil)
+        #expect(try await backing.loadBackups().count == 1)
+    }
+
+    @MainActor
     @Test("Concurrent arming requests create one protection baseline")
     func coalescesProtectionBaselineCreation() async throws {
         let fixture = try BackupFixture()
@@ -188,8 +216,8 @@ struct RepositoryBackupServiceTests {
     }
 
     @MainActor
-    @Test("External audit reports only post-baseline changes that reach the threshold")
-    func reportsPostBaselineThresholdChanges() async throws {
+    @Test("External audit checkpoints large normal changes instead of reporting destructive changes")
+    func checkpointsPostBaselineThresholdChanges() async throws {
         let fixture = try BackupFixture()
         defer { fixture.remove() }
         let backing = RepositoryBackupService(
@@ -224,29 +252,10 @@ struct RepositoryBackupServiceTests {
         )
         await model.auditExternalRepositoryChange(for: fixture.repository)
 
-        let incident = try #require(model.repositoryProtectionIncidents.first)
-        #expect(incident.exceedsConfiguredChangeLimit)
-        #expect(incident.assessment?.changedPathsSinceBaseline == ["notes.txt", "tracked.txt"])
-        #expect(incident.assessment?.deletedPaths.isEmpty == true)
-        #expect(incident.assessment?.lostChangedPaths.isEmpty == true)
-
-        if let outputPath = ProcessInfo.processInfo.environment[
-            "GITGATTO_EXTERNAL_PROTECTION_THRESHOLD_UI_SNAPSHOT_PATH"
-        ] {
-            await model.reloadRepositoryBackups()
-            let view = RepositoryRecoveryView(model: model)
-                .frame(width: 1_100, height: 700)
-            let hostingView = NSHostingView(rootView: view)
-            hostingView.frame = NSRect(x: 0, y: 0, width: 1_100, height: 700)
-            hostingView.layoutSubtreeIfNeeded()
-            hostingView.displayIfNeeded()
-            let representation = try #require(
-                hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)
-            )
-            hostingView.cacheDisplay(in: hostingView.bounds, to: representation)
-            let data = try #require(representation.representation(using: .png, properties: [:]))
-            try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
-        }
+        #expect(model.repositoryProtectionIncidents.isEmpty)
+        let latest = try #require(try await backing.loadBackups().first)
+        let unchanged = try await backing.assessChanges(after: latest, in: fixture.repository)
+        #expect(unchanged.changedPathsSinceBaseline.isEmpty)
     }
 
     @MainActor
@@ -848,6 +857,10 @@ private actor RecordingRepositoryBackupService: RepositoryBackupServing {
     private let backing: RepositoryBackupService
     private let createDelay: Duration?
     private(set) var createCallCount = 0
+    private(set) var assessCallCount = 0
+    private var assessmentFailuresRemaining = 0
+
+    func setAssessmentFailures(_ count: Int) { assessmentFailuresRemaining = count }
 
     init(backing: RepositoryBackupService, createDelay: Duration? = nil) {
         self.backing = backing
@@ -882,7 +895,12 @@ private actor RecordingRepositoryBackupService: RepositoryBackupServing {
         after backup: RepositoryBackup,
         in repositoryURL: URL
     ) async throws -> RepositoryProtectionAssessment {
-        try await backing.assessChanges(after: backup, in: repositoryURL)
+        assessCallCount += 1
+        if assessmentFailuresRemaining > 0 {
+            assessmentFailuresRemaining -= 1
+            throw CocoaError(.fileReadNoPermission)
+        }
+        return try await backing.assessChanges(after: backup, in: repositoryURL)
     }
 
     func delete(_ backup: RepositoryBackup) async throws {

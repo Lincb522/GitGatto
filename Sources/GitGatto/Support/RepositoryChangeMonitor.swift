@@ -11,6 +11,11 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
     private let onChange: @Sendable () -> Void
     private let includesGitMetadata: Bool
     private let includesGitObjectChanges: Bool
+    private let filtersIgnoredPaths: Bool
+    private let queueKey = DispatchSpecificKey<UInt8>()
+    private var pendingPaths = Set<String>()
+    private var filterTask: Task<Void, Never>?
+    private var filterGeneration = UUID()
     private var stream: FSEventStreamRef?
     private var watchdog: DispatchSourceTimer?
     /// Only read or written on `callbackQueue`; `start`/`stop` never touch it directly.
@@ -20,12 +25,26 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         repositoryURL: URL,
         includesGitMetadata: Bool = true,
         includesGitObjectChanges: Bool = false,
+        filtersIgnoredPaths: Bool = false,
         onChange: @escaping @Sendable () -> Void
     ) {
-        rootPath = repositoryURL.standardizedFileURL.path
+        rootPath = Self.fileSystemPath(repositoryURL)
         self.includesGitMetadata = includesGitMetadata
         self.includesGitObjectChanges = includesGitObjectChanges
+        self.filtersIgnoredPaths = filtersIgnoredPaths
+        callbackQueue.setSpecific(key: queueKey, value: 1)
         self.onChange = onChange
+    }
+
+    private static func fileSystemPath(_ url: URL) -> String {
+        // FSEvents reports /private/var even when Foundation preserves the /var alias.
+        if let resolved = url.withUnsafeFileSystemRepresentation({ path in
+            path.flatMap { realpath($0, nil) }
+        }) {
+            defer { free(resolved) }
+            return String(cString: resolved)
+        }
+        return url.standardizedFileURL.path
     }
 
     func start() {
@@ -76,6 +95,14 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
     }
 
     func stop() {
+        let cancelFilter = {
+            self.filterGeneration = UUID()
+            self.filterTask?.cancel()
+            self.filterTask = nil
+            self.pendingPaths.removeAll()
+        }
+        if DispatchQueue.getSpecific(key: queueKey) != nil { cancelFilter() }
+        else { callbackQueue.sync(execute: cancelFilter) }
         watchdog?.setEventHandler {}
         watchdog?.cancel()
         watchdog = nil
@@ -97,34 +124,78 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         eventFlags: UnsafePointer<FSEventStreamEventFlags>
     ) {
         let paths = unsafeBitCast(eventPaths, to: NSArray.self) as? [String] ?? []
+        var requiresImmediateRefresh = false
         for index in 0 ..< min(eventCount, paths.count) {
-            if shouldRefresh(path: paths[index], flags: eventFlags[index]) {
-                onChange()
-                return
+            let path = paths[index]
+            let flags = eventFlags[index]
+            guard shouldRefresh(path: path, flags: flags) else { continue }
+            let relative = relativePath(path)
+            if !filtersIgnoredPaths || relative == nil || relative == ".git"
+                || relative?.hasPrefix(".git/") == true
+                || flags & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs | kFSEventStreamEventFlagRootChanged) != 0 {
+                requiresImmediateRefresh = true
+            } else if let relative {
+                pendingPaths.insert(relative)
             }
         }
+        if requiresImmediateRefresh { onChange() }
+        filterPendingPaths()
+    }
+
+    private func relativePath(_ path: String) -> String? {
+        guard path.hasPrefix(rootPath + "/") else { return nil }
+        return String(path.dropFirst(rootPath.count + 1))
     }
 
     private func shouldRefresh(path: String, flags: FSEventStreamEventFlags) -> Bool {
-        if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs) != 0 {
+        if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs | kFSEventStreamEventFlagRootChanged) != 0 {
             return true
         }
-        if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagRootChanged) != 0 {
-            return true
-        }
-        let relativePath = path.hasPrefix(rootPath)
-            ? String(path.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            : path
-        guard !relativePath.isEmpty, relativePath != ".DS_Store" else { return false }
-        if relativePath == ".git" || relativePath.hasPrefix(".git/") {
+        guard let relative = relativePath(path), relative != ".DS_Store" else { return false }
+        if relative == ".git" || relative.hasPrefix(".git/") {
             guard includesGitMetadata else { return false }
-            if includesGitObjectChanges {
-                return true
+            if filtersIgnoredPaths {
+                if relative.hasSuffix(".lock") || relative == ".git/FETCH_HEAD"
+                    || relative.hasPrefix(".git/logs/") { return false }
+                if relative == ".git" {
+                    return flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemRemoved | kFSEventStreamEventFlagItemRenamed) != 0
+                }
+            }
+            if includesGitObjectChanges { return true }
+        }
+        return !relative.hasPrefix(".git/objects/")
+            && !relative.hasPrefix(".git/logs/")
+            && relative != ".git/FETCH_HEAD"
+    }
+
+    private func filterPendingPaths() {
+        guard filterTask == nil, !pendingPaths.isEmpty else { return }
+        let paths = pendingPaths.sorted()
+        pendingPaths.removeAll()
+        let generation = filterGeneration
+        let root = rootPath
+        filterTask = Task { [weak self] in
+            let shouldNotify: Bool
+            do {
+                let output = try await ExternalProcessRunner().run(
+                    executable: URL(fileURLWithPath: "/usr/bin/git"),
+                    arguments: ["--no-optional-locks", "-C", root, "check-ignore", "--stdin", "-z"],
+                    environment: ["LC_ALL": "C", "GIT_TERMINAL_PROMPT": "0"],
+                    input: Data((paths.joined(separator: "\0") + "\0").utf8),
+                    acceptedExitCodes: [0, 1], timeout: .seconds(5)
+                )
+                let ignored = Set(output.standardOutput.split(separator: 0).map { String(decoding: $0, as: UTF8.self) })
+                shouldNotify = paths.contains { !ignored.contains($0) }
+            } catch is CancellationError { return }
+            catch { shouldNotify = true }
+            guard !Task.isCancelled, let self else { return }
+            self.callbackQueue.async { [weak self] in
+                guard let self, self.filterGeneration == generation else { return }
+                self.filterTask = nil
+                if shouldNotify { self.onChange() }
+                self.filterPendingPaths()
             }
         }
-        return !relativePath.hasPrefix(".git/objects/")
-            && !relativePath.hasPrefix(".git/logs/")
-            && relativePath != ".git/FETCH_HEAD"
     }
 
     private func startWatchdog() {
@@ -168,7 +239,9 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
             ])
         }
         return RepositoryWatchdogFingerprint(
-            entries: paths.map(RepositoryWatchdogEntry.init(path:))
+            entries: paths.map {
+                RepositoryWatchdogEntry(path: $0, identityOnly: filtersIgnoredPaths && ($0 == rootPath || $0 == "\(rootPath)/.git"))
+            }
         )
     }
 }
@@ -187,7 +260,7 @@ private struct RepositoryWatchdogEntry: Equatable {
     let changedSeconds: Int64
     let changedNanoseconds: Int64
 
-    init(path: String) {
+    init(path: String, identityOnly: Bool = false) {
         var value = stat()
         guard lstat(path, &value) == 0 else {
             exists = false
@@ -203,10 +276,10 @@ private struct RepositoryWatchdogEntry: Equatable {
         exists = true
         device = UInt64(value.st_dev)
         inode = UInt64(value.st_ino)
-        size = Int64(value.st_size)
-        modifiedSeconds = Int64(value.st_mtimespec.tv_sec)
-        modifiedNanoseconds = Int64(value.st_mtimespec.tv_nsec)
-        changedSeconds = Int64(value.st_ctimespec.tv_sec)
-        changedNanoseconds = Int64(value.st_ctimespec.tv_nsec)
+        size = identityOnly ? 0 : Int64(value.st_size)
+        modifiedSeconds = identityOnly ? 0 : Int64(value.st_mtimespec.tv_sec)
+        modifiedNanoseconds = identityOnly ? 0 : Int64(value.st_mtimespec.tv_nsec)
+        changedSeconds = identityOnly ? 0 : Int64(value.st_ctimespec.tv_sec)
+        changedNanoseconds = identityOnly ? 0 : Int64(value.st_ctimespec.tv_nsec)
     }
 }

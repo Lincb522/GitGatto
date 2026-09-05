@@ -109,6 +109,14 @@ actor RepositoryBackupService: RepositoryBackupServing {
         {
             return nil
         }
+        if reason == .externalCheckpoint,
+           let latest = try manifests()
+               .filter({ $0.backup.repositoryPath == repository.path })
+               .max(by: { $0.backup.createdAt < $1.backup.createdAt }),
+           latest.fingerprint == state.fingerprint,
+           try canReuseCheckpoint(latest, in: repository) {
+            return latest.backup
+        }
         let alwaysCreatesRecoveryPoint = reason == .manual
             || reason == .agentCheckpoint
             || reason == .externalCheckpoint
@@ -246,42 +254,31 @@ actor RepositoryBackupService: RepositoryBackupServing {
         }
         let baseline = try manifest(for: backup)
         let current = try await inspect(repository, maximumFileSize: .max)
-        var deletedPaths = Set(current.deletedPaths).subtracting(baseline.deletedPaths)
-        var lostChangedPaths = Set<String>()
-        let currentChangedPaths = Set(current.changedPaths)
-        let baselineChangedPaths = Set(baseline.copiedPaths + baseline.deletedPaths)
-        var changedPathsSinceBaseline = currentChangedPaths.symmetricDifference(baselineChangedPaths)
-        let baselineWorkspace = try backupDirectory(for: backup)
-            .appendingPathComponent("workspace", isDirectory: true)
-        for path in baseline.copiedPaths {
-            let url = try containedURL(path: path, in: repository)
-            if !Self.itemExists(at: url, fileManager: fileManager) {
-                deletedPaths.insert(path)
-                changedPathsSinceBaseline.insert(path)
-                continue
-            }
-            let preservedURL = try containedURL(path: path, in: baselineWorkspace)
-            let differsFromBaseline = Self.itemExists(at: preservedURL, fileManager: fileManager)
-                && !fileManager.contentsEqual(atPath: preservedURL.path, andPath: url.path)
-            if differsFromBaseline {
-                changedPathsSinceBaseline.insert(path)
-            }
-            guard !currentChangedPaths.contains(path) else { continue }
-            if differsFromBaseline {
-                lostChangedPaths.insert(path)
-            }
+        let comparison: RepositoryBackupComparison.Result
+        if baseline.fingerprint == current.fingerprint {
+            comparison = .init(changedPaths: [], changedLines: 0, deletedPaths: [], lostPaths: [], historyRewritten: false)
+        } else {
+            comparison = try await RepositoryBackupComparison(
+                manifest: baseline,
+                workspace: try backupDirectory(for: backup).appendingPathComponent("workspace"),
+                repository: repository,
+                currentPaths: Set(current.changedPaths),
+                currentHead: current.headSHA,
+                currentBranch: current.branchName
+            ).run()
         }
         return RepositoryProtectionAssessment(
             backupID: backup.id,
             changedFileCount: current.changedPaths.count,
             changedLineCount: current.changedLineCount,
-            changedPathsSinceBaseline: changedPathsSinceBaseline.sorted(),
-            changedLineCountSinceBaseline: abs(current.changedLineCount - backup.changedLineCount),
-            deletedPaths: deletedPaths.sorted(),
-            lostChangedPaths: lostChangedPaths.sorted(),
+            changedPathsSinceBaseline: comparison.changedPaths,
+            changedLineCountSinceBaseline: comparison.changedLines,
+            deletedPaths: comparison.deletedPaths,
+            lostChangedPaths: comparison.lostPaths,
             headChanged: current.headSHA != backup.headSHA,
             branchChanged: current.branchName != backup.branchName,
-            indexChanged: baseline.indexFingerprint.map { $0 != current.indexFingerprint } ?? false
+            indexChanged: baseline.indexFingerprint.map { $0 != current.indexFingerprint } ?? false,
+            historyRewritten: comparison.historyRewritten
         )
     }
 
@@ -660,23 +657,34 @@ actor RepositoryBackupService: RepositoryBackupServing {
         _ repository: URL,
         maximumFileSize: Int64
     ) async throws -> RepositoryBackupState {
+        for location in [repository, repository.appendingPathComponent(".git")] {
+            do {
+                _ = try fileManager.attributesOfItem(atPath: location.path)
+            } catch let error as CocoaError where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile {
+                throw RepositoryBackupError.repositoryUnavailable
+            }
+        }
+        let readEnvironment = ["GIT_OPTIONAL_LOCKS": "0"]
         let headResult = try await runner.run(
             at: repository,
             arguments: ["rev-parse", "--verify", "HEAD"],
+            environment: readEnvironment,
             acceptedExitCodes: [0, 128]
         )
         let headSHA = headResult.exitCode == 0
             ? headResult.text.trimmingCharacters(in: .whitespacesAndNewlines)
             : nil
-        if headSHA != nil {
+        if let headSHA {
             _ = try await runner.run(
                 at: repository,
-                arguments: ["cat-file", "-e", "HEAD^{commit}"]
+                arguments: ["cat-file", "-e", "\(headSHA)^{commit}"],
+                environment: readEnvironment
             )
         }
         let branchResult = try await runner.run(
             at: repository,
             arguments: ["symbolic-ref", "--quiet", "--short", "HEAD"],
+            environment: readEnvironment,
             acceptedExitCodes: [0, 1]
         )
         let branch = branchResult.exitCode == 0
@@ -684,7 +692,8 @@ actor RepositoryBackupService: RepositoryBackupServing {
             : nil
         let index = try await runner.run(
             at: repository,
-            arguments: ["ls-files", "--stage", "-z"]
+            arguments: ["ls-files", "--stage", "-z"],
+            environment: readEnvironment
         )
         let indexFingerprint = Self.digest(index.output)
 
@@ -692,19 +701,22 @@ actor RepositoryBackupService: RepositoryBackupServing {
         if headSHA != nil {
             let changed = try await runner.run(
                 at: repository,
-                arguments: ["diff", "--name-only", "-z", "HEAD", "--"]
+                arguments: ["diff", "--no-ext-diff", "--no-textconv", "--no-renames", "--name-only", "-z", "HEAD", "--"],
+                environment: readEnvironment
             )
             paths.formUnion(Self.nullSeparatedPaths(changed.output))
         } else {
             let indexed = try await runner.run(
                 at: repository,
-                arguments: ["ls-files", "--cached", "-z"]
+                arguments: ["ls-files", "--cached", "-z"],
+                environment: readEnvironment
             )
             paths.formUnion(Self.nullSeparatedPaths(indexed.output))
         }
         let untracked = try await runner.run(
             at: repository,
-            arguments: ["ls-files", "--others", "--exclude-standard", "-z"]
+            arguments: ["ls-files", "--others", "--exclude-standard", "-z"],
+            environment: readEnvironment
         )
         paths.formUnion(Self.nullSeparatedPaths(untracked.output))
         let sortedPaths = paths.sorted()
@@ -716,14 +728,24 @@ actor RepositoryBackupService: RepositoryBackupServing {
         if headSHA != nil {
             let numstat = try await runner.run(
                 at: repository,
-                arguments: ["diff", "--numstat", "HEAD", "--"]
+                arguments: ["diff", "--no-ext-diff", "--no-textconv", "--numstat", "HEAD", "--"],
+                environment: readEnvironment
             )
             changedLineCount = Self.lineChangeCount(numstat.text)
         } else {
             changedLineCount = 0
         }
+        let references = try await runner.run(
+            at: repository,
+            arguments: ["for-each-ref", "--format=%(refname)%00%(objectname)"],
+            environment: readEnvironment
+        )
         var hasher = SHA256()
+        hasher.update(data: Data("recovery-v2\0".utf8))
         hasher.update(data: Data((headSHA ?? "unborn").utf8))
+        hasher.update(data: Data((branch ?? "detached").utf8))
+        hasher.update(data: Data(indexFingerprint.utf8))
+        hasher.update(data: references.output)
         for path in sortedPaths {
             hasher.update(data: Data(path.utf8))
             guard !deletedPaths.contains(path),
@@ -790,6 +812,25 @@ actor RepositoryBackupService: RepositoryBackupServing {
             throw RepositoryBackupError.invalidBackupPath
         }
         return directory
+    }
+
+    private func canReuseCheckpoint(_ manifest: RepositoryBackupManifest, in repository: URL) throws -> Bool {
+        let directory = try backupDirectory(for: manifest.backup)
+        guard committedManifest(in: directory) == manifest else { return false }
+        if let bundle = manifest.bundleFileName {
+            let url = try containedURL(path: bundle, in: directory)
+            guard fileManager.isReadableFile(atPath: url.path),
+                  (try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) > 0 else { return false }
+        }
+        let workspace = directory.appendingPathComponent("workspace")
+        for path in manifest.copiedPaths {
+            try Task.checkCancellation()
+            guard fileManager.contentsEqual(
+                atPath: try containedURL(path: path, in: workspace).path,
+                andPath: try containedURL(path: path, in: repository).path
+            ) else { return false }
+        }
+        return true
     }
 
     private func enforceRetention(for repositoryPath: String, limit: Int) throws {

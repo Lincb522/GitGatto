@@ -70,6 +70,7 @@ struct RepositoryProtectionAssessment: Sendable, Equatable {
     let headChanged: Bool
     let branchChanged: Bool
     let indexChanged: Bool
+    var historyRewritten: Bool = false
 
     var requiresReview: Bool {
         !deletedPaths.isEmpty

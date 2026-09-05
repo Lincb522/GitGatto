@@ -299,6 +299,8 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryBackupMonitors: [String: RepositoryChangeMonitor] = [:]
     private var repositoryProtectionArmingTask: Task<Void, Never>?
     private var repositoryProtectionAuditTasks: [String: Task<Void, Never>] = [:]
+    private var repositoryProtectionAuditTokens: [String: UUID] = [:]
+    private var repositoryProtectionReadFailure: (path: String, message: String)?
     private var repositoryProtectionBaselines: [String: RepositoryBackup] = [:]
     private var repositoryProtectionBaselineCreations = Set<String>()
     private var repositoryProtectionGeneration = UUID()
@@ -3324,7 +3326,8 @@ final class WorkspaceViewModel: ObservableObject {
             let monitor = RepositoryChangeMonitor(
                 repositoryURL: repository,
                 includesGitMetadata: appPreferences.externalRepositoryProtectionEnabled,
-                includesGitObjectChanges: appPreferences.externalRepositoryProtectionEnabled
+                includesGitObjectChanges: appPreferences.externalRepositoryProtectionEnabled,
+                filtersIgnoredPaths: true
             ) { [weak self] in
                 Task { @MainActor in
                     guard let self else { return }
@@ -3393,6 +3396,7 @@ final class WorkspaceViewModel: ObservableObject {
             task.cancel()
         }
         repositoryProtectionAuditTasks = [:]
+        repositoryProtectionAuditTokens = [:]
         repositoryProtectionBaselines = [:]
         for monitor in repositoryBackupMonitors.values {
             monitor.stop()
@@ -3414,6 +3418,8 @@ final class WorkspaceViewModel: ObservableObject {
               !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path })
         else { return }
         repositoryProtectionAuditTasks[path]?.cancel()
+        let auditToken = UUID()
+        repositoryProtectionAuditTokens[path] = auditToken
         repositoryProtectionAuditTasks[path] = Task { [weak self] in
             do {
                 try await Task.sleep(for: .seconds(1.5))
@@ -3427,8 +3433,10 @@ final class WorkspaceViewModel: ObservableObject {
                 for: repository,
                 generation: generation
             )
-            if self.repositoryProtectionGeneration == generation {
+            if self.repositoryProtectionGeneration == generation,
+               self.repositoryProtectionAuditTokens[path] == auditToken {
                 self.repositoryProtectionAuditTasks[path] = nil
+                self.repositoryProtectionAuditTokens[path] = nil
             }
         }
     }
@@ -3457,10 +3465,17 @@ final class WorkspaceViewModel: ObservableObject {
         }
 
         do {
-            let assessment = try await repositoryBackupService.assessChanges(
+            let assessment = try await assessExternalRepositoryChanges(
                 after: baseline,
                 in: repository
             )
+            try Task.checkCancellation()
+            guard generation == nil || generation == repositoryProtectionGeneration,
+                  !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path }) else { return }
+            if let failure = repositoryProtectionReadFailure, failure.path == path {
+                if repositoryProtectionError == failure.message { repositoryProtectionError = nil }
+                repositoryProtectionReadFailure = nil
+            }
             let exceedsLimit = assessment.changedPathsSinceBaseline.count >= max(
                 1,
                 appPreferences.majorBackupFileThreshold
@@ -3470,7 +3485,7 @@ final class WorkspaceViewModel: ObservableObject {
             )
             let hasDestructiveChange = !assessment.deletedPaths.isEmpty
                 || !assessment.lostChangedPaths.isEmpty
-                || exceedsLimit
+                || assessment.historyRewritten
             if hasDestructiveChange {
                 publishRepositoryProtectionIncident(
                     RepositoryProtectionIncident(
@@ -3503,17 +3518,48 @@ final class WorkspaceViewModel: ObservableObject {
             return
         } catch RepositoryBackupError.storageBusy {
             return
-        } catch {
+        } catch RepositoryBackupError.repositoryUnavailable {
+            guard generation == nil || generation == repositoryProtectionGeneration,
+                  !Task.isCancelled else { return }
             publishRepositoryProtectionIncident(
                 RepositoryProtectionIncident(
                     repositoryPath: path,
                     repositoryName: repository.lastPathComponent,
                     backup: baseline,
                     kind: .repositoryUnavailable,
-                    failureDescription: error.localizedDescription
+                    failureDescription: RepositoryBackupError.repositoryUnavailable.localizedDescription
                 )
             )
+        } catch {
+            guard generation == nil || generation == repositoryProtectionGeneration,
+                  !Task.isCancelled else { return }
+            // A failed read is not proof of corruption. Keep the last restorable baseline.
+            repositoryProtectionError = L10n.format(
+                "recovery.error.monitoring", repository.lastPathComponent, error.localizedDescription
+            )
+            repositoryProtectionReadFailure = (path, repositoryProtectionError ?? error.localizedDescription)
+            monitoringEngine.markAttention(.repositoryProtection, error: repositoryProtectionError ?? error.localizedDescription)
         }
+    }
+
+    private func assessExternalRepositoryChanges(
+        after backup: RepositoryBackup,
+        in repository: URL
+    ) async throws -> RepositoryProtectionAssessment {
+        for attempt in 0..<2 {
+            do {
+                return try await repositoryBackupService.assessChanges(after: backup, in: repository)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch let error as RepositoryBackupError {
+                throw error
+            } catch {
+                guard attempt == 0 else { throw error }
+                // Git can briefly replace metadata during an operation; recheck once, never spin.
+                try await Task.sleep(for: .milliseconds(300))
+            }
+        }
+        throw CancellationError()
     }
 
     func createExternalRepositoryProtectionBaseline(
