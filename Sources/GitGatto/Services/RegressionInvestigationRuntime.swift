@@ -80,21 +80,23 @@ struct RegressionCommandRunner: Sendable {
         at directory: URL
     ) async throws -> RegressionCommandResult {
         let processBox = RegressionProcessBox()
-        let task = Task.detached(priority: .userInitiated) {
-            try Self.runBlocking(
-                executable: executable,
-                arguments: arguments,
-                at: directory,
-                additionalSearchPaths: additionalSearchPaths,
-                processBox: processBox
-            )
-        }
         return try await withTaskCancellationHandler {
-            let result = try await task.value
+            let result: RegressionCommandResult = try await withCheckedThrowingContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    continuation.resume(with: Result {
+                        try Self.runBlocking(
+                            executable: executable,
+                            arguments: arguments,
+                            at: directory,
+                            additionalSearchPaths: additionalSearchPaths,
+                            processBox: processBox
+                        )
+                    })
+                }
+            }
             try Task.checkCancellation()
             return result
         } onCancel: {
-            task.cancel()
             processBox.cancel()
         }
     }
@@ -136,26 +138,16 @@ struct RegressionCommandRunner: Sendable {
         try process.run()
         if processBox.isCancelled { process.terminate() }
 
-        let outputBox = RegressionDataBox()
-        let errorBox = RegressionDataBox()
-        let reads = DispatchGroup()
-        reads.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            outputBox.set(standardOutput.fileHandleForReading.readDataToEndOfFile())
-            reads.leave()
-        }
-        reads.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            errorBox.set(standardError.fileHandleForReading.readDataToEndOfFile())
-            reads.leave()
-        }
-        process.waitUntilExit()
-        reads.wait()
+        let capturedOutput = ProcessPipeCollector.waitForExit(
+            process,
+            standardOutput: standardOutput,
+            standardError: standardError
+        )
 
         if processBox.isCancelled || Task.isCancelled { throw CancellationError() }
         return RegressionCommandResult(
-            standardOutput: String(decoding: outputBox.value, as: UTF8.self),
-            standardError: String(decoding: errorBox.value, as: UTF8.self),
+            standardOutput: String(decoding: capturedOutput.standardOutput, as: UTF8.self),
+            standardError: String(decoding: capturedOutput.standardError, as: UTF8.self),
             exitCode: process.terminationStatus
         )
     }
@@ -787,16 +779,5 @@ private final class RegressionProcessBox: @unchecked Sendable {
 
     func clear() {
         lock.withLock { process = nil }
-    }
-}
-
-private final class RegressionDataBox: @unchecked Sendable {
-    private let lock = NSLock()
-    private var data = Data()
-
-    var value: Data { lock.withLock { data } }
-
-    func set(_ value: Data) {
-        lock.withLock { data = value }
     }
 }

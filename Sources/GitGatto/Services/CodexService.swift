@@ -1342,9 +1342,11 @@ private final class CodexCommandInvocation: @unchecked Sendable {
     }
 
     func run() async throws -> CodexCommandOutput {
-        try await Task.detached(priority: .userInitiated) { [self] in
-            try runBlocking()
-        }.value
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { [self] in
+                continuation.resume(with: Result { try runBlocking() })
+            }
+        }
     }
 
     func cancel() {
@@ -1398,22 +1400,11 @@ private final class CodexCommandInvocation: @unchecked Sendable {
             try? inputPipe.fileHandleForWriting.close()
         }
 
-        let outputBox = LockedDataBox()
-        let errorBox = LockedDataBox()
-        let readGroup = DispatchGroup()
-        readGroup.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            outputBox.set(outputPipe.fileHandleForReading.readDataToEndOfFile())
-            readGroup.leave()
-        }
-        readGroup.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            errorBox.set(errorPipe.fileHandleForReading.readDataToEndOfFile())
-            readGroup.leave()
-        }
-
-        process.waitUntilExit()
-        readGroup.wait()
+        let capturedOutput = ProcessPipeCollector.waitForExit(
+            process,
+            standardOutput: outputPipe,
+            standardError: errorPipe
+        )
 
         lock.lock()
         let cancelled = isCancelled
@@ -1421,23 +1412,10 @@ private final class CodexCommandInvocation: @unchecked Sendable {
         if cancelled { throw CancellationError() }
 
         return CodexCommandOutput(
-            standardOutput: outputBox.value,
-            standardError: errorBox.value,
+            standardOutput: capturedOutput.standardOutput,
+            standardError: capturedOutput.standardError,
             exitCode: process.terminationStatus
         )
-    }
-}
-
-private final class LockedDataBox: @unchecked Sendable {
-    private let lock = NSLock()
-    private var storage = Data()
-
-    var value: Data {
-        lock.withLock { storage }
-    }
-
-    func set(_ value: Data) {
-        lock.withLock { storage = value }
     }
 }
 

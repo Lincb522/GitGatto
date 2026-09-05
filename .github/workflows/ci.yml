@@ -69,6 +69,13 @@ jobs:
           set -o pipefail
           swift test --skip-build 2>&1 | tee "$RUNNER_TEMP/test-diagnostics/tests.log"
 
+      - name: Test Agent lanes with a constrained executor
+        timeout-minutes: 2
+        run: |
+          set -o pipefail
+          LIBDISPATCH_COOPERATIVE_POOL_STRICT=1 swift test --skip-build --filter IndependentAILaneTests \
+            2>&1 | tee "$RUNNER_TEMP/test-diagnostics/agent-lanes.log"
+
       - name: Upload test diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

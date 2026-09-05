@@ -233,9 +233,11 @@ private final class DevelopmentToolHomebrewCommand: @unchecked Sendable {
     }
 
     func run() async throws -> Output {
-        try await Task.detached(priority: .userInitiated) { [self] in
-            try runBlocking()
-        }.value
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { [self] in
+                continuation.resume(with: Result { try runBlocking() })
+            }
+        }
     }
 
     func cancel() {
@@ -293,41 +295,20 @@ private final class DevelopmentToolHomebrewCommand: @unchecked Sendable {
             throw DevelopmentToolHomebrewError.launchFailed
         }
 
-        let outputBox = HomebrewCommandDataBox()
-        let errorBox = HomebrewCommandDataBox()
-        let group = DispatchGroup()
-        group.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            outputBox.set(outputPipe.fileHandleForReading.readDataToEndOfFile())
-            group.leave()
-        }
-        group.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            errorBox.set(errorPipe.fileHandleForReading.readDataToEndOfFile())
-            group.leave()
-        }
-        process.waitUntilExit()
-        group.wait()
+        let capturedOutput = ProcessPipeCollector.waitForExit(
+            process,
+            standardOutput: outputPipe,
+            standardError: errorPipe
+        )
 
         lock.lock()
         let cancelled = isCancelled
         lock.unlock()
         if cancelled { throw CancellationError() }
         return Output(
-            standardOutput: outputBox.value,
-            standardError: errorBox.value,
+            standardOutput: capturedOutput.standardOutput,
+            standardError: capturedOutput.standardError,
             exitCode: process.terminationStatus
         )
-    }
-}
-
-private final class HomebrewCommandDataBox: @unchecked Sendable {
-    private let lock = NSLock()
-    private var data = Data()
-
-    var value: Data { lock.withLock { data } }
-
-    func set(_ value: Data) {
-        lock.withLock { data = value }
     }
 }
