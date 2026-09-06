@@ -10,7 +10,8 @@ struct AppThemeTests {
     func lumenAmbientMotionLifecycle() throws {
         let window = ThemeTestWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 600),
                                      styleMask: [.titled, .resizable], backing: .buffered, defer: false)
-        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: .light))
+        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: .light)
+            .environment(\.accessibilityReduceTransparency, false))
         window.contentView = hosting
         window.orderFront(nil)
         defer { window.orderOut(nil); window.contentView = nil }
@@ -54,7 +55,8 @@ struct AppThemeTests {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 960, height: 620),
                               styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.appearance = NSAppearance(named: colorScheme == .dark ? .darkAqua : .aqua)
-        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: colorScheme))
+        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: colorScheme)
+            .environment(\.accessibilityReduceTransparency, false))
         window.contentView = hosting
         window.orderFront(nil)
         defer { window.orderOut(nil); window.contentView = nil }
@@ -81,6 +83,16 @@ struct AppThemeTests {
                 try data.write(to: output.appendingPathComponent("lumen-\(Int(size.width))-\(colorScheme).png"))
             }
         }
+    }
+
+    @MainActor
+    @Test("Lumen omits ambient effects when transparency is reduced")
+    func lumenReducedTransparency() {
+        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: .light)
+            .environment(\.accessibilityReduceTransparency, true))
+        hosting.frame = NSRect(x: 0, y: 0, width: 960, height: 620)
+        hosting.layoutSubtreeIfNeeded()
+        #expect(ambientView(in: hosting) == nil)
     }
 
     @MainActor
