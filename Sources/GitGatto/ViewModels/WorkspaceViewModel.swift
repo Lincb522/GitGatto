@@ -335,7 +335,9 @@ final class WorkspaceViewModel: ObservableObject {
         fileHistoryService: any GitFileHistoryServing = GitFileHistoryService(),
         diagnosticService: any GitEnvironmentDiagnosticServing = GitEnvironmentDiagnosticService(),
         projectGoalStore: any ProjectGoalStoring = ProjectGoalStore(),
-        projectGoalRuntime: (any ProjectGoalRunning)? = nil,
+        makeProjectGoalRuntime: @Sendable (any GitRepositoryServing, any GitHubServing) -> any ProjectGoalRunning = {
+            ProjectGoalRuntime(repositoryService: $0, githubService: $1)
+        },
         regressionInvestigationStore: any RegressionInvestigationStoring = RegressionInvestigationStore(),
         regressionInvestigationRuntime: RegressionInvestigationRuntime = RegressionInvestigationRuntime(),
         monitoringEngine: MonitoringEngine = MonitoringEngine(),
@@ -360,10 +362,7 @@ final class WorkspaceViewModel: ObservableObject {
         self.regressionInvestigationRuntime = regressionInvestigationRuntime
         self.monitoringEngine = monitoringEngine
         self.repositoryBackupService = repositoryBackupService
-        self.projectGoalRuntime = projectGoalRuntime ?? ProjectGoalRuntime(
-            repositoryService: service,
-            githubService: githubService
-        )
+        self.projectGoalRuntime = makeProjectGoalRuntime(service, githubService)
         repositoryBackupDirectoryURL = appPreferences.repositoryBackupDirectoryURL
             ?? RepositoryBackupService.defaultRootURL()
         projectAIConfiguration = AIProviderSettings.load(.project)

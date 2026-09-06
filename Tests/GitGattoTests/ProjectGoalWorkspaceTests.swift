@@ -312,7 +312,7 @@ struct ProjectGoalWorkspaceTests {
 
     @MainActor
     private func model(_ store: GoalWorkspaceStore, _ runtime: GoalWorkspaceRuntime) async -> WorkspaceViewModel {
-        let model = WorkspaceViewModel(projectGoalStore: store, projectGoalRuntime: runtime)
+        let model = WorkspaceViewModel(projectGoalStore: store, makeProjectGoalRuntime: { _, _ in runtime })
         model.appPreferences.monitoringEngineEnabled = false
         model.selectedSection = .goals
         model.apply(snapshot())
