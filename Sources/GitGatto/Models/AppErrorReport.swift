@@ -372,6 +372,14 @@ private enum AppErrorCatalog {
     }
 
     private static func gitDiagnosis(message: String) -> AppErrorDiagnosis? {
+        switch GitPushRejection(message: message) {
+        case .workflowScope:
+            return localized("error.explanation.git_workflow_scope", "error.recovery.git_workflow_scope")
+        case .nonFastForward:
+            return localized("error.explanation.git_non_fast_forward", "error.recovery.git_non_fast_forward")
+        case nil:
+            break
+        }
         let value = message.lowercased()
         let rules: [(needles: [String], explanation: String, recovery: String)] = [
             (["not a git repository"], "error.explanation.git_not_repository", "error.recovery.git_not_repository"),
@@ -384,7 +392,6 @@ private enum AppErrorCatalog {
             (["could not resolve host", "name or service not known"], "error.explanation.network_dns", "error.recovery.network_dns"),
             (["failed to connect", "connection timed out", "connection reset", "network is unreachable"], "error.explanation.network_connection", "error.recovery.network_connection"),
             (["ssl certificate problem", "certificate verify failed"], "error.explanation.network_certificate", "error.recovery.network_certificate"),
-            (["non-fast-forward", "fetch first", "failed to push some refs"], "error.explanation.git_non_fast_forward", "error.recovery.git_non_fast_forward"),
             (["has no upstream branch", "no tracking information for the current branch"], "error.explanation.git_no_upstream", "error.recovery.git_no_upstream"),
             (["need to specify how to reconcile divergent branches", "divergent branches"], "error.explanation.git_diverged", "error.recovery.git_diverged"),
             (["would be overwritten by merge", "would be overwritten by checkout"], "error.explanation.git_local_overwrite", "error.recovery.git_local_overwrite"),

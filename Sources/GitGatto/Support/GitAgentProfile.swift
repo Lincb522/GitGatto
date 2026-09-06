@@ -173,15 +173,15 @@ enum GitAgentProfile {
             .joined(separator: "\n")
             .lowercased()
 
-        if evidence.contains("authentication failed")
+        let rejection = GitPushRejection(message: report.message)
+        if rejection == .workflowScope
+            || evidence.contains("authentication failed")
             || evidence.contains("permission denied (publickey)")
             || evidence.contains("could not read username")
             || evidence.contains("repository not found") {
             return .authentication
         }
-        if evidence.contains("non-fast-forward")
-            || evidence.contains("fetch first")
-            || evidence.contains("remote rejected")
+        if rejection == .nonFastForward
             || evidence.contains("no upstream branch")
             || evidence.contains("divergent branches") {
             return .synchronization
@@ -280,7 +280,7 @@ enum GitAgentProfile {
     private static func repairInstruction(for route: GitAgentRepairRoute) -> String {
         switch route {
         case .authentication:
-            "verify the remote URL and credential-safe authentication status without reading or replacing credentials"
+            "verify the remote URL and credential-safe authentication status without reading or replacing credentials; missing workflow scope requires user authorization, not pull, rebase, or local configuration changes"
         case .synchronization:
             "compare HEAD, upstream, ahead/behind, merge-base, and branch protection evidence; repair only local configuration"
         case .conflicts:

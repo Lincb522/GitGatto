@@ -60,12 +60,16 @@ struct AppPalette {
     let dangerSoft: Color
     let warning: Color
     let warningSoft: Color
+    let lumenColors: LumenResolvedColors?
+    var onPrimary: Color { lumenColors?[.onPrimary] ?? .white }
 
+    @MainActor
     init(
         _ scheme: ColorScheme,
         theme: AppVisualTheme = AppStyleDefaults.theme,
         accentChoice: AppAccentChoice = AppStyleDefaults.accent,
-        customAccentHex: String = AppStyleDefaults.customAccentHex
+        customAccentHex: String = AppStyleDefaults.customAccentHex,
+        lumenColors: LumenResolvedColors? = nil
     ) {
         let selectedPrimary = Self.primaryColor(
             for: accentChoice,
@@ -73,7 +77,30 @@ struct AppPalette {
             customHex: customAccentHex
         )
 
-        if theme == .standard, scheme == .dark {
+        let resolvedLumen = theme == .lumen ? (lumenColors ?? LumenColorStore.shared.resolved(
+            scheme, accentChoice: accentChoice, customAccentHex: customAccentHex
+        )) : nil
+        self.lumenColors = resolvedLumen
+        if let colors = resolvedLumen {
+            background = colors[.background]
+            sidebar = colors[.sidebar]
+            surface = colors[.surface]
+            raisedSurface = colors[.raisedSurface]
+            ink = colors[.ink]
+            mutedInk = colors[.mutedInk]
+            subtleInk = colors[.subtleInk]
+            divider = colors[.divider]
+            primary = colors[.primary]
+            primarySoft = colors[.primarySoft]
+            accent = colors[.accent]
+            accentSoft = colors[.accentSoft]
+            success = colors[.success]
+            successSoft = colors[.successSoft]
+            danger = colors[.danger]
+            dangerSoft = colors[.dangerSoft]
+            warning = colors[.warning]
+            warningSoft = colors[.warningSoft]
+        } else if theme == .standard, scheme == .dark {
             background = OKLCHColor(0.225, 0.004, 255).color
             sidebar = OKLCHColor(0.265, 0.004, 255).color
             surface = OKLCHColor(0.250, 0.004, 255).color
@@ -115,48 +142,6 @@ struct AppPalette {
             dangerSoft = OKLCHColor(0.950, 0.040, 25).color
             warning = OKLCHColor(0.560, 0.150, 80).color
             warningSoft = OKLCHColor(0.955, 0.045, 86).color
-        } else if theme == .lumen, scheme == .dark {
-            background = Color(red: 5 / 255, green: 5 / 255, blue: 5 / 255)
-            sidebar = Color(red: 13 / 255, green: 12 / 255, blue: 14 / 255).opacity(0.28)
-            surface = Color(red: 15 / 255, green: 14 / 255, blue: 16 / 255).opacity(0.48)
-            raisedSurface = Color(red: 24 / 255, green: 22 / 255, blue: 25 / 255)
-            ink = Color(red: 246 / 255, green: 245 / 255, blue: 241 / 255)
-            mutedInk = Color(red: 246 / 255, green: 245 / 255, blue: 241 / 255).opacity(0.62)
-            subtleInk = Color(red: 246 / 255, green: 245 / 255, blue: 241 / 255).opacity(0.58)
-            divider = Color.white.opacity(0.10)
-            primary = selectedPrimary
-            primarySoft = accentChoice == .custom
-                ? selectedPrimary.opacity(0.22)
-                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
-            accent = OKLCHColor(0.735, 0.100, 285).color
-            accentSoft = OKLCHColor(0.245, 0.050, 285).color
-            success = OKLCHColor(0.760, 0.135, 151).color
-            successSoft = OKLCHColor(0.235, 0.045, 151).color
-            danger = OKLCHColor(0.735, 0.175, 25).color
-            dangerSoft = OKLCHColor(0.235, 0.055, 25).color
-            warning = OKLCHColor(0.820, 0.145, 86).color
-            warningSoft = OKLCHColor(0.245, 0.050, 86).color
-        } else if theme == .lumen {
-            background = Color(red: 246 / 255, green: 242 / 255, blue: 236 / 255)
-            sidebar = Color.white.opacity(0.18)
-            surface = Color.white.opacity(0.48)
-            raisedSurface = Color.white
-            ink = Color(red: 23 / 255, green: 22 / 255, blue: 25 / 255)
-            mutedInk = Color(red: 23 / 255, green: 22 / 255, blue: 25 / 255).opacity(0.66)
-            subtleInk = Color(red: 23 / 255, green: 22 / 255, blue: 25 / 255).opacity(0.60)
-            divider = Color(red: 29 / 255, green: 24 / 255, blue: 27 / 255).opacity(0.10)
-            primary = selectedPrimary
-            primarySoft = accentChoice == .custom
-                ? selectedPrimary.opacity(0.14)
-                : Self.primarySoftColor(for: accentChoice, scheme: scheme)
-            accent = OKLCHColor(0.610, 0.115, 285).color
-            accentSoft = OKLCHColor(0.925, 0.035, 285).color
-            success = OKLCHColor(0.495, 0.135, 151).color
-            successSoft = OKLCHColor(0.940, 0.035, 151).color
-            danger = OKLCHColor(0.550, 0.185, 25).color
-            dangerSoft = OKLCHColor(0.945, 0.040, 25).color
-            warning = OKLCHColor(0.590, 0.145, 86).color
-            warningSoft = OKLCHColor(0.945, 0.045, 86).color
         } else if theme == .emerald, scheme == .dark {
             background = OKLCHColor(0.205, 0.006, 155).color
             sidebar = OKLCHColor(0.225, 0.031, 155).color
@@ -328,7 +313,7 @@ struct AppPalette {
         }
     }
 
-    private static func primaryColor(
+    static func primaryColor(
         for choice: AppAccentChoice,
         scheme: ColorScheme,
         customHex: String
@@ -345,7 +330,7 @@ struct AppPalette {
         ).color
     }
 
-    private static func primarySoftColor(for choice: AppAccentChoice, scheme: ColorScheme) -> Color {
+    static func primarySoftColor(for choice: AppAccentChoice, scheme: ColorScheme) -> Color {
         let specification = accentSpecification(for: choice)
         return OKLCHColor(
             scheme == .dark ? 0.285 : 0.945,
@@ -483,12 +468,13 @@ struct AppThemeRoot<Content: View>: View {
 struct AppThemeBackdrop: View {
     let theme: AppVisualTheme
     let colorScheme: ColorScheme
+    var lumenColors: LumenResolvedColors? = nil
 
     var body: some View {
-        if theme == .lumen {
+        if theme == .lumen, let colors = AppPalette(colorScheme, theme: theme, lumenColors: lumenColors).lumenColors {
             ZStack {
-                WindowThemeSurface(theme: theme, colorScheme: colorScheme)
-                LumenBackdrop(colorScheme: colorScheme)
+                WindowThemeSurface(theme: theme, colorScheme: colorScheme, lumenColors: colors)
+                LumenBackdrop(colorScheme: colorScheme, colors: colors)
             }
             .ignoresSafeArea()
             .accessibilityHidden(true)
@@ -509,94 +495,164 @@ struct AppThemeBackdrop: View {
 
 private struct LumenBackdrop: View {
     let colorScheme: ColorScheme
+    let colors: LumenResolvedColors
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @State private var lightsAreShifted = false
 
     var body: some View {
-        let palette = AppPalette(colorScheme, theme: .lumen)
+        let palette = AppPalette(colorScheme, theme: .lumen, lumenColors: colors)
         GeometryReader { proxy in
-            let radius = max(proxy.size.width, proxy.size.height) * 0.82
             ZStack {
-                palette.background.opacity(reduceTransparency ? 1 : (colorScheme == .dark ? 0.76 : 0.60))
+                (reduceTransparency ? colors.opaque(.background) : palette.background.opacity(colorScheme == .dark ? 0.76 : 0.60))
 
                 if !reduceTransparency {
-                    RadialGradient(
-                        colors: colorScheme == .dark
-                            ? [
-                                Color(red: 1.00, green: 84 / 255, blue: 66 / 255).opacity(0.22),
-                                Color(red: 1.00, green: 84 / 255, blue: 66 / 255).opacity(0.10),
-                                Color(red: 185 / 255, green: 49 / 255, blue: 75 / 255).opacity(0.035),
-                                .clear,
-                            ]
-                            : [
-                                Color(red: 1.00, green: 93 / 255, blue: 72 / 255).opacity(0.28),
-                                Color(red: 247 / 255, green: 112 / 255, blue: 106 / 255).opacity(0.14),
-                                Color(red: 226 / 255, green: 126 / 255, blue: 138 / 255).opacity(0.043),
-                                .clear,
-                            ],
-                        center: UnitPoint(
-                            x: lightsAreShifted ? 0.12 : 0.02,
-                            y: lightsAreShifted ? 0.31 : 0.24
-                        ),
-                        startRadius: 0,
-                        endRadius: radius
-                    )
-                    .animation(
-                        reduceMotion ? nil : .easeInOut(duration: 11).repeatForever(autoreverses: true),
-                        value: lightsAreShifted
-                    )
+                    LumenAmbientLights(colorScheme: colorScheme, reduceMotion: reduceMotion, colors: colors)
 
                     RadialGradient(
-                        colors: colorScheme == .dark
-                            ? [
-                                Color(red: 114 / 255, green: 101 / 255, blue: 1.00).opacity(0.19),
-                                Color(red: 114 / 255, green: 101 / 255, blue: 1.00).opacity(0.09),
-                                Color(red: 67 / 255, green: 59 / 255, blue: 166 / 255).opacity(0.03),
-                                .clear,
-                            ]
-                            : [
-                                Color(red: 126 / 255, green: 113 / 255, blue: 1.00).opacity(0.24),
-                                Color(red: 137 / 255, green: 126 / 255, blue: 240 / 255).opacity(0.12),
-                                Color(red: 146 / 255, green: 137 / 255, blue: 216 / 255).opacity(0.04),
-                                .clear,
-                            ],
-                        center: UnitPoint(
-                            x: lightsAreShifted ? 0.86 : 0.96,
-                            y: lightsAreShifted ? 0.29 : 0.36
-                        ),
-                        startRadius: 0,
-                        endRadius: radius
-                    )
-                    .animation(
-                        reduceMotion ? nil : .easeInOut(duration: 13).repeatForever(autoreverses: true),
-                        value: lightsAreShifted
-                    )
-
-                    RadialGradient(
-                        colors: colorScheme == .dark
-                            ? [.clear, .clear, Color.black.opacity(0.44)]
-                            : [.clear, .clear, Color(red: 238 / 255, green: 232 / 255, blue: 225 / 255).opacity(0.64)],
+                        colors: [.clear, .clear, colors[.vignette]],
                         center: UnitPoint(x: 0.50, y: 0.44),
                         startRadius: min(proxy.size.width, proxy.size.height) * 0.20,
                         endRadius: max(proxy.size.width, proxy.size.height) * 0.72
                     )
 
                     LinearGradient(
-                        colors: colorScheme == .dark
-                            ? [Color.black.opacity(0.12), .clear, Color.black.opacity(0.46)]
-                            : [Color.white.opacity(0.08), .clear, Color(red: 236 / 255, green: 231 / 255, blue: 224 / 255).opacity(0.34)],
+                        colors: [colors[.backdropTop], .clear, colors[.backdropBottom]],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 }
             }
         }
-        .onAppear {
-            lightsAreShifted = !reduceMotion
+        .clipped()
+    }
+}
+
+private struct LumenAmbientLights: NSViewRepresentable {
+    let colorScheme: ColorScheme
+    let reduceMotion: Bool
+    let colors: LumenResolvedColors
+
+    func makeNSView(context: Context) -> LumenAmbientLightsView {
+        LumenAmbientLightsView()
+    }
+
+    func updateNSView(_ view: LumenAmbientLightsView, context: Context) {
+        view.configure(colorScheme: colorScheme, reduceMotion: reduceMotion, colors: colors)
+    }
+}
+
+final class LumenAmbientLightsView: NSView {
+    private let lights = [CAGradientLayer(), CAGradientLayer()]
+    private var renderedStops: [[Color]]?
+    private var reduceMotion = false
+    private var renderedSize = CGSize.zero
+    private var animationEpoch: CFTimeInterval?
+    private var visibilityObservation: NSKeyValueObservation?
+    private let origins = [CGPoint(x: 0.02, y: 0.24), CGPoint(x: 0.96, y: 0.36)]
+    private let destinations = [CGPoint(x: 0.12, y: 0.31), CGPoint(x: 0.86, y: 0.29)]
+    private let durations: [CFTimeInterval] = [11, 13]
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        let root = CALayer()
+        layer = root
+        wantsLayer = true
+        clipsToBounds = true
+        for light in lights {
+            light.type = .radial
+            light.startPoint = CGPoint(x: 0.5, y: 0.5)
+            light.endPoint = CGPoint(x: 1, y: 1)
+            root.addSublayer(light)
         }
-        .onChange(of: reduceMotion) { _, isReduced in
-            lightsAreShifted = !isReduced
+        setAccessibilityElement(false)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override var isFlipped: Bool { true }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    func configure(colorScheme: ColorScheme, reduceMotion: Bool, colors: LumenResolvedColors? = nil) {
+        let stops = (colors ?? LumenColorSettings().resolved(colorScheme)).ambientStops
+        if renderedStops != stops {
+            renderedStops = stops
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            for (light, colors) in zip(lights, stops) {
+                light.colors = colors.map { NSColor($0).cgColor }
+            }
+            CATransaction.commit()
+        }
+        if self.reduceMotion != reduceMotion { animationEpoch = nil }
+        self.reduceMotion = reduceMotion
+        updateAnimations()
+    }
+
+    override func layout() {
+        super.layout()
+        guard bounds.width > 0, bounds.height > 0, renderedSize != bounds.size else { return }
+        renderedSize = bounds.size
+        let radius = max(bounds.width, bounds.height) * 0.82
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for (index, light) in lights.enumerated() {
+            light.bounds = CGRect(x: 0, y: 0, width: radius * 2, height: radius * 2)
+            light.position = point(origins[index])
+            light.removeAnimation(forKey: "ambientMotion")
+        }
+        CATransaction.commit()
+        updateAnimations()
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        visibilityObservation?.invalidate()
+        visibilityObservation = nil
+        if let window {
+            NotificationCenter.default.removeObserver(self, name: NSWindow.didChangeOcclusionStateNotification, object: window)
+        }
+        super.viewWillMove(toWindow: newWindow)
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let window {
+            NotificationCenter.default.addObserver(self, selector: #selector(updateAnimations),
+                name: NSWindow.didChangeOcclusionStateNotification, object: window)
+            visibilityObservation = window.observe(\.isVisible, options: [.new]) { [weak self] _, _ in
+                MainActor.assumeIsolated { self?.updateAnimations() }
+            }
+        }
+        updateAnimations()
+    }
+
+    override func viewDidHide() { super.viewDidHide(); updateAnimations() }
+    override func viewDidUnhide() { super.viewDidUnhide(); updateAnimations() }
+
+    private func point(_ unit: CGPoint) -> CGPoint {
+        CGPoint(x: unit.x * renderedSize.width, y: unit.y * renderedSize.height)
+    }
+
+    @objc private func updateAnimations() {
+        let shouldAnimate = !reduceMotion && !isHiddenOrHasHiddenAncestor
+            && window?.isVisible == true && window?.occlusionState.contains(.visible) == true && renderedSize != .zero
+        if shouldAnimate, animationEpoch == nil { animationEpoch = CACurrentMediaTime() }
+        for (index, light) in lights.enumerated() {
+            guard shouldAnimate, let animationEpoch else {
+                light.removeAnimation(forKey: "ambientMotion")
+                continue
+            }
+            guard light.animation(forKey: "ambientMotion") == nil else { continue }
+            // Keep the radial fields fixed; the compositor moves them without SwiftUI frame-by-frame layout.
+            let animation = CABasicAnimation(keyPath: "position")
+            animation.fromValue = NSValue(point: point(origins[index]))
+            animation.toValue = NSValue(point: point(destinations[index]))
+            animation.duration = durations[index]
+            animation.beginTime = light.convertTime(animationEpoch, from: nil)
+            animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            animation.autoreverses = true
+            animation.repeatCount = .infinity
+            light.add(animation, forKey: "ambientMotion")
         }
     }
 }
@@ -604,6 +660,7 @@ private struct LumenBackdrop: View {
 struct WindowThemeSurface: NSViewRepresentable {
     let theme: AppVisualTheme
     let colorScheme: ColorScheme
+    var lumenColors: LumenResolvedColors? = nil
 
     func makeNSView(context: Context) -> NSVisualEffectView {
         GlassEffectView()
@@ -617,9 +674,7 @@ struct WindowThemeSurface: NSViewRepresentable {
         if let effectView = nsView as? GlassEffectView {
             effectView.usesGlass = usesGlass
             if theme == .lumen {
-                effectView.opaqueBackgroundColor = colorScheme == .dark
-                    ? NSColor(calibratedRed: 5 / 255, green: 5 / 255, blue: 5 / 255, alpha: 1)
-                    : NSColor(calibratedRed: 246 / 255, green: 242 / 255, blue: 236 / 255, alpha: 1)
+                effectView.opaqueBackgroundColor = NSColor(AppPalette(colorScheme, theme: .lumen, lumenColors: lumenColors).background)
             } else {
                 effectView.opaqueBackgroundColor = colorScheme == .dark
                     ? NSColor(calibratedWhite: 0.10, alpha: 1)
@@ -802,7 +857,7 @@ private struct LumenSurfaceModifier: ViewModifier {
                 .background {
                     ZStack {
                         if reduceTransparency {
-                            shape.fill(palette.background)
+                            shape.fill(palette.lumenColors?.opaque(.background) ?? palette.background)
                         } else {
                             shape.fill(.ultraThinMaterial)
                                 .opacity(style == .chrome ? 0.42 : 0.18)
@@ -826,26 +881,16 @@ private struct LumenSurfaceModifier: ViewModifier {
     }
 
     private func fill(_ palette: AppPalette) -> Color {
-        if colorScheme == .dark {
-            switch style {
-            case .chrome: Color.black.opacity(0.18)
-            case .panel: Color.black.opacity(0.20)
-            case .inset: Color.black.opacity(0.14)
-            }
-        } else {
-            switch style {
-            case .chrome: Color.white.opacity(0.26)
-            case .panel: Color.white.opacity(0.40)
-            case .inset: Color.white.opacity(0.22)
-            }
+        let role: LumenColorRole = switch style {
+        case .chrome: .chrome
+        case .panel: .panel
+        case .inset: .inset
         }
+        return palette.lumenColors?[role] ?? palette.surface
     }
 
     private func borderColor(_ palette: AppPalette) -> Color {
-        colorScheme == .dark
-            ? Color.white.opacity(style == .chrome ? 0.18 : 0.10)
-            : Color(red: 29 / 255, green: 24 / 255, blue: 27 / 255)
-                .opacity(style == .chrome ? 0.16 : 0.10)
+        style == .chrome ? (palette.lumenColors?[.chromeBorder] ?? palette.divider) : palette.divider
     }
 }
 

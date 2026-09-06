@@ -429,12 +429,16 @@ private actor GitHubAgentReplyAIFixture: CodexServing {
     func cancel() async {}
 }
 
-private actor GitHubAgentReplyGitHubFixture: GitHubServing {
+actor GitHubAgentReplyGitHubFixture: GitHubServing {
     let repository: GitHubRepository
     let issue: GitHubIssue
     private(set) var publishedBodies: [String] = []
+    let authorized: Bool
+    let failsAuthorization: Bool
 
-    init() throws {
+    init(authorized: Bool = false, failsAuthorization: Bool = false) throws {
+        self.authorized = authorized
+        self.failsAuthorization = failsAuthorization
         repository = GitHubRepository(
             fullName: "acme/repo",
             name: "repo",
@@ -465,9 +469,18 @@ private actor GitHubAgentReplyGitHubFixture: GitHubServing {
         )
     }
 
-    func probe() async -> GitHubAvailability { .unavailable }
-    func beginLogin() async throws { throw GitHubServiceError.invalidResponse }
-    func currentAccount() async throws -> GitHubAccount { throw GitHubServiceError.invalidResponse }
+    func probe() async -> GitHubAvailability {
+        authorized ? GitHubAvailability(state: .available, version: nil) : .unavailable
+    }
+    private(set) var authorizationRequests: [GitHubAuthorizationRequest] = []
+    func beginLogin(_ request: GitHubAuthorizationRequest) async throws {
+        authorizationRequests.append(request)
+        if failsAuthorization { throw GitHubServiceError.launchFailed }
+    }
+    func currentAccount() async throws -> GitHubAccount {
+        guard authorized else { throw GitHubServiceError.invalidResponse }
+        return GitHubAccount(login: "developer-with-a-long-account-name", name: nil, webURL: repository.webURL)
+    }
     func accountRepositories() async throws -> [GitHubRepository] { [repository] }
     func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository] { [] }
     func searchDevelopers(query: String, page: Int) async throws -> [GitHubDeveloperSummary] { [] }

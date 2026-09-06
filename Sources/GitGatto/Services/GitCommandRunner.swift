@@ -33,6 +33,25 @@ struct GitFailureDetails: Sendable, Equatable {
     }
 }
 
+enum GitPushRejection: Equatable {
+    case workflowScope
+    case nonFastForward
+
+    init?(message: String) {
+        let value = message.lowercased().filter { !"`\"'".contains($0) }
+        if value.contains("create or update workflow"), value.contains("without workflow scope") {
+            self = .workflowScope
+        } else if value.contains("non-fast-forward") || value.contains("fetch first")
+            || value.contains("remote contains work that you do not have locally")
+            || value.contains("tip of your current branch is behind") {
+            self = .nonFastForward
+        } else {
+            // "failed to push some refs" and "remote rejected" do not identify a cause.
+            return nil
+        }
+    }
+}
+
 struct GitCommandRunner: Sendable {
     func run(
         at repositoryURL: URL,

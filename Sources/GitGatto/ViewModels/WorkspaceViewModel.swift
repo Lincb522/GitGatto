@@ -5052,15 +5052,16 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
-    func beginGitHubLogin() {
+    func beginGitHubLogin(_ request: GitHubAuthorizationRequest = .signIn) {
         guard !isLaunchingGitHubLogin else { return }
         isLaunchingGitHubLogin = true
         githubError = nil
+        githubActivity = nil
         Task {
             defer { isLaunchingGitHubLogin = false }
             do {
-                try await githubService.beginLogin()
-                githubActivity = L10n.text("github.status.login_opened")
+                try await githubService.beginLogin(request)
+                githubActivity = L10n.text(request.openedStatusKey)
             } catch {
                 githubError = L10n.format("github.error.login", error.localizedDescription)
             }

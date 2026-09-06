@@ -29,7 +29,7 @@ struct FlatAgentResolveButton: View {
                     }
                 }
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.white)
+                .foregroundStyle(palette.onPrimary)
                 .padding(.horizontal, 14)
                 .frame(height: 34)
                 .background {
@@ -107,12 +107,12 @@ struct ReadmeRewriteMotionLabel: View {
                     TranslationMotionGlyph(
                         symbol: systemImage,
                         isActive: isActive,
-                        tint: isOpen ? Color.white : palette.primary
+                        tint: isOpen ? palette.onPrimary : palette.primary
                     )
                         .transition(.opacity)
                 } else if !isActive {
                     GattoIcon(symbol: "ai.writing", size: 23)
-                        .foregroundStyle(isOpen ? Color.white : palette.primary)
+                        .foregroundStyle(isOpen ? palette.onPrimary : palette.primary)
                         .scaleEffect(isOpen && !reduceMotion ? 1.04 : 1)
                         .rotationEffect(.degrees(isOpen && !reduceMotion ? -1.5 : 0))
                         .transition(.opacity)
@@ -128,14 +128,14 @@ struct ReadmeRewriteMotionLabel: View {
 
             Text(isShowingCompletion ? L10n.text("downloads.state.completed") : title)
                 .font(.system(size: 10.5, weight: .semibold))
-                .foregroundStyle(isOpen ? Color.white : palette.ink)
+                .foregroundStyle(isOpen ? palette.onPrimary : palette.ink)
                 .lineLimit(1)
                 .padding(.leading, 11)
                 .padding(.trailing, 8)
 
             if let trailingSymbol {
                 GattoIcon(symbol: trailingSymbol, size: isActive ? 18 : 14)
-                    .foregroundStyle(isOpen ? Color.white.opacity(0.78) : palette.subtleInk)
+                    .foregroundStyle(isOpen ? palette.onPrimary.opacity(0.78) : palette.subtleInk)
                     .offset(x: isOpen && !reduceMotion ? 2 : 0)
                     .padding(.trailing, 11)
             } else {
@@ -226,7 +226,7 @@ private struct ReadmeFolderMotionGlyph: View {
 
             ZStack {
                 ReadmeFolderBackShape()
-                    .fill(isOpen ? Color.white.opacity(0.62) : palette.primary.opacity(0.46))
+                    .fill(isOpen ? palette.onPrimary.opacity(0.62) : palette.primary.opacity(0.46))
                     .frame(width: 23, height: 27)
 
                 RoundedRectangle(cornerRadius: 1.4, style: .continuous)
@@ -239,7 +239,7 @@ private struct ReadmeFolderMotionGlyph: View {
                     .offset(x: isOpen ? -1 : 0, y: isOpen ? -1 : 0)
 
                 ReadmeFolderFrontShape()
-                    .fill(isOpen ? Color.white.opacity(0.90) : palette.primary)
+                    .fill(isOpen ? palette.onPrimary.opacity(0.90) : palette.primary)
                     .frame(width: 23, height: 20)
                     .rotation3DEffect(
                         .degrees(isOpen && !reduceMotion ? -58 : 0),
@@ -249,7 +249,7 @@ private struct ReadmeFolderMotionGlyph: View {
                     )
                     .offset(x: isOpen && !reduceMotion ? -9 : 0, y: 4)
 
-                ReadmePencilGlyph(tint: isOpen ? Color.white : palette.primary)
+                ReadmePencilGlyph(tint: isOpen ? palette.onPrimary : palette.primary)
                     .offset(
                         x: isOpen ? 11 + pencilTravel : 34,
                         y: isOpen ? -5 - pencilTravel : -5
@@ -382,7 +382,7 @@ struct CloneActionButton: View {
                 .overlay {
                     if isActive {
                         HStack(spacing: 7) {
-                            CloneActivityGlyph(systemImage: systemImage, tint: Color.white)
+                            CloneActivityGlyph(systemImage: systemImage, tint: palette.onPrimary)
                             Text(activeTitle)
                                 .lineLimit(1)
                         }
@@ -392,13 +392,13 @@ struct CloneActionButton: View {
                     } else {
                         Image(gattoSymbol: systemImage)
                             .font(.system(size: compact ? 11.5 : 13, weight: .bold))
-                            .foregroundStyle(isExpanded ? Color.white : palette.primary)
+                            .foregroundStyle(isExpanded ? palette.onPrimary : palette.primary)
                     }
                 }
                 .overlay {
                     if isActive {
                         CloneProgressBorder(
-                            tint: Color.white.opacity(0.92),
+                            tint: palette.onPrimary.opacity(0.92),
                             cornerRadius: max(3, cornerRadius - 2)
                         )
                     }
@@ -833,7 +833,7 @@ struct GitHubStarActionButton: View {
                         isStarred: isStarred,
                         isUpdating: false,
                         iconSize: 30,
-                        inactiveTint: isHovering ? highlightedStar : Color.white.opacity(0.74),
+                        inactiveTint: isHovering ? highlightedStar : palette.onPrimary.opacity(0.74),
                         activeTint: highlightedStar
                     )
                     Text(GitHubNumberFormatter.string(starCount))
@@ -842,7 +842,7 @@ struct GitHubStarActionButton: View {
                 }
             }
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.white)
+            .foregroundStyle(palette.onPrimary)
             .padding(.horizontal, 13)
             .frame(minWidth: 136)
             .frame(height: 40)
@@ -880,7 +880,7 @@ struct GitHubStarActionButton: View {
                         .stroke(Color.white.opacity(isHovering ? 0.30 : 0.16), lineWidth: 1)
                     if isUpdating {
                         CloneProgressBorder(
-                            tint: Color.white.opacity(0.94),
+                            tint: palette.onPrimary.opacity(0.94),
                             cornerRadius: cornerRadius
                         )
                     }

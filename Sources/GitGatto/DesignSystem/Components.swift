@@ -148,14 +148,14 @@ struct PrimaryButtonStyle: ButtonStyle {
         case .lumen:
             configuration.label
                 .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(Color.white)
+                .foregroundStyle(palette.onPrimary)
                 .padding(.horizontal, 16)
                 .frame(height: 34)
                 .background(palette.primary.opacity(configuration.isPressed ? 0.78 : 0.96))
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                        .stroke(palette.onPrimary.opacity(0.16), lineWidth: 1)
                 }
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
                 .animation(.easeOut(duration: 0.12), value: configuration.isPressed)

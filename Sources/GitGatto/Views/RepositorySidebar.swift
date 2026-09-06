@@ -40,7 +40,7 @@ struct RepositorySidebar: View {
                 expandedSidebar(palette: palette, showsBrand: showsBrand)
             }
         }
-        .background(theme == .lumen || theme == .folio ? Color.clear : palette.sidebar)
+        .background(theme == .folio ? Color.clear : palette.sidebar)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.20), value: isCollapsed)
     }
 

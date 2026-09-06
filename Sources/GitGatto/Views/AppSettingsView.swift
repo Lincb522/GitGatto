@@ -465,30 +465,34 @@ private struct AppearanceSettingsPage: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
 
-        SettingsSection(titleKey: "settings.appearance.accent_section") {
-            LazyVGrid(
-                columns: accentColumns,
-                spacing: 8
-            ) {
-                ForEach(AppAccentChoice.allCases) { accent in
-                    AccentChoiceButton(
-                        accent: accent,
-                        isSelected: selectedAccent == accent,
-                        colorScheme: colorScheme,
-                        customAccentHex: customAccentHex
-                    ) {
-                        accentRaw = accent.rawValue
+        if selectedTheme == .lumen {
+            LumenColorSettingsView(store: .shared, appearance: colorScheme)
+        } else {
+            SettingsSection(titleKey: "settings.appearance.accent_section") {
+                LazyVGrid(
+                    columns: accentColumns,
+                    spacing: 8
+                ) {
+                    ForEach(AppAccentChoice.allCases) { accent in
+                        AccentChoiceButton(
+                            accent: accent,
+                            isSelected: selectedAccent == accent,
+                            colorScheme: colorScheme,
+                            customAccentHex: customAccentHex
+                        ) {
+                            accentRaw = accent.rawValue
+                        }
                     }
                 }
-            }
 
-            if selectedAccent == .custom {
-                SettingsControlRow(
-                    titleKey: "settings.appearance.custom_accent",
-                    descriptionKey: "settings.appearance.custom_accent.body"
-                ) {
-                    ColorPicker("", selection: customColorBinding, supportsOpacity: false)
-                        .labelsHidden()
+                if selectedAccent == .custom {
+                    SettingsControlRow(
+                        titleKey: "settings.appearance.custom_accent",
+                        descriptionKey: "settings.appearance.custom_accent.body"
+                    ) {
+                        ColorPicker("", selection: customColorBinding, supportsOpacity: false)
+                            .labelsHidden()
+                    }
                 }
             }
         }
@@ -1014,13 +1018,39 @@ private struct GitSettingsPage: View {
 
 }
 
-private struct GitHubAccountSettings: View {
+struct GitHubAccountSettings: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        HStack(alignment: .center, spacing: 16) {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) {
+                accountIdentity.fixedSize(horizontal: true, vertical: false)
+                Spacer(minLength: 16)
+                accountActions.fixedSize(horizontal: true, vertical: false)
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                accountIdentity
+                accountActions
+            }
+        }
+
+        if let error = model.githubError {
+            Text(error)
+                .font(.system(size: 10.5))
+                .foregroundStyle(palette.danger)
+                .textSelection(.enabled)
+        } else if let activity = model.githubActivity {
+            Text(activity)
+                .font(.system(size: 10.5))
+                .foregroundStyle(palette.mutedInk)
+        }
+    }
+
+    private var accountIdentity: some View {
+        let palette = AppPalette(colorScheme)
+        return HStack(alignment: .center, spacing: 16) {
             Image(gattoSymbol: model.githubAccount == nil ? "person.crop.circle" : "checkmark.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(model.githubAccount == nil ? palette.subtleInk : palette.success)
@@ -1040,41 +1070,42 @@ private struct GitHubAccountSettings: View {
                     .foregroundStyle(palette.mutedInk)
                     .lineLimit(2)
             }
+        }
+    }
 
-            Spacer(minLength: 16)
+    private var accountActions: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { authorizationButton; recheckButton }
+                .fixedSize(horizontal: true, vertical: false)
+            VStack(alignment: .leading, spacing: 8) { authorizationButton; recheckButton }
+        }
+    }
 
-            if model.githubAccount == nil {
-                Button {
-                    model.beginGitHubLogin()
-                } label: {
-                    HStack(spacing: 7) {
-                        if model.isLaunchingGitHubLogin {
-                            ProgressView().controlSize(.small)
-                        }
-                        Text(L10n.text("github.action.login"))
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(model.isLaunchingGitHubLogin)
+    @ViewBuilder
+    private var authorizationButton: some View {
+        if model.githubAccount == nil {
+            authorizationButton(.signIn).buttonStyle(PrimaryButtonStyle())
+        } else {
+            authorizationButton(.workflowPermission).buttonStyle(SecondaryButtonStyle())
+        }
+    }
+
+    private func authorizationButton(_ request: GitHubAuthorizationRequest) -> some View {
+        Button {
+            model.beginGitHubLogin(request)
+        } label: {
+            HStack(spacing: 7) {
+                if model.isLaunchingGitHubLogin { ProgressView().controlSize(.small) }
+                Text(L10n.text(request == .signIn ? "github.action.login" : "github.action.authorize_workflows"))
             }
+        }
+        .disabled(model.isLaunchingGitHubLogin)
+    }
 
-            Button(L10n.text("github.action.retry")) {
-                model.retryGitHubProbe()
-            }
+    private var recheckButton: some View {
+        Button(L10n.text("github.action.retry")) { model.retryGitHubProbe() }
             .buttonStyle(SecondaryButtonStyle())
-            .disabled(model.githubAvailability.state == .checking)
-        }
-
-        if let error = model.githubError {
-            Text(error)
-                .font(.system(size: 10.5))
-                .foregroundStyle(palette.danger)
-                .textSelection(.enabled)
-        } else if let activity = model.githubActivity {
-            Text(activity)
-                .font(.system(size: 10.5))
-                .foregroundStyle(palette.mutedInk)
-        }
+            .disabled(model.githubAvailability.state == .checking || model.isLaunchingGitHubLogin)
     }
 
     private var accountDetail: String {

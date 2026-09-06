@@ -2,7 +2,7 @@ import Foundation
 
 protocol GitHubServing: Sendable {
     func probe() async -> GitHubAvailability
-    func beginLogin() async throws
+    func beginLogin(_ request: GitHubAuthorizationRequest) async throws
     func currentAccount() async throws -> GitHubAccount
     func accountRepositories() async throws -> [GitHubRepository]
     func searchRepositories(query: String, page: Int) async throws -> [GitHubRepository]
@@ -420,11 +420,11 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
         }
     }
 
-    func beginLogin() async throws {
+    func beginLogin(_ request: GitHubAuthorizationRequest) async throws {
         guard let executableURL = GitHubExecutableLocator.find() else {
             throw GitHubServiceError.executableNotFound
         }
-        try await GitHubLoginLauncher.launch(executableURL: executableURL)
+        try await GitHubLoginLauncher.launch(executableURL: executableURL, request: request)
     }
 
     func currentAccount() async throws -> GitHubAccount {
@@ -2301,11 +2301,38 @@ private final class GitHubCommandInvocation: @unchecked Sendable {
     }
 }
 
+enum GitHubAuthorizationRequest: Sendable, Equatable {
+    case signIn
+    case workflowPermission
+
+    var arguments: [String] {
+        switch self {
+        case .signIn:
+            ["auth", "login", "--hostname", "github.com", "--web", "--clipboard",
+             "--git-protocol", "ssh", "--skip-ssh-key", "--scopes", "workflow"]
+        case .workflowPermission:
+            ["auth", "refresh", "--hostname", "github.com", "--scopes", "workflow", "--clipboard"]
+        }
+    }
+
+    var openedStatusKey: String {
+        switch self {
+        case .signIn: "github.status.login_opened"
+        case .workflowPermission: "github.status.workflow_opened"
+        }
+    }
+
+    func shellCommand(executableURL: URL) -> String {
+        ([executableURL.path] + arguments)
+            .map { "'" + $0.replacingOccurrences(of: "'", with: "'\\''") + "'" }
+            .joined(separator: " ")
+    }
+}
+
 private enum GitHubLoginLauncher {
-    static func launch(executableURL: URL) async throws {
+    static func launch(executableURL: URL, request: GitHubAuthorizationRequest) async throws {
         try await Task.detached(priority: .userInitiated) {
-            let escapedPath = executableURL.path.replacingOccurrences(of: "'", with: "'\\''")
-            let command = "'\(escapedPath)' auth login --hostname github.com --web --clipboard --git-protocol ssh --skip-ssh-key"
+            let command = request.shellCommand(executableURL: executableURL)
             let escapedCommand = command
                 .replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "\"", with: "\\\"")

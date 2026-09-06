@@ -5,6 +5,7 @@ final class GitHubReadmeWebView: WKWebView {
     struct Content: Equatable {
         let document: GitHubReadmeDocument
         let colorScheme: ColorScheme
+        var lumenColors: LumenResolvedColors? = nil
     }
 
     var loadedContent: Content?
@@ -76,6 +77,7 @@ final class GitHubReadmeRendererCache: NSObject, ObservableObject, WKNavigationD
 struct GitHubReadmeView: NSViewRepresentable {
     let document: GitHubReadmeDocument
     let colorScheme: ColorScheme
+    var lumenColors: LumenResolvedColors? = nil
     let rendererCache: GitHubReadmeRendererCache
     let onScrollAwayFromTop: () -> Void
     let onOpenLink: (URL) -> Void
@@ -89,7 +91,7 @@ struct GitHubReadmeView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> GitHubReadmeWebView {
-        let lease = rendererCache.acquire(for: .init(document: document, colorScheme: colorScheme))
+        let lease = rendererCache.acquire(for: .init(document: document, colorScheme: colorScheme, lumenColors: lumenColors))
         context.coordinator.lease = lease
         let webView = lease.webView
         webView.onScrollAwayFromTop = onScrollAwayFromTop
@@ -102,7 +104,7 @@ struct GitHubReadmeView: NSViewRepresentable {
         webView.onScrollAwayFromTop = onScrollAwayFromTop
         context.coordinator.onOpenLink = onOpenLink
         context.coordinator.linkBaseURL = document.linkBaseURL
-        let content = GitHubReadmeWebView.Content(document: document, colorScheme: colorScheme)
+        let content = GitHubReadmeWebView.Content(document: document, colorScheme: colorScheme, lumenColors: lumenColors)
         guard webView.loadedContent != content else { return }
         webView.loadedContent = content
         webView.resetScrollDetection()
@@ -120,15 +122,19 @@ struct GitHubReadmeView: NSViewRepresentable {
 
     private var pageHTML: String {
         let dark = colorScheme == .dark
-        let canvas = dark ? "#0d1117" : "#ffffff"
-        let ink = dark ? "#f0f6fc" : "#1f2328"
-        let muted = dark ? "#8b949e" : "#656d76"
-        let border = dark ? "#30363d" : "#d0d7de"
-        let surface = dark ? "#161b22" : "#f6f8fa"
-        let link = dark ? "#58a6ff" : "#0969da"
-        let accent = dark ? "#3fb950" : "#1f883d"
-        let danger = dark ? "#f85149" : "#cf222e"
-        let attention = dark ? "#d29922" : "#9a6700"
+        func themed(_ role: LumenColorRole, light: String, dark: String) -> String {
+            if let lumenColors, let rgba = LumenRGBA(lumenColors[role]) { return rgba.hex }
+            return colorScheme == .dark ? dark : light
+        }
+        let canvas = themed(.background, light: "#ffffff", dark: "#0d1117")
+        let ink = themed(.ink, light: "#1f2328", dark: "#f0f6fc")
+        let muted = themed(.mutedInk, light: "#656d76", dark: "#8b949e")
+        let border = themed(.divider, light: "#d0d7de", dark: "#30363d")
+        let surface = themed(.raisedSurface, light: "#f6f8fa", dark: "#161b22")
+        let link = themed(.primary, light: "#0969da", dark: "#58a6ff")
+        let accent = themed(.success, light: "#1f883d", dark: "#3fb950")
+        let danger = themed(.danger, light: "#cf222e", dark: "#f85149")
+        let attention = themed(.warning, light: "#9a6700", dark: "#d29922")
 
         return """
         <!doctype html>

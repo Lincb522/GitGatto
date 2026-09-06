@@ -5,6 +5,89 @@ import Testing
 
 @Suite("Application themes")
 struct AppThemeTests {
+    @MainActor
+    @Test("Ambient lights retain their motion configuration and honor visibility and reduced motion")
+    func lumenAmbientMotionLifecycle() throws {
+        let window = ThemeTestWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 600),
+                                     styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: .light))
+        window.contentView = hosting
+        window.orderFront(nil)
+        defer { window.orderOut(nil); window.contentView = nil }
+        hosting.layoutSubtreeIfNeeded()
+        let view = try #require(ambientView(in: hosting))
+        view.configure(colorScheme: .light, reduceMotion: false)
+        let lights = try #require(view.layer?.sublayers?.compactMap { $0 as? CAGradientLayer })
+        #expect(lights.count == 2)
+        #expect(lights.allSatisfy { $0.animationKeys()?.isEmpty != false })
+        window.setTestVisibility(true)
+        let animations = try lights.map { try #require($0.animation(forKey: "ambientMotion") as? CABasicAnimation) }
+        #expect(animations.map(\.duration) == [11, 13])
+        #expect(animations.allSatisfy { $0.keyPath == "position" && $0.autoreverses && $0.repeatCount.isInfinite })
+        #expect(lights.allSatisfy { $0.type == .radial && $0.colors?.count == 4 })
+        #expect(view.hitTest(.zero) == nil)
+        #expect(!view.isAccessibilityElement())
+        view.configure(colorScheme: .light, reduceMotion: false)
+        #expect(lights.first?.animation(forKey: "ambientMotion")?.beginTime == animations.first?.beginTime)
+        view.configure(colorScheme: .dark, reduceMotion: true)
+        #expect(lights.allSatisfy { $0.animationKeys()?.isEmpty != false })
+        let colors = try #require(lights[0].colors as? [CGColor])
+        let coral = try #require(colors.first)
+        #expect(abs(coral.alpha - 0.22) < 0.001)
+        view.configure(colorScheme: .dark, reduceMotion: false)
+        #expect(lights.allSatisfy { $0.animation(forKey: "ambientMotion") != nil })
+        window.orderOut(nil)
+        #expect(lights.allSatisfy { $0.animationKeys()?.isEmpty != false })
+        window.orderFront(nil)
+        #expect(lights.allSatisfy { $0.animation(forKey: "ambientMotion") != nil })
+        window.setTestVisibility(false)
+        #expect(lights.allSatisfy { $0.animationKeys()?.isEmpty != false })
+        window.setTestVisibility(true)
+        #expect(lights.allSatisfy { $0.animation(forKey: "ambientMotion") != nil })
+        window.contentView = nil
+        #expect(lights.allSatisfy { $0.animationKeys()?.isEmpty != false })
+    }
+
+    @MainActor
+    @Test("Lumen light geometry follows window resizing in both appearances", arguments: [ColorScheme.light, .dark])
+    func lumenResizesWithoutClipping(colorScheme: ColorScheme) async throws {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 960, height: 620),
+                              styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: colorScheme == .dark ? .darkAqua : .aqua)
+        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: colorScheme))
+        window.contentView = hosting
+        window.orderFront(nil)
+        defer { window.orderOut(nil); window.contentView = nil }
+        for size in [CGSize(width: 960, height: 620), CGSize(width: 1416, height: 878)] {
+            window.setContentSize(size)
+            hosting.layoutSubtreeIfNeeded()
+            let ambient = try #require(ambientView(in: hosting))
+            ambient.configure(colorScheme: colorScheme, reduceMotion: true)
+            ambient.layoutSubtreeIfNeeded()
+            let lights = try #require(ambient.layer?.sublayers?.compactMap { $0 as? CAGradientLayer })
+            #expect(lights.count == 2)
+            let radius = max(ambient.bounds.width, ambient.bounds.height) * 0.82
+            #expect(lights.allSatisfy { abs($0.bounds.width - radius * 2) < 0.1 && abs($0.bounds.height - radius * 2) < 0.1 })
+            #expect(abs(lights[0].position.x - ambient.bounds.width * 0.02) < 0.1)
+            #expect(abs(lights[1].position.y - ambient.bounds.height * 0.36) < 0.1)
+            #expect(ambient.layer?.masksToBounds == true)
+            hosting.displayIfNeeded()
+            if let directory = ProcessInfo.processInfo.environment["GITGATTO_THEME_UI_OUTPUT"] {
+                let output = URL(fileURLWithPath: directory)
+                try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+                let bitmap = try #require(hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds))
+                hosting.cacheDisplay(in: hosting.bounds, to: bitmap)
+                let data = try #require(bitmap.representation(using: .png, properties: [:]))
+                try data.write(to: output.appendingPathComponent("lumen-\(Int(size.width))-\(colorScheme).png"))
+            }
+        }
+    }
+
+    @MainActor
+    private func ambientView(in view: NSView) -> LumenAmbientLightsView? {
+        (view as? LumenAmbientLightsView) ?? view.subviews.lazy.compactMap { ambientView(in: $0) }.first
+    }
+
     @Test("Uses glass by default and preserves saved theme selections")
     func resolvesStoredTheme() {
         #expect(AppVisualTheme.resolved(nil) == .softGlass)
@@ -82,5 +165,16 @@ struct AppThemeTests {
         #expect(window.isMovableByWindowBackground)
         window.orderOut(nil)
         window.contentView = nil
+    }
+}
+
+@MainActor
+private final class ThemeTestWindow: NSWindow {
+    private var testOcclusion: NSWindow.OcclusionState = []
+    override var occlusionState: NSWindow.OcclusionState { testOcclusion }
+
+    func setTestVisibility(_ visible: Bool) {
+        testOcclusion = visible ? [.visible] : []
+        NotificationCenter.default.post(name: NSWindow.didChangeOcclusionStateNotification, object: self)
     }
 }

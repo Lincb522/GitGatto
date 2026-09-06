@@ -126,6 +126,37 @@ struct GlobalErrorHandlerTests {
         #expect(report.recoverySuggestion == L10n.text("error.recovery.git_non_fast_forward"))
     }
 
+    @Test("Workflow scope rejection is an authorization failure, not a divergent branch")
+    func diagnosesWorkflowScope() {
+        let original = """
+        ! [remote rejected] main -> main (refusing to allow an OAuth App to create or update workflow `.github/workflows/ios-ci.yml` without `workflow` scope)
+        error: failed to push some refs to 'https://github.com/example/repo.git'
+        """
+        let report = GlobalErrorHandler.report(
+            for: GitCommandError(arguments: ["push"], exitCode: 1, message: original),
+            context: .git(.push)
+        )
+        #expect(report.message == original)
+        #expect(report.explanation == L10n.text("error.explanation.git_workflow_scope"))
+        #expect(report.recoverySuggestion == L10n.text("error.recovery.git_workflow_scope"))
+        #expect(GitAgentProfile.repairRoute(for: report) == .authentication)
+    }
+
+    @Test("A generic push rejection does not prove the remote is ahead", arguments: [
+        "error: failed to push some refs to 'origin'",
+        "! [remote rejected] main -> main (repository rule violations)\nerror: failed to push some refs to 'origin'",
+        "remote: GH006: Protected branch update failed\nerror: failed to push some refs to 'origin'"
+    ])
+    func rejectsUnsupportedDivergenceDiagnosis(message: String) {
+        let report = GlobalErrorHandler.report(
+            for: GitCommandError(arguments: ["push"], exitCode: 1, message: message),
+            context: .git(.push)
+        )
+        #expect(report.explanation != L10n.text("error.explanation.git_non_fast_forward"))
+        #expect(GitAgentProfile.repairRoute(for: report) != .synchronization)
+        #expect(report.message == message)
+    }
+
     @Test("Provides catalog entries for every Agent service error")
     func explainsEveryAgentServiceError() {
         let errors: [CodexServiceError] = [

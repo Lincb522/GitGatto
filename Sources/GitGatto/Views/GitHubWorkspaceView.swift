@@ -997,6 +997,7 @@ struct GitHubWorkspaceView: View {
                     GitHubReadmeView(
                         document: document,
                         colorScheme: colorScheme,
+                        lumenColors: palette.lumenColors,
                         rendererCache: readmeRendererCache,
                         onScrollAwayFromTop: {
                             setRepositoryHeaderCollapsed(true)
