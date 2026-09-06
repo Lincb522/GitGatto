@@ -4,7 +4,8 @@ import SwiftUI
 @main
 struct GitGattoApp: App {
     @NSApplicationDelegateAdaptor(GitGattoAppDelegate.self) private var appDelegate
-    @StateObject private var model = WorkspaceViewModel()
+    // Swift 6.1 crashes when StateObject lowers this optional existential as a default argument.
+    @StateObject private var model = WorkspaceViewModel(projectGoalRuntime: nil)
     @StateObject private var appNavigation = AppNavigationModel()
     @StateObject private var updateManager = AppUpdateManager()
     @State private var showsLaunchAnimation: Bool
