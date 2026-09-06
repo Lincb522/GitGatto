@@ -4,818 +4,221 @@ struct ProjectGoalsWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
-    @State private var showsMergeConfirmation = false
-    @State private var showsReleasePublishConfirmation = false
-    @State private var showsReleaseInstallConfirmation = false
+    @State private var query = ""
+    @State private var filter = ProjectGoalListFilter.all
+    @State private var showsComposer = false
+    @State private var showsCompactDetail = false
     @State private var showsQuickGuide = false
-    @State private var inAppBrowserPage: InAppBrowserPage?
 
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
+    private var goals: [ProjectGoal] {
+        ProjectGoalPresentation.goals(model.currentRepositoryGoals, filter: filter, query: query)
+    }
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            commandBar(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            if model.currentRepositoryGoals.isEmpty {
-                emptyState(palette)
-            } else {
-                HSplitView {
-                    goalList(palette)
-                        .frame(minWidth: 250, idealWidth: 292, maxWidth: 360)
-                    if let goal = model.selectedProjectGoal {
-                        goalDetail(goal, palette: palette)
-                            .frame(minWidth: 430, maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                commandBar(palette, compact: geometry.size.width < 760)
+                Divider().overlay(palette.divider)
+                if showsComposer {
+                    ProjectGoalComposerView(model: model) {
+                        showsComposer = false
+                        showsCompactDetail = true
+                        query = ""
+                        filter = .all
+                    } onCancel: {
+                        showsComposer = false
+                    }
+                } else if model.currentRepositoryGoals.isEmpty {
+                    ContentUnavailableView {
+                        GattoLabel(L10n.text("goal.empty"), systemImage: "checkmark.seal")
+                    } description: {
+                        Text(L10n.text("goal.workspace.empty"))
+                    } actions: {
+                        Button(L10n.text("goal.new")) { showsComposer = true }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .disabled(model.snapshot == nil)
+                    }
+                } else if geometry.size.width < 760 {
+                    if showsCompactDetail, let goal = model.selectedProjectGoal {
+                        ProjectGoalDetailView(model: model, goal: goal).id(goal.id)
+                    } else {
+                        goalList(palette)
+                    }
+                } else {
+                    HSplitView {
+                        goalList(palette)
+                            .frame(minWidth: 240, idealWidth: 278, maxWidth: 340)
+                        if let goal = model.selectedProjectGoal, goals.contains(where: { $0.id == goal.id }) {
+                            ProjectGoalDetailView(model: model, goal: goal)
+                                .id(goal.id)
+                                .frame(minWidth: 390, maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ContentUnavailableView.search(text: query)
+                                .frame(minWidth: 390, maxWidth: .infinity, maxHeight: .infinity)
+                        }
                     }
                 }
             }
         }
+        .foregroundStyle(palette.ink)
+        .fontDesign(theme == .console ? .monospaced : .default)
         .background(theme == .softGlass ? Color.clear : palette.background)
         .task(id: model.snapshot?.rootURL.standardizedFileURL.path) {
-            if let first = model.currentRepositoryGoals.first {
-                model.selectProjectGoal(first)
-            }
-            await model.prepareProjectReleaseDraftIfNeeded()
+            showsComposer = false
+            showsCompactDetail = false
+            query = ""
+            filter = .all
+            if let goal = model.selectedProjectGoal { model.selectProjectGoal(goal) }
 #if DEBUG
-            if ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1" {
-                if ProcessInfo.processInfo.environment["GITGATTO_QUICK_GUIDE_PREVIEW"] == "goals" {
-                    try? await Task.sleep(for: .milliseconds(250))
-                    showsQuickGuide = true
-                }
-                return
-            }
+            if ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1" { return }
 #endif
             await model.refreshProjectGoals(showErrors: false)
         }
-        .confirmationDialog(
-            L10n.text("goal.merge.confirm.title"),
-            isPresented: $showsMergeConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.text("goal.action.merge"), role: .destructive) {
-                Task { await model.mergeSelectedProjectGoal() }
+        .onChange(of: goals.map(\.id)) { _, ids in
+            if let first = goals.first, !ids.contains(model.selectedProjectGoalID ?? first.id) {
+                model.selectProjectGoal(first)
             }
-            Button(L10n.text("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(L10n.text("goal.merge.confirm.message"))
         }
-        .confirmationDialog(
-            L10n.text("goal.release.publish.confirm.title"),
-            isPresented: $showsReleasePublishConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.text("goal.action.publish_release")) {
-                Task { await model.publishSelectedProjectRelease() }
-            }
-            Button(L10n.text("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(L10n.text("goal.release.publish.confirm.message"))
-        }
-        .confirmationDialog(
-            L10n.text("goal.release.install.confirm.title"),
-            isPresented: $showsReleaseInstallConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.text("goal.action.install_release")) {
-                Task { await model.installSelectedProjectRelease() }
-            }
-            Button(L10n.text("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(L10n.text("goal.release.install.confirm.message"))
-        }
-        .sheet(item: $inAppBrowserPage) { page in
-            InAppBrowserSheet(url: page.url, persistent: page.persistent)
-        }
+        .sheet(isPresented: $showsQuickGuide) { WorkspaceQuickGuideSheet(guide: .goals) }
 #if DEBUG
-        .background(
-            DebugSnapshotCapture(
-                isReady: ProcessInfo.processInfo.environment["GITGATTO_GOALS_P1_PREVIEW"] != nil
-                    || ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] != nil
-                    || ProcessInfo.processInfo.environment["GITGATTO_GOALS_P3_PREVIEW"] != nil
-            )
-        )
+        .background(DebugSnapshotCapture(
+            isReady: ProcessInfo.processInfo.environment["GITGATTO_GOALS_P1_PREVIEW"] != nil
+                || ProcessInfo.processInfo.environment["GITGATTO_GOALS_P2_PREVIEW"] != nil
+                || ProcessInfo.processInfo.environment["GITGATTO_GOALS_P3_PREVIEW"] != nil
+        ))
 #endif
     }
 
-    private func commandBar(_ palette: AppPalette) -> some View {
+    private func commandBar(_ palette: AppPalette, compact: Bool) -> some View {
         HStack(spacing: 10) {
-            Text(L10n.text("goal.title"))
-                .font(font(15, weight: .semibold))
-                .foregroundStyle(palette.ink)
-            if model.activeProjectGoalCount > 0 {
-                CountBadge(count: model.activeProjectGoalCount, emphasized: false)
-            }
-            Spacer()
-            Button {
-                showsQuickGuide = true
-            } label: {
-                GattoLabel(L10n.text("workspace.guide.open"), systemImage: "info.circle")
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .sheet(isPresented: $showsQuickGuide) {
-                WorkspaceQuickGuideSheet(guide: .goals)
-            }
-            Button {
-                model.projectGoalCommitMessage = ""
-            } label: {
-                HStack(spacing: 6) {
-                    Image(gattoSymbol: "plus")
-                    Text(L10n.text("goal.new"))
+            if compact, showsCompactDetail, !showsComposer {
+                Button {
+                    showsCompactDetail = false
+                } label: {
+                    GattoLabel(L10n.text("goal.workspace.list"), systemImage: "chevron.left")
                 }
+                .buttonStyle(SecondaryButtonStyle())
+            } else {
+                Text(L10n.text("goal.title")).font(.system(size: 15, weight: .semibold))
+            }
+            Spacer(minLength: 4)
+            ToolbarIconButton(systemName: "info.circle", helpKey: "workspace.guide.open") {
+                showsQuickGuide = true
+            }
+            Button {
+                showsComposer = true
+            } label: {
+                GattoLabel(L10n.text("goal.new"), systemImage: "plus")
             }
             .buttonStyle(SecondaryButtonStyle())
-            .disabled(model.currentRepositoryGoals.contains { !$0.status.isTerminal })
+            .disabled(model.snapshot == nil || showsComposer)
             ToolbarIconButton(
-                systemName: "arrow.clockwise",
-                helpKey: "goal.action.refresh",
+                systemName: "arrow.clockwise", helpKey: "goal.action.refresh",
                 isActive: model.isRefreshingProjectGoals,
                 isDisabled: model.isRefreshingProjectGoals || model.activeProjectGoalID != nil
-            ) {
-                Task { await model.refreshProjectGoals() }
-            }
+            ) { Task { await model.refreshProjectGoals() } }
         }
-        .padding(.horizontal, 18)
-        .frame(height: 62)
+        .padding(.horizontal, 16)
+        .frame(minHeight: 58)
         .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
-    }
-
-    private func emptyState(_ palette: AppPalette) -> some View {
-        VStack(spacing: 16) {
-            Image(gattoSymbol: "checkmark.seal")
-                .font(.system(size: 28, weight: .medium))
-                .foregroundStyle(palette.accent)
-                .frame(width: 58, height: 58)
-                .background(palette.accentSoft)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            Text(L10n.text("goal.empty"))
-                .font(font(15, weight: .semibold))
-                .foregroundStyle(palette.ink)
-            goalComposer(palette)
-                .frame(maxWidth: 460)
-        }
-        .padding(30)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func goalList(_ palette: AppPalette) -> some View {
         VStack(spacing: 0) {
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(model.currentRepositoryGoals) { goal in
-                        Button {
-                            model.selectProjectGoal(goal)
-                        } label: {
-                            goalRow(goal, palette: palette)
-                        }
-                        .buttonStyle(.plain)
+            VStack(spacing: 12) {
+                TextField(L10n.text("goal.workspace.search"), text: $query)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("goals.search")
+                Picker(L10n.text("goal.workspace.filter"), selection: $filter) {
+                    ForEach(ProjectGoalListFilter.allCases) { value in
+                        Text(L10n.text("goal.workspace.filter.\(value.rawValue)")).tag(value)
                     }
                 }
-                .padding(12)
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
-
-            if !model.currentRepositoryGoals.contains(where: { !$0.status.isTerminal }) {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                goalComposer(palette)
-                    .padding(12)
+            .padding(12)
+            if goals.isEmpty {
+                ContentUnavailableView.search(text: query)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 6) {
+                        ForEach(goals) { goal in
+                            Button {
+                                model.selectProjectGoal(goal)
+                                showsCompactDetail = true
+                            } label: {
+                                row(goal, palette: palette)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(model.selectedProjectGoal?.id == goal.id ? .isSelected : [])
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 12)
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme == .softGlass ? palette.surface.opacity(0.10) : palette.surface)
     }
 
-    private func goalRow(_ goal: ProjectGoal, palette: AppPalette) -> some View {
+    private func row(_ goal: ProjectGoal, palette: AppPalette) -> some View {
         let selected = model.selectedProjectGoal?.id == goal.id
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(gattoSymbol: statusIcon(goal.status))
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(statusColor(goal.status, palette: palette))
-                    .frame(width: 24, height: 24)
-                    .background(statusColor(goal.status, palette: palette).opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                Text(goalTitle(goal))
-                    .font(font(12, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                Text("\(Int(goal.progress * 100))%")
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+        return HStack(alignment: .top, spacing: 10) {
+            Image(gattoSymbol: ProjectGoalAppearance.icon(goal.status))
+                .font(.system(size: 17))
+                .foregroundStyle(ProjectGoalAppearance.color(goal.status, palette))
+                .frame(width: 22, height: 22)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 7) {
+                Text(goal.displayTitle)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Text(goal.branchName).font(.system(size: 11, design: .monospaced)).lineLimit(1)
                     .foregroundStyle(palette.subtleInk)
+                HStack(spacing: 6) {
+                    Text(L10n.text("goal.status.\(goal.status.rawValue)"))
+                    Spacer(minLength: 0)
+                    Text("\(goal.satisfiedStepCount)/\(goal.steps.count)")
+                        .monospacedDigit()
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(ProjectGoalAppearance.color(goal.status, palette))
             }
-            ProgressView(value: goal.progress)
-                .tint(statusColor(goal.status, palette: palette))
-            HStack {
-                Text(L10n.text("goal.status.\(goal.status.rawValue)"))
-                Spacer()
-                Text(goal.updatedAt, style: .relative)
-            }
-            .font(font(9.5, weight: .medium))
-            .foregroundStyle(palette.subtleInk)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
-        .background(selected ? palette.accentSoft : palette.raisedSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(selected ? palette.accent.opacity(0.42) : palette.divider, lineWidth: 1)
-        }
+        .foregroundStyle(palette.ink)
+        .background(selected ? palette.accentSoft : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? palette.accent.opacity(0.35) : .clear))
         .contentShape(Rectangle())
     }
+}
 
-    private func goalComposer(_ palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(L10n.text("goal.custom.title"))
-                .font(font(11.5, weight: .semibold))
-                .foregroundStyle(palette.ink)
-            TextField(
-                L10n.text("goal.custom.placeholder"),
-                text: $model.projectGoalCustomIntent,
-                axis: .vertical
-            )
-            .textFieldStyle(.plain)
-            .font(font(11, weight: .regular))
-            .lineLimit(2...4)
-            .padding(10)
-            .background(palette.raisedSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .stroke(palette.divider, lineWidth: 1)
-            }
-            Button {
-                Task { await model.proposeCustomProjectGoal() }
-            } label: {
-                HStack(spacing: 7) {
-                    if model.isPlanningProjectGoal {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Image(gattoSymbol: "sparkles")
-                    }
-                    Text(L10n.text(
-                        model.isPlanningProjectGoal
-                            ? "goal.custom.planning"
-                            : "goal.custom.action.generate"
-                    ))
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(customGoalPlanningDisabled)
-
-            if let candidate = model.projectGoalCandidate {
-                candidateCard(candidate, palette: palette)
-            } else if let error = model.projectGoalPlanningError, !error.isEmpty {
-                Text(error)
-                    .font(font(10, weight: .regular))
-                    .foregroundStyle(palette.danger)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Rectangle().fill(palette.divider).frame(height: 1)
-            Text(L10n.text("goal.quick.title"))
-                .font(font(11.5, weight: .semibold))
-                .foregroundStyle(palette.ink)
-            TextField(
-                L10n.text("goal.commit_message.placeholder"),
-                text: $model.projectGoalCommitMessage
-            )
-            .textFieldStyle(.plain)
-            .font(font(11, weight: .regular))
-            .padding(.horizontal, 11)
-            .frame(height: 34)
-            .background(palette.raisedSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .stroke(palette.divider, lineWidth: 1)
-            }
-            HStack(spacing: 8) {
-                Button(L10n.text("goal.action.create_github")) {
-                    Task { await model.createGitHubDeliveryGoal() }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                Button(L10n.text("goal.action.create_commit")) {
-                    Task { await model.createProjectDeliveryGoal() }
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            }
-            .disabled(goalCreationDisabled)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            HStack(spacing: 8) {
-                TextField(
-                    L10n.text("goal.release.version.placeholder"),
-                    text: Binding(
-                        get: { model.projectGoalReleaseVersion },
-                        set: { model.updateProjectReleaseVersionDraft($0) }
-                    )
-                )
-                .textFieldStyle(.plain)
-                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
-                .padding(.horizontal, 10)
-                .frame(height: 34)
-                .background(palette.raisedSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(palette.divider, lineWidth: 1)
-                }
-                TextField(
-                    L10n.text("goal.release.build.placeholder"),
-                    text: $model.projectGoalReleaseBuildNumber
-                )
-                .textFieldStyle(.plain)
-                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
-                .padding(.horizontal, 10)
-                .frame(width: 92, height: 34)
-                .background(palette.raisedSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(palette.divider, lineWidth: 1)
-                }
-            }
-            Button(L10n.text("goal.action.create_release")) {
-                Task { await model.createCompleteReleaseGoal() }
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .disabled(
-                model.activeProjectGoalID != nil
-                    || model.projectGoalReleaseVersion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    || model.projectGoalReleaseBuildNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            )
-        }
-    }
-
-    private func candidateCard(_ candidate: ProjectGoalCandidate, palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(spacing: 7) {
-                Image(gattoSymbol: "checkmark.square.fill")
-                    .foregroundStyle(palette.accent)
-                Text(candidate.title)
-                    .font(font(11.5, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                    .lineLimit(2)
-            }
-            Text(
-                candidate.stepKinds
-                    .map { L10n.text("goal.step.\($0.rawValue)") }
-                    .joined(separator: " → ")
-            )
-            .font(font(9.5, weight: .medium))
-            .foregroundStyle(palette.subtleInk)
-            .fixedSize(horizontal: false, vertical: true)
-            if let version = candidate.releaseVersion {
-                Text("v\(version) · \(candidate.releaseBuildNumber ?? "")")
-                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                    .foregroundStyle(palette.subtleInk)
-            }
-            HStack(spacing: 8) {
-                Button(L10n.text("goal.custom.action.confirm")) {
-                    Task { await model.confirmCustomProjectGoalCandidate() }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                Button(L10n.text("action.cancel")) {
-                    model.cancelCustomProjectGoalCandidate()
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            }
-        }
-        .padding(10)
-        .background(palette.accentSoft.opacity(0.72))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(palette.accent.opacity(0.28), lineWidth: 1)
-        }
-    }
-
-    private func goalDetail(_ goal: ProjectGoal, palette: AppPalette) -> some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                summaryCard(goal, palette: palette)
-                stepTrack(goal, palette: palette)
-                metadataCard(goal, palette: palette)
-                if let failure = goal.lastActionFailure {
-                    actionsFailureCard(goal, failure: failure, palette: palette)
-                }
-                if goal.lastActionFailure == nil,
-                   let error = goal.lastError,
-                   !error.isEmpty {
-                    Text(error)
-                        .font(.system(size: 10.5, design: .monospaced))
-                        .foregroundStyle(palette.danger)
-                        .textSelection(.enabled)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(palette.dangerSoft)
-                        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-                }
-            }
-            .padding(16)
-        }
-    }
-
-    private func summaryCard(_ goal: ProjectGoal, palette: AppPalette) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Image(gattoSymbol: statusIcon(goal.status))
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(statusColor(goal.status, palette: palette))
-                    .frame(width: 42, height: 42)
-                    .background(statusColor(goal.status, palette: palette).opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(goalTitle(goal))
-                        .font(font(17, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                    Text(L10n.text("goal.status.\(goal.status.rawValue)"))
-                        .font(font(11, weight: .medium))
-                        .foregroundStyle(statusColor(goal.status, palette: palette))
-                }
-                Spacer()
-                Text("\(Int(goal.progress * 100))%")
-                    .font(.system(size: 23, weight: .semibold, design: .rounded))
-                    .foregroundStyle(palette.ink)
-            }
-            ProgressView(value: goal.progress)
-                .tint(statusColor(goal.status, palette: palette))
-
-            if let intent = goal.intent, !intent.isEmpty {
-                Text(intent)
-                    .font(font(10.5, weight: .regular))
-                    .foregroundStyle(palette.subtleInk)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if goal.targetHeadSHA == nil {
-                TextField(
-                    L10n.text("goal.commit_message.placeholder"),
-                    text: Binding(
-                        get: { goal.commitMessage },
-                        set: { model.updateSelectedProjectGoalCommitMessage($0) }
-                    )
-                )
-                .textFieldStyle(.plain)
-                .font(font(11.5, weight: .regular))
-                .padding(.horizontal, 11)
-                .frame(height: 36)
-                .background(palette.background.opacity(theme == .softGlass ? 0.35 : 1))
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(palette.divider, lineWidth: 1)
-                }
-            }
-
-            HStack(spacing: 8) {
-                if canContinue(goal) {
-                    Button(L10n.text("goal.action.continue")) {
-                        Task { await model.continueSelectedProjectGoal() }
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(
-                        model.activeProjectGoalID != nil
-                            || model.activeOperation != nil
-                            || model.isCodexRunning
-                    )
-                }
-
-                if goal.lastActionFailure != nil {
-                    Button(L10n.text("goal.action.agent_repair")) {
-                        Task { await model.repairSelectedProjectGoalWithAgent() }
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .disabled(!model.canRepairSelectedProjectGoalWithAgent)
-                }
-
-                if model.canPrepareSelectedReleaseWithAgent {
-                    Button(L10n.text("goal.action.prepare_release")) {
-                        model.prepareSelectedReleaseWithAgent()
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
-
-                if model.canPublishSelectedProjectRelease {
-                    Button(L10n.text("goal.action.publish_release")) {
-                        showsReleasePublishConfirmation = true
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                }
-
-                if model.canInstallSelectedProjectRelease {
-                    Button(L10n.text("goal.action.install_release")) {
-                        showsReleaseInstallConfirmation = true
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                }
-
-                if let releaseURL = goal.releaseURL {
-                    Button(L10n.text("goal.action.open_release")) {
-                        inAppBrowserPage = InAppBrowserPage(url: releaseURL, persistent: true)
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
-
-                if model.canMergeSelectedProjectGoal {
-                    Button(L10n.text("goal.action.merge")) {
-                        showsMergeConfirmation = true
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                }
-
-                if !goal.status.isTerminal {
-                    Button(L10n.text("goal.action.cancel")) {
-                        Task { await model.cancelSelectedProjectGoal() }
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .disabled(model.activeProjectGoalID == goal.id)
-                }
-                Spacer()
-            }
-        }
-        .goalPanel(palette: palette, theme: theme)
-    }
-
-    private func stepTrack(_ goal: ProjectGoal, palette: AppPalette) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(goal.steps.enumerated()), id: \.element.id) { index, step in
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(spacing: 0) {
-                        Image(gattoSymbol: stepIcon(step.kind))
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(stepColor(step.status, palette: palette))
-                            .frame(width: 32, height: 32)
-                            .background(stepColor(step.status, palette: palette).opacity(0.12))
-                            .clipShape(Circle())
-                        if index < goal.steps.count - 1 {
-                            Rectangle()
-                                .fill(step.status.isSatisfied ? palette.success.opacity(0.45) : palette.divider)
-                                .frame(width: 2, height: 34)
-                        }
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(L10n.text("goal.step.\(step.kind.rawValue)"))
-                                .font(font(12, weight: .semibold))
-                                .foregroundStyle(palette.ink)
-                            Spacer()
-                            Text(L10n.text("goal.step.status.\(step.status.rawValue)"))
-                                .font(font(10, weight: .semibold))
-                                .foregroundStyle(stepColor(step.status, palette: palette))
-                        }
-                        if let evidence = step.evidence, !evidence.isEmpty {
-                            Text(evidence)
-                                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                .foregroundStyle(palette.subtleInk)
-                        }
-                        if let error = step.error, !error.isEmpty {
-                            Text(error)
-                                .font(font(10, weight: .regular))
-                                .foregroundStyle(palette.danger)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    .padding(.top, 7)
-                }
-            }
-        }
-        .goalPanel(palette: palette, theme: theme)
-    }
-
-    private func metadataCard(_ goal: ProjectGoal, palette: AppPalette) -> some View {
-        VStack(spacing: 0) {
-            metadataRow("goal.repository", value: goal.repositoryName, palette: palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            metadataRow("goal.branch", value: goal.branchName, palette: palette)
-            if let remote = goal.remoteFullName {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow("goal.remote", value: remote, palette: palette)
-            }
-            if let baseBranch = goal.baseBranch, goal.usesPullRequestFlow {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow("goal.base_branch", value: baseBranch, palette: palette)
-            }
-            if let number = goal.pullRequestNumber {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow("goal.pull_request", value: "#\(number)", palette: palette, monospaced: true)
-            }
-            if goal.repairAttemptCount > 0 {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow(
-                    "goal.repair_attempts",
-                    value: String(goal.repairAttemptCount),
-                    palette: palette,
-                    monospaced: true
-                )
-            }
-            if let target = goal.targetHeadSHA {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow("goal.target_commit", value: String(target.prefix(12)), palette: palette, monospaced: true)
-            }
-            if let version = goal.releaseVersion {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow(
-                    "goal.release.version",
-                    value: version,
-                    palette: palette,
-                    monospaced: true
-                )
-            }
-            if let build = goal.releaseBuildNumber {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow(
-                    "goal.release.build",
-                    value: build,
-                    palette: palette,
-                    monospaced: true
-                )
-            }
-            if let tag = goal.releaseTag {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow("goal.release.tag", value: tag, palette: palette, monospaced: true)
-            }
-            if let installed = goal.installedApplicationVersion {
-                Rectangle().fill(palette.divider).frame(height: 1)
-                metadataRow(
-                    "goal.release.installed",
-                    value: installed + (goal.installedApplicationBuild.map { " (\($0))" } ?? ""),
-                    palette: palette,
-                    monospaced: true
-                )
-            }
-        }
-        .goalPanel(palette: palette, theme: theme)
-    }
-
-    private func metadataRow(
-        _ key: String,
-        value: String,
-        palette: AppPalette,
-        monospaced: Bool = false
-    ) -> some View {
-        HStack(spacing: 12) {
-            Text(L10n.text(key))
-                .font(font(10.5, weight: .medium))
-                .foregroundStyle(palette.subtleInk)
-            Spacer()
-            Text(value)
-                .font(monospaced ? .system(size: 10.5, weight: .medium, design: .monospaced) : font(10.5, weight: .medium))
-                .foregroundStyle(palette.ink)
-                .textSelection(.enabled)
-        }
-        .padding(.vertical, 10)
-    }
-
-    private func stepIcon(_ kind: ProjectGoalStepKind) -> String {
-        switch kind {
-        case .readme: "doc.richtext"
-        case .translation: "globe"
-        case .version: "curlybraces.square"
-        case .changelog: "clock.arrow.circlepath"
-        case .releasePipeline: "checkmark.shield"
-        case .stageChanges: "square.stack.3d.up"
-        case .commit: "checkmark.circle"
-        case .push: "arrow.up.circle"
-        case .pullRequest: "git.pull.request"
-        case .review: "doc.text.magnifyingglass"
-        case .actions: "checkmark.shield"
-        case .artifact: "shippingbox"
-        case .merge: "arrow.triangle.merge"
-        case .releaseTag: "text.badge.plus"
-        case .githubRelease: "arrow.up.forward.app"
-        case .dmg: "shippingbox"
-        case .updateFeed: "arrow.triangle.2.circlepath"
-        case .localApplication: "arrow.down.app"
-        }
-    }
-
-    private var goalCreationDisabled: Bool {
-        model.activeProjectGoalID != nil
-            || (model.snapshot?.changes.isEmpty == false
-                && model.projectGoalCommitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-    }
-
-    private var customGoalPlanningDisabled: Bool {
-        model.projectGoalCustomIntent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || model.isPlanningProjectGoal
-            || model.isCodexRunning
-            || model.activeOperation != nil
-            || model.currentRepositoryGoals.contains { !$0.status.isTerminal }
-            || model.codexAvailability.state != .available
-    }
-
-    private func goalTitle(_ goal: ProjectGoal) -> String {
-        switch goal.kind {
-        case .deliverChanges: L10n.text("goal.delivery.title")
-        case .githubDelivery: L10n.text("goal.github_delivery.title")
-        case .completeRelease: L10n.text("goal.complete_release.title")
-        case .custom: goal.title ?? L10n.text("goal.custom.title")
-        }
-    }
-
-    private func canContinue(_ goal: ProjectGoal) -> Bool {
-        guard !goal.status.isTerminal,
-              goal.status != .waiting,
-              let next = goal.nextStep,
-              goal.step(next)?.status != .blocked else { return false }
-        return [.stageChanges, .commit, .push, .pullRequest].contains(next)
-    }
-
-    private func actionsFailureCard(
-        _ goal: ProjectGoal,
-        failure: ProjectGoalActionFailure,
-        palette: AppPalette
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(gattoSymbol: "exclamationmark.triangle.fill")
-                    .foregroundStyle(palette.danger)
-                Text(L10n.text("goal.actions.failure"))
-                    .font(font(12, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                Spacer()
-                Text("#\(failure.runNumber)")
-                    .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(palette.subtleInk)
-            }
-            Text(failure.workflowName)
-                .font(font(10.5, weight: .medium))
-                .foregroundStyle(palette.ink)
-            if let explanation = goal.step(.actions)?.error {
-                Text(explanation)
-                    .font(font(10.5, weight: .regular))
-                    .foregroundStyle(palette.danger)
-            }
-            Text(failure.conclusion)
-                .font(.system(size: 9.5, design: .monospaced))
-                .foregroundStyle(palette.danger)
-            if let log = failure.logExcerpt, !log.isEmpty {
-                Text(log)
-                    .font(.system(size: 9.5, design: .monospaced))
-                    .foregroundStyle(palette.ink)
-                    .textSelection(.enabled)
-                    .lineLimit(14)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(palette.background.opacity(theme == .softGlass ? 0.28 : 1))
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            }
-            Button(L10n.text("goal.action.agent_repair")) {
-                Task { await model.repairSelectedProjectGoalWithAgent() }
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .disabled(!model.canRepairSelectedProjectGoalWithAgent)
-        }
-        .goalPanel(palette: palette, theme: theme)
-    }
-
-    private func statusIcon(_ status: ProjectGoalStatus) -> String {
+enum ProjectGoalAppearance {
+    static func icon(_ status: ProjectGoalStatus) -> String {
         switch status {
         case .ready: "play.circle"
         case .running: "arrow.triangle.2.circlepath"
         case .waiting: "clock.arrow.circlepath"
         case .blocked: "exclamationmark.triangle.fill"
-        case .completed: "checkmark.circle.fill"
+        case .completed: "checkmark.circle"
         case .cancelled: "xmark.circle.fill"
         }
     }
 
-    private func statusColor(_ status: ProjectGoalStatus, palette: AppPalette) -> Color {
+    static func color(_ status: ProjectGoalStatus, _ palette: AppPalette) -> Color {
         switch status {
-        case .ready: palette.accent
-        case .running: palette.accent
+        case .ready, .running: palette.accent
         case .waiting: palette.warning
         case .blocked: palette.danger
         case .completed: palette.success
         case .cancelled: palette.subtleInk
         }
-    }
-
-    private func stepColor(_ status: ProjectGoalStepStatus, palette: AppPalette) -> Color {
-        switch status {
-        case .pending: palette.subtleInk
-        case .running: palette.accent
-        case .waiting: palette.warning
-        case .blocked: palette.danger
-        case .completed: palette.success
-        case .notRequired: palette.mutedInk
-        }
-    }
-
-    private func font(_ size: CGFloat, weight: Font.Weight) -> Font {
-        .system(size: size, weight: weight, design: theme == .console ? .monospaced : .default)
-    }
-}
-
-private extension View {
-    func goalPanel(palette: AppPalette, theme: AppVisualTheme) -> some View {
-        padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(palette.divider, lineWidth: 1)
-            }
     }
 }

@@ -1,12 +1,15 @@
 ## Added
 
-- Customize Lumen backgrounds, panels, text, buttons, and status colors. Four presets—Coral, Coast, Forest, and Dusk—keep separate light and dark settings, with preview, apply, and reset controls.
-- Reauthorize a GitHub account to grant the workflow permission needed to push workflow files.
+- Search goals and filter active goals or history.
 
 ## Improved
 
-- Reduced interface redraws from Lumen's animated background while preserving its lighting effects. Animation pauses when the window is hidden.
+- Create goals on a dedicated page with fields for the selected goal type and a step preview before confirmation.
+- Goal details focus on the current step, next action, and failure reason, with expandable step records. Narrow windows switch between the list and details.
+- Commit messages are saved explicitly instead of after each keystroke.
 
 ## Fixed
 
-- Pushes rejected for missing workflow permission now prompt reauthorization instead of incorrectly reporting that the remote is ahead and needs to be pulled.
+- Background refreshes no longer overwrite a saved commit message or a cancelled goal, or reorder the list by refresh time.
+- Failed save and cancel operations preserve the previous state and show the error. Completed and cancelled goals can no longer run further actions.
+- Custom plans must be regenerated if the repository, branch, or commit changes after planning.

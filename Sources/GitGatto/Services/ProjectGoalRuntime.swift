@@ -24,7 +24,12 @@ enum ProjectGoalExecutionResult: Sendable, Equatable {
     case installed(String)
 }
 
-actor ProjectGoalRuntime {
+protocol ProjectGoalRunning: Sendable {
+    func observe(_ goal: ProjectGoal) async throws -> ProjectGoalObservation
+    func execute(_ step: ProjectGoalStepKind, goal: ProjectGoal) async throws -> ProjectGoalExecutionResult
+}
+
+actor ProjectGoalRuntime: ProjectGoalRunning {
     private let repositoryService: any GitRepositoryServing
     private let actionsService: any ProjectGoalActionsServing
     private let deliveryService: any ProjectGoalDeliveryServing

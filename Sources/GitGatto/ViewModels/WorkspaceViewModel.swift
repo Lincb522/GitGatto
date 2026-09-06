@@ -231,7 +231,7 @@ final class WorkspaceViewModel: ObservableObject {
     private let fileHistoryService: any GitFileHistoryServing
     private let diagnosticService: any GitEnvironmentDiagnosticServing
     private let projectGoalStore: any ProjectGoalStoring
-    private let projectGoalRuntime: ProjectGoalRuntime
+    private let projectGoalRuntime: any ProjectGoalRunning
     private let regressionInvestigationStore: any RegressionInvestigationStoring
     private let regressionInvestigationRuntime: RegressionInvestigationRuntime
     let repositoryBackupService: any RepositoryBackupServing
@@ -292,6 +292,8 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryDiscoveryTask: Task<Void, Never>?
     private var repositoryDiscoveryRunID: UUID?
     private var projectGoalMonitorTask: Task<Void, Never>?
+    private var projectGoalRefreshIDs: [UUID: UUID] = [:]
+    private var projectGoalCandidateContext: ProjectGoalPlanningIdentity?
     private var regressionInvestigationTask: Task<Void, Never>?
     private var repositoryBackupLoadTask: Task<Void, Never>?
     private var repositoryBackupTimerTask: Task<Void, Never>?
@@ -333,6 +335,7 @@ final class WorkspaceViewModel: ObservableObject {
         fileHistoryService: any GitFileHistoryServing = GitFileHistoryService(),
         diagnosticService: any GitEnvironmentDiagnosticServing = GitEnvironmentDiagnosticService(),
         projectGoalStore: any ProjectGoalStoring = ProjectGoalStore(),
+        projectGoalRuntime: (any ProjectGoalRunning)? = nil,
         regressionInvestigationStore: any RegressionInvestigationStoring = RegressionInvestigationStore(),
         regressionInvestigationRuntime: RegressionInvestigationRuntime = RegressionInvestigationRuntime(),
         monitoringEngine: MonitoringEngine = MonitoringEngine(),
@@ -357,7 +360,7 @@ final class WorkspaceViewModel: ObservableObject {
         self.regressionInvestigationRuntime = regressionInvestigationRuntime
         self.monitoringEngine = monitoringEngine
         self.repositoryBackupService = repositoryBackupService
-        projectGoalRuntime = ProjectGoalRuntime(
+        self.projectGoalRuntime = projectGoalRuntime ?? ProjectGoalRuntime(
             repositoryService: service,
             githubService: githubService
         )
@@ -458,9 +461,9 @@ final class WorkspaceViewModel: ObservableObject {
 
     var currentRepositoryGoals: [ProjectGoal] {
         guard let path = snapshot?.rootURL.standardizedFileURL.path else { return [] }
-        return projectGoals
-            .filter { $0.repositoryPath == path }
-            .sorted { $0.updatedAt > $1.updatedAt }
+        return ProjectGoalPresentation.goals(
+            projectGoals.filter { $0.repositoryPath == path }, filter: .all, query: ""
+        )
     }
 
     var selectedProjectGoal: ProjectGoal? {
@@ -498,60 +501,21 @@ final class WorkspaceViewModel: ObservableObject {
         regressionInvestigations.filter { !$0.status.isTerminal && $0.workspacePath != nil }.count
     }
 
-    var canRepairSelectedProjectGoalWithAgent: Bool {
-        selectedProjectGoal?.monitorsRemoteState == true
-            && selectedProjectGoal?.lastActionFailure != nil
-            && codexAvailability.state == .available
-            && activeProjectGoalID == nil
-            && activeOperation == nil
-            && !isCodexRunning
+    func canPerformProjectGoalAction(_ action: ProjectGoalAction) -> Bool {
+        guard let goal = selectedProjectGoal,
+              goal.nextAction == action,
+              activeProjectGoalID == nil,
+              activeOperation == nil,
+              !isCodexRunning else { return false }
+        return (!action.requiresAgent || codexAvailability.state == .available)
+            && (action != .refresh || !isRefreshingProjectGoals)
     }
 
-    var canPrepareSelectedReleaseWithAgent: Bool {
-        guard let goal = selectedProjectGoal,
-              goal.usesReleaseFlow else { return false }
-        let preparation: Set<ProjectGoalStepKind> = [
-            .readme, .translation, .version, .changelog, .releasePipeline,
-        ]
-        return goal.steps.contains { preparation.contains($0.kind) && $0.status == .blocked }
-            && codexAvailability.state == .available
-            && activeProjectGoalID == nil
-            && activeOperation == nil
-            && !isCodexRunning
-    }
-
-    var canPublishSelectedProjectRelease: Bool {
-        guard let goal = selectedProjectGoal,
-              goal.usesReleaseFlow,
-              goal.nextStep == .releaseTag else { return false }
-        return goal.step(.releaseTag)?.status == .pending
-            && activeProjectGoalID == nil
-            && activeOperation == nil
-    }
-
-    var canInstallSelectedProjectRelease: Bool {
-        guard let goal = selectedProjectGoal,
-              goal.usesReleaseFlow,
-              goal.step(.githubRelease)?.status == .completed,
-              goal.step(.dmg)?.status == .completed,
-              goal.step(.updateFeed)?.status == .completed else { return false }
-        return goal.step(.localApplication)?.status == .pending
-            && activeProjectGoalID == nil
-            && activeOperation == nil
-    }
-
-    var canMergeSelectedProjectGoal: Bool {
-        guard let goal = selectedProjectGoal,
-              goal.usesPullRequestFlow,
-              goal.pullRequestNumber != nil,
-              goal.step(.merge)?.status == .pending else { return false }
-        return goal.steps
-            .prefix { $0.kind != .merge }
-            .allSatisfy(\.status.isSatisfied)
-            && activeProjectGoalID == nil
-            && activeOperation == nil
-            && !isCodexRunning
-    }
+    var canRepairSelectedProjectGoalWithAgent: Bool { canPerformProjectGoalAction(.repair) }
+    var canPrepareSelectedReleaseWithAgent: Bool { canPerformProjectGoalAction(.prepareRelease) }
+    var canPublishSelectedProjectRelease: Bool { canPerformProjectGoalAction(.publish) }
+    var canInstallSelectedProjectRelease: Bool { canPerformProjectGoalAction(.install) }
+    var canMergeSelectedProjectGoal: Bool { canPerformProjectGoalAction(.merge) }
 
     var displayedGitHubActionRuns: [GitHubActionsRun] {
         guard let workflowID = selectedGitHubActionWorkflow?.id else { return githubActionRuns }
@@ -2114,25 +2078,40 @@ final class WorkspaceViewModel: ObservableObject {
 
     func selectProjectGoal(_ goal: ProjectGoal) {
         selectedProjectGoalID = goal.id
-        projectGoalCommitMessage = goal.commitMessage
     }
 
-    func updateSelectedProjectGoalCommitMessage(_ message: String) {
-        guard let id = selectedProjectGoal?.id,
-              let index = projectGoals.firstIndex(where: { $0.id == id }),
-              projectGoals[index].targetHeadSHA == nil,
-              activeProjectGoalID == nil else { return }
-        projectGoals[index].commitMessage = message
-        projectGoals[index].updatedAt = Date()
-        projectGoalCommitMessage = message
-        Task { try? await projectGoalStore.save(projectGoals) }
+    @discardableResult
+    func updateSelectedProjectGoalCommitMessage(_ message: String) async -> Bool {
+        guard let goal = selectedProjectGoal, goal.canEditCommitMessage,
+              activeProjectGoalID == nil, activeOperation == nil, !isCodexRunning,
+              let index = projectGoals.firstIndex(where: { $0.id == goal.id }) else { return false }
+        let message = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !message.isEmpty else { return false }
+        activeProjectGoalID = goal.id
+        defer { activeProjectGoalID = nil }
+        var updated = goal
+        updated.commitMessage = message
+        updated.updatedAt = Date()
+        projectGoals[index] = updated
+        do {
+            try await projectGoalStore.save(projectGoals)
+            return true
+        } catch {
+            if let index = projectGoals.firstIndex(where: { $0.id == goal.id }), projectGoals[index] == updated {
+                projectGoals[index] = goal
+            }
+            presentError(error, context: .goal, repositoryURL: URL(fileURLWithPath: goal.repositoryPath))
+            return false
+        }
     }
 
-    func createProjectDeliveryGoal() async {
+    @discardableResult
+    func createProjectDeliveryGoal() async -> Bool {
         await createProjectGoal(kind: .deliverChanges)
     }
 
-    func createGitHubDeliveryGoal() async {
+    @discardableResult
+    func createGitHubDeliveryGoal() async -> Bool {
         await createProjectGoal(kind: .githubDelivery)
     }
 
@@ -2153,6 +2132,22 @@ final class WorkspaceViewModel: ObservableObject {
             return
         }
 
+        let identity = ProjectGoalPlanningIdentity(snapshot)
+        let runID = UUID()
+        activeCodexRunID = runID
+        isCodexRunning = true
+        isPlanningProjectGoal = true
+        projectGoalCandidate = nil
+        projectGoalCandidateContext = nil
+        projectGoalPlanningError = nil
+        defer {
+            if activeCodexRunID == runID {
+                activeCodexRunID = nil
+                isCodexRunning = false
+                isPlanningProjectGoal = false
+            }
+        }
+
         let repositoryURL = snapshot.rootURL.standardizedFileURL
         let releaseSuggestion = await Task.detached(priority: .utility) {
             ProjectReleaseInspector.suggestedVersion(at: repositoryURL)
@@ -2164,20 +2159,8 @@ final class WorkspaceViewModel: ObservableObject {
             suggestedReleaseVersion: releaseSuggestion,
             suggestedReleaseBuildNumber: releaseSuggestion.flatMap(ProjectReleaseInspector.buildNumber(for:))
         )
-        let runID = UUID()
-        activeCodexRunID = runID
-        isCodexRunning = true
-        isPlanningProjectGoal = true
-        projectGoalCandidate = nil
-        projectGoalPlanningError = nil
-        defer {
-            if activeCodexRunID == runID {
-                activeCodexRunID = nil
-                isCodexRunning = false
-                isPlanningProjectGoal = false
-            }
-        }
-
+        guard !Task.isCancelled, activeCodexRunID == runID,
+              self.snapshot.map(ProjectGoalPlanningIdentity.init) == identity else { return }
         do {
             let result = try await codexService.run(
                 prompt: ProjectGoalPlanner.prompt(intent: intent, context: context),
@@ -2187,11 +2170,12 @@ final class WorkspaceViewModel: ObservableObject {
             )
             guard !Task.isCancelled,
                   activeCodexRunID == runID,
-                  self.snapshot?.rootURL.standardizedFileURL == repositoryURL else { return }
+                  self.snapshot.map(ProjectGoalPlanningIdentity.init) == identity else { return }
             projectGoalCandidate = try ProjectGoalPlanner.candidate(
                 from: result.response,
                 intent: intent
             )
+            projectGoalCandidateContext = identity
         } catch is CancellationError {
             return
         } catch let error as ProjectGoalPlanningError {
@@ -2207,11 +2191,19 @@ final class WorkspaceViewModel: ObservableObject {
     func cancelCustomProjectGoalCandidate() {
         guard !isPlanningProjectGoal else { return }
         projectGoalCandidate = nil
+        projectGoalCandidateContext = nil
         projectGoalPlanningError = nil
     }
 
-    func confirmCustomProjectGoalCandidate() async {
-        guard let candidate = projectGoalCandidate else { return }
+    @discardableResult
+    func confirmCustomProjectGoalCandidate() async -> Bool {
+        guard let candidate = projectGoalCandidate else { return false }
+        guard snapshot.map(ProjectGoalPlanningIdentity.init) == projectGoalCandidateContext else {
+            projectGoalCandidate = nil
+            projectGoalCandidateContext = nil
+            projectGoalPlanningError = L10n.text("goal.workspace.plan_changed")
+            return false
+        }
         let created = await createProjectGoal(
             kind: .custom,
             title: candidate.title,
@@ -2225,7 +2217,9 @@ final class WorkspaceViewModel: ObservableObject {
             projectGoalCandidate = nil
             projectGoalPlanningError = nil
             projectGoalCustomIntent = ""
+            projectGoalCandidateContext = nil
         }
+        return created
     }
 
     func prepareProjectReleaseDraftIfNeeded() async {
@@ -2248,7 +2242,8 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
-    func createCompleteReleaseGoal() async {
+    @discardableResult
+    func createCompleteReleaseGoal() async -> Bool {
         let version = projectGoalReleaseVersion.trimmingCharacters(in: .whitespacesAndNewlines)
         let buildNumber = projectGoalReleaseBuildNumber.trimmingCharacters(in: .whitespacesAndNewlines)
         guard ProjectReleaseInspector.buildNumber(for: version) != nil else {
@@ -2257,7 +2252,7 @@ final class WorkspaceViewModel: ObservableObject {
                 context: .goal,
                 repositoryURL: snapshot?.rootURL
             )
-            return
+            return false
         }
         guard !buildNumber.isEmpty, buildNumber.allSatisfy(\.isNumber) else {
             presentError(
@@ -2265,9 +2260,9 @@ final class WorkspaceViewModel: ObservableObject {
                 context: .goal,
                 repositoryURL: snapshot?.rootURL
             )
-            return
+            return false
         }
-        await createProjectGoal(
+        return await createProjectGoal(
             kind: .completeRelease,
             releaseVersion: version,
             releaseBuildNumber: buildNumber
@@ -2284,7 +2279,7 @@ final class WorkspaceViewModel: ObservableObject {
         releaseVersion: String? = nil,
         releaseBuildNumber: String? = nil
     ) async -> Bool {
-        guard let snapshot else { return false }
+        guard let snapshot, activeProjectGoalID == nil, activeOperation == nil, !isCodexRunning else { return false }
         if let existing = currentRepositoryGoals.first(where: { !$0.status.isTerminal }) {
             selectProjectGoal(existing)
             return false
@@ -2333,10 +2328,8 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func continueSelectedProjectGoal() async {
-        guard let id = selectedProjectGoal?.id,
-              activeProjectGoalID == nil,
-              activeOperation == nil,
-              !isCodexRunning else { return }
+        guard canPerformProjectGoalAction(.continueDelivery),
+              let id = selectedProjectGoal?.id else { return }
         activeProjectGoalID = id
         defer {
             activeProjectGoalID = nil
@@ -2345,8 +2338,10 @@ final class WorkspaceViewModel: ObservableObject {
 
         do {
             for _ in 0 ..< 8 {
-                guard let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
-                var goal = try await reconciledProjectGoal(projectGoals[index])
+                guard let requested = projectGoals.first(where: { $0.id == id }), !requested.status.isTerminal else { return }
+                var goal = try await reconciledProjectGoal(requested)
+                guard let index = projectGoals.firstIndex(where: { $0.id == id }),
+                      ProjectGoalPresentation.acceptsObservation(of: requested, current: projectGoals[index]) else { return }
                 projectGoals[index] = goal
                 try await projectGoalStore.save(projectGoals)
 
@@ -2395,7 +2390,7 @@ final class WorkspaceViewModel: ObservableObject {
                     try await projectGoalStore.save(projectGoals)
                 }
             }
-            await refreshProjectGoal(id: id, showErrors: true)
+            await refreshProjectGoal(id: id, showErrors: true, allowActiveExecution: true)
             await refresh()
         } catch is CancellationError {
             return
@@ -2470,7 +2465,7 @@ final class WorkspaceViewModel: ObservableObject {
         do {
             try await projectGoalStore.save(projectGoals)
             _ = try await projectGoalRuntime.execute(.releaseTag, goal: goal)
-            await refreshProjectGoal(id: id, showErrors: true)
+            await refreshProjectGoal(id: id, showErrors: true, allowActiveExecution: true)
             startProjectGoalMonitorIfNeeded()
         } catch is CancellationError {
             return
@@ -2499,7 +2494,7 @@ final class WorkspaceViewModel: ObservableObject {
                 projectGoals[currentIndex].installedApplicationPath = path
                 try await projectGoalStore.save(projectGoals)
             }
-            await refreshProjectGoal(id: id, showErrors: true)
+            await refreshProjectGoal(id: id, showErrors: true, allowActiveExecution: true)
         } catch is CancellationError {
             return
         } catch {
@@ -2540,7 +2535,7 @@ final class WorkspaceViewModel: ObservableObject {
         do {
             try await projectGoalStore.save(projectGoals)
             _ = try await projectGoalRuntime.execute(.merge, goal: goal)
-            await refreshProjectGoal(id: id, showErrors: true)
+            await refreshProjectGoal(id: id, showErrors: true, allowActiveExecution: true)
             startProjectGoalMonitorIfNeeded()
         } catch is CancellationError {
             return
@@ -2577,16 +2572,27 @@ final class WorkspaceViewModel: ObservableObject {
     }
 
     func cancelSelectedProjectGoal() async {
-        guard let id = selectedProjectGoal?.id,
-              activeProjectGoalID != id,
-              let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
-        projectGoals[index].status = .cancelled
-        projectGoals[index].updatedAt = Date()
-        try? await projectGoalStore.save(projectGoals)
+        guard let goal = selectedProjectGoal, !goal.status.isTerminal,
+              activeProjectGoalID == nil, !isCodexRunning,
+              let index = projectGoals.firstIndex(where: { $0.id == goal.id }) else { return }
+        activeProjectGoalID = goal.id
+        defer { activeProjectGoalID = nil }
+        var cancelled = goal
+        cancelled.status = .cancelled
+        cancelled.updatedAt = Date()
+        projectGoals[index] = cancelled
+        do {
+            try await projectGoalStore.save(projectGoals)
+        } catch {
+            if let index = projectGoals.firstIndex(where: { $0.id == goal.id }), projectGoals[index] == cancelled {
+                projectGoals[index] = goal
+            }
+            presentError(error, context: .goal, repositoryURL: URL(fileURLWithPath: goal.repositoryPath))
+        }
         startProjectGoalMonitorIfNeeded()
     }
 
-    private func loadProjectGoals() async {
+    func loadProjectGoals() async {
         do {
             projectGoals = try await projectGoalStore.load().map { source in
                 var goal = source
@@ -2973,31 +2979,47 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
-    private func refreshProjectGoal(id: UUID, showErrors: Bool) async {
-        guard let index = projectGoals.firstIndex(where: { $0.id == id }),
-              projectGoals[index].status != .cancelled else { return }
+    func refreshProjectGoal(id: UUID, showErrors: Bool, allowActiveExecution: Bool = false) async {
+        guard allowActiveExecution || projectGoalRefreshIDs[id] == nil,
+              allowActiveExecution || activeProjectGoalID != id,
+              let requested = projectGoals.first(where: { $0.id == id }),
+              requested.status != .cancelled else { return }
+        let requestID = UUID()
+        projectGoalRefreshIDs[id] = requestID
+        defer {
+            if projectGoalRefreshIDs[id] == requestID { projectGoalRefreshIDs[id] = nil }
+        }
+        let updated: ProjectGoal
         do {
-            let goal = try await reconciledProjectGoal(projectGoals[index])
-            projectGoals[index] = goal
-            try await projectGoalStore.save(projectGoals)
+            updated = try await reconciledProjectGoal(requested)
         } catch is CancellationError {
             return
         } catch {
-            var goal = projectGoals[index]
-            goal.status = .blocked
-            goal.lastError = error.localizedDescription
-            if let step = goal.nextStep {
-                goal.updateStep(step, status: .blocked, error: error.localizedDescription)
+            guard !Task.isCancelled, projectGoalRefreshIDs[id] == requestID,
+                  allowActiveExecution || activeProjectGoalID != id,
+                  ProjectGoalPresentation.acceptsObservation(of: requested, current: projectGoals.first { $0.id == id }),
+                  let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+            var failed = requested
+            failed.status = .blocked
+            failed.lastError = error.localizedDescription
+            if let step = failed.nextStep { failed.updateStep(step, status: .blocked, error: error.localizedDescription) }
+            projectGoals[index] = failed
+            do { try await projectGoalStore.save(projectGoals) }
+            catch {
+                presentError(error, context: .goal, repositoryURL: URL(fileURLWithPath: requested.repositoryPath))
+                return
             }
-            projectGoals[index] = goal
-            try? await projectGoalStore.save(projectGoals)
-            if showErrors {
-                presentError(
-                    error,
-                    context: .goal,
-                    repositoryURL: URL(fileURLWithPath: goal.repositoryPath, isDirectory: true)
-                )
-            }
+            if showErrors { presentError(error, context: .goal, repositoryURL: URL(fileURLWithPath: requested.repositoryPath)) }
+            return
+        }
+        guard !Task.isCancelled, projectGoalRefreshIDs[id] == requestID,
+              allowActiveExecution || activeProjectGoalID != id,
+              ProjectGoalPresentation.acceptsObservation(of: requested, current: projectGoals.first { $0.id == id }),
+              let index = projectGoals.firstIndex(where: { $0.id == id }) else { return }
+        projectGoals[index] = updated
+        do { try await projectGoalStore.save(projectGoals) }
+        catch {
+            presentError(error, context: .goal, repositoryURL: URL(fileURLWithPath: requested.repositoryPath))
         }
     }
 
@@ -7509,7 +7531,7 @@ final class WorkspaceViewModel: ObservableObject {
         gitToolsError = nil
     }
 
-    private func apply(_ loaded: RepositorySnapshot, preservingSelection: Bool = false) {
+    func apply(_ loaded: RepositorySnapshot, preservingSelection: Bool = false) {
         let selectedChangeID = preservingSelection ? selectedChange?.id : nil
         let selectedCommitID = preservingSelection ? selectedCommit?.id : nil
         let selectedBranchID = preservingSelection ? selectedBranch?.id : nil
