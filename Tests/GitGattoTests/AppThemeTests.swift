@@ -10,14 +10,13 @@ struct AppThemeTests {
     func lumenAmbientMotionLifecycle() throws {
         let window = ThemeTestWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 600),
                                      styleMask: [.titled, .resizable], backing: .buffered, defer: false)
-        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: .light)
-            .environment(\.accessibilityReduceTransparency, false))
-        window.contentView = hosting
+        // Test the compositor independently of accessibility settings that can omit it from the backdrop.
+        let view = LumenAmbientLightsView(frame: window.contentLayoutRect)
+        view.configure(colorScheme: .light, reduceMotion: false)
+        window.contentView = view
         window.orderFront(nil)
         defer { window.orderOut(nil); window.contentView = nil }
-        hosting.layoutSubtreeIfNeeded()
-        let view = try #require(ambientView(in: hosting))
-        view.configure(colorScheme: .light, reduceMotion: false)
+        view.layoutSubtreeIfNeeded()
         let lights = try #require(view.layer?.sublayers?.compactMap { $0 as? CAGradientLayer })
         #expect(lights.count == 2)
         #expect(lights.allSatisfy { $0.animationKeys()?.isEmpty != false })
@@ -55,16 +54,13 @@ struct AppThemeTests {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 960, height: 620),
                               styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.appearance = NSAppearance(named: colorScheme == .dark ? .darkAqua : .aqua)
-        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: colorScheme)
-            .environment(\.accessibilityReduceTransparency, false))
-        window.contentView = hosting
+        let ambient = LumenAmbientLightsView(frame: window.contentLayoutRect)
+        ambient.configure(colorScheme: colorScheme, reduceMotion: true)
+        window.contentView = ambient
         window.orderFront(nil)
         defer { window.orderOut(nil); window.contentView = nil }
         for size in [CGSize(width: 960, height: 620), CGSize(width: 1416, height: 878)] {
             window.setContentSize(size)
-            hosting.layoutSubtreeIfNeeded()
-            let ambient = try #require(ambientView(in: hosting))
-            ambient.configure(colorScheme: colorScheme, reduceMotion: true)
             ambient.layoutSubtreeIfNeeded()
             let lights = try #require(ambient.layer?.sublayers?.compactMap { $0 as? CAGradientLayer })
             #expect(lights.count == 2)
@@ -73,31 +69,16 @@ struct AppThemeTests {
             #expect(abs(lights[0].position.x - ambient.bounds.width * 0.02) < 0.1)
             #expect(abs(lights[1].position.y - ambient.bounds.height * 0.36) < 0.1)
             #expect(ambient.layer?.masksToBounds == true)
-            hosting.displayIfNeeded()
+            ambient.displayIfNeeded()
             if let directory = ProcessInfo.processInfo.environment["GITGATTO_THEME_UI_OUTPUT"] {
                 let output = URL(fileURLWithPath: directory)
                 try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
-                let bitmap = try #require(hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds))
-                hosting.cacheDisplay(in: hosting.bounds, to: bitmap)
+                let bitmap = try #require(ambient.bitmapImageRepForCachingDisplay(in: ambient.bounds))
+                ambient.cacheDisplay(in: ambient.bounds, to: bitmap)
                 let data = try #require(bitmap.representation(using: .png, properties: [:]))
                 try data.write(to: output.appendingPathComponent("lumen-\(Int(size.width))-\(colorScheme).png"))
             }
         }
-    }
-
-    @MainActor
-    @Test("Lumen omits ambient effects when transparency is reduced")
-    func lumenReducedTransparency() {
-        let hosting = NSHostingView(rootView: AppThemeBackdrop(theme: .lumen, colorScheme: .light)
-            .environment(\.accessibilityReduceTransparency, true))
-        hosting.frame = NSRect(x: 0, y: 0, width: 960, height: 620)
-        hosting.layoutSubtreeIfNeeded()
-        #expect(ambientView(in: hosting) == nil)
-    }
-
-    @MainActor
-    private func ambientView(in view: NSView) -> LumenAmbientLightsView? {
-        (view as? LumenAmbientLightsView) ?? view.subviews.lazy.compactMap { ambientView(in: $0) }.first
     }
 
     @Test("Uses glass by default and preserves saved theme selections")
