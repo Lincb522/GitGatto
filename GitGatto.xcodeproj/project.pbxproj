@@ -297,9 +297,11 @@
 		C53394B112AF3961A135DBCF /* RepositoryDiscoveryServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC90B8A203C02679751AFF8 /* RepositoryDiscoveryServiceTests.swift */; };
 		C5A8757DF5B1A980B4D352EF /* gatto-externaldrive.svg in Resources */ = {isa = PBXBuildFile; fileRef = 70E8D4E591ED9985ED9B879E /* gatto-externaldrive.svg */; };
 		C5BDB87E3C4B2D5DDBBCDABE /* AppSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7B297B0D056D40DF7E14E81 /* AppSettingsView.swift */; };
+		C5C059D5B25BFB1173D5DA9B /* HelpGuideTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E8AF66EF9DCEB44B023CEC /* HelpGuideTests.swift */; };
 		C7C3EA9AB358CEC6F8F7AC64 /* GitHubWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9182BDEF2994C48C40821377 /* GitHubWorkspaceView.swift */; };
 		C85E1929AD981BD23EB402AF /* GitHubAuthorizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4AFB9FA400E0F34D4B1632C /* GitHubAuthorizationTests.swift */; };
 		C9502D6050BF6FDF4B5E6509 /* RepositoryBackupServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E96BF1D2B9105BED29D701B6 /* RepositoryBackupServiceTests.swift */; };
+		CAA521D7669BB2FA707267F3 /* HelpTopic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036D1A7B338A858161C1F7CA /* HelpTopic.swift */; };
 		CAFE05587DEE7BB2720568A5 /* WorktreeWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED4F0A8765FED352B3FD598 /* WorktreeWorkspaceView.swift */; };
 		CB20B4BC43C6D94ACAF558CA /* GitCommitSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C52BEA697D86FADDDAB3F4 /* GitCommitSearchService.swift */; };
 		CB9B19F07B3DA2A13062A2AB /* gatto-legal-privacy.svg in Resources */ = {isa = PBXBuildFile; fileRef = F2B85FEA8DFFFF680F04B702 /* gatto-legal-privacy.svg */; };
@@ -420,6 +422,7 @@
 		01E3CC09EFECBAE2EA1203AD /* MonitoringEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringEngine.swift; sourceTree = "<group>"; };
 		02720750D2A66508BAB13FA7 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		030C6A06E334C22F569BFA9C /* gatto-chevron-left.svg */ = {isa = PBXFileReference; path = "gatto-chevron-left.svg"; sourceTree = "<group>"; };
+		036D1A7B338A858161C1F7CA /* HelpTopic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpTopic.swift; sourceTree = "<group>"; };
 		037409197010393E2B2D96FF /* lua.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = lua.png; sourceTree = "<group>"; };
 		03FAFC785742101330AD241A /* RepositoryDiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDiagnosticsView.swift; sourceTree = "<group>"; };
 		0489600D8AFB3ED30F2A95B5 /* meta.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = meta.png; sourceTree = "<group>"; };
@@ -660,6 +663,7 @@
 		877B1BDD3B897E7B77CEED94 /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
 		87BDB526036B7B611B2110B4 /* zig.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = zig.png; sourceTree = "<group>"; };
 		87E3CC6F9773E92267D13B37 /* GitRepositoryReferenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitRepositoryReferenceService.swift; sourceTree = "<group>"; };
+		87E8AF66EF9DCEB44B023CEC /* HelpGuideTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpGuideTests.swift; sourceTree = "<group>"; };
 		88237A9959816B8F7E602C7D /* vscode-icons-LICENSE */ = {isa = PBXFileReference; path = "vscode-icons-LICENSE"; sourceTree = "<group>"; };
 		8826229A2BF960CAC0977C52 /* GattoIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GattoIcon.swift; sourceTree = "<group>"; };
 		88B6C9BD5F34503C692EA6EC /* RepositoryBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBackupService.swift; sourceTree = "<group>"; };
@@ -1319,6 +1323,7 @@
 				1BD94D75F40826C20B84C908 /* DevelopmentToolModels.swift */,
 				4B0921C44134C9CFA292D890 /* DownloadModels.swift */,
 				E224280BBF138C29C3650272 /* GitModels.swift */,
+				036D1A7B338A858161C1F7CA /* HelpTopic.swift */,
 				B7E8127FACB20606495989A0 /* LocalRepositoryCatalog.swift */,
 				CE4A0EA7E1DF62431D7B079C /* MonitoringModels.swift */,
 				33E3A9BA03790202579FBCF2 /* ProjectGoalModels.swift */,
@@ -1418,6 +1423,7 @@
 				98B9BF0AABE19613D6E50F6F /* GitRepositoryServiceTests.swift */,
 				90FDA74DA5B092F11772BA42 /* GitWorktreeServiceTests.swift */,
 				1D2F0FCECD21005DF1142BD2 /* GlobalErrorHandlerTests.swift */,
+				87E8AF66EF9DCEB44B023CEC /* HelpGuideTests.swift */,
 				13403BC1D5D87FD16E79D58B /* LegalDocumentTests.swift */,
 				22D8B113159C1712C3D7A960 /* LocalizationRuntimeTests.swift */,
 				A758C7A17912288C6B463DCC /* LocalRepositoryCatalogTests.swift */,
@@ -1894,6 +1900,7 @@
 				ACA948DB407093BBDF7AE2BB /* GitRepositoryServiceTests.swift in Sources */,
 				AE392F605A90D1C31A756363 /* GitWorktreeServiceTests.swift in Sources */,
 				87EA0F7CB8D1B5282AA5BE3F /* GlobalErrorHandlerTests.swift in Sources */,
+				C5C059D5B25BFB1173D5DA9B /* HelpGuideTests.swift in Sources */,
 				9FC788B6CDC4B351FF2665D2 /* LegalDocumentTests.swift in Sources */,
 				EECD8C4081C2B7F0EDB61C32 /* LocalRepositoryCatalogTests.swift in Sources */,
 				820FBCAA82D9BFDC5E3F16A1 /* LocalizationRuntimeTests.swift in Sources */,
@@ -2001,6 +2008,7 @@
 				E7032BC88B917F42BE45953A /* GlobalErrorSheet.swift in Sources */,
 				3D3ADD282E4499E1F75079A6 /* HTMLTextTranslationPlan.swift in Sources */,
 				4F702C7330106E845C6D4AC7 /* HelpCenterView.swift in Sources */,
+				CAA521D7669BB2FA707267F3 /* HelpTopic.swift in Sources */,
 				E22F223136A7F5A16AC9A40C /* HistoryWorkspaceView.swift in Sources */,
 				0622A3F914E629E38144727D /* IgnoreRulesPanel.swift in Sources */,
 				D4BAD184CFA8F605F5A33961 /* IgnoreRulesService.swift in Sources */,
@@ -2241,7 +2249,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18026;
+				CURRENT_PROJECT_VERSION = 18027;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2262,7 +2270,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.26;
+				MARKETING_VERSION = 0.18.27;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -2308,7 +2316,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18026;
+				CURRENT_PROJECT_VERSION = 18027;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2323,7 +2331,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.26;
+				MARKETING_VERSION = 0.18.27;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

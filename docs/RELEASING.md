@@ -94,8 +94,8 @@ https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=100
 完成发布说明后创建并推送标签：
 
 ```bash
-git tag v0.18.26
-git push origin v0.18.26
+git tag v0.18.27
+git push origin v0.18.27
 ```
 
 工作流按顺序执行：

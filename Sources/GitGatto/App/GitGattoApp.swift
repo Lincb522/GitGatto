@@ -546,6 +546,12 @@ private struct GitGattoCommands: Commands {
             }
             .keyboardShortcut("?", modifiers: .command)
 
+            Button(L10n.text("help.current_workspace")) {
+                let topic = HelpTopic.topic(for: model.selectedSection)
+                UserDefaults.standard.set(topic.rawValue, forKey: "help.selectedTopic")
+                openWindow(id: "help")
+            }
+
             Divider()
 
             Button(L10n.text("settings.open")) {

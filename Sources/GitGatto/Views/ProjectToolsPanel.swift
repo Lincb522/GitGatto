@@ -7,6 +7,7 @@ struct ProjectToolsPanel: View {
     @State var selection: ProjectTool
     @Environment(\.colorScheme) private var scheme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openWindow) private var openWindow
     @State private var confirmation = ""
     @State private var showsConfirmation = false
     @State private var pending: (@MainActor () async -> Void)?
@@ -18,6 +19,14 @@ struct ProjectToolsPanel: View {
                 Text(selection.title).font(.system(size: 17, weight: .semibold))
                 Spacer()
                 if tools.busy { ProgressView().controlSize(.small) }
+                Button {
+                    UserDefaults.standard.set(HelpTopic.topic(for: selection).rawValue, forKey: "help.selectedTopic")
+                    openWindow(id: "help")
+                } label: {
+                    Text(L10n.text("help.short_title"))
+                }
+                .accessibilityLabel(L10n.text("help.menu.guide"))
+                .help(L10n.text("help.menu.guide"))
                 Button(L10n.text("tools.close")) { dismiss() }.keyboardShortcut(.cancelAction)
             }.padding(18)
             ScrollView(.horizontal, showsIndicators: false) {

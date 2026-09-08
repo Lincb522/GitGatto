@@ -12,30 +12,35 @@ struct HelpCenterView: View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: AppThemeLayout.panelSpacing) {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
                     AppBrandLockup(iconSize: 32, wordmarkWidth: 88, spacing: 7)
                     Text(L10n.text("help.short_title"))
                         .font(.system(size: 13.5, weight: .semibold))
                         .foregroundStyle(palette.ink)
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
-                .frame(height: 76)
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Rectangle().fill(palette.divider).frame(height: 1)
 
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        ForEach(HelpTopic.allCases) { topic in
-                            HelpTopicButton(
-                                topic: topic,
-                                isSelected: selectedTopic == topic
-                            ) {
-                                selectedTopicRaw = topic.rawValue
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 4) {
+                            ForEach(HelpTopic.allCases) { topic in
+                                HelpTopicButton(
+                                    topic: topic,
+                                    isSelected: selectedTopic == topic
+                                ) {
+                                    selectedTopicRaw = topic.rawValue
+                                }
+                                .id(topic.id)
                             }
                         }
+                        .padding(10)
                     }
-                    .padding(10)
+                    .onChange(of: selectedTopicRaw, initial: true) { _, _ in
+                        proxy.scrollTo(selectedTopic.id, anchor: .center)
+                    }
                 }
             }
             .frame(width: 226)
@@ -64,241 +69,6 @@ struct HelpCenterView: View {
     }
 }
 
-private enum HelpTopic: String, CaseIterable, Identifiable {
-    case gettingStarted
-    case changes
-    case intelligence
-    case sync
-    case goals
-    case regression
-    case github
-    case agent
-    case translation
-    case cliSettings
-    case shortcuts
-    case troubleshooting
-
-    var id: String { rawValue }
-    var titleKey: String { "help.topic.\(rawValue).title" }
-    var summaryKey: String { "help.topic.\(rawValue).summary" }
-
-    var icon: String {
-        switch self {
-        case .gettingStarted: "play.circle"
-        case .changes: "square.stack.3d.up"
-        case .intelligence: "point.3.connected.trianglepath.dotted"
-        case .sync: "arrow.up.arrow.down"
-        case .goals: "checkmark.seal"
-        case .regression: "record.circle"
-        case .github: "shippingbox"
-        case .agent: "sparkles"
-        case .translation: "ai.translation"
-        case .cliSettings: "gearshape"
-        case .shortcuts: "command"
-        case .troubleshooting: "wrench.and.screwdriver"
-        }
-    }
-
-    var sections: [HelpArticleSection] {
-        switch self {
-        case .gettingStarted:
-            [
-                .init("help.gettingStarted.open.title", bullets: [
-                    "help.gettingStarted.open.1",
-                    "help.gettingStarted.open.2",
-                    "help.gettingStarted.open.3"
-                ]),
-                .init("help.gettingStarted.navigation.title", bullets: [
-                    "help.gettingStarted.navigation.1",
-                    "help.gettingStarted.navigation.2",
-                    "help.gettingStarted.navigation.3"
-                ]),
-                .init("tools.title", bullets: [
-                    "tools.search.empty",
-                    "tools.scenes.help",
-                    "tools.commands.help",
-                    "tools.ignore.help",
-                    "tools.identity.help"
-                ])
-            ]
-        case .changes:
-            [
-                .init("help.changes.stage.title", bullets: [
-                    "help.changes.stage.1",
-                    "help.changes.stage.2",
-                    "help.changes.stage.3"
-                ]),
-                .init("help.changes.files.title", bullets: [
-                    "help.changes.files.1",
-                    "help.changes.files.2",
-                    "help.changes.files.3"
-                ])
-            ]
-        case .intelligence:
-            [
-                .init("help.intelligence.intent.title", bullets: [
-                    "help.intelligence.intent.1",
-                    "help.intelligence.intent.2",
-                    "help.intelligence.intent.3"
-                ]),
-                .init("help.intelligence.provenance.title", bullets: [
-                    "help.intelligence.provenance.1",
-                    "help.intelligence.provenance.2",
-                    "help.intelligence.provenance.3"
-                ]),
-                .init("help.intelligence.capsule.title", bullets: [
-                    "help.intelligence.capsule.1",
-                    "help.intelligence.capsule.2",
-                    "help.intelligence.capsule.3"
-                ]),
-                .init("help.intelligence.activity.title", bullets: [
-                    "help.intelligence.activity.1",
-                    "help.intelligence.activity.2",
-                    "help.intelligence.activity.3"
-                ])
-            ]
-        case .sync:
-            [
-                .init("help.sync.commit.title", bullets: [
-                    "help.sync.commit.1",
-                    "help.sync.commit.2",
-                    "help.sync.commit.3"
-                ]),
-                .init("help.sync.remote.title", bullets: [
-                    "help.sync.remote.1",
-                    "help.sync.remote.2",
-                    "help.sync.remote.3"
-                ])
-            ]
-        case .goals:
-            [
-                .init("help.goals.create.title", bullets: [
-                    "help.goals.create.1",
-                    "help.goals.create.2",
-                    "help.goals.create.3",
-                    "help.goals.create.4"
-                ]),
-                .init("help.goals.execute.title", bullets: [
-                    "help.goals.execute.1",
-                    "help.goals.execute.2",
-                    "help.goals.execute.3",
-                    "help.goals.execute.4"
-                ]),
-                .init("help.goals.release.title", bullets: [
-                    "help.goals.release.1",
-                    "help.goals.release.2",
-                    "help.goals.release.3"
-                ])
-            ]
-        case .regression:
-            [
-                .init("help.regression.start.title", bullets: [
-                    "help.regression.start.1",
-                    "help.regression.start.2",
-                    "help.regression.start.3",
-                    "help.regression.start.4"
-                ]),
-                .init("help.regression.verdict.title", bullets: [
-                    "help.regression.verdict.1",
-                    "help.regression.verdict.2",
-                    "help.regression.verdict.3"
-                ]),
-                .init("help.regression.fix.title", bullets: [
-                    "help.regression.fix.1",
-                    "help.regression.fix.2",
-                    "help.regression.fix.3",
-                    "help.regression.fix.4"
-                ])
-            ]
-        case .github:
-            [
-                .init("help.github.discover.title", bullets: [
-                    "help.github.discover.1",
-                    "help.github.discover.2",
-                    "help.github.discover.3"
-                ]),
-                .init("help.github.detail.title", bullets: [
-                    "help.github.detail.1",
-                    "help.github.detail.2",
-                    "help.github.detail.3",
-                    "help.github.detail.4",
-                    "help.github.detail.5"
-                ])
-            ]
-        case .agent:
-            [
-                .init("help.agent.scope.title", bullets: [
-                    "help.agent.scope.1",
-                    "help.agent.scope.2",
-                    "help.agent.scope.3"
-                ]),
-                .init("help.agent.workflow.title", bullets: [
-                    "help.agent.workflow.1",
-                    "help.agent.workflow.2",
-                    "help.agent.workflow.3",
-                    "help.agent.workflow.4"
-                ])
-            ]
-        case .translation:
-            [
-                .init("help.translation.document.title", bullets: [
-                    "help.translation.document.1",
-                    "help.translation.document.2",
-                    "help.translation.document.3"
-                ]),
-                .init("help.translation.channel.title", bullets: [
-                    "help.translation.channel.1",
-                    "help.translation.channel.2",
-                    "help.translation.channel.3"
-                ])
-            ]
-        case .cliSettings:
-            [
-                .init("help.cliSettings.providers.title", bullets: [
-                    "help.cliSettings.providers.1",
-                    "help.cliSettings.providers.2",
-                    "help.cliSettings.providers.3"
-                ]),
-                .init("help.cliSettings.arguments.title", bullets: [
-                    "help.cliSettings.arguments.1",
-                    "help.cliSettings.arguments.2",
-                    "help.cliSettings.arguments.3",
-                    "help.cliSettings.arguments.4"
-                ])
-            ]
-        case .shortcuts:
-            [
-                .init("help.shortcuts.workspace.title", bullets: [
-                    "help.shortcuts.workspace.1",
-                    "help.shortcuts.workspace.2",
-                    "help.shortcuts.workspace.3",
-                    "help.shortcuts.workspace.4",
-                    "help.shortcuts.workspace.5"
-                ]),
-                .init("help.shortcuts.actions.title", bullets: [
-                    "help.shortcuts.actions.1",
-                    "help.shortcuts.actions.2",
-                    "help.shortcuts.actions.3"
-                ])
-            ]
-        case .troubleshooting:
-            [
-                .init("help.troubleshooting.access.title", bullets: [
-                    "help.troubleshooting.access.1",
-                    "help.troubleshooting.access.2",
-                    "help.troubleshooting.access.3"
-                ]),
-                .init("help.troubleshooting.operations.title", bullets: [
-                    "help.troubleshooting.operations.1",
-                    "help.troubleshooting.operations.2",
-                    "help.troubleshooting.operations.3",
-                    "help.troubleshooting.operations.4",
-                    "help.troubleshooting.operations.5"
-                ])
-            ]
-        }
-    }
-}
 
 enum WorkspaceQuickGuideKind {
     case goals
@@ -482,16 +252,6 @@ struct WorkspaceQuickGuideSheet: View {
     }
 }
 
-private struct HelpArticleSection {
-    let titleKey: String
-    let bulletKeys: [String]
-
-    init(_ titleKey: String, bullets: [String]) {
-        self.titleKey = titleKey
-        self.bulletKeys = bullets
-    }
-}
-
 private struct HelpTopicButton: View {
     let topic: HelpTopic
     let isSelected: Bool
@@ -511,21 +271,23 @@ private struct HelpTopicButton: View {
                 Text(L10n.text(topic.titleKey))
                     .font(.system(size: 12.5, weight: isSelected ? .semibold : .medium))
                     .foregroundStyle(isSelected ? palette.ink : palette.mutedInk)
-                    .lineLimit(1)
-                Spacer()
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
             }
             .padding(.horizontal, 10)
-            .frame(height: 36)
+            .padding(.vertical, 9)
+            .frame(minHeight: 36)
             .background(isSelected ? palette.primarySoft : (isHovering ? palette.raisedSurface : Color.clear))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .onHover { isHovering = $0 }
     }
 }
 
-private struct HelpArticleView: View {
+struct HelpArticleView: View {
     let topic: HelpTopic
     @Environment(\.colorScheme) private var colorScheme
 

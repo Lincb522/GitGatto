@@ -7,7 +7,7 @@
 
 <h1 align="center">GitGatto</h1>
 
-<p align="center">Un client Git natif piloté par des Agents.</p>
+<p align="center">macOS · Git · GitHub</p>
 
 <p align="center">
   <a href="README.md">简体中文</a> · <a href="README.zh-Hant.md">繁體中文</a> · <a href="README.en.md">English</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.ru.md">Русский</a> · <a href="README.ar.md">العربية</a>
@@ -34,126 +34,169 @@
   </tr>
 </table>
 
-GitGatto est un client Git et GitHub natif pour macOS. L'état des dépôts vient du Git système, les opérations distantes utilisent GitHub CLI et les Agents s'appuient sur les CLI déjà installées et connectées sur le Mac. GitGatto réunit leurs états, leurs étapes et leurs résultats dans une seule vue de projet.
+GitGatto est un client Git et GitHub natif pour macOS, sur Apple Silicon et Intel. Il propose aussi la sauvegarde du code non committé, le suivi des Agents externes, des objectifs de livraison, la recherche de régressions et la configuration d'outils de développement.
 
-## Pourquoi GitGatto existe
+<a id="why"></a>
+## Pourquoi nous développons GitGatto
 
-Une livraison complète passe souvent par le terminal, l'éditeur, GitHub, Actions et la page de version. Lorsqu'une étape échoue, il faut revérifier la branche, les fichiers indexés, les journaux et les artefacts. Avec un Agent, il faut également contrôler son répertoire de travail, ses droits et la correspondance de son contexte avec le dépôt courant.
+Après le code restent les modifications à démêler, les régressions à retrouver, la CI, les revues et les releases. Un changement de tâche peut aussi faire perdre de vue brouillons et fichiers non committés.
 
-GitGatto est parti de ces problèmes quotidiens. Il conserve le vrai Git et les outils existants, puis relie les opérations du dépôt, la collaboration GitHub, le travail des Agents et les preuves d'échec dans un parcours que l'on peut vérifier, interrompre et reprendre.
+Les Agents ajoutent des questions : qu'ont-ils changé, pourquoi, quelles traces reste-t-il après un échec et le résultat annoncé fonctionne-t-il ? GitGatto traite ces tâches et leur reprise, pas seulement l'habillage des commandes Git. Il conserve Git système et les CLI existantes tout en donnant accès aux modifications, preuves et points de restauration.
 
+[Sauvegarde](#recovery) · [Barre des menus](#monitoring) · [Objectifs](#goals) · [Organisation des commits](#intent) · [Régressions](#regression) · [Outils](#project-tools) · [Installation](#install-tools)
+
+<a id="features"></a>
 ## Fonctions distinctives
 
-### Objectifs de projet
+<a id="recovery"></a>
+### Sauvegarder le travail non committé et observer les changements externes
 
-« Livrer les modifications », « Livraison GitHub » et « Version complète » vérifient dans l'ordre des dépendances l'index, les commits, le Push, la Pull Request, les Reviews, Actions, les artefacts, la Release, le DMG, l'Appcast et la version installée. Un objectif peut aussi être décrit en langage naturel, puis ses conditions vérifiées avant l'exécution.
+Sauvegardes programmées, manuelles ou déclenchées par des changements importants, sans dupliquer un contenu identique. Chaque dépôt local ajouté conserve au maximum trois générations comprenant un Git bundle et les fichiers non committés.
 
-Chaque étape lit l'état réel de Git, GitHub ou du Mac. Les étapes terminées sont conservées après une interruption ; un échec Actions peut être transmis à un Agent avec ses preuves. La fusion, la publication d'un tag et l'installation demandent toujours une confirmation distincte.
+Un point peut être créé avant les écritures de l'Agent intégré. La protection observe aussi suppressions, pertes de modifications, retours de références et dépôts indisponibles après l'activité d'Agents externes, de terminaux ou de scripts. Les alertes donnent raisons et chemins, sans attribuer une faute certaine à un processus.
 
-### Organisation des changements et preuves
+L'écriture par étapes et les marqueurs de fin distinguent les copies incomplètes après un arrêt anormal. Consulter l'espace, supprimer une sauvegarde ou celles d'un dépôt, migrer le contenu en changeant de dossier. La restauration crée une nouvelle copie, sans écraser l'original. Ce n'est pas un intercepteur de commandes système ; les fichiers non enregistrés ou exclus ne sont pas garantis récupérables.
 
-- Le centre des changements classe les modifications par fichier ou bloc de Diff et peut créer plusieurs commits atomiques. Il vérifie l’empreinte du dépôt et crée un point de restauration avant l’exécution ; tout échec de commit ou de vérification restaure le HEAD et la limite de staging d’origine.
-- La provenance du code remonte d’une ligne au commit et, si GitHub CLI est disponible, ajoute la Pull Request, les Issues, les Reviews et les Checks associés.
-- Les capsules de reproduction regroupent patch, fichiers non suivis, commit de base, commande en échec, sortie et versions des outils dans un fichier `.gatto`. L’import est vérifié puis restauré dans un worktree isolé.
-- Le journal d’activité conserve les changements de références Git et d’état des fichiers avec les processus Agent dont le dossier de travail se trouvait dans le dépôt. Le niveau de corrélation est indiqué sans l’assimiler à une responsabilité prouvée.
+<a id="monitoring"></a>
+### Voir les dépôts depuis la barre des menus
 
-### Recherche de régression
+Choisir tous les dépôts ou un seul indépendamment de la fenêtre principale : modifications, amont, restaurations, Actions, objectifs et un an d'activité quotidienne. Les points comptent commits et changements observés, pas des heures travaillées.
 
-Exécute `git bisect` dans un worktree isolé sans changer l'espace de travail courant. Le mode automatique lance une commande de vérification ; le mode manuel classe chaque candidat comme bon, défectueux ou ignoré. Commits candidats, codes de sortie, durées et sorties sont conservés. Une fois le premier commit défectueux trouvé, un Agent peut préparer la correction, relancer la vérification et ouvrir une Pull Request.
+Les canaux arbre de travail, distant, protection, Actions et objectifs ont leurs interrupteurs dans les réglages, avec activation générale, affichage et intervalle. La surveillance continue tant que l'application tourne en arrière-plan et s'arrête lorsqu'elle quitte.
 
-### Récupération des dépôts
+<a id="goals"></a>
+### Reprendre un objectif de livraison
 
-Le centre de récupération surveille les dépôts locaux ajoutés à GitGatto. Il enregistre le travail non commité à intervalles réguliers, crée immédiatement un point de récupération lorsque le nombre de fichiers ou de lignes atteint le seuil, et accepte les sauvegardes manuelles. Un contenu inchangé n'est pas réécrit.
+Choisir livraison des changements, livraison GitHub, release complète ou objectif en langage naturel. Vérifier les étapes avant création, suivre progression, blocages et traces, rechercher et filtrer les objectifs actifs ou passés.
 
-Un point contient un Git bundle du dépôt et une copie des fichiers non commités. Chaque dépôt conserve au plus trois points glissants. Il est possible de consulter l'espace occupé, d'ouvrir les dossiers, de supprimer un point ou toutes les sauvegardes d'un dépôt, puis de restaurer un point dans une nouvelle copie du dépôt. Un changement d'emplacement migre les données existantes et vérifie le résultat avant la bascule.
+Selon le parcours, vérifier index, commit, Push, PR, Review, Actions, artefacts, Release, DMG, Appcast et version installée. Les conditions proposées par l'Agent doivent être approuvées. Après interruption, l'état réel est relu ; son texte ne prouve pas la réussite. Fusion, publication de tags et installation gardent leurs confirmations séparées.
 
-### Agents spécialisés pour Git
+<a id="intent"></a>
+### Séparer les modifications en plusieurs commits
 
-GitGatto prend en charge Codex CLI, Claude Code, Gemini CLI, OpenCode et des modèles de CLI personnalisés. Les opérations de dépôt, la traduction et l'installation de logiciels utilisent des canaux séparés ; une tâche longue ne bloque donc pas la traduction d'un document.
+Regrouper fichiers ou hunks avec leur message, avec l'aide possible d'un Agent. Avant exécution, vérifier omissions, doublons et changement du dépôt, créer un point de restauration puis committer dans l'ordre.
 
-Un Agent peut exploiter la sortie d'erreur complète pour traiter Git, Git LFS, les hooks, la signature, les branches, la synchronisation, les conflits, les Pull Requests et Actions. Si l'index est vide, la rédaction d'un commit peut d'abord indexer les modifications, puis commiter ou commiter et pousser. Une réécriture du README est rendue intégralement avant que « Appliquer le commit » ne commite que ce document.
+Chaque commit passe un contrôle de diff ou une commande de vérification choisie. En cas d'échec, retour tenté vers le HEAD et l'index d'origine, sans garantie dans toutes les situations ; le point de restauration reste consultable.
 
-## Git et GitHub
+<a id="regression"></a>
+### Chercher une régression dans un worktree isolé
 
-- Gérer l'arbre de travail, l'index, les commits, Pull, Push, branches, stashes et worktrees.
-- Consulter les diffs ligne par ligne, le graphe des commits, Blame, l'historique d'un fichier, ainsi que les images, SVG et vidéos des anciennes révisions.
-- Modifier le résultat des conflits de merge, rebase ou stash, puis continuer, ignorer ou abandonner.
-- Charger les dépôts accessibles au compte GitHub courant et rechercher dépôts ou développeurs avec recherche approximative, langage naturel et chargement continu.
-- Lire code, README, Pull Requests, Actions, Releases et fichiers publiés sans quitter l'application.
-- Examiner les fichiers d'une Pull Request, les marquer comme vus, commenter une ligne, répondre, envoyer une Review, relancer ou annuler Actions et télécharger les artefacts.
-- Star, Fork et Clone. L'analyse locale est manuelle et permet de choisir les dépôts à ajouter au lieu d'importer tout le disque.
+Exécuter `git bisect` sans changer le dossier de travail courant. Automatiquement par une commande ou manuellement avec bon, défectueux ou ignoré. Candidats, verdicts, codes de sortie, durée et sortie sont conservés.
 
-## Documents, traduction et aperçu
+Transmettre les preuves à un Agent pour correction, nouvelle vérification et préparation d'une PR. La commande doit reconnaître le problème ; trop de commits ignorés peuvent laisser plusieurs candidats.
 
-- Rendre dans GitGatto le Markdown du dépôt, les images relatives et les liens internes.
-- Détecter la langue d'un document et le traduire sur un canal Agent séparé ; les traductions sont conservées localement par version de la source.
-- Prévisualiser code source, images, source SVG et médias depuis l'espace de travail, l'historique des commits et celui des fichiers.
-- L'Agent README reconstruit le document à partir des fichiers, dépendances et ressources du dépôt au lieu de simplement reformuler le texte.
+<a id="evidence"></a>
+### Origine du code, capsules et activités
 
-## Catalogue d'applications et outils de développement
+- **Origine du code** : remonter d'une ligne au commit, puis aux PR, issues, reviews et checks liés si GitHub CLI est disponible.
+- **Capsules de panne** : exporter commit de base, patchs, fichiers non suivis admissibles, commande en échec, sortie et versions en `.gatto`. Vérifier structure et empreintes avant restauration dans un worktree isolé, sans exécuter automatiquement les commandes incluses. Le filtrage ne couvre que les chemins sensibles connus et le contenu reconnu : vérifier avant partage.
+- **Agents externes** : relier changements de fichiers/références et processus Agent connus travaillant dans le dépôt, avec force des indices. La présence d'un processus ne prouve pas sa responsabilité.
 
-- Rechercher dans GitHub Releases des applications installables avec leur véritable icône, description, captures, version et paquets. Les DMG et ZIP utilisent l'installateur local ; les autres formats passent par un Agent.
-- Détecter versions installées et mises à jour pour 99 environnements, outils de build, conteneurs, outils cloud, bases de données et utilitaires CLI.
-- Exécuter installations et mises à niveau sur trois voies parallèles avec sélection multiple et traitement par lot. Les modifications Homebrew restent sérialisées afin d'éviter les écritures simultanées dans Cellar.
-- Après installation, l'Agent termine le PATH utilisateur, l'enregistrement des composants, l'initialisation et la migration de configuration, puis vérifie à nouveau l'exécutable et sa version.
-- Conserver les étapes, la sortie d'origine et une explication localisée des erreurs connues pour le téléchargement, l'installation, la configuration et la vérification.
+<a id="agent"></a>
+### Des Agents au-delà des messages de commit
 
-## Documents du projet
+Codex CLI, Claude Code, Gemini CLI, OpenCode et CLI personnalisées. Les instructions Git intégrées couvrent revue de l'index, brouillon de commit, conflits, branches, récupération d'historique, santé du dépôt et préparation de release ; les erreurs originales LFS, hooks, signature et synchronisation peuvent accompagner l'enquête.
 
-- [Feuille de route](docs/ROADMAP.md) : étapes réalisées, travaux prévus et limites.
-- [Architecture](docs/ARCHITECTURE.md) : propriété des états, frontières des services et principaux flux de données.
-- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date) : évolution des étoiles GitHub.
+Projet, traduction, recherche et installation ont des voies d'exécution distinctes. Prévisualiser une réécriture README avant application. Les réponses Issue/PR utilisent discussion et diff, restent éditables et ne sont envoyées qu'après confirmation. Conserver les CLI et modèles déjà configurés.
 
-![GitGatto roadmap](docs/media/roadmap.svg)
+<a id="project-tools"></a>
+### Conserver le contexte d'un changement de tâche
 
-![GitGatto architecture](docs/media/architecture-overview.svg)
+Les **Contextes de travail** enregistrent fichiers indexés, non indexés et non suivis, branche, brouillons, fichier sélectionné, objectifs et liens. La restauration contrôle l'état du dépôt ; ouverture dans un worktree séparé possible. Fichiers ignorés exclus, ce n'est pas une sauvegarde indépendante.
+
+| Outil | Usage |
+| --- | --- |
+| Recherche de code | Fichiers courants, révision ou changements historiques dans les dépôts gérés ; filtres dossier, langue, extension, aperçu et transmission à l'Agent. Recherche littérale avec limites de résultats. |
+| Exécuter des commandes | Détecter les scripts, ajouter et épingler des commandes ; sortie, durée, état, arrêt, nouvel essai, services locaux. Exécution non interactive, arguments en tableau JSON. |
+| Règles d’exclusion | Expliquer la provenance, prévisualiser `.gitignore` partagé ou `.git/info/exclude` local ; arrêter le suivi sans effacer les fichiers. |
+| Identités de commit | Auteur et signature par dépôt ou dossier, provenance effective et contrôle avant commit ; distincts du compte GitHub. |
+
+Accès par les outils du projet ou `⌘K`.
+
+<a id="install-tools"></a>
+### Installer, configurer et vérifier
+
+Le catalogue lit GitHub Releases et distingue téléchargement et installation. DMG/ZIP suivent l'installation native, les paquets en ligne de commande passent à l'Agent. Phases, sortie et reprise restent visibles.
+
+**99 outils et environnements d'exécution**, détection locale, sélection multiple et mises à niveau groupées. Files d'installation et de mise à niveau : trois tâches simultanées maximum ; écritures Homebrew sérialisées.
+
+PATH requis, enregistrement des plugins, initialisation et migration précèdent la vérification de l'exécutable et de sa version. Téléchargement terminé ou déclaration de l'Agent ne remplacent pas ce contrôle. Permissions/configuration incomplètes restent à traiter ; connexion et autorisation système vous reviennent. La liste installée représente les installations GitGatto, pas toutes les apps du Mac.
+
+<a id="git-github"></a>
+## Git et GitHub au quotidien
+
+- Index, commit, diff, graphe, blame, historique des fichiers et médias ; recherche combinée SHA, auteur, chemin, texte, date et référence.
+- Branches, tags, remotes, stash, worktrees, comparaison et branche de récupération depuis reflog. Réordonner, fusionner, scinder, amender, cherry-pick, revert, reset ; contrôle des commits publiés avant réécriture et confirmation des opérations destructrices.
+- Résoudre les conflits merge/rebase/stash, continuer, ignorer ou abandonner ; diagnostic LFS, hooks et outils.
+- Fetch, pull et push groupés ; avance, retard, divergence, conflits et échecs par dépôt, reprise des échecs.
+- Dépôts du compte, recherche de développeurs et en langage naturel, Star, Fork, clone, code, README, releases et pièces jointes.
+- Boîte de réception pour reviews, mentions et checks échoués ; gestion des issues ; fichiers PR, marquage lu, commentaires de ligne, réponses et reviews.
+- Actions : exécutions, logs, relance, annulation et artefacts. Rafraîchir une page ne déclenche pas d'écriture distante.
+
+<a id="reading"></a>
+## Lecture et traduction
+
+Afficher Markdown, images relatives, sources, SVG et médias. Détection de langue, configuration de traduction séparée, cache lié au texte source, chemin et langue cible. Une source modifiée invalide sa traduction ; texte trop court ou déjà dans la bonne langue peut rester inchangé. Aucun commit README automatique.
+
+<a id="appearance"></a>
+## Thèmes et interface
+
+Six thèmes : Brume légère, Verre dépoli doux, Console, Émeraude, Folio, Scène lumineuse, avec dispositions, panneaux, barre latérale et contrôles différents. Scène lumineuse sépare les couleurs claires/sombres du fond, des panneaux, textes, boutons et états ; préréglages Corail, Littoral, Forêt, Crépuscule.
+
+Sections latérales repliables et défilantes, zones redimensionnables, 11 langues sans redémarrage. Mode d'emploi dans l'aide intégrée.
+
+<a id="start"></a>
+## Installation et démarrage
+
+Télécharger le DMG depuis [Releases](https://github.com/Lincb522/GitGatto/releases/latest), glisser dans Applications. macOS 14+, Apple Silicon/Intel. [Changelog](CHANGELOG.md) et Releases décrivent les versions publiées ; cette page décrit le dépôt actuel.
+
+| Usage | Prérequis |
+| --- | --- |
+| Git local et synchronisation distante | Git et authentification Git / SSH correspondante |
+| GitHub, PR, Issue, Actions | [GitHub CLI](https://cli.github.com/) connectée |
+| Agent, traduction, installation Agent | CLI installée et connexion/configuration du fournisseur |
+| Détection et mises à jour Homebrew | Homebrew |
+
+Ouvrir un dépôt ou lancer une recherche manuelle et choisir les ajouts, sans importation automatique du disque entier. GitHub et Agents se règlent dans les paramètres. Mises à jour via GitHub Releases et Appcast.
+
+<a id="data"></a>
+## Données et permissions
+
+Listes, réglages, objectifs, enquêtes, conversations, traductions, téléchargements et restaurations sont locaux ; le dossier de sauvegarde peut migrer. Git, SSH et les CLI utilisent leurs sources d'authentification habituelles.
+
+Local ne signifie pas entièrement hors ligne : GitHub est contacté, Agents et traduction passent le contexte nécessaire à la CLI choisie. La suite dépend de l'outil et du service de modèle. Vérifier les envois et ne pas mettre d'identifiants dans commandes, brouillons ou capsules. Les changements système restent soumis aux autorisations macOS.
+
+<a id="docs"></a>
+## Plans, architecture et historique
+
+[Feuille de route](docs/ROADMAP.md) · [Architecture](docs/ARCHITECTURE.md) · [Versions](CHANGELOG.md)
+
+![Feuille de route GitGatto](docs/media/roadmap.svg)
+
+![Architecture GitGatto](docs/media/architecture-overview.svg)
 
 [![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
-## Installation
+La feuille de route suit les versions ; les pointillés indiquent les plans. Star History est un instantané enregistré, son lien donne le relevé en ligne.
 
-Téléchargez le DMG depuis [Releases](https://github.com/Lincb522/GitGatto/releases/latest), puis glissez GitGatto dans Applications. Les versions sont universelles pour Apple Silicon et Intel et nécessitent macOS 14 ou plus récent.
+<a id="development"></a>
+## Exécuter les sources
 
-| Fonction | Prérequis |
-| --- | --- |
-| Dépôts locaux | Git |
-| Dépôts GitHub, PR, Actions et opérations distantes | [GitHub CLI](https://cli.github.com/) connectée |
-| Agents | Au moins une CLI prise en charge, installée et connectée |
-| Recherche de mises à jour Homebrew | Homebrew |
+macOS 14+, Swift 6.1+ ; configuration Xcode dans `project.yml`.
 
-Les mises à jour intégrées, les notes de version et les installateurs proviennent tous des GitHub Releases de ce dépôt.
-
-## Données locales et autorisations
-
-- Réglages, liste des dépôts, objectifs, enquêtes de régression, conversations et journaux des Agents, téléchargements et traductions restent sur le Mac.
-- Lorsque la protection est activée, les Git bundles et copies de fichiers non commités sont conservés dans Application Support ou à l'emplacement choisi. Chaque dépôt garde au plus trois copies, supprimables depuis le centre de récupération.
-- Git, SSH, GitHub CLI et les CLI Agent continuent d'utiliser leurs propres identifiants. GitGatto ne stocke ni jeton, ni mot de passe, ni clé privée.
-- Pull, Push, Fork, commentaires, Reviews, Actions, installations d'applications et modifications des outils ne s'exécutent qu'après une action explicite dans l'application.
-
-## Développement
-
-macOS 14 ou ultérieur et la chaîne Swift déclarée par le projet sont nécessaires.
-
-```bash
+```sh
 git clone https://github.com/Lincb522/GitGatto.git
 cd GitGatto
 swift package resolve
 swift test
-open GitGatto.xcodeproj
+swift run GitGatto
 ```
 
-Le code utilise Swift 6, SwiftUI, AppKit, WebKit et AVKit ; Alamofire 5.12 pour le réseau et Sparkle 2.9.6 pour les mises à jour. Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour contribuer et [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) pour les limites du système.
+Ou ouvrir `GitGatto.xcodeproj`, scheme `GitGatto`. Après modification structurelle, régénérer avec XcodeGen et `./scripts/generate-xcodeproj.sh`, sans éditer le projet à la main. SwiftUI, AppKit, WebKit, AVKit, Alamofire et Sparkle ; versions dans `Package.resolved`.
 
-## Remerciements
+<a id="credits"></a>
+## Contribution et licence
 
-- [Sparkle](https://github.com/sparkle-project/Sparkle)
-- [Alamofire](https://github.com/Alamofire/Alamofire)
-- [SwiftUI-Animations](https://github.com/Shubham0812/SwiftUI-Animations)
-- [GitHub CLI](https://github.com/cli/cli)
-- [Simple Icons](https://github.com/simple-icons/simple-icons), [VSCode Icons](https://github.com/vscode-icons/vscode-icons), [Devicon](https://github.com/devicons/devicon) et [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)
+[Contribuer](CONTRIBUTING.md) · [Sécurité](SECURITY.md). Merci à [GitHub CLI](https://github.com/cli/cli), [Sparkle](https://github.com/sparkle-project/Sparkle), [Alamofire](https://github.com/Alamofire), [Reicon](https://github.com/Lincb522/reicon) et aux auteurs d'icônes et d'animations. Sources : [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Les versions et licences exactes figurent dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Signalez les problèmes de sécurité par le canal indiqué dans [SECURITY.md](SECURITY.md).
-
-## Licence
-
-GitGatto est développé par **ZIJIU522** et publié sous [licence MIT](LICENSE).
+Développé par **ZIJIU522**, sous [MIT License](LICENSE).

@@ -7,7 +7,7 @@
 
 <h1 align="center">GitGatto</h1>
 
-<p align="center">macOS 네이티브로 만든 Agent 기반 Git 클라이언트.</p>
+<p align="center">macOS · Git · GitHub</p>
 
 <p align="center">
   <a href="README.md">简体中文</a> ·
@@ -52,126 +52,169 @@
   </tr>
 </table>
 
-GitGatto는 macOS용 네이티브 Git 및 GitHub 클라이언트입니다. 저장소 상태는 시스템 Git에서 읽고, 원격 작업은 GitHub CLI를 사용하며, Agent는 Mac에 이미 설치되고 로그인된 CLI를 사용합니다. 각 도구의 상태, 단계, 결과를 하나의 프로젝트 화면에 모읍니다.
+GitGatto는 Apple Silicon과 Intel을 지원하는 macOS 네이티브 Git·GitHub 클라이언트입니다. 일반 저장소 작업 외에 미커밋 코드 백업, 외부 Agent 활동 기록, 목표별 전달·릴리스, 회귀 조사, 개발 도구 설치와 설정을 제공합니다.
 
+<a id="why"></a>
 ## GitGatto를 만든 이유
 
-한 번의 배포도 터미널, 편집기, GitHub, Actions, 릴리스 페이지를 오가며 진행됩니다. 중간 단계가 실패하면 브랜치, 스테이징 파일, 실행 로그, 빌드 산출물을 다시 확인해야 합니다. Agent까지 사용하면 작업 디렉터리, 권한, 현재 저장소에 맞는 컨텍스트인지도 확인해야 합니다.
+코드를 작성한 뒤에도 섞인 변경 정리, 회귀가 시작된 커밋 찾기, CI 확인, PR 검토와 릴리스가 남습니다. 잠시 다른 작업으로 옮겼다가 초안이나 미커밋 파일을 놓치기도 합니다.
 
-GitGatto는 이런 일상적인 문제에서 시작했습니다. 실제 Git과 기존 도구는 그대로 두고, 저장소 작업, GitHub 협업, Agent 처리, 실패 증거를 확인하고 멈췄다가 이어갈 수 있는 흐름으로 연결합니다.
+Agent를 쓰면 무엇을 왜 바꿨는지, 실패한 증거는 어디 있는지, 완료했다는 결과가 실제로 작동하는지도 확인해야 합니다. GitGatto는 Git 명령에 버튼만 붙이기보다 이 작업과 복구를 다루려고 만들었습니다. 시스템 Git과 기존 CLI를 그대로 쓰면서 변경, 증거, 복구 지점, 후속 작업을 확인할 수 있습니다.
 
-## 주요 워크플로
+[복구](#recovery) · [모니터링](#monitoring) · [목표](#goals) · [변경 분할](#intent) · [회귀](#regression) · [프로젝트 도구](#project-tools) · [설치](#install-tools)
 
-### 프로젝트 목표
+<a id="features"></a>
+## 주요 기능
 
-‘현재 변경 배포’, ‘GitHub 배포’, ‘전체 릴리스’는 스테이징, 커밋, Push, Pull Request, Review, Actions, 빌드 산출물, Release, DMG, Appcast, 설치된 앱 버전을 의존 순서대로 확인합니다. 자연어로 원하는 결과를 적고 생성된 조건을 검토한 뒤 실행할 수도 있습니다.
+<a id="recovery"></a>
+### 미커밋 코드 백업과 외부 Agent 보호
 
-각 단계는 Git, GitHub 또는 로컬의 실제 상태를 읽습니다. 작업이 중단되어도 완료된 단계는 남으며, 실패한 Actions 실행은 관련 증거와 함께 Agent에 전달할 수 있습니다. 병합, 태그 공개, 설치는 각각 별도의 확인이 필요합니다.
+추가한 로컬 저장소를 정기·대규모 변경·수동 방식으로 백업합니다. 같은 내용은 중복 저장하지 않습니다. Git bundle과 미커밋 파일 사본을 저장소마다 최대 세 세대로 순환 보관합니다.
 
-### 변경 구성 및 증거
+앱 안의 Agent가 쓰기 전에 복구 지점을 만들 수 있습니다. 외부 Agent, 터미널, 스크립트로 인한 파일 삭제, 미커밋 내용 소실, 참조 되돌림, 저장소 사용 불가도 관찰합니다. 경고에서 원인과 영향을 받은 경로를 보고 저장소나 복구 지점을 열 수 있지만, 경고만으로 특정 프로세스의 책임을 단정하지 않습니다.
 
-- 변경 센터는 파일 또는 Diff 헝크별로 변경 의도를 정리하고 여러 원자적 커밋으로 나눌 수 있습니다. 실행 전에 저장소 지문을 확인하고 복구 지점을 만들며, 커밋이나 검증이 실패하면 기존 HEAD와 스테이징 경계를 복원합니다.
-- 코드 출처는 파일의 한 줄에서 커밋을 추적하고, GitHub CLI를 사용할 수 있으면 관련 Pull Request, Issue, Review, Checks를 함께 표시합니다.
-- 재현 캡슐은 패치, 추적되지 않은 파일, 기준 커밋, 실패 명령, 출력, 도구 버전을 `.gatto`로 묶습니다. 가져올 때 내용을 검증하고 독립 worktree에 복원합니다.
-- 활동 원장은 Git 참조와 파일 상태 변화, 당시 작업 디렉터리가 저장소 안에 있던 Agent 프로세스를 기록합니다. 연관 신뢰도를 따로 표시하며 상관관계를 확정된 책임으로 표현하지 않습니다.
+단계별 쓰기와 완료 표식으로 비정상 종료 후 미완성 백업을 구분합니다. 용량 확인, 개별·저장소별 삭제, 위치 변경 시 기존 백업 이동을 지원합니다. 복원은 원본을 덮어쓰지 않고 새 디렉터리에 만듭니다. 시스템 전체 명령을 차단하는 기능은 아니며, 저장하지 않았거나 제외된 파일의 복구를 보장하지 않습니다.
 
-### 회귀 조사
+<a id="monitoring"></a>
+### 메뉴 막대에서 저장소 상태 확인
 
-현재 작업 공간을 바꾸지 않고 독립 worktree에서 `git bisect`를 실행합니다. 자동 모드는 지정한 검증 명령을 실행하고, 수동 모드는 각 후보를 정상, 문제, 건너뛰기로 판정합니다. 후보 커밋, 종료 코드, 소요 시간, 출력은 조사 기록에 저장됩니다. 첫 문제 커밋을 찾은 뒤 Agent로 수정하고 다시 검증한 다음 Pull Request를 만들 수 있습니다.
+주 창과 독립적으로 모든 저장소 또는 하나를 선택해 변경, 업스트림 동기화, 복구 지점, Actions, 목표와 최근 1년의 일별 활동 점 그래프를 봅니다.
 
-### 저장소 재해 복구
+작업 트리·원격·보호·Actions·목표 채널을 각각 켜고 끌 수 있습니다. 전체 스위치, 메뉴 막대 표시, 갱신 간격도 설정에 있습니다. 활동은 커밋과 감지한 변경 수이지 근무 시간이 아닙니다. 앱이 백그라운드에서 실행 중이면 계속 관찰하고 앱 종료 시 중지합니다.
 
-복구 센터는 GitGatto에 추가된 로컬 저장소를 감시합니다. 커밋하지 않은 작업을 일정에 따라 저장하고, 변경 파일 수나 줄 수가 기준에 도달하면 즉시 복구 지점을 만듭니다. 수동 백업도 지원하며 내용이 같으면 다시 쓰지 않습니다.
+<a id="goals"></a>
+### 중단 후 이어가는 전달 목표
 
-복구 지점에는 저장소 Git bundle과 커밋하지 않은 파일의 사본이 포함됩니다. 저장소마다 최대 3개의 순환 복구 지점을 유지합니다. 사용 공간 확인, 백업 폴더 열기, 단일 또는 저장소 전체 백업 삭제, 새 저장소 사본으로 복원이 가능합니다. 백업 위치를 변경하면 기존 데이터를 이전하고 검증한 뒤 새 위치로 전환합니다.
+현재 변경 전달, GitHub 전달, 전체 릴리스 또는 자연어 사용자 정의 목표를 선택합니다. 생성 전 단계를 검토하고 실행 후 진행 상황, 막힌 이유, 기록을 확인합니다. 검색과 진행 중·과거 목표 필터도 제공합니다.
 
-### Git 작업에 맞춘 Agent
+선택한 흐름에 따라 스테이징, 커밋, Push, PR, Review, Actions, 산출물, Release, DMG, Appcast와 로컬 버전을 확인합니다. 사용자 정의 조건은 Agent 제안에 동의한 뒤 실행합니다. 중단 후 실제 상태를 다시 읽으며 Agent 답변 자체를 성공으로 보지 않습니다. 병합, 태그 게시, 설치는 별도 확인이 필요합니다.
 
-Codex CLI, Claude Code, Gemini CLI, OpenCode 및 사용자 지정 CLI를 지원합니다. 저장소 작업, 번역, 소프트웨어 설치가 별도의 실행 채널을 사용하므로 긴 저장소 작업 중에도 문서 번역을 실행할 수 있습니다.
+<a id="intent"></a>
+### 섞인 변경을 여러 커밋으로
 
-Agent는 전체 오류 출력을 바탕으로 Git, Git LFS, Hook, 서명, 브랜치, 동기화, 충돌, Pull Request, Actions 문제를 처리할 수 있습니다. 스테이징 영역이 비어 있으면 현재 변경을 먼저 스테이징한 뒤 커밋 메시지를 작성하고, 바로 커밋하거나 커밋 후 Push할 수 있습니다. README 재작성 결과는 먼저 완전히 렌더링되며, ‘커밋 적용’은 해당 문서만 커밋합니다.
+파일이나 Diff hunk를 그룹으로 묶고 커밋 메시지를 각각 작성하거나 Agent에 정리를 맡깁니다. 누락·중복 할당과 저장소 변경을 검사하고 복구 지점을 만든 뒤 순서대로 커밋합니다.
 
-## Git 및 GitHub
+각 커밋에서 diff 검사 또는 지정한 검증 명령을 실행합니다. 실패하면 원래 HEAD와 스테이징 경계로 복구를 시도하지만 모든 오류에서 성공을 보장하지는 않습니다. 복구 지점으로 상태를 확인할 수 있습니다.
 
-- 작업 트리, 스테이징, 커밋, Pull, Push, 브랜치, Stash, worktree 관리.
-- 줄 단위 Diff, 커밋 그래프, Blame, 파일별 기록, 과거 리비전의 이미지·SVG·동영상 확인.
-- 병합, rebase, Stash 충돌 결과를 편집한 뒤 계속, 건너뛰기 또는 중단.
-- 현재 GitHub 계정이 접근할 수 있는 저장소를 불러오고 저장소와 개발자를 퍼지 검색, 자연어 검색, 추가 로딩.
-- 코드, README, Pull Request, Actions, Releases, 릴리스 첨부 파일을 앱 안에서 확인.
-- Pull Request 파일 검토, 확인 표시, 줄 댓글, 답글, Review 제출, Actions 재실행·취소, 산출물 다운로드.
-- Star, Fork, Clone 지원. 로컬 검색은 수동으로 시작하며 디스크 전체를 가져오지 않고 추가할 저장소를 선택합니다.
+<a id="regression"></a>
+### 독립 worktree에서 회귀 조사
 
-## 문서, 번역 및 미리보기
+현재 작업 디렉터리를 전환하지 않고 `git bisect`를 실행합니다. 자동 모드는 검증 명령을 사용하고 수동 모드는 정상·오류·건너뜀을 선택합니다. 후보, 판정, 종료 코드, 소요 시간과 출력을 보관합니다.
 
-- 저장소 Markdown, 상대 경로 이미지, 내부 링크를 GitGatto 안에서 렌더링.
-- 문서 언어를 자동 판별하고 별도 Agent 채널로 번역. 번역본은 원문 버전별로 로컬에 저장되어 다시 실행하지 않고 전환 가능.
-- 작업 공간, 커밋 기록, 파일 기록에서 소스 코드, 이미지, SVG 소스, 미디어 파일 미리보기.
-- README Agent는 문구만 바꾸지 않고 저장소 파일, 의존성, 기존 자산을 바탕으로 문서 구성을 다시 만듭니다.
+증거를 Agent에 넘겨 수정, 재검증, PR 준비로 이어갈 수 있습니다. 명령이 실제 문제를 판별해야 하며, 건너뛴 커밋이 많으면 후보를 하나로 좁히지 못할 수 있습니다.
 
-## 앱 카탈로그 및 개발 도구
+<a id="evidence"></a>
+### 코드 근거, 실패 캡슐, 활동 기록
 
-- GitHub Releases에서 설치 가능한 앱을 검색하고 실제 아이콘, 설명, 스크린샷, 버전, 패키지를 표시. DMG와 ZIP은 로컬 설치 절차를 사용하고 다른 형식은 Agent가 처리.
-- 런타임, 빌드 도구, 컨테이너, 클라우드 도구, 데이터베이스, CLI 99종의 설치 버전과 업데이트 확인.
-- 3개 실행 레인에서 설치와 업그레이드를 병렬 처리하고 다중 선택 및 일괄 업그레이드 지원. Homebrew 변경은 별도 직렬 큐를 사용해 Cellar 동시 쓰기를 방지.
-- 설치 후 Agent가 사용자별 PATH, 구성 요소 등록, 초기화, 설정 이전을 완료하고 실행 파일과 버전을 다시 확인.
-- 다운로드, 설치, 설정, 검증의 단계별 진행 상황과 원본 출력, 알려진 오류의 현지화된 설명 보존.
+- **코드 근거**: 파일 행에서 커밋을 추적하고 GitHub CLI가 있으면 관련 PR, Issue, Review, Checks까지 확인합니다.
+- **실패 캡슐**: 기준 커밋, 패치, 허용된 미추적 파일, 실패 명령, 출력과 도구 버전을 `.gatto`로 내보냅니다. 가져올 때 구조와 해시를 검사한 뒤 독립 worktree에 복원하며 포함된 명령을 자동 실행하지 않습니다. 알려진 민감 경로와 식별 가능한 내용만 걸러내므로 공유 전 확인해야 합니다.
+- **외부 Agent 활동**: 파일·참조 변화를 당시 저장소에서 작업한 알려진 Agent 프로세스와 연결하고 증거 강도를 표시합니다. 실행 중이었다는 이유만으로 모든 변경의 책임이 입증되지는 않습니다.
 
-## 프로젝트 문서
+<a id="agent"></a>
+### 커밋 초안 이상을 다루는 Agent
 
-- [로드맵](docs/ROADMAP.md): 구현 완료 단계, 다음 계획 및 범위.
-- [아키텍처](docs/ARCHITECTURE.md): 상태 소유권, 서비스 경계 및 주요 데이터 흐름.
-- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date): GitHub Star 증가 기록.
+Codex CLI, Claude Code, Gemini CLI, OpenCode, 사용자 정의 CLI를 지원합니다. 내장 Git 지침으로 스테이징 검토, 커밋 작성, 충돌, 분기 정리, 기록 복구, 저장소 상태와 릴리스를 확인합니다. LFS·hooks·서명·동기화의 원본 오류도 함께 조사할 수 있습니다.
 
-![GitGatto roadmap](docs/media/roadmap.svg)
+프로젝트, 번역, 검색, 설치는 별도 실행 경로입니다. README 재작성은 미리 보고 적용합니다. Issue·PR 답변은 논의와 diff를 바탕으로 편집 가능한 초안을 만들고 확인 후 전송합니다. 기존 CLI와 모델 설정을 계속 사용할 수 있습니다.
 
-![GitGatto architecture](docs/media/architecture-overview.svg)
+<a id="project-tools"></a>
+### 분기뿐 아니라 작업 상태도 저장
+
+**작업 상태**은 스테이징·미스테이징·미추적 파일, 분기, 초안, 선택 파일, 관련 목표와 링크를 보관합니다. 복원 시 저장소 상태를 확인하고 독립 worktree에서도 열 수 있습니다. 무시된 파일은 제외되며 독립 백업을 대신하지 않습니다.
+
+| 도구 | 기능 |
+| --- | --- |
+| 코드 검색 | 관리 저장소의 현재 파일, 지정 버전, 과거 변경을 검색하고 디렉터리·언어·확장자로 필터링합니다. 증거를 미리 보고 Agent에 넘깁니다. 정규식이 아닌 일반 문자열 검색이며 결과 수가 제한됩니다. |
+| 명령 실행 | 프로젝트 스크립트 감지, 사용자 정의·고정, 실시간 출력·시간·종료 상태 확인, 중지·재시도·로컬 서비스 열기. 비대화형이며 인자는 JSON 배열입니다. |
+| 제외 규칙 | 규칙 출처 확인, 미리 보기 후 공유 `.gitignore` 또는 로컬 `.git/info/exclude` 편집. 추적 해제 시 디스크 파일 유지. |
+| 커밋 사용자 정보 | 저장소·디렉터리별 작성자와 서명 설정, 적용 출처 및 커밋 전 일치 검사. GitHub 로그인과 별개입니다. |
+
+도구 막대의 프로젝트 도구 또는 `⌘K`로 엽니다.
+
+<a id="install-tools"></a>
+### 설치 뒤 설정과 검증까지
+
+GitHub Releases에서 버전과 파일을 찾고 다운로드와 설치를 구분합니다. DMG·ZIP은 네이티브 설치, 명령줄 패키지는 Agent가 처리합니다. 관리 화면에서 단계, 출력, 재시도를 확인합니다.
+
+**99개 도구와 런타임**의 로컬 버전을 감지하고 다중 선택·일괄 업그레이드를 지원합니다. 설치·업그레이드 큐는 최대 세 작업을 병렬 처리하며 Homebrew 쓰기는 직렬화합니다.
+
+필요한 PATH, 플러그인 등록, 초기화, 설정 이전 후 실행 파일과 실제 버전을 검사합니다. 다운로드 완료나 Agent 보고로 검증을 대신하지 않습니다. 권한·설정 미완료 항목을 남기고 로그인과 시스템 승인은 사용자가 합니다. 설치됨 목록은 GitGatto 설치 기록이며 Mac의 모든 앱을 수집한 목록이 아닙니다.
+
+<a id="git-github"></a>
+## 일상적인 Git·GitHub 작업
+
+- 스테이징, 커밋, Diff, 그래프, Blame, 파일·미디어 기록. SHA·작성자·경로·텍스트·날짜·참조 복합 검색.
+- 분기, 태그, 원격, stash, worktree, 참조 비교와 reflog 복구 분기. 재정렬·합치기·분할·수정·cherry-pick·revert·reset. 기록 재작성은 게시된 커밋을 검사하며 파괴적 작업은 확인을 요구합니다.
+- merge·rebase·stash 충돌 편집과 계속·건너뛰기·중단, LFS·hooks·도구 진단.
+- 여러 저장소 fetch·pull·push, 앞섬·뒤처짐·분기·충돌·실패별 결과와 실패 재시도.
+- 계정 저장소, 개발자·자연어 검색, Star, Fork, clone, 코드, README, Release와 첨부.
+- 받은 편지함의 리뷰·언급·실패 검사, Issue 생성·관리, PR 파일 검토·열람 표식·행 댓글·답변·Review.
+- Actions 실행·로그·재실행·취소·산출물 다운로드. 페이지 새로고침으로 원격 쓰기를 실행하지 않습니다.
+
+<a id="reading"></a>
+## 읽기와 번역
+
+Markdown, 상대 경로 이미지, 소스, SVG, 미디어를 앱에서 봅니다. 언어 감지 후 독립 설정으로 번역하며 원문·경로·대상 언어별로 캐시합니다. 원문이 바뀌면 이전 번역을 재사용하지 않습니다. 이미 대상 언어이거나 너무 짧으면 원문을 유지할 수 있고 README를 자동 커밋하지 않습니다.
+
+<a id="appearance"></a>
+## 테마와 화면
+
+라이트 미스트, 부드러운 반투명 유리, 콘솔, 에메랄드, 폴리오, 루멘의 여섯 테마는 배치, 패널, 사이드바, 컨트롤도 다릅니다. 루멘은 밝고 어두운 모드의 배경·패널·문자·버튼·상태 색을 따로 설정하며 코랄, 해안, 숲, 황혼 프리셋을 제공합니다.
+
+사이드바 접기·스크롤과 작업 영역 크기 조정을 지원합니다. 11개 언어를 재시작 없이 전환하며 앱의 도움말에서 사용법을 확인합니다.
+
+<a id="start"></a>
+## 설치와 시작
+
+[Releases](https://github.com/Lincb522/GitGatto/releases/latest)의 DMG를 열어 응용 프로그램으로 옮깁니다. macOS 14+, Apple Silicon·Intel 지원. 게시된 버전은 [변경 기록](CHANGELOG.md)과 Release를, 현재 저장소 기능은 이 README를 참고하세요.
+
+| 용도 | 필요 사항 |
+| --- | --- |
+| 로컬 Git·일반 원격 동기화 | Git 및 해당 원격의 Git / SSH 인증 |
+| GitHub·PR·Issue·Actions | 로그인된 [GitHub CLI](https://cli.github.com/) |
+| Agent·번역·Agent 설치 | 해당 CLI와 제공자의 로그인·설정 |
+| Homebrew 감지·업그레이드 | Homebrew |
+
+로컬 저장소를 열거나 수동 스캔으로 선택해 추가합니다. 전체 디스크 자동 등록은 없습니다. 설정에서 GitHub·Agent를 구성하고 GitHub Releases와 Appcast로 업데이트합니다.
+
+<a id="data"></a>
+## 데이터와 권한
+
+설정, 저장소 목록, 목표, 조사, 대화, 번역, 다운로드 기록, 복구 지점은 로컬에 저장하며 백업 위치를 옮길 수 있습니다. Git·SSH·GitHub CLI·Agent CLI의 기존 인증 출처를 사용합니다.
+
+로컬 저장이 완전 오프라인을 뜻하지는 않습니다. GitHub에 접속하고 Agent·번역에 필요한 맥락을 설정한 CLI에 전달합니다. 이후 처리는 도구와 모델 서비스에 따릅니다. 전송 내용을 확인하고 명령·초안·캡슐에 자격 증명을 넣지 마세요. 시스템 디렉터리 변경에는 macOS 승인이 필요합니다.
+
+<a id="docs"></a>
+## 계획·구조·개발 기록
+
+[로드맵](docs/ROADMAP.md) · [아키텍처](docs/ARCHITECTURE.md) · [변경 기록](CHANGELOG.md)
+
+![GitGatto 로드맵](docs/media/roadmap.svg)
+
+![GitGatto 구조](docs/media/architecture-overview.svg)
 
 [![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
-## 설치
+로드맵은 버전 기록에 근거하며 점선은 계획입니다. Star History는 저장된 스냅샷으로, 온라인 기록은 이미지 링크에서 봅니다.
 
-[Releases](https://github.com/Lincb522/GitGatto/releases/latest)에서 DMG를 내려받아 GitGatto를 응용 프로그램 폴더로 드래그합니다. 배포본은 Apple Silicon과 Intel을 모두 지원하며 macOS 14 이상이 필요합니다.
+<a id="development"></a>
+## 소스에서 실행
 
-| 기능 | 필요 항목 |
-| --- | --- |
-| 로컬 저장소 | Git |
-| GitHub 저장소, PR, Actions 및 원격 작업 | 로그인된 [GitHub CLI](https://cli.github.com/) |
-| Agent 워크플로 | 설치되고 로그인된 지원 CLI 한 개 이상 |
-| Homebrew 업데이트 확인 | Homebrew |
+macOS 14+, Swift 6.1+가 필요하며 Xcode 설정은 `project.yml`에 있습니다.
 
-앱 내 업데이트, 릴리스 노트, 설치 파일은 모두 이 저장소의 GitHub Releases에서 가져옵니다.
-
-## 로컬 데이터 및 권한
-
-- 설정, 저장소 목록, 프로젝트 목표, 회귀 조사 기록, Agent 대화와 작업 기록, 다운로드, 번역은 Mac에 저장됩니다.
-- 저장소 보호를 켜면 Git bundle과 커밋하지 않은 파일 사본이 Application Support 또는 선택한 위치에 저장됩니다. 저장소마다 최대 3개를 유지하며 복구 센터에서 삭제할 수 있습니다.
-- Git, SSH, GitHub CLI, Agent CLI는 각자의 자격 증명 저장소를 계속 사용합니다. GitGatto는 토큰, 비밀번호, 개인 키를 저장하지 않습니다.
-- Pull, Push, Fork, 댓글, Review, Actions, 앱 설치, 개발 도구 변경은 앱에서 명시적으로 실행한 경우에만 이루어집니다.
-
-## 개발
-
-macOS 14 이상과 프로젝트에서 선언한 Swift 도구 체인이 필요합니다.
-
-```bash
+```sh
 git clone https://github.com/Lincb522/GitGatto.git
 cd GitGatto
 swift package resolve
 swift test
-open GitGatto.xcodeproj
+swift run GitGatto
 ```
 
-Swift 6, SwiftUI, AppKit, WebKit, AVKit을 사용합니다. 네트워크는 Alamofire 5.12, 업데이트는 Sparkle 2.9.6을 사용합니다. 기여 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md), 아키텍처 경계는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)를 참고하세요.
+`GitGatto.xcodeproj`의 `GitGatto` scheme도 사용할 수 있습니다. 구조 변경은 XcodeGen으로 `./scripts/generate-xcodeproj.sh`를 실행해 반영하며 생성 파일을 직접 편집하지 않습니다. SwiftUI, AppKit, WebKit, AVKit, Alamofire, Sparkle을 사용하고 `Package.resolved`에 버전을 고정합니다.
 
-## 감사
+<a id="credits"></a>
+## 기여와 라이선스
 
-- [Sparkle](https://github.com/sparkle-project/Sparkle)
-- [Alamofire](https://github.com/Alamofire/Alamofire)
-- [SwiftUI-Animations](https://github.com/Shubham0812/SwiftUI-Animations)
-- [GitHub CLI](https://github.com/cli/cli)
-- [Simple Icons](https://github.com/simple-icons/simple-icons), [VSCode Icons](https://github.com/vscode-icons/vscode-icons), [Devicon](https://github.com/devicons/devicon), [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)
+[기여 안내](CONTRIBUTING.md)·[보안](SECURITY.md)을 참고하세요. [GitHub CLI](https://github.com/cli/cli), [Sparkle](https://github.com/sparkle-project/Sparkle), [Alamofire](https://github.com/Alamofire), [Reicon](https://github.com/Lincb522/reicon) 및 아이콘·애니메이션 제작자께 감사합니다. 전체 출처는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
 
-정확한 버전과 라이선스는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다. 보안 문제는 [SECURITY.md](SECURITY.md)의 안내에 따라 신고해 주세요.
-
-## 라이선스
-
-GitGatto는 **ZIJIU522**가 개발하며 [MIT License](LICENSE)로 공개됩니다.
+**ZIJIU522**가 개발하며 [MIT License](LICENSE)로 공개합니다.

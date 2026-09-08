@@ -43,23 +43,23 @@
 <text class="detail" x="64" y="84">已实现版本按 CHANGELOG 记录；虚线阶段为下一步计划</text>
 <text class="section" x="64" y="138">已实现</text>
 <line class="connector-accent" x1="142" y1="222" x2="1378" y2="222"/>
-<rect class="panel-green" x="62" y="166" width="250" height="112" rx="16"/><text class="label" x="187.0" y="212.0" text-anchor="middle"><tspan x="187.0" dy="0">0.14</tspan></text><text class="detail" x="187.0" y="236.0" text-anchor="middle"><tspan x="187.0" dy="0">Git + GitHub</tspan><tspan x="187.0" dy="18">基础流程</tspan></text>
+<rect class="panel-green" x="62" y="166" width="250" height="112" rx="16"/><text class="label" x="187.0" y="212.0" text-anchor="middle"><tspan x="187.0" dy="0">0.14–0.16</tspan></text><text class="detail" x="187.0" y="236.0" text-anchor="middle"><tspan x="187.0" dy="0">Git · GitHub · 工作区</tspan><tspan x="187.0" dy="18">历史与更新</tspan></text>
 <circle class="dot" cx="187.0" cy="222" r="6"/>
-<rect class="panel-green" x="350" y="166" width="250" height="112" rx="16"/><text class="label" x="475.0" y="212.0" text-anchor="middle"><tspan x="475.0" dy="0">0.15–0.16</tspan></text><text class="detail" x="475.0" y="236.0" text-anchor="middle"><tspan x="475.0" dy="0">专业工作区</tspan><tspan x="475.0" dy="18">更新链路</tspan></text>
+<rect class="panel-green" x="350" y="166" width="250" height="112" rx="16"/><text class="label" x="475.0" y="212.0" text-anchor="middle"><tspan x="475.0" dy="0">0.17–0.18.10</tspan></text><text class="detail" x="475.0" y="236.0" text-anchor="middle"><tspan x="475.0" dy="0">Agent · 内容预览</tspan><tspan x="475.0" dy="18">工具安装</tspan></text>
 <circle class="dot" cx="475.0" cy="222" r="6"/>
-<rect class="panel-green" x="638" y="166" width="250" height="112" rx="16"/><text class="label" x="763.0" y="212.0" text-anchor="middle"><tspan x="763.0" dy="0">0.17–0.18.10</tspan></text><text class="detail" x="763.0" y="236.0" text-anchor="middle"><tspan x="763.0" dy="0">Agent · 内容预览</tspan><tspan x="763.0" dy="18">工具安装</tspan></text>
+<rect class="panel-green" x="638" y="166" width="250" height="112" rx="16"/><text class="label" x="763.0" y="212.0" text-anchor="middle"><tspan x="763.0" dy="0">0.18.11</tspan></text><text class="detail" x="763.0" y="236.0" text-anchor="middle"><tspan x="763.0" dy="0">目标驱动交付</tspan><tspan x="763.0" dy="18">完整发布</tspan></text>
 <circle class="dot" cx="763.0" cy="222" r="6"/>
-<rect class="panel-green" x="926" y="166" width="250" height="112" rx="16"/><text class="label" x="1051.0" y="212.0" text-anchor="middle"><tspan x="1051.0" dy="0">0.18.11</tspan></text><text class="detail" x="1051.0" y="236.0" text-anchor="middle"><tspan x="1051.0" dy="0">目标驱动交付</tspan><tspan x="1051.0" dy="18">完整发布</tspan></text>
+<rect class="panel-green" x="926" y="166" width="250" height="112" rx="16"/><text class="label" x="1051.0" y="212.0" text-anchor="middle"><tspan x="1051.0" dy="0">0.18.12</tspan></text><text class="detail" x="1051.0" y="236.0" text-anchor="middle"><tspan x="1051.0" dy="0">回归取证</tspan><tspan x="1051.0" dy="18">仓库灾备</tspan></text>
 <circle class="dot" cx="1051.0" cy="222" r="6"/>
-<rect class="panel-accent" x="1214" y="166" width="250" height="112" rx="16"/><text class="label" x="1339.0" y="212.0" text-anchor="middle"><tspan x="1339.0" dy="0">0.18.12</tspan></text><text class="detail" x="1339.0" y="236.0" text-anchor="middle"><tspan x="1339.0" dy="0">回归取证</tspan><tspan x="1339.0" dy="18">仓库灾备</tspan></text>
+<rect class="panel-accent" x="1214" y="166" width="250" height="112" rx="16"/><text class="label" x="1339.0" y="212.0" text-anchor="middle"><tspan x="1339.0" dy="0">0.18.13–0.18.26</tspan></text><text class="detail" x="1339.0" y="236.0" text-anchor="middle"><tspan x="1339.0" dy="0">监控 · 协作 · 变更取证</tspan><tspan x="1339.0" dy="18">五项项目工具</tspan></text>
 <circle class="dot" cx="1339.0" cy="222" r="6"/>
 <text class="section" x="64" y="354">下一阶段</text>
-<rect class="panel-muted" x="62" y="386" width="390" height="108" rx="16"/><text class="label" x="257.0" y="430.0" text-anchor="middle"><tspan x="257.0" dy="0">恢复证据</tspan></text><text class="detail" x="257.0" y="454.0" text-anchor="middle"><tspan x="257.0" dy="0">多仓库值守</tspan></text>
+<rect class="panel-muted" x="62" y="386" width="390" height="108" rx="16"/><text class="label" x="257.0" y="430.0" text-anchor="middle"><tspan x="257.0" dy="0">恢复证据</tspan></text><text class="detail" x="257.0" y="454.0" text-anchor="middle"><tspan x="257.0" dy="0">恢复点导入与导出</tspan></text>
 <text class="badge" x="80" y="410">NEXT 01</text>
 <path class="connector" d="M464 440 L518 440" marker-end="url(#arrow)"/>
 <rect class="panel-muted" x="530" y="386" width="390" height="108" rx="16"/><text class="label" x="725.0" y="430.0" text-anchor="middle"><tspan x="725.0" dy="0">可复用 Agent</tspan></text><text class="detail" x="725.0" y="454.0" text-anchor="middle"><tspan x="725.0" dy="0">处理方案</tspan></text>
 <text class="badge" x="548" y="410">NEXT 02</text>
 <path class="connector" d="M932 440 L986 440" marker-end="url(#arrow)"/>
-<rect class="panel-muted" x="998" y="386" width="390" height="108" rx="16"/><text class="label" x="1193.0" y="430.0" text-anchor="middle"><tspan x="1193.0" dy="0">签名 · 公证</tspan></text><text class="detail" x="1193.0" y="454.0" text-anchor="middle"><tspan x="1193.0" dy="0">更新闭环</tspan></text>
+<rect class="panel-muted" x="998" y="386" width="390" height="108" rx="16"/><text class="label" x="1193.0" y="430.0" text-anchor="middle"><tspan x="1193.0" dy="0">公证与更新</tspan></text><text class="detail" x="1193.0" y="454.0" text-anchor="middle"><tspan x="1193.0" dy="0">发行验证</tspan></text>
 <text class="badge" x="1016" y="410">NEXT 03</text>
 </svg>

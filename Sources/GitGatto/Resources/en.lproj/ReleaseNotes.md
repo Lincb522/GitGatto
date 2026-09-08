@@ -1,7 +1,12 @@
 ## Added
 
-- Search filenames, code, and historical changes across local repositories, filter by directory, language, or extension, preview results, and pass context to Agent.
-- Save work scenes with the branch, staged and unstaged changes, untracked files, and drafts. Restore, rename, delete, or open a scene in a separate worktree.
-- Discover project scripts, add and pin custom commands, view output, elapsed time, and exit status, stop or retry runs, and open local services.
-- Inspect the source of ignore rules, preview and edit shared or local exclusions, and stop tracking files without removing them from disk.
-- Bind author and signing profiles to repositories or directories, inspect effective configuration sources, and check the identity before committing.
+- Added 16 help chapters covering recovery, monitoring, apps and developer tools, Git/GitHub collaboration, and project tools, with complete guides in 11 languages.
+- Added “Help for Current Workspace” to the Help menu and direct links to the relevant guide in project tools.
+
+## Improved
+
+- The help sidebar scrolls to the selected chapter and wraps long titles. Article content returns to the top when switching chapters.
+
+## Documentation
+
+- Rewrote all 11 README editions to cover distinctive features, usage requirements, and the project's motivation, and updated the roadmap.

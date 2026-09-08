@@ -101,16 +101,16 @@ def base_svg(width: int, height: int, title: str, description: str, body: str) -
 def roadmap() -> str:
     width, height = 1520, 560
     stages = [
-        ("0.14", ["Git + GitHub", "基础流程"], "panel-green"),
-        ("0.15–0.16", ["专业工作区", "更新链路"], "panel-green"),
+        ("0.14–0.16", ["Git · GitHub · 工作区", "历史与更新"], "panel-green"),
         ("0.17–0.18.10", ["Agent · 内容预览", "工具安装"], "panel-green"),
         ("0.18.11", ["目标驱动交付", "完整发布"], "panel-green"),
-        ("0.18.12", ["回归取证", "仓库灾备"], "panel-accent"),
+        ("0.18.12", ["回归取证", "仓库灾备"], "panel-green"),
+        ("0.18.13–0.18.26", ["监控 · 协作 · 变更取证", "五项项目工具"], "panel-accent"),
     ]
     planned = [
-        ("NEXT 01", ["恢复证据", "多仓库值守"]),
+        ("NEXT 01", ["恢复证据", "恢复点导入与导出"]),
         ("NEXT 02", ["可复用 Agent", "处理方案"]),
-        ("NEXT 03", ["签名 · 公证", "更新闭环"]),
+        ("NEXT 03", ["公证与更新", "发行验证"]),
     ]
     body = [
         '<text class="title" x="64" y="58">GitGatto 路线图</text>',

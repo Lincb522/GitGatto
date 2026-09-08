@@ -7,7 +7,7 @@
 
 <h1 align="center">GitGatto</h1>
 
-<p align="center">原生构建，由 Agent 驱动的 Git 管理工具。</p>
+<p align="center">macOS · Git · GitHub</p>
 
 <p align="center">
   <a href="README.md">简体中文</a> ·
@@ -52,126 +52,172 @@
   </tr>
 </table>
 
-GitGatto 是面向 macOS 的原生 Git 与 GitHub 客户端。仓库状态来自系统 Git，远端操作使用 GitHub CLI，Agent 使用本机已经安装并登录的 CLI；应用负责把分散的状态、步骤和结果放回同一个项目界面。
+GitGatto 是 macOS 原生 Git 与 GitHub 客户端，支持 Apple Silicon 和 Intel。除了日常仓库操作，还提供未提交代码备份、外部 Agent 活动记录、目标交付、回归定位和开发环境安装。
 
+<a id="why"></a>
 ## 为什么做 GitGatto
 
-一次完整的交付经常横跨终端、编辑器、GitHub、Actions 和发布页。中间任何一步失败，都要重新核对分支、暂存内容、运行记录和构建产物。Agent 加入之后，又多了工作目录、执行权限和上下文是否对应当前仓库的问题。
+写 GitGatto，是因为写完代码以后的事情同样费时间：整理一堆混在一起的改动，查一个回归从哪次提交开始，等 CI、审 PR、发版本。临时切换任务还容易弄丢草稿和未提交文件。
 
-GitGatto 从这些日常问题开始：保留真实的 Git 与现有工具，把仓库操作、GitHub 协作、Agent 处理和失败证据连成一条可以检查、暂停和继续的流程。
+用了 Agent 以后，又多了几个实际问题：它改了什么、为什么这样改、失败时留下了什么，以及它说“完成”之后结果到底能不能用。我们想把这些事做好，而不是只给 Git 命令套一层按钮。GitGatto 继续使用系统 Git 和本机 CLI，让改动、证据、恢复点和后续操作都能查到。
 
+[灾备与保护](#recovery) · [状态栏监控](#monitoring) · [目标交付](#goals) · [变更编排](#intent) · [回归取证](#regression) · [项目工具](#project-tools) · [安装与配置](#install-tools)
+
+<a id="features"></a>
 ## 特色功能
 
-### 项目目标
+<a id="recovery"></a>
+### 未提交代码的灾备，与外部 Agent 保护
 
-“交付当前修改”“GitHub 交付”和“完整发布”会按依赖顺序检查暂存、提交、Push、Pull Request、Review、Actions、构建产物、Release、DMG、Appcast 与本机版本。也可以用自然语言描述结果，确认条件后再执行。
+灾备中心保护加入 GitGatto 的本地仓库。定时保存、重大改动触发和手动备份都支持；内容没变时不重复创建。恢复点包含 Git bundle 和未提交文件副本，每个仓库最多轮换保留三份，不会随着运行时间无限堆积。
 
-每一步都读取 Git、GitHub 或本机的实际状态。任务中断时保留已完成步骤；Actions 失败可以连同运行证据交给 Agent。合并、发布标签和安装仍需单独确认。
+- 应用内 Agent 写入前可创建恢复点；仓库守卫也观察外部 Agent、终端和脚本带来的文件删除、未提交内容丢失、引用回退及仓库不可用。
+- 异常记录列出原因和受影响路径，可以直接检查仓库或打开恢复点。提醒表示需要核对，不代表已经认定某个进程误操作。
+- 恢复点分阶段写入并带完整性标记，异常退出后不把未完成副本当成有效备份。
+- 可以查看空间占用、删除单份或整仓备份；更换目录会迁移现有内容。“恢复副本”写入新目录，不覆盖源仓库。
 
-### 变更编排与取证
+这不是系统级命令拦截器，也不能保证找回尚未保存或被备份规则排除的文件。
 
-- 变更中心按文件或 Diff 分块整理改动意图，可拆成多个原子提交；执行前核对仓库指纹并创建恢复点，任一提交或验证失败时恢复原有 HEAD 与暂存边界。
-- 代码缘由从文件行追溯提交，并在 GitHub CLI 可用时补齐关联 Pull Request、Issue、Review 与 Checks。
-- 故障胶囊将补丁、未跟踪文件、基准提交、失败命令、输出和工具版本封装为 `.gatto`；导入后校验内容，并在独立 worktree 中恢复现场。
-- 活动记录保存 Git 引用和文件状态变化，并列出当时工作目录位于仓库内的 Agent 进程；关联强度会明确标注，不把相关性写成确定责任。
+<a id="monitoring"></a>
+### 不打开主窗口，也能看仓库情况
 
-### 回归取证
+状态栏可以独立选择所有仓库或单个仓库，不跟着主窗口的选择走。查看未提交改动、上游同步、恢复点、Actions、目标状态，以及最近一年的每日活动点阵图。
 
-在独立 worktree 中运行 `git bisect`，不切换当前工作区。自动模式执行指定验证命令，手动模式逐个标记正常、故障或跳过；候选提交、退出码、耗时和输出会随任务保存。定位首个故障提交后，可以继续让 Agent 修复、复验并创建 Pull Request。
+工作区、远程同步、仓库保护、Actions 和目标分别有监控开关；总开关、状态栏开关和刷新间隔都在设置里。点阵统计提交和监测到的本地改动，不是工时。应用保持运行时可在后台监控，退出应用后停止。
 
-### 仓库灾备
+<a id="goals"></a>
+### 把交付过程保存成可继续的目标
 
-灾备中心监控已加入 GitGatto 的本地仓库，按计划保存未提交代码，并在变更文件数或行数达到阈值时立即创建恢复点；也可以随时手动备份。没有新改动或内容指纹未变化时不会重复写入。
+目标提供“交付当前修改”“GitHub 交付”“完整发布”和自然语言自定义。创建前先看步骤，执行后查看当前进度、阻塞原因和记录；可搜索目标、筛选进行中与历史任务。
 
-备份包含仓库 Git bundle 与未提交文件副本，每个仓库最多保留三份滚动恢复点。可以查看占用、打开备份目录、删除单份或整仓备份，并将恢复点还原为新的仓库副本。更换备份位置时，GitGatto 会迁移现有内容并核对迁移结果。
+根据所选流程，逐项核对暂存、提交、Push、PR、Review、Actions、构建产物、Release、DMG、Appcast 和本机版本。自定义目标由 Agent 生成候选条件，确认后才执行。中断后重新读取实际状态再继续，不把 Agent 的文字回复当成成功结果；合并、发布标签和安装仍有单独确认。
 
-### 面向 Git 的 Agent
+<a id="intent"></a>
+### 把混在一起的改动拆成提交
 
-支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义 CLI。仓库操作、翻译与软件安装使用独立执行通道，长任务不会占住文档翻译。
+变更中心按文件或 Diff 分块分组，可以分别写提交说明，也可以让 Agent 整理分组。执行前检查是否遗漏、重复分配，以及仓库是否已经变化，再创建恢复点并按顺序提交。
 
-Agent 可以根据完整错误输出处理 Git、Git LFS、Hook、签名、分支、同步、冲突、Pull Request 和 Actions 问题；暂存区为空时可先暂存再起草提交信息，随后直接提交或提交并推送。README 重写会先渲染完整结果，再由“提交应用”只提交对应文档。
+每个提交会运行差异检查或指定的验证命令。中途失败会尝试回退原 HEAD 和暂存边界；恢复点仍可用于检查，不承诺任何错误下都能自动回退成功。
 
-## Git 与 GitHub
+<a id="regression"></a>
+### 在独立工作树里定位回归
 
-- 管理工作区、暂存区、提交、Pull、Push、分支、贮藏和工作树。
-- 查看逐行 Diff、提交图、Blame、单文件历史，以及历史版本中的图片、SVG 和视频。
-- 编辑合并、变基与贮藏冲突结果，并继续、跳过或中止当前操作。
-- 从当前 GitHub 账号加载可访问仓库，搜索仓库与开发者，并支持模糊检索、自然语言检索和继续加载。
-- 在应用内查看代码、README、Pull Request、Actions、Releases 和发行附件。
-- 审阅 Pull Request 文件、标记已查看、发布行评论、回复与 Review；重新运行或取消 Actions，并下载构建产物。
-- Star、Fork、克隆仓库；本地项目通过手动扫描选择加入，不会整盘自动导入。
+回归取证用 `git bisect` 缩小首个故障提交的范围，不切换正在工作的目录。自动模式运行验证命令；手动模式把候选标为正常、故障或跳过。提交、判定、退出码、耗时和输出随任务保存。
 
-## 文档、翻译与内容预览
+定位后可把证据交给 Agent 修复、复验并准备 PR。验证命令必须能判断你要找的问题，跳过太多提交时不一定能得到唯一结论。
 
-- 渲染仓库 Markdown、相对路径图片和应用内链接，不把文档阅读交给外部浏览器。
-- 自动识别文档语言并调用单独的 Agent 通道翻译；译文按原文版本保存在本机，可直接切换。
-- 预览源码、图片、SVG 源码与媒体文件；工作区、提交历史和文件历史使用同一套内容查看器。
-- README Agent 根据仓库文件、依赖与现有素材重组文档，而不是只替换措辞。
+<a id="evidence"></a>
+### 代码缘由、故障胶囊与活动记录
 
-## 应用仓库与开发工具
+- **代码缘由**：从文件行追溯提交，在 GitHub CLI 可用时继续查看关联 PR、Issue、Review 和 Checks。
+- **故障胶囊**：把基准提交、补丁、允许收录的未跟踪文件、失败命令、输出和工具版本导出为 `.gatto`。导入时校验结构与摘要，再在独立工作树恢复；不会自动执行包里的命令。只过滤已知敏感路径和可识别内容，分享前仍需检查。
+- **外部 Agent 活动记录**：将文件和 Git 引用变化，与当时工作目录位于仓库中的已知 Agent 进程关联，显示证据强度。进程恰好在运行，不等于能证明每次改动都是它造成的。
 
-- 从 GitHub Releases 检索可安装应用，读取实际图标、介绍、截图、版本和安装包；DMG 与 ZIP 使用本机安装流程，其他格式交给 Agent。
-- 开发工具中心收录 99 种运行环境、构建工具、容器、云工具、数据库和命令行工具，并检测本机版本与可用更新。
-- 安装与升级支持三路并发队列、多选和批量升级；Homebrew 变更使用单独串行队列，避免依赖同时写入 Cellar。
-- Agent 安装后继续完成当前用户所需的 PATH、组件注册、初始化与配置迁移，再重新检查可执行文件和版本。
-- 下载、安装、配置与验证过程保留阶段进度、原始输出和已知错误的本地化说明。
+<a id="agent"></a>
+### Agent 不只起草提交说明
 
-## 项目文档
+支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义 CLI。内置 Git 处理指引覆盖暂存审阅、提交起草、冲突、分支整理、历史恢复、仓库健康和发布检查，也可携带 Git LFS、hooks、签名或同步失败的原始输出继续排查。
 
-- [路线图](docs/ROADMAP.md)：已实现阶段、下一步计划与边界。
-- [架构图](docs/ARCHITECTURE.md)：状态所有权、服务边界与关键数据流。
-- [Star History](https://www.star-history.com/#Lincb522/GitGatto&Date)：GitHub Star 增长记录。
+项目处理、翻译、搜索和安装有独立执行通道。README 重写先预览再应用；Issue 和 PR 回复根据讨论与差异起草，可编辑，确认后才发送。工具和模型使用你配置的 CLI，不要求更换现有 Agent。
 
-![GitGatto roadmap](docs/media/roadmap.svg)
+<a id="project-tools"></a>
+### 切换任务时，保存的不只是分支
 
-![GitGatto architecture](docs/media/architecture-overview.svg)
+**工作现场**可保存暂存与未暂存改动、未跟踪文件、分支、草稿、所选文件及关联目标和链接。恢复时核对仓库状态；也可以在独立工作树中打开。被忽略文件不在保存范围，现场不是独立备份。
+
+| 工具 | 能做什么 |
+| --- | --- |
+| 代码搜索 | 跨已管理仓库搜索当前文件、指定版本或历史改动；按目录、语言、扩展名筛选，预览后把证据交给 Agent。普通文本匹配，结果有数量限制。 |
+| 运行命令 | 读取项目脚本或添加自定义命令，固定常用项，查看实时输出、耗时和退出状态，支持停止、重试与打开本地服务。非交互执行，参数使用 JSON 数组。 |
+| 忽略规则 | 查明规则来源，预览后编辑共享 `.gitignore` 或本地 `.git/info/exclude`；停止跟踪时保留磁盘文件。 |
+| 提交身份 | 按仓库或目录绑定作者与签名配置，查看生效来源，提交前检查身份一致性。Git 作者身份与 GitHub 登录分开管理。 |
+
+从顶部“项目工具”或 `⌘K` 进入。
+
+<a id="install-tools"></a>
+### 安装之后，把配置和验证一起做完
+
+应用仓库从 GitHub Releases 查找版本和安装包，区分下载与安装。DMG、ZIP 使用本机安装流程，需要命令行的交给 Agent；下载管理显示阶段、输出和重试入口。
+
+开发工具库包含 **99 种工具与运行库**，可检测本机版本、多选或批量升级。安装与升级有各自队列，最多三路任务并行；Homebrew 写入串行调度，避免同时修改依赖。
+
+安装任务继续处理需要的 PATH、插件注册、初始化和配置迁移，再检查可执行文件与实际版本。下载成功、Agent 说完成，都不能代替本机验证。缺少权限或配置时保留待处理事项；账号登录、系统授权仍需本人完成。“已安装”应用列表记录 GitGatto 的安装结果，不是整机应用清单。
+
+<a id="git-github"></a>
+## Git 与 GitHub 的日常操作
+
+- **工作区与历史**：暂存、提交、Diff、提交图、Blame、文件历史和历史媒体预览；组合搜索 SHA、作者、路径、文本、日期和引用。
+- **分支与恢复**：分支、标签、远程、贮藏、工作树、引用比较、Reflog 恢复分支；整理提交支持重排、合并、拆分、修订、拣选、撤销和重置。历史重写会检查已发布提交，破坏性操作需要确认。
+- **冲突与诊断**：编辑合并、变基或贮藏冲突，继续、跳过或中止 Git 操作；检查 Git LFS、hooks 和工具环境。
+- **多仓库同步**：批量获取、拉取和推送，分别显示领先、落后、分叉、冲突和失败，可重试失败项。
+- **GitHub 项目**：账号仓库、仓库与开发者搜索、自然语言检索、Star、Fork、克隆；应用内浏览代码、README、Release 和附件。
+- **收件箱、Issue 与 PR**：筛选待审阅、提及、检查失败等事项；创建和处理 Issue；PR 文件审阅、已查看标记、行评论、回复与 Review。
+- **Actions**：查看运行和日志、重新运行或取消、下载构建产物。远端写入由明确操作触发，不因刷新页面自动执行。
+
+<a id="reading"></a>
+## 阅读与翻译
+
+Markdown、相对路径图片、源码、SVG 和媒体文件可直接预览。文档自动识别语言，使用独立翻译配置；译文按原文、路径和目标语言缓存，原文变化后不复用旧译文。已是目标语言或文本不足时可保持原文。翻译不是自动提交 README。
+
+<a id="appearance"></a>
+## 主题与界面
+
+轻雾、轻毛玻璃、控制台、翠影、银页、曜幕共六种主题，区别包括布局、面板、侧栏和控件，不只是强调色。曜幕支持分开调整深浅色的背景、面板、文字、按钮与状态颜色，并提供珊瑚、海盐、松雾、暮紫预设。
+
+侧栏分区可折叠、滚动，工作区域可调节尺寸。界面有 11 种语言，切换无需重启；使用方法见应用内“帮助 → 使用指南”。
+
+<a id="start"></a>
+## 安装与开始使用
+
+从 [Releases](https://github.com/Lincb522/GitGatto/releases/latest) 下载 DMG，拖入“应用程序”。最低 macOS 14，发行包支持 Apple Silicon 与 Intel。正式版本和变更以 [更新日志](CHANGELOG.md) 及 Release 为准，README 介绍当前仓库能力。
+
+| 使用范围 | 前置条件 |
+| --- | --- |
+| 本地 Git 与普通远程同步 | Git，以及相应远程的 Git / SSH 认证 |
+| GitHub 账号、PR、Issue、Actions | 已登录的 [GitHub CLI](https://cli.github.com/) |
+| Agent、翻译与 Agent 安装 | 对应 CLI 已安装，并按提供方要求完成登录或配置 |
+| Homebrew 工具检测与升级 | Homebrew |
+
+打开本地仓库，或手动扫描后选择添加；不会整盘自动导入。GitHub 登录与 Agent 配置在设置中完成。应用更新从 GitHub Releases 和 Appcast 获取。
+
+<a id="data"></a>
+## 数据与权限
+
+仓库列表、设置、目标、回归记录、对话、译文、下载记录和恢复点保存在本机；备份位置可更换。Git、SSH、GitHub CLI 和 Agent CLI 复用各自的凭据来源。
+
+“本地保存”不等于“全部离线”：GitHub 功能会访问 GitHub，Agent 与翻译会将所需上下文交给配置的 CLI，后续数据处理取决于该工具及模型服务。执行前检查待发送内容；不要在命令、草稿或故障胶囊里放入凭据。系统目录变更仍受 macOS 授权约束。
+
+<a id="docs"></a>
+## 路线图、架构与项目记录
+
+[路线图与后续计划](docs/ROADMAP.md) · [系统架构](docs/ARCHITECTURE.md) · [版本记录](CHANGELOG.md)
+
+![GitGatto 路线图](docs/media/roadmap.svg)
+
+![GitGatto 系统架构](docs/media/architecture-overview.svg)
 
 [![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
-## 安装
+路线图依据仓库版本记录，虚线部分为计划；Star History 是已提交的数据快照，在线记录见图中链接。
 
-从 [Releases](https://github.com/Lincb522/GitGatto/releases/latest) 下载 DMG，将 GitGatto 拖入“应用程序”。发行包支持 Apple Silicon 与 Intel，最低系统版本为 macOS 14。
+<a id="development"></a>
+## 从源码运行
 
-| 功能 | 需要 |
-| --- | --- |
-| 本地仓库 | Git |
-| GitHub 仓库、PR、Actions 与远端操作 | 已登录的 [GitHub CLI](https://cli.github.com/) |
-| Agent | 至少一个已安装并登录的受支持 CLI |
-| Homebrew 更新检测 | Homebrew |
+需要 macOS 14+、Swift 6.1+；Xcode 工程配置见 `project.yml`。
 
-应用内更新、更新日志和安装包均来自本仓库的 GitHub Releases。
-
-## 本地数据与权限
-
-- 设置、仓库列表、项目目标、回归取证记录、Agent 对话与操作记录、下载记录和译文保存在本机。
-- 开启灾备后，Git bundle 与未提交文件副本保存在应用支持目录或你选择的位置；每个仓库最多保留三份，可在灾备中心单独删除或全部清理。
-- Git、SSH、GitHub CLI 与 Agent CLI 继续使用各自的凭据来源；GitGatto 不保存令牌、密码或私钥。
-- Pull、Push、Fork、评论、Review、Actions 操作、应用安装和开发工具变更均由明确的应用操作触发。
-
-## 开发
-
-需要 macOS 14 及以上版本和项目声明的 Swift 工具链。
-
-```bash
+```sh
 git clone https://github.com/Lincb522/GitGatto.git
 cd GitGatto
 swift package resolve
 swift test
-open GitGatto.xcodeproj
+swift run GitGatto
 ```
 
-源码使用 Swift 6、SwiftUI、AppKit、WebKit 与 AVKit；网络和更新分别使用 Alamofire 5.12 与 Sparkle 2.9.6。贡献要求见 [CONTRIBUTING.md](CONTRIBUTING.md)，架构边界见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+也可以打开 `GitGatto.xcodeproj` 使用 `GitGatto` scheme。修改工程结构后，用 XcodeGen 执行 `./scripts/generate-xcodeproj.sh` 重新生成，不手改工程文件。应用使用 SwiftUI、AppKit、WebKit、AVKit、Alamofire 和 Sparkle；版本由 `Package.resolved` 锁定。
 
-## 致谢
+<a id="credits"></a>
+## 贡献与许可
 
-- [Sparkle](https://github.com/sparkle-project/Sparkle)
-- [Alamofire](https://github.com/Alamofire/Alamofire)
-- [SwiftUI-Animations](https://github.com/Shubham0812/SwiftUI-Animations)
-- [GitHub CLI](https://github.com/cli/cli)
-- [Simple Icons](https://github.com/simple-icons/simple-icons)、[VSCode Icons](https://github.com/vscode-icons/vscode-icons)、[Devicon](https://github.com/devicons/devicon) 与 [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)
-
-具体版本与许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。安全问题请通过 [SECURITY.md](SECURITY.md) 中的渠道报告。
-
-## 许可
+贡献约定见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题见 [SECURITY.md](SECURITY.md)。感谢 [GitHub CLI](https://github.com/cli/cli)、[Sparkle](https://github.com/sparkle-project/Sparkle)、[Alamofire](https://github.com/Alamofire)、[Reicon](https://github.com/Lincb522/reicon) 及图标、动画资源作者；完整来源与许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 GitGatto 由 **ZIJIU522** 开发，基于 [MIT License](LICENSE) 开源。
