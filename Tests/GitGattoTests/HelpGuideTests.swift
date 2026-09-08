@@ -109,7 +109,7 @@ struct HelpGuideTests {
     @MainActor private func capture(_ content: some View, size: NSSize, name: String, output: URL?) async throws {
         let host = NSHostingView(rootView: content)
         host.wantsLayer = true
-        let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        let window = HelpGuideRenderWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = host
         host.frame = NSRect(origin: .zero, size: size)
@@ -151,5 +151,12 @@ struct HelpGuideTests {
 
     @MainActor private func scrollViews(in view: NSView) -> [NSScrollView] {
         (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap { scrollViews(in: $0) }
+    }
+}
+
+@MainActor private final class HelpGuideRenderWindow: NSWindow {
+    // Snapshot dimensions must not shrink to the CI runner's virtual display.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
     }
 }
