@@ -59,6 +59,9 @@ struct GitCommandRunner: Sendable {
         environment environmentOverrides: [String: String] = [:],
         acceptedExitCodes: Set<Int32> = [0]
     ) async throws -> GitCommandResult {
+        if arguments.first == "commit" {
+            try await RepositoryIdentityService.verifyBinding(repository: repositoryURL, environment: environmentOverrides)
+        }
         let processBox = GitCommandProcessBox()
         let task = Task.detached(priority: .userInitiated) {
             try Self.runBlocking(

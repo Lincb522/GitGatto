@@ -11,6 +11,9 @@ struct WorkspaceView: View {
     @StateObject private var readmeRendererCache = GitHubReadmeRendererCache()
     @State private var didReportInitialContentReady = false
     @State private var showsCommandPalette = false
+    @State private var pendingProjectTool: ProjectTool?
+    @StateObject private var projectTools = ProjectToolsViewModel()
+    @State private var activeProjectCommands = 0
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @AppStorage("workspace.sidebar.collapsed") private var isSidebarCollapsed = false
@@ -148,7 +151,7 @@ struct WorkspaceView: View {
                         RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
                     } secondary: {
                         VStack(spacing: 0) {
-                            RepositoryTopBar(model: model)
+                            RepositoryTopBar(model: model, activeCommands: activeProjectCommands)
                                 .padding(.top, 20)
                                 .background(palette.surface)
                             Rectangle().fill(palette.divider).frame(height: 1)
@@ -167,7 +170,7 @@ struct WorkspaceView: View {
                         RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
                     } secondary: {
                         VStack(spacing: 0) {
-                            RepositoryTopBar(model: model)
+                            RepositoryTopBar(model: model, activeCommands: activeProjectCommands)
                             Rectangle().fill(palette.divider.opacity(0.65)).frame(height: 1)
                             workspaceDetail
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -186,7 +189,8 @@ struct WorkspaceView: View {
                     VStack(spacing: 0) {
                         LumenWorkspaceHeader(
                             model: model,
-                            sidebarCollapsed: lumenSidebarCollapsed
+                            sidebarCollapsed: lumenSidebarCollapsed,
+                            activeProjectCommands: activeProjectCommands
                         )
                         .frame(height: 94)
                         .lumenSurface(.chrome, cornerRadius: 0)
@@ -258,12 +262,19 @@ struct WorkspaceView: View {
             DownloadCenterView(manager: downloads)
             .frame(minWidth: 620, minHeight: 520)
         }
-        .sheet(isPresented: $showsCommandPalette) {
+        .onReceive(projectTools.$runs.map { $0.filter(\.running).count }.removeDuplicates()) { activeProjectCommands = $0 }
+        .sheet(item: $model.projectTool) { tool in
+            ProjectToolsPanel(workspace: model, tools: projectTools, selection: tool)
+        }
+        .sheet(isPresented: $showsCommandPalette, onDismiss: {
+            if let tool = pendingProjectTool { pendingProjectTool = nil; model.projectTool = tool }
+        }) {
             GlobalCommandPalette(
                 model: model,
                 openSettings: { openSettings() },
                 openScanner: { openWindow(id: "repository-scanner") },
                 openHelp: { openWindow(id: "help") },
+                openProjectTool: { tool in pendingProjectTool = tool; showsCommandPalette = false },
                 dismiss: { showsCommandPalette = false }
             )
         }
@@ -360,7 +371,7 @@ struct WorkspaceView: View {
                 .environment(\.colorScheme, .dark)
         } secondary: {
             VStack(spacing: 0) {
-                RepositoryTopBar(model: model)
+                RepositoryTopBar(model: model, activeCommands: activeProjectCommands)
                     .padding(.top, 28)
                 Rectangle().fill(palette.divider).frame(height: 1)
                 workspaceDetail
@@ -374,7 +385,7 @@ struct WorkspaceView: View {
             HStack(spacing: 18) {
                 WorkspaceBrandBar(compact: compact, iconOnly: isSidebarCollapsed)
                     .frame(width: isSidebarCollapsed ? 50 : 184)
-                RepositoryTopBar(model: model)
+                RepositoryTopBar(model: model, activeCommands: activeProjectCommands)
                     .padding(.top, 18)
             }
             .frame(height: 88)
@@ -401,7 +412,7 @@ struct WorkspaceView: View {
                 AppBrandLockup(iconSize: 26, wordmarkWidth: 80, spacing: 7)
                     .frame(width: 172, alignment: .leading)
                     .padding(.leading, 16)
-                RepositoryTopBar(model: model)
+                RepositoryTopBar(model: model, activeCommands: activeProjectCommands)
             }
             .padding(.top, 24)
             .frame(height: 68)
@@ -490,6 +501,7 @@ private struct ConsoleWorkspaceTabs: View {
 private struct LumenWorkspaceHeader: View {
     @ObservedObject var model: WorkspaceViewModel
     let sidebarCollapsed: Bool
+    var activeProjectCommands: Int = 0
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -513,7 +525,7 @@ private struct LumenWorkspaceHeader: View {
                 .fill(palette.divider.opacity(0.72))
                 .frame(width: 1, height: 28)
 
-            RepositoryTopBar(model: model)
+            RepositoryTopBar(model: model, activeCommands: activeProjectCommands)
                 .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 22)
@@ -551,6 +563,7 @@ private struct WorkspaceBrandBar: View {
 
 private struct RepositoryTopBar: View {
     @ObservedObject var model: WorkspaceViewModel
+    var activeCommands: Int = 0
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
@@ -698,6 +711,18 @@ private struct RepositoryTopBar: View {
 
     private func repositoryActions(palette: AppPalette, compact: Bool, iconOnly: Bool = false) -> some View {
         HStack(spacing: compact ? 9 : 12) {
+            Menu {
+                ForEach(ProjectTool.allCases) { tool in
+                    Button(tool.title) { model.projectTool = tool }
+                        .disabled(tool != .search && model.snapshot == nil)
+                }
+            } label: { Image(gattoSymbol: "command").font(.system(size: 17)) }
+            .menuStyle(.borderlessButton).fixedSize().help(L10n.text("tools.title"))
+            .accessibilityLabel(L10n.text("tools.title"))
+            if activeCommands > 0 {
+                Button { model.projectTool = .commands } label: { Text(activeCommands.formatted()).monospacedDigit() }
+                    .help(L10n.format("tools.command.active", activeCommands)).accessibilityLabel(L10n.format("tools.command.active", activeCommands))
+            }
             if model.snapshot != nil {
                 RemoteSyncButton(
                     titleKey: "action.pull",

@@ -1,15 +1,7 @@
 ## Added
 
-- Search goals and filter active goals or history.
-
-## Improved
-
-- Create goals on a dedicated page with fields for the selected goal type and a step preview before confirmation.
-- Goal details focus on the current step, next action, and failure reason, with expandable step records. Narrow windows switch between the list and details.
-- Commit messages are saved explicitly instead of after each keystroke.
-
-## Fixed
-
-- Background refreshes no longer overwrite a saved commit message or a cancelled goal, or reorder the list by refresh time.
-- Failed save and cancel operations preserve the previous state and show the error. Completed and cancelled goals can no longer run further actions.
-- Custom plans must be regenerated if the repository, branch, or commit changes after planning.
+- Search filenames, code, and historical changes across local repositories, filter by directory, language, or extension, preview results, and pass context to Agent.
+- Save work scenes with the branch, staged and unstaged changes, untracked files, and drafts. Restore, rename, delete, or open a scene in a separate worktree.
+- Discover project scripts, add and pin custom commands, view output, elapsed time, and exit status, stop or retry runs, and open local services.
+- Inspect the source of ignore rules, preview and edit shared or local exclusions, and stop tracking files without removing them from disk.
+- Bind author and signing profiles to repositories or directories, inspect effective configuration sources, and check the identity before committing.

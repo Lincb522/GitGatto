@@ -17,7 +17,7 @@ GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.6 
 | `MACOS_DEVELOPER_ID_P12_BASE64` | 包含私钥的 Developer ID Application `.p12` 文件的 Base64 内容 |
 | `MACOS_DEVELOPER_ID_P12_PASSWORD` | 导出该 `.p12` 时设置的口令 |
 
-可选的 Apple 公证凭据（三项必须同时配置，配置后 Release DMG 会自动公证并装订票据；缺失时工作流输出警告并只做签名）：
+可选的 Apple 公证凭据（三项必须同时配置）。公证仅在手动运行工作流并选择 `notarize` 时执行；标签推送发布默认只做签名：
 
 | 名称 | 内容 |
 | --- | --- |
@@ -94,15 +94,15 @@ https://api.github.com/repos/Lincb522/GitGatto/releases?per_page=100
 完成发布说明后创建并推送标签：
 
 ```bash
-git tag v0.18.17
-git push origin v0.18.17
+git tag v0.18.26
+git push origin v0.18.26
 ```
 
 工作流按顺序执行：
 
-1. 校验 Secrets、标签格式，并根据已配置的凭据决定是否公证、是否签名 Appcast。
+1. 校验 Secrets、标签格式；公证须明确选择，Appcast 是否使用 EdDSA 签名取决于密钥配置。
 2. 构建通用架构应用，使用 Developer ID Application 签名应用及 Sparkle 嵌套组件。
-3. 已配置公证凭据时：公证并装订应用，创建 DMG，再公证并装订 DMG；否则只创建并签名 DMG。
+3. 明确选择公证且凭据完整时，公证并装订应用和 DMG；未选择公证时只创建并签名 DMG。
 4. 从 DMG 生成 `appcast.xml`（已配置 EdDSA 时附带 `sparkle:edSignature`）。
 5. 创建或更新 GitHub Release，上传 DMG、Appcast、更新说明与 SHA-256 文件。
 

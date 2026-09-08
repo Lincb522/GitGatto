@@ -4,6 +4,7 @@ import Foundation
 
 @MainActor
 final class WorkspaceViewModel: ObservableObject {
+    @Published var projectTool: ProjectTool?
     @Published var selectedSection: WorkspaceSection = .github {
         didSet {
             if selectedSection != oldValue {
@@ -4430,6 +4431,26 @@ final class WorkspaceViewModel: ObservableObject {
             restartRepositoryProtection()
         }
         repositoryAddCompletionID = UUID()
+    }
+
+    func performProjectToolMutation<T: Sendable>(_ operation: OperationKind, action: () async throws -> T) async throws -> T {
+        guard let root = snapshot?.rootURL, activeOperation == nil, activeProjectGoalID == nil,
+              !isCodexRunning, !isRefreshing else { throw ProjectToolsError(key: "busy") }
+        activeOperation = operation
+        repositoryMutationGeneration += 1
+        repositoryProtectionSuppressedUntil[root.path] = .distantFuture
+        defer {
+            activeOperation = nil
+            repositoryProtectionSuppressedUntil[root.path] = Date().addingTimeInterval(3)
+        }
+        do {
+            let result = try await action()
+            if snapshot?.rootURL == root { await refresh() }
+            return result
+        } catch {
+            if snapshot?.rootURL == root { await refresh() }
+            throw error
+        }
     }
 
     func commit() async {

@@ -5,6 +5,7 @@ struct GlobalCommandPalette: View {
     let openSettings: () -> Void
     let openScanner: () -> Void
     let openHelp: () -> Void
+    var openProjectTool: (ProjectTool) -> Void = { _ in }
     let dismiss: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -121,6 +122,12 @@ struct GlobalCommandPalette: View {
                 keywords: [section.rawValue, "navigate", "workspace"],
                 action: { model.selectedSection = section }
             )
+        }
+
+        values += ProjectTool.allCases.map { tool in
+            CommandPaletteItem(id: "project-tool." + tool.rawValue, title: tool.title,
+                subtitle: L10n.text("tools.title"), symbol: tool.symbol,
+                keywords: [tool.rawValue, "code", "project"], action: { openProjectTool(tool) })
         }
 
         values += model.localRepositories.map { repositoryURL in

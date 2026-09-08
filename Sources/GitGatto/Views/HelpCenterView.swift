@@ -112,6 +112,13 @@ private enum HelpTopic: String, CaseIterable, Identifiable {
                     "help.gettingStarted.navigation.1",
                     "help.gettingStarted.navigation.2",
                     "help.gettingStarted.navigation.3"
+                ]),
+                .init("tools.title", bullets: [
+                    "tools.search.empty",
+                    "tools.scenes.help",
+                    "tools.commands.help",
+                    "tools.ignore.help",
+                    "tools.identity.help"
                 ])
             ]
         case .changes:
