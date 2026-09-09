@@ -35,8 +35,7 @@ jobs:
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
-      # Optional: when both are present the appcast carries an EdDSA signature and the app
-      # embeds SUPublicEDKey, so updates no longer depend solely on the Developer ID certificate.
+      # Both keys are required; never publish unsigned updates to signed clients.
       SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
       SPARKLE_ED_PUBLIC_KEY: ${{ vars.SPARKLE_ED_PUBLIC_KEY }}
       RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
@@ -71,15 +70,14 @@ jobs:
             print "Notarization was not requested; the DMG will be signed but not notarized."
           fi
 
-          SIGN_APPCAST=false
-          if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" || -n "${SPARKLE_ED_PUBLIC_KEY:-}" ]]; then
-            if [[ -z "${SPARKLE_ED_PRIVATE_KEY:-}" || -z "${SPARKLE_ED_PUBLIC_KEY:-}" ]]; then
-              print -u2 "Sparkle EdDSA signing needs both the SPARKLE_ED_PRIVATE_KEY secret and the SPARKLE_ED_PUBLIC_KEY variable."
-              exit 1
-            fi
-            SIGN_APPCAST=true
-          else
-            print "::warning::Sparkle EdDSA key is not configured; updates rely on Developer ID signature continuity only."
+          if [[ -z "${SPARKLE_ED_PRIVATE_KEY:-}" || -z "${SPARKLE_ED_PUBLIC_KEY:-}" ]]; then
+            print -u2 "Sparkle EdDSA signing requires the SPARKLE_ED_PRIVATE_KEY secret and SPARKLE_ED_PUBLIC_KEY variable."
+            exit 1
+          fi
+          EXPECTED_PUBLIC_KEY="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' Config/GitGatto-Info.plist)"
+          if [[ "$SPARKLE_ED_PUBLIC_KEY" != "$EXPECTED_PUBLIC_KEY" ]]; then
+            print -u2 "Sparkle public key does not match Config/GitGatto-Info.plist."
+            exit 1
           fi
 
           VERSION="${RELEASE_TAG#v}"
@@ -92,7 +90,6 @@ jobs:
           print "VERSION=$VERSION" >> "$GITHUB_ENV"
           print "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
           print "NOTARIZE=$NOTARIZE" >> "$GITHUB_ENV"
-          print "SIGN_APPCAST=$SIGN_APPCAST" >> "$GITHUB_ENV"
 
       - name: Import signing credentials
         shell: zsh {0}
@@ -133,9 +130,7 @@ jobs:
         shell: zsh {0}
         run: |
           set -euo pipefail
-          if [[ "$SIGN_APPCAST" == true ]]; then
-            export GITGATTO_SPARKLE_PUBLIC_KEY="$SPARKLE_ED_PUBLIC_KEY"
-          fi
+          export GITGATTO_SPARKLE_PUBLIC_KEY="$SPARKLE_ED_PUBLIC_KEY"
           GITGATTO_VERSION="$VERSION" \
           GITGATTO_BUILD_NUMBER="$BUILD_NUMBER" \
           GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" \
@@ -187,12 +182,11 @@ jobs:
             --full-release-notes-url "https://github.com/Lincb522/GitGatto/releases"
             -o "$RELEASE_DIR/appcast.xml"
           )
-          if [[ "$SIGN_APPCAST" == true ]]; then
-            print -n "$SPARKLE_ED_PRIVATE_KEY" | "$APPCAST_TOOL" --ed-key-file - "${APPCAST_ARGS[@]}" "$RELEASE_DIR"
-            grep -q 'sparkle:edSignature=' "$RELEASE_DIR/appcast.xml"
-          else
-            "$APPCAST_TOOL" "${APPCAST_ARGS[@]}" "$RELEASE_DIR"
-          fi
+          print -n "$SPARKLE_ED_PRIVATE_KEY" | "$APPCAST_TOOL" --ed-key-file - "${APPCAST_ARGS[@]}" "$RELEASE_DIR"
+          swift scripts/verify-update-signature.swift \
+            "$RELEASE_DIR/appcast.xml" \
+            "$RELEASE_DIR/GitGatto-$VERSION.dmg" \
+            "$PWD/dist/GitGatto.app"
 
           grep -F "GitGatto-$VERSION.dmg" "$RELEASE_DIR/appcast.xml"
           (

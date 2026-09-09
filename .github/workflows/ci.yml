@@ -50,6 +50,9 @@ jobs:
       - name: Resolve dependencies
         run: swift package resolve
 
+      - name: Test update signature verification
+        run: python3 scripts/test-update-signature.py
+
       - name: Build
         run: swift build --build-tests
 

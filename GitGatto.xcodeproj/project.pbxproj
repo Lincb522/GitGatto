@@ -491,6 +491,7 @@
 		268F1AEE4AABC2392D17145D /* gatto-media-fit.svg */ = {isa = PBXFileReference; path = "gatto-media-fit.svg"; sourceTree = "<group>"; };
 		26978AF004E438D4A7D16029 /* ProjectGoalWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectGoalWorkspaceTests.swift; sourceTree = "<group>"; };
 		2804A3EA9F9A5FAAB28536D5 /* inventory-icons.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "inventory-icons.py"; sourceTree = "<group>"; };
+		296FB5C8B7740C788E6E78A2 /* test-update-signature.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "test-update-signature.py"; sourceTree = "<group>"; };
 		299051E3363189BC3E080169 /* LumenColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumenColors.swift; sourceTree = "<group>"; };
 		29968ED8E77BA6372DFE98B9 /* GitGatto.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GitGatto.entitlements; sourceTree = "<group>"; };
 		299B44EE5A03B42DE02420B4 /* gatto-chevron-right.svg */ = {isa = PBXFileReference; path = "gatto-chevron-right.svg"; sourceTree = "<group>"; };
@@ -572,6 +573,7 @@
 		51420AA231364892A6A82DB2 /* gatto-globe.svg */ = {isa = PBXFileReference; path = "gatto-globe.svg"; sourceTree = "<group>"; };
 		51887A5BE330B009A67C3818 /* gatto-lifepreserver.svg */ = {isa = PBXFileReference; path = "gatto-lifepreserver.svg"; sourceTree = "<group>"; };
 		53FD91FF93BDC65F0C514CDC /* GitGatto-AppIcon-Dark.svg */ = {isa = PBXFileReference; path = "GitGatto-AppIcon-Dark.svg"; sourceTree = "<group>"; };
+		544ED07AA1E59DA3082DD683 /* verify-update-signature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "verify-update-signature.swift"; sourceTree = "<group>"; };
 		54CBDAC1B1BBECC69238CF84 /* uv.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = uv.png; sourceTree = "<group>"; };
 		54D3F3B41A1D20A72B2A9EEA /* GitHubLanguageIcons.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = GitHubLanguageIcons.json; sourceTree = "<group>"; };
 		55A77B441BCBF1868335602B /* gatto-person-circle.svg */ = {isa = PBXFileReference; path = "gatto-person-circle.svg"; sourceTree = "<group>"; };
@@ -1466,6 +1468,8 @@
 				2804A3EA9F9A5FAAB28536D5 /* inventory-icons.py */,
 				7E8C0491156392CA5A63504E /* notarize-macos.sh */,
 				4A4EEFDF749A5CF939B74BEC /* package-macos.sh */,
+				296FB5C8B7740C788E6E78A2 /* test-update-signature.py */,
+				544ED07AA1E59DA3082DD683 /* verify-update-signature.swift */,
 			);
 			path = scripts;
 			sourceTree = "<group>";
@@ -2249,7 +2253,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18028;
+				CURRENT_PROJECT_VERSION = 18029;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2270,7 +2274,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.28;
+				MARKETING_VERSION = 0.18.29;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -2316,7 +2320,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18028;
+				CURRENT_PROJECT_VERSION = 18029;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2331,7 +2335,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.28;
+				MARKETING_VERSION = 0.18.29;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -25,7 +25,7 @@ GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.6 
 | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect Issuer ID |
 | `APP_STORE_CONNECT_PRIVATE_KEY_BASE64` | `AuthKey_<KEY_ID>.p8` 的 Base64 内容 |
 
-可选的 Sparkle EdDSA 签名（两项必须同时配置）：
+Sparkle EdDSA 签名为正式发布的必需配置（两项必须同时配置）：
 
 | 名称 | 类型 | 内容 |
 | --- | --- | --- |
@@ -41,7 +41,9 @@ BIN=$(find .build/artifacts/sparkle/Sparkle/bin -maxdepth 1 -name generate_keys)
 "$BIN" -x key.txt   # 导出私钥文件，用于 Secret；导出后妥善保管并删除本地副本
 ```
 
-配置后，打包脚本会把公钥写入 `SUPublicEDKey`，`generate_appcast` 会为 DMG 附加 `sparkle:edSignature`。未配置时 Sparkle 只依赖 Developer ID 签名的一致性验证更新；更换证书会导致已安装用户无法更新，因此建议尽早启用。**密钥一经发布不要更换**：Sparkle 只允许在证书和 EdDSA 密钥中轮换其一。
+公钥保存在 `Config/GitGatto-Info.plist` 的 `SUPublicEDKey`，本地打包与 Xcode 构建共用。GitHub Variable 必须与其一致；私钥只保存在钥匙串和 GitHub Secret，不得提交到仓库。已有密钥时不要重新生成或替换。
+
+正式发布缺少任一密钥时立即停止；生成 Appcast 后，使用应用内公钥验证 DMG 的 Ed25519 签名、长度和版本，验证通过后才上传。签名证书和 EdDSA 密钥不能在同一次更新中一起更换。
 
 `.cer` 只包含公钥证书，不能用于 CI 签名。`.p12` 必须同时包含 Developer ID Application 证书与对应私钥。Team ID 与签名身份已固定为 `7VJKFX4HF8` 和 `Developer ID Application: chengbo lin (7VJKFX4HF8)`。
 
@@ -100,10 +102,10 @@ git push origin v0.18.27
 
 工作流按顺序执行：
 
-1. 校验 Secrets、标签格式；公证须明确选择，Appcast 是否使用 EdDSA 签名取决于密钥配置。
+1. 校验 Secrets、标签格式和公钥一致性；公证须明确选择。
 2. 构建通用架构应用，使用 Developer ID Application 签名应用及 Sparkle 嵌套组件。
 3. 明确选择公证且凭据完整时，公证并装订应用和 DMG；未选择公证时只创建并签名 DMG。
-4. 从 DMG 生成 `appcast.xml`（已配置 EdDSA 时附带 `sparkle:edSignature`）。
+4. 从 DMG 生成带 `sparkle:edSignature` 的 `appcast.xml`，再验证签名、长度和版本。
 5. 创建或更新 GitHub Release，上传 DMG、Appcast、更新说明与 SHA-256 文件。
 
 旧版本通过 `releases/latest/download/appcast.xml` 跟随最新正式 Release。草稿和预发布版本不会成为稳定通道的 `latest` Release。
