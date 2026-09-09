@@ -293,6 +293,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryDiscoveryTask: Task<Void, Never>?
     private var repositoryDiscoveryRunID: UUID?
     private var projectGoalMonitorTask: Task<Void, Never>?
+    @Published private(set) var projectGoalAgentID: UUID?
     private var projectGoalRefreshIDs: [UUID: UUID] = [:]
     private var projectGoalCandidateContext: ProjectGoalPlanningIdentity?
     private var regressionInvestigationTask: Task<Void, Never>?
@@ -506,6 +507,7 @@ final class WorkspaceViewModel: ObservableObject {
               goal.nextAction == action,
               activeProjectGoalID == nil,
               activeOperation == nil,
+              projectGoalAgentID == nil,
               !isCodexRunning else { return false }
         return (!action.requiresAgent || codexAvailability.state == .available)
             && (action != .refresh || !isRefreshingProjectGoals)
@@ -2414,17 +2416,33 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    /// Starts only the previously confirmed goal. Publication, merge and installation keep their own gates.
+    func startProjectGoal(id: UUID) async {
+        guard let goal = selectedProjectGoal, goal.id == id, !goal.status.isTerminal else { return }
+        switch goal.nextAction {
+        case .continueDelivery: await continueSelectedProjectGoal()
+        case .prepareRelease: await prepareSelectedReleaseWithAgent()
+        default: break
+        }
+    }
+
     func repairSelectedProjectGoalWithAgent() async {
         guard canRepairSelectedProjectGoalWithAgent,
               let id = selectedProjectGoal?.id,
               let index = projectGoals.firstIndex(where: { $0.id == id }),
               let failure = projectGoals[index].lastActionFailure else { return }
-        var goal = projectGoals[index]
+        let original = projectGoals[index]
+        var goal = original
+        activeProjectGoalID = id
+        defer { if activeProjectGoalID == id { activeProjectGoalID = nil } }
         goal.resetForActionsRepair()
         projectGoals[index] = goal
         do {
             try await projectGoalStore.save(projectGoals)
         } catch {
+            if let index = projectGoals.firstIndex(where: { $0.id == id }), projectGoals[index] == goal {
+                projectGoals[index] = original
+            }
             presentError(
                 error,
                 context: .goal,
@@ -2432,23 +2450,66 @@ final class WorkspaceViewModel: ObservableObject {
             )
             return
         }
-        selectedSection = .codex
-        runCodex(
+        activeProjectGoalID = nil
+        await runProjectGoalAgent(
+            goal: goal,
+            repairFailure: failure,
             prompt: GitAgentProfile.actionsRepairPrompt(goal: goal, failure: failure),
-            displayPrompt: L10n.format("goal.agent.display", failure.workflowName, failure.runNumber),
-            mode: .edit
+            displayPrompt: L10n.format("goal.agent.display", failure.workflowName, failure.runNumber)
         )
     }
 
-    func prepareSelectedReleaseWithAgent() {
+    func prepareSelectedReleaseWithAgent() async {
         guard canPrepareSelectedReleaseWithAgent,
               let goal = selectedProjectGoal else { return }
-        selectedSection = .codex
-        runCodex(
+        await runProjectGoalAgent(
+            goal: goal,
             prompt: GitAgentProfile.releasePreparationPrompt(goal: goal),
-            displayPrompt: L10n.format("goal.release.agent.display", goal.releaseTag ?? ""),
-            mode: .edit
+            displayPrompt: L10n.format("goal.release.agent.display", goal.releaseTag ?? "")
         )
+    }
+
+    private func runProjectGoalAgent(
+        goal: ProjectGoal, repairFailure: ProjectGoalActionFailure? = nil,
+        prompt: String, displayPrompt: String
+    ) async {
+        guard projectGoalAgentID == nil, !isCodexRunning,
+              selectedProjectGoal?.id == goal.id else { return }
+        projectGoalAgentID = goal.id
+        defer { if projectGoalAgentID == goal.id { projectGoalAgentID = nil } }
+        var completed = false
+        runCodex(
+            prompt: prompt,
+            displayPrompt: displayPrompt,
+            mode: .edit,
+            onSuccess: { completed = true }
+        )
+        guard let task = codexTask else { return }
+        await task.value
+        if !completed, let repairFailure,
+           let index = projectGoals.firstIndex(where: { $0.id == goal.id }),
+           !projectGoals[index].status.isTerminal {
+            var stopped = projectGoals[index]
+            stopped.lastActionFailure = repairFailure
+            stopped.status = .blocked
+            stopped.lastError = codexError ?? L10n.text("codex.status.cancelled")
+            projectGoals[index] = stopped
+            do { try await projectGoalStore.save(projectGoals) }
+            catch { presentError(error, context: .goal, repositoryURL: URL(fileURLWithPath: goal.repositoryPath)) }
+        }
+        guard completed, !Task.isCancelled, !task.isCancelled, !isCodexRunning, codexError == nil,
+              agentProtectionNotice?.requiresReview != true,
+              selectedProjectGoal?.id == goal.id,
+              snapshot?.rootURL.standardizedFileURL.path == goal.repositoryPath,
+              snapshot?.branchName == goal.branchName else { return }
+        await refreshProjectGoal(id: goal.id, showErrors: true)
+        guard !Task.isCancelled, selectedProjectGoal?.id == goal.id,
+              snapshot?.rootURL.standardizedFileURL.path == goal.repositoryPath,
+              snapshot?.branchName == goal.branchName else { return }
+        projectGoalAgentID = nil
+        if selectedProjectGoal?.nextAction == .continueDelivery {
+            await continueSelectedProjectGoal()
+        }
     }
 
     func publishSelectedProjectRelease() async {
@@ -7061,7 +7122,8 @@ final class WorkspaceViewModel: ObservableObject {
         includesStagedDiff: Bool = false,
         createsCommitDraft: Bool = false,
         fillsCommitComposer: Bool = false,
-        automaticallyStagesChanges: Bool = false
+        automaticallyStagesChanges: Bool = false,
+        onSuccess: (@MainActor () -> Void)? = nil
     ) {
         let request = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !request.isEmpty,
@@ -7217,6 +7279,8 @@ final class WorkspaceViewModel: ObservableObject {
                     await refresh()
                     await refreshProjectGoals(showErrors: false)
                 }
+                guard !Task.isCancelled, activeCodexRunID == runID else { return }
+                onSuccess?()
             } catch is CancellationError {
                 if let protectionBackup {
                     await completeAgentProtection(

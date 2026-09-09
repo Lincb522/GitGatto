@@ -391,14 +391,14 @@
 "help.topic.goals.title" = "Objectifs du projet";
 "help.topic.goals.summary" = "Enregistrez un résultat de livraison sous forme de contrôles récupérables qui continuent à partir du référentiel et de l'état GitHub réellement observé.";
 "help.goals.create.title" = "Créer un objectif";
-"help.goals.create.1" = "Ouvrez un référentiel local, puis entrez les objectifs. Un référentiel ne peut avoir qu'un seul objectif inachevé à la fois.";
-"help.goals.create.2" = "Un objectif personnalisé demande à Agent de convertir le résultat en conditions prises en charge. La planification est en lecture seule ; l'objectif n'est créé qu'après confirmation du candidat.";
+"help.goals.create.1" = "Ouvrez un dépôt, choisissez une action dans Objectifs, saisissez un message de commit ou une version, puis démarrez. Un seul objectif peut être actif par dépôt.";
+"help.goals.create.2" = "Décrivez le résultat voulu. Agent propose des étapes après une analyse en lecture seule. Vérifiez la portée avant de démarrer.";
 "help.goals.create.3" = "Les objectifs rapides couvrent la validation et le push, la livraison GitHub et la version complète. La livraison GitHub nécessite une branche autre que la branche par défaut.";
 "help.goals.create.4" = "L'objectif enregistre son référentiel, sa branche, sa validation de base, ses étapes et ses preuves. Changer de référentiel ne mélange pas leur état.";
 "help.goals.execute.title" = "Exécuter et récupérer";
-"help.goals.execute.1" = "Continue exécute uniquement l'étape actuellement exploitable, puis recharge les états Git et GitHub après chaque étape.";
+"help.goals.execute.1" = "Les étapes autorisées s’enchaînent et l’état Git et GitHub est relu après chacune. Fusion, publication et installation attendent votre confirmation.";
 "help.goals.execute.2" = "Une étape ayant échoué conserve sa preuve d'origine et s'arrête à Needs Attention. Les étapes terminées survivent au redémarrage de l'application.";
-"help.goals.execute.3" = "Lorsque les actions échouent, la réparation Agent est disponible à partir de cette étape. Le résultat à distance doit encore être vérifié après la réparation.";
+"help.goals.execute.3" = "Après un échec Actions, choisissez Réparer et continuer. La reprise exige une réparation réussie dans le même dépôt et la même branche. Annulation, échec ou contrôle de protection interrompent l’exécution.";
 "help.goals.execute.4" = "Un goal s'arrête si la branche extraite diffère de sa branche cible. Revenez en arrière, puis actualisez ou continuez.";
 "help.goals.release.title" = "Fusionner et publier";
 "help.goals.release.1" = "Une version complète vérifie le README ainsi que la traduction, la version et la construction, le journal des modifications et le flux de travail de publication avant de valider et de pousser.";
@@ -1406,8 +1406,8 @@
 "goal.guide.feature.3" = "Chaque étape est décidée à partir du Git réel, de la demande d'extraction, de la révision et de l'état des actions.";
 "goal.guide.feature.4" = "La fusion, la publication et l'installation nécessitent chacune une confirmation.";
 "goal.guide.step.1" = "Ouvrez un référentiel local et entrez les objectifs.";
-"goal.guide.step.2" = "Choisissez Nouvel objectif et un type, remplissez les champs, vérifiez les étapes et confirmez.";
-"goal.guide.step.3" = "Suivez l’action suivante dans les détails. Enregistrez les messages modifiés ; développez les étapes pour consulter preuves et erreurs.";
+"goal.guide.step.2" = "Choisissez commit et push, création de PR, version ou objectif personnalisé. Le dépôt et la branche sont renseignés automatiquement.";
+"goal.guide.step.3" = "Vérifiez la portée, puis démarrez. Suivez l’avancement sur la page de l’objectif et ouvrez les détails ou l’historique au besoin.";
 "goal.guide.step.4" = "Vérifiez le résultat distant, puis confirmez la fusion, la publication ou l'installation.";
 "goal.guide.note" = "Un goal est lié à son référentiel et à sa branche. Si la branche change, revenez en arrière avant de continuer.";
 "goal.custom.error.empty" = "Décrivez le résultat cible.";
@@ -1424,12 +1424,12 @@
 "goal.commit_message" = "Message de validation";
 "goal.commit_message.placeholder" = "Entrez un message de validation";
 "goal.action.create" = "Créer un objectif";
-"goal.action.prepare_release" = "Préparez-vous avec Agent";
+"goal.action.prepare_release" = "Préparer et continuer";
 "goal.action.publish_release" = "Publier la version";
 "goal.action.install_release" = "Installer et vérifier";
 "goal.action.open_release" = "Voir la version";
 "goal.action.continue" = "Continuer";
-"goal.action.agent_repair" = "Réparer avec Agent";
+"goal.action.agent_repair" = "Réparer et continuer";
 "goal.action.merge" = "Fusionner PR";
 "goal.action.cancel" = "Annuler l'objectif";
 "goal.action.refresh" = "Actualiser l'état";
@@ -2382,13 +2382,7 @@
 "lumen.settings.save_error" = "Impossible d’enregistrer les couleurs. Réessayez de les appliquer.";
 
 "goal.workspace.empty" = "Choisissez un objectif pour avancer vers un commit, une livraison ou une publication.";
-"goal.workspace.type" = "Type d’objectif";
-"goal.workspace.template.deliverChanges" = "Commitez et poussez les modifications, puis vérifiez Actions.";
-"goal.workspace.template.githubDelivery" = "Commitez, créez une PR, vérifiez les revues et les builds, puis confirmez la fusion.";
-"goal.workspace.template.completeRelease" = "Vérifiez la documentation, la version et la configuration, publiez le paquet, puis confirmez l’installation locale.";
-"goal.workspace.template.custom" = "Décrivez le résultat souhaité. Vérifiez les étapes proposées par Agent avant de créer l’objectif.";
 "goal.workspace.plan" = "Vérifier les étapes";
-"goal.workspace.create_note" = "La création enregistre seulement l’objectif. Vous lancez séparément l’exécution, la fusion, la publication et l’installation.";
 "goal.workspace.one_active" = "Ce dépôt a déjà un objectif actif. Terminez-le ou arrêtez-le avant d’en créer un autre.";
 "goal.workspace.search" = "Rechercher un objectif ou une branche";
 "goal.workspace.filter" = "Filtrer les objectifs";
@@ -2404,7 +2398,6 @@
 "goal.workspace.waiting" = "En attente de résultats externes. Actualisez pour vérifier leur état.";
 "goal.workspace.commit_message" = "Message de commit";
 "goal.workspace.save" = "Enregistrer";
-"goal.workspace.save_first" = "Enregistrez le message de commit avant de continuer.";
 "goal.workspace.agent_unavailable" = "Agent est indisponible. Vérifiez sa configuration dans les réglages.";
 "goal.workspace.no_evidence" = "Aucune preuve d’exécution pour cette étape.";
 "goal.workspace.steps" = "Étapes d’exécution";
@@ -2637,3 +2630,39 @@
 "help.identities.start" = "Créez nom, courriel et éventuellement identifiant public de clé de signature dans les outils du projet ; liez le profil à un dépôt ou dossier. Consultez valeurs effectives et sources.";
 "help.identities.result" = "Les liens par dossier utilisent Git includeIf. Avant commit, l’auteur réel est comparé au profil, y compris les variables d’environnement. Corrigez la source indiquée plutôt que des réglages globaux sans rapport.";
 "help.identities.caution" = "L’identité de commit est distincte du compte GitHub et des permissions distantes. Aucun jeton ni clé privée n’est enregistré ; la signature exige vos outils et clé configurés. Supprimer un profil ne nettoie que ses propres liens, pas le reste de Git.";
+
+"goal.workspace.current" = "Objectif actuel";
+
+"goal.workspace.start" = "Démarrer";
+
+"goal.quick.deliverChanges" = "Commit et push";
+
+"goal.quick.githubDelivery" = "Créer une PR";
+
+"goal.quick.completeRelease" = "Version";
+
+"goal.quick.custom" = "Personnalisé";
+
+"goal.scope.deliverChanges" = "Indexer et committer toutes les modifications du dépôt, puis pousser la branche actuelle.";
+
+"goal.scope.githubDelivery" = "Committer et pousser la branche, créer une PR et vérifier les résultats distants. La fusion sera confirmée séparément.";
+
+"goal.scope.completeRelease" = "Agent prépare les fichiers de version, puis committe et pousse. La publication et l’installation demandent chacune une confirmation.";
+
+"goal.workspace.waiting_auto" = "En attente des résultats distants. L’état se met à jour automatiquement.";
+
+"goal.workspace.agent_record" = "Historique Agent";
+
+"goal.workspace.agent_continuation" = "Après une réparation ou préparation réussie, les commits et le push reprennent automatiquement. Fusion, publication et installation restent à confirmer.";
+
+"goal.phase.prepare" = "Préparer";
+
+"goal.phase.submit" = "Commit et push";
+
+"goal.phase.verify" = "Vérifications";
+
+"goal.phase.publish" = "Publier";
+
+"goal.phase.merge" = "Fusionner la PR";
+
+"goal.phase.install" = "Installer et vérifier";

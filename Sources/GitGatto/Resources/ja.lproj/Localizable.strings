@@ -391,14 +391,14 @@
 "help.topic.goals.title" = "プロジェクトの目標";
 "help.topic.goals.summary" = "Save a delivery result as recoverable checks that continue from the repository and GitHub state actually observed.";
 "help.goals.create.title" = "目標を作成する";
-"help.goals.create.1" = "Open a local repository, then enter Goals. A repository can have only one unfinished goal at a time.";
-"help.goals.create.2" = "A custom goal asks Agent to convert the result into supported conditions.計画は読み取り専用です。 the goal is created only after you confirm the candidate.";
+"help.goals.create.1" = "リポジトリを開き、「目標」で操作を選び、コミットメッセージまたはバージョンを入力して「実行開始」を選びます。同時に実行できる目標はリポジトリごとに1つです。";
+"help.goals.create.2" = "カスタム目標では目的を記述します。Agent が読み取り専用で分析して手順を提案します。操作範囲を確認して実行してください。";
 "help.goals.create.3" = "Quick goals cover commit and push, GitHub delivery, and complete release. GitHub delivery requires a branch other than the default branch.";
 "help.goals.create.4" = "The goal records its repository, branch, baseline commit, steps, and evidence.リポジトリを切り替えても、その状態は混在しません。";
 "help.goals.execute.title" = "実行して回復する";
-"help.goals.execute.1" = "Continue runs only the currently actionable step, then reloads Git and GitHub state after each step.";
+"help.goals.execute.1" = "許可した手順を順に実行し、各手順後に Git と GitHub の状態を読み直します。マージ、公開、インストールは確認を待ちます。";
 "help.goals.execute.2" = "A failed step retains its original evidence and stops at Needs Attention.完了したステップはアプリを再起動しても残ります。";
-"help.goals.execute.3" = "When Actions fails, Agent repair is available from that step. The remote result must still be checked after the repair.";
+"help.goals.execute.3" = "Actions の失敗時は「修正して続行」を選びます。成功後、同じリポジトリとブランチでのみ続行します。キャンセル、失敗、保護確認の要求で停止します。";
 "help.goals.execute.4" = "チェックアウトされたブランチがターゲット ブランチと異なる場合、ゴールは停止します。元に戻して更新するか続行します。";
 "help.goals.release.title" = "マージとリリース";
 "help.goals.release.1" = "完全なリリースでは、コミットしてプッシュする前に、README と翻訳、バージョンとビルド、変更ログ、リリース ワークフローがチェックされます。";
@@ -1406,8 +1406,8 @@
 "goal.guide.feature.3" = "各ステップは、実際の Git、プルリクエスト、レビュー、アクションの状態から決定されます。";
 "goal.guide.feature.4" = "マージ、リリース、インストールにはそれぞれ確認が必要です。";
 "goal.guide.step.1" = "ローカル リポジトリを開き、「目標」を入力します。";
-"goal.guide.step.2" = "「新規目標」で種類を選び、必要事項を入力します。手順を確認して作成します。";
-"goal.guide.step.3" = "詳細で次の操作を確認します。コミットメッセージの変更は先に保存し、各手順を開いて結果やエラーを確認します。";
+"goal.guide.step.2" = "コミットとプッシュ、PR 作成、リリース、またはカスタム目標を選びます。リポジトリとブランチは自動入力されます。";
+"goal.guide.step.3" = "操作範囲を確認して「実行開始」を選びます。進捗は目標ページに表示され、詳細手順や履歴は必要に応じて開けます。";
 "goal.guide.step.4" = "リモート結果を確認し、マージ、リリース、またはインストールを確認します。";
 "goal.guide.note" = "ゴールはリポジトリとブランチにバインドされています。ブランチが変更された場合は、続行する前に元に戻してください。";
 "goal.custom.error.empty" = "目標結果を説明します。";
@@ -1424,12 +1424,12 @@
 "goal.commit_message" = "コミットメッセージ";
 "goal.commit_message.placeholder" = "コミットメッセージを入力してください";
 "goal.action.create" = "目標を作成する";
-"goal.action.prepare_release" = "Agentで準備します";
+"goal.action.prepare_release" = "準備して続行";
 "goal.action.publish_release" = "リリースを公開";
 "goal.action.install_release" = "インストールと確認";
 "goal.action.open_release" = "リリースを見る";
 "goal.action.continue" = "続きへ";
-"goal.action.agent_repair" = "Agent で修理します";
+"goal.action.agent_repair" = "修正して続行";
 "goal.action.merge" = "PR をマージ";
 "goal.action.cancel" = "ゴールをキャンセル";
 "goal.action.refresh" = "ステータスを更新";
@@ -2382,13 +2382,7 @@
 "lumen.settings.save_error" = "配色を保存できませんでした。もう一度適用してください。";
 
 "goal.workspace.empty" = "目標を選び、コミット・デリバリー・リリースを順に進めます。";
-"goal.workspace.type" = "目標の種類";
-"goal.workspace.template.deliverChanges" = "現在の変更をコミットしてプッシュし、Actions を確認します。";
-"goal.workspace.template.githubDelivery" = "変更をコミットして PR を作成し、レビューとビルドの確認後にマージします。";
-"goal.workspace.template.completeRelease" = "ドキュメント、バージョン、リリース設定を確認して公開し、ローカルへのインストールを確認します。";
-"goal.workspace.template.custom" = "達成したい結果を入力し、Agent が提案する手順を確認して目標を作成します。";
 "goal.workspace.plan" = "手順を確認";
-"goal.workspace.create_note" = "作成時は目標の保存のみ行います。実行・マージ・公開・インストールは個別に開始します。";
 "goal.workspace.one_active" = "このリポジトリには進行中の目標があります。完了または停止してから新規作成してください。";
 "goal.workspace.search" = "目標やブランチを検索";
 "goal.workspace.filter" = "目標を絞り込む";
@@ -2404,7 +2398,6 @@
 "goal.workspace.waiting" = "外部の結果を待っています。更新して最新の状態を確認できます。";
 "goal.workspace.commit_message" = "コミットメッセージ";
 "goal.workspace.save" = "保存";
-"goal.workspace.save_first" = "続行する前にコミットメッセージを保存してください。";
 "goal.workspace.agent_unavailable" = "Agent を利用できません。設定を確認してください。";
 "goal.workspace.no_evidence" = "この手順の実行結果はまだありません。";
 "goal.workspace.steps" = "実行手順";
@@ -2637,3 +2630,39 @@
 "help.identities.start" = "プロジェクトツールで名前・メールと任意の署名公開鍵識別子を登録し、リポジトリまたはディレクトリに紐付けます。有効な値と設定元を確認できます。";
 "help.identities.result" = "ディレクトリ紐付けは Git includeIf を使います。コミット前には環境変数による上書きも含めて実際の作者を照合します。不一致は表示された設定元で解決し、無関係なグローバル設定を変えないでください。";
 "help.identities.caution" = "コミット作者は GitHub ログインやリモート権限とは別です。秘密鍵やトークンは保存しません。署名には設定済みの鍵とツールが必要です。プロフィール削除は自身の紐付けだけを消し、無関係な Git 設定は変更しません。";
+
+"goal.workspace.current" = "現在の目標";
+
+"goal.workspace.start" = "実行開始";
+
+"goal.quick.deliverChanges" = "コミットしてプッシュ";
+
+"goal.quick.githubDelivery" = "PR を作成";
+
+"goal.quick.completeRelease" = "リリース";
+
+"goal.quick.custom" = "カスタム";
+
+"goal.scope.deliverChanges" = "このリポジトリのすべての変更をステージしてコミットし、現在のブランチをプッシュします。";
+
+"goal.scope.githubDelivery" = "現在のブランチをコミットしてプッシュし、PR を作成してリモートの結果を確認します。マージ前に確認します。";
+
+"goal.scope.completeRelease" = "Agent がリリースファイルを準備し、コミットしてプッシュします。公開とインストールは個別に確認します。";
+
+"goal.workspace.waiting_auto" = "リモートの結果を待っています。状態は自動更新されます。";
+
+"goal.workspace.agent_record" = "Agent の履歴";
+
+"goal.workspace.agent_continuation" = "修正や準備が成功するとコミットとプッシュを続行します。マージ、公開、インストールには確認が必要です。";
+
+"goal.phase.prepare" = "ファイルの準備";
+
+"goal.phase.submit" = "コミット・プッシュ";
+
+"goal.phase.verify" = "リモート確認";
+
+"goal.phase.publish" = "公開";
+
+"goal.phase.merge" = "PR をマージ";
+
+"goal.phase.install" = "インストール確認";

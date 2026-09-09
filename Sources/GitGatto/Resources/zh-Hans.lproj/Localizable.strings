@@ -391,14 +391,14 @@
 "help.topic.goals.title" = "项目目标";
 "help.topic.goals.summary" = "把交付结果保存为可恢复的检查步骤，依据本地仓库与 GitHub 的真实状态持续推进。";
 "help.goals.create.title" = "创建目标";
-"help.goals.create.1" = "先打开本地仓库，再进入“目标”。同一仓库一次只执行一个未完成目标。";
-"help.goals.create.2" = "自定义目标会让 Agent 把结果描述转换为受支持的条件；生成阶段只读取仓库，确认候选目标后才会创建。";
+"help.goals.create.1" = "打开仓库后进入“目标”，选择快捷操作，填写提交信息或版本号，点击“开始执行”。同一仓库一次进行一个目标。";
+"help.goals.create.2" = "自定义目标先描述结果，由 Agent 只读分析并拟定步骤；核对操作范围后，点击“开始执行”。";
 "help.goals.create.3" = "快捷目标包含仅提交并推送、GitHub 交付和完整发布。GitHub 交付需要当前分支不是默认分支。";
 "help.goals.create.4" = "目标会记录创建时的仓库、分支、基准提交、步骤和证据；切换仓库不会混用状态。";
 "help.goals.execute.title" = "执行与恢复";
-"help.goals.execute.1" = "点击“继续完成”后，GitGatto 只执行当前可运行的步骤，并在每一步后重新读取 Git 与 GitHub 状态。";
+"help.goals.execute.1" = "开始后会连续执行已授权的步骤，每一步都重新读取 Git 与 GitHub 状态。合并、发布和安装会停下等待确认。";
 "help.goals.execute.2" = "失败步骤会显示原始证据并停在“需要处理”；已经完成的步骤不会因重启应用而丢失。";
-"help.goals.execute.3" = "Actions 失败时可从对应步骤调用 Agent 修复；修复结束后仍需重新检查远端结果。";
+"help.goals.execute.3" = "Actions 失败时点击“修复并继续”。修复成功且仓库、分支未变时自动继续；取消、失败或保护检查要求复核时会停下。";
 "help.goals.execute.4" = "如果当前分支与目标分支不同，目标会停止；切回目标分支后刷新或继续。";
 "help.goals.release.title" = "合并与发布";
 "help.goals.release.1" = "完整发布检查 README 与译文、版本和构建号、更新日志以及发布工作流，再创建提交并推送。";
@@ -1406,8 +1406,8 @@
 "goal.guide.feature.3" = "每一步依据真实 Git、Pull Request、审查和 Actions 状态判定。";
 "goal.guide.feature.4" = "合并、发布和安装必须分别确认。";
 "goal.guide.step.1" = "打开本地仓库并进入“目标”。";
-"goal.guide.step.2" = "点击“新建目标”，选择类型并填写所需信息，核对步骤后确认创建。";
-"goal.guide.step.3" = "在详情查看下一步；修改提交信息后先保存。展开步骤可查看证据和错误。";
+"goal.guide.step.2" = "选择提交并推送、创建 PR、发布版本，或描述自定义目标。仓库和分支会自动带入。";
+"goal.guide.step.3" = "核对操作范围后点击“开始执行”。当前进度直接显示在目标页，详细步骤和历史记录可按需展开。";
 "goal.guide.step.4" = "检查远端结果，再确认合并、发布或安装。";
 "goal.guide.note" = "目标绑定创建时的仓库和分支；切换分支后会停止，切回后才能继续。";
 "goal.custom.error.empty" = "请输入目标结果。";
@@ -1424,12 +1424,12 @@
 "goal.commit_message" = "提交信息";
 "goal.commit_message.placeholder" = "输入本次提交信息";
 "goal.action.create" = "创建目标";
-"goal.action.prepare_release" = "Agent 准备发布";
+"goal.action.prepare_release" = "准备并继续";
 "goal.action.publish_release" = "发布版本";
 "goal.action.install_release" = "安装并验证";
 "goal.action.open_release" = "查看 Release";
 "goal.action.continue" = "继续完成";
-"goal.action.agent_repair" = "Agent 修复";
+"goal.action.agent_repair" = "修复并继续";
 "goal.action.merge" = "合并 PR";
 "goal.action.cancel" = "取消目标";
 "goal.action.refresh" = "刷新状态";
@@ -2382,13 +2382,7 @@
 "lumen.settings.save_error" = "配色未能保存，请重新应用。";
 
 "goal.workspace.empty" = "选择一个目标，逐步完成提交、交付或发布。";
-"goal.workspace.type" = "目标类型";
-"goal.workspace.template.deliverChanges" = "提交并推送当前改动，检查 Actions 结果。";
-"goal.workspace.template.githubDelivery" = "提交改动、创建 PR，检查审查与构建结果，再确认合并。";
-"goal.workspace.template.completeRelease" = "检查文档、版本和发布配置，发布安装包，再确认本地安装。";
-"goal.workspace.template.custom" = "描述要达到的结果，由 Agent 拟定步骤，确认后创建。";
 "goal.workspace.plan" = "核对步骤";
-"goal.workspace.create_note" = "创建只保存目标；执行、合并、发布和安装由你分别发起。";
 "goal.workspace.one_active" = "当前仓库已有进行中的目标。请先完成或停止它，再创建新目标。";
 "goal.workspace.search" = "搜索目标或分支";
 "goal.workspace.filter" = "筛选目标";
@@ -2404,7 +2398,6 @@
 "goal.workspace.waiting" = "等待外部结果，可刷新查看最新状态。";
 "goal.workspace.commit_message" = "提交信息";
 "goal.workspace.save" = "保存";
-"goal.workspace.save_first" = "请先保存提交信息，再继续执行。";
 "goal.workspace.agent_unavailable" = "Agent 当前不可用，请在设置中检查配置。";
 "goal.workspace.no_evidence" = "此步骤还没有执行证据。";
 "goal.workspace.steps" = "执行步骤";
@@ -2637,3 +2630,39 @@
 "help.identities.start" = "进入“项目工具 → 提交身份”，建立姓名、邮箱及可选的签名公钥标识配置，再绑定到仓库或目录。面板可查看实际生效值和配置来源。";
 "help.identities.result" = "目录绑定使用 Git includeIf 规则。提交前会对照所选身份检查实际作者，包括环境变量的覆盖。发现不一致时按来源修正，不要直接改动无关的全局设置。";
 "help.identities.caution" = "提交身份与 GitHub 登录、远程访问权限无关。身份配置不保存私钥或令牌，签名仍依赖已经配置好的密钥和工具。删除身份只清理它自己管理的绑定，不改无关的 Git 配置。";
+
+"goal.workspace.current" = "当前目标";
+
+"goal.workspace.start" = "开始执行";
+
+"goal.quick.deliverChanges" = "提交并推送";
+
+"goal.quick.githubDelivery" = "创建 PR";
+
+"goal.quick.completeRelease" = "发布版本";
+
+"goal.quick.custom" = "自定义";
+
+"goal.scope.deliverChanges" = "将暂存并提交当前仓库的全部改动，然后推送当前分支。";
+
+"goal.scope.githubDelivery" = "将提交并推送当前分支、创建 PR 并检查远端结果。合并前会再次确认。";
+
+"goal.scope.completeRelease" = "Agent 会准备发布文件，然后提交并推送。发布版本和安装应用前会分别确认。";
+
+"goal.workspace.waiting_auto" = "正在等待远端结果，状态会自动更新。";
+
+"goal.workspace.agent_record" = "Agent 记录";
+
+"goal.workspace.agent_continuation" = "Agent 修复或准备完成后，会自动继续提交、推送。合并、发布和安装仍需确认。";
+
+"goal.phase.prepare" = "准备文件";
+
+"goal.phase.submit" = "提交推送";
+
+"goal.phase.verify" = "远端检查";
+
+"goal.phase.publish" = "发布版本";
+
+"goal.phase.merge" = "合并 PR";
+
+"goal.phase.install" = "安装验证";

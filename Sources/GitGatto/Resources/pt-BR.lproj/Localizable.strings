@@ -391,14 +391,14 @@
 "help.topic.goals.title" = "Metas do Projeto";
 "help.topic.goals.summary" = "Salva um resultado de entrega como verificações recuperáveis que continuam a partir do repositório e estado GitHub realmente observado.";
 "help.goals.create.title" = "Crie uma meta";
-"help.goals.create.1" = "Abra um repositório local e insira Metas. Um repositório pode ter apenas um objetivo inacabado por vez.";
-"help.goals.create.2" = "Uma meta personalizada solicita que Agent converta o resultado em condições suportadas. O planejamento é somente leitura; a meta é criada somente após você confirmar o candidato.";
+"help.goals.create.1" = "Abra um repositório, escolha uma ação em Objetivos, informe uma mensagem de commit ou versão e inicie. Só um objetivo pode estar ativo por repositório.";
+"help.goals.create.2" = "Descreva o resultado desejado. Agent sugere etapas após uma análise somente leitura. Revise o escopo e inicie.";
 "help.goals.create.3" = "Metas rápidas cobrem commit e push, entrega GitHub e liberação completa. A entrega GitHub requer uma filial diferente da filial padrão.";
 "help.goals.create.4" = "A meta registra seu repositório, ramificação, commit de linha de base, etapas e evidências. A troca de repositórios não mistura seus estados.";
 "help.goals.execute.title" = "Executar e recuperar";
-"help.goals.execute.1" = "Continue executa apenas a etapa atualmente acionável e, em seguida, recarrega o estado Git e GitHub após cada etapa.";
+"help.goals.execute.1" = "As etapas autorizadas são executadas em sequência, relendo o estado do Git e GitHub após cada uma. Mesclagem, publicação e instalação aguardam confirmação.";
 "help.goals.execute.2" = "Uma etapa com falha retém sua evidência original e para em Requer Atenção. As etapas concluídas sobrevivem à reinicialização do aplicativo.";
-"help.goals.execute.3" = "Quando as Ações falham, o reparo Agent fica disponível a partir dessa etapa. O resultado remoto ainda deve ser verificado após o reparo.";
+"help.goals.execute.3" = "Se o Actions falhar, escolha Reparar e continuar. A retomada exige reparo bem-sucedido no mesmo repositório e branch. Cancelamento, falha ou revisão de proteção interrompem a execução.";
 "help.goals.execute.4" = "Uma meta para se a ramificação com check-out for diferente da ramificação de destino. Volte e atualize ou continue.";
 "help.goals.release.title" = "Mesclar e liberar";
 "help.goals.release.1" = "Uma versão completa verifica o README e o fluxo de trabalho de tradução, versão e construção, changelog e lançamento antes de confirmar e enviar.";
@@ -1406,8 +1406,8 @@
 "goal.guide.feature.3" = "Cada etapa é decidida a partir do Git real, solicitação pull, revisão e estado de ações.";
 "goal.guide.feature.4" = "Mesclar, liberar e instalar exigem confirmação.";
 "goal.guide.step.1" = "Abra um repositório local e insira Metas.";
-"goal.guide.step.2" = "Escolha Novo objetivo e um tipo, preencha os campos, revise as etapas e confirme.";
-"goal.guide.step.3" = "Siga a próxima ação nos detalhes. Salve as mensagens editadas e expanda as etapas para ver evidências e erros.";
+"goal.guide.step.2" = "Escolha commit e push, criar PR, versão ou um objetivo personalizado. O repositório e a branch são preenchidos automaticamente.";
+"goal.guide.step.3" = "Revise o escopo e inicie. Acompanhe o progresso na página do objetivo; abra os detalhes ou o histórico quando precisar.";
 "goal.guide.step.4" = "Verifique o resultado remoto e confirme a fusão, liberação ou instalação.";
 "goal.guide.note" = "Um objetivo está vinculado ao seu repositório e ramificação. Se a ramificação mudar, volte antes de continuar.";
 "goal.custom.error.empty" = "Descreva o resultado alvo.";
@@ -1424,12 +1424,12 @@
 "goal.commit_message" = "Mensagem de confirmação";
 "goal.commit_message.placeholder" = "Insira uma mensagem de confirmação";
 "goal.action.create" = "Criar meta";
-"goal.action.prepare_release" = "Prepare com Agent";
+"goal.action.prepare_release" = "Preparar e continuar";
 "goal.action.publish_release" = "Publicar versão";
 "goal.action.install_release" = "Instalar e verificar";
 "goal.action.open_release" = "Ver versão";
 "goal.action.continue" = "Continuar";
-"goal.action.agent_repair" = "Repare com Agent";
+"goal.action.agent_repair" = "Reparar e continuar";
 "goal.action.merge" = "Mesclar RP";
 "goal.action.cancel" = "Cancelar meta";
 "goal.action.refresh" = "Atualizar status";
@@ -2382,13 +2382,7 @@
 "lumen.settings.save_error" = "Não foi possível salvar as cores. Tente aplicá-las novamente.";
 
 "goal.workspace.empty" = "Escolha um objetivo para concluir um commit, uma entrega ou uma versão.";
-"goal.workspace.type" = "Tipo de objetivo";
-"goal.workspace.template.deliverChanges" = "Faça commit e push das alterações e verifique o Actions.";
-"goal.workspace.template.githubDelivery" = "Faça commit, crie uma PR, verifique revisões e builds e confirme a mesclagem.";
-"goal.workspace.template.completeRelease" = "Verifique documentação, versão e configuração; publique o pacote e confirme a instalação local.";
-"goal.workspace.template.custom" = "Descreva o resultado. Revise as etapas propostas pelo Agent antes de criar o objetivo.";
 "goal.workspace.plan" = "Revisar etapas";
-"goal.workspace.create_note" = "Criar apenas salva o objetivo. Execução, mesclagem, publicação e instalação são iniciadas separadamente.";
 "goal.workspace.one_active" = "Este repositório já tem um objetivo ativo. Conclua ou pare esse objetivo antes de criar outro.";
 "goal.workspace.search" = "Buscar objetivos ou branches";
 "goal.workspace.filter" = "Filtrar objetivos";
@@ -2404,7 +2398,6 @@
 "goal.workspace.waiting" = "Aguardando resultados externos. Atualize para verificar o estado.";
 "goal.workspace.commit_message" = "Mensagem de commit";
 "goal.workspace.save" = "Salvar";
-"goal.workspace.save_first" = "Salve a mensagem de commit antes de continuar.";
 "goal.workspace.agent_unavailable" = "Agent indisponível. Verifique a configuração nos Ajustes.";
 "goal.workspace.no_evidence" = "Ainda não há evidências de execução desta etapa.";
 "goal.workspace.steps" = "Etapas de execução";
@@ -2637,3 +2630,39 @@
 "help.identities.start" = "Crie nome, e-mail e identificador público opcional de assinatura e vincule a repositório ou pasta. Confira valores efetivos e fontes de configuração nas ferramentas do projeto.";
 "help.identities.result" = "Vínculos de pasta usam Git includeIf. Antes do commit, compara-se o autor real, incluindo variáveis de ambiente. Corrija a fonte indicada, sem alterar configurações globais não relacionadas.";
 "help.identities.caution" = "Identidade de commit não é login GitHub nem permissão remota. Não armazena chaves privadas ou tokens; assinatura depende das ferramentas e chave configuradas. Remover o perfil limpa apenas vínculos próprios, não outras configurações Git.";
+
+"goal.workspace.current" = "Objetivo atual";
+
+"goal.workspace.start" = "Iniciar";
+
+"goal.quick.deliverChanges" = "Commit e push";
+
+"goal.quick.githubDelivery" = "Criar PR";
+
+"goal.quick.completeRelease" = "Versão";
+
+"goal.quick.custom" = "Personalizado";
+
+"goal.scope.deliverChanges" = "Preparar e fazer commit de todas as alterações do repositório, depois enviar a branch atual.";
+
+"goal.scope.githubDelivery" = "Fazer commit e enviar a branch atual, criar uma PR e verificar os resultados remotos. A mesclagem exige confirmação.";
+
+"goal.scope.completeRelease" = "Agent prepara os arquivos da versão, faz commit e envia. Publicação e instalação exigem confirmações separadas.";
+
+"goal.workspace.waiting_auto" = "Aguardando resultados remotos. O status é atualizado automaticamente.";
+
+"goal.workspace.agent_record" = "Histórico do Agent";
+
+"goal.workspace.agent_continuation" = "Após reparo ou preparação bem-sucedidos, o commit e o envio continuam automaticamente. Mesclagem, publicação e instalação ainda exigem confirmação.";
+
+"goal.phase.prepare" = "Preparar arquivos";
+
+"goal.phase.submit" = "Commit e push";
+
+"goal.phase.verify" = "Verificações";
+
+"goal.phase.publish" = "Publicar";
+
+"goal.phase.merge" = "Mesclar PR";
+
+"goal.phase.install" = "Instalar e verificar";

@@ -74,6 +74,13 @@ extension ProjectGoal {
 }
 
 enum ProjectGoalPresentation {
+    static func primaryGoal(_ source: [ProjectGoal], selectedID: UUID?) -> ProjectGoal? {
+        let ordered = goals(source, filter: .all, query: "")
+        return ordered.first { !$0.status.isTerminal }
+            ?? ordered.first { $0.id == selectedID }
+            ?? ordered.first
+    }
+
     static func goals(_ source: [ProjectGoal], filter: ProjectGoalListFilter, query: String) -> [ProjectGoal] {
         let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
         return source.filter { goal in
@@ -89,6 +96,32 @@ enum ProjectGoalPresentation {
     // An observation belongs to the exact revision it read, not just to a row index.
     static func acceptsObservation(of requested: ProjectGoal, current: ProjectGoal?) -> Bool {
         current == requested && current?.status != .cancelled
+    }
+}
+
+enum ProjectGoalPhase: String, CaseIterable, Identifiable {
+    case prepare, submit, verify, deliver, install
+    var id: String { rawValue }
+
+    static func phase(for step: ProjectGoalStepKind) -> Self {
+        switch step {
+        case .readme, .translation, .version, .changelog, .releasePipeline: .prepare
+        case .stageChanges, .commit, .push: .submit
+        case .pullRequest, .review, .actions, .artifact: .verify
+        case .merge, .releaseTag, .githubRelease, .dmg, .updateFeed: .deliver
+        case .localApplication: .install
+        }
+    }
+}
+
+extension ProjectGoal {
+    var phases: [ProjectGoalPhase] {
+        ProjectGoalPhase.allCases.filter { phase in steps.contains { ProjectGoalPhase.phase(for: $0.kind) == phase } }
+    }
+
+    func phaseIsComplete(_ phase: ProjectGoalPhase) -> Bool {
+        let members = steps.filter { ProjectGoalPhase.phase(for: $0.kind) == phase }
+        return !members.isEmpty && members.allSatisfy(\.status.isSatisfied)
     }
 }
 

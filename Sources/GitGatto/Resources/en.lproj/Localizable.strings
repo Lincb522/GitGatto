@@ -391,14 +391,14 @@
 "help.topic.goals.title" = "Project Goals";
 "help.topic.goals.summary" = "Save a delivery result as recoverable checks that continue from the repository and GitHub state actually observed.";
 "help.goals.create.title" = "Create a goal";
-"help.goals.create.1" = "Open a local repository, then enter Goals. A repository can have only one unfinished goal at a time.";
-"help.goals.create.2" = "A custom goal asks Agent to convert the result into supported conditions. Planning is read-only; the goal is created only after you confirm the candidate.";
+"help.goals.create.1" = "Open a repository, choose a quick action in Goals, enter a commit message or version, then select Start. One goal runs per repository at a time.";
+"help.goals.create.2" = "For a custom goal, describe the outcome. Agent proposes steps using read-only analysis. Review the scope, then select Start.";
 "help.goals.create.3" = "Quick goals cover commit and push, GitHub delivery, and complete release. GitHub delivery requires a branch other than the default branch.";
 "help.goals.create.4" = "The goal records its repository, branch, baseline commit, steps, and evidence. Switching repositories does not mix their state.";
 "help.goals.execute.title" = "Run and recover";
-"help.goals.execute.1" = "Continue runs only the currently actionable step, then reloads Git and GitHub state after each step.";
+"help.goals.execute.1" = "Starting runs authorized steps in sequence, rereading Git and GitHub state after each step. Merge, release and installation wait for confirmation.";
 "help.goals.execute.2" = "A failed step retains its original evidence and stops at Needs Attention. Completed steps survive an app restart.";
-"help.goals.execute.3" = "When Actions fails, Agent repair is available from that step. The remote result must still be checked after the repair.";
+"help.goals.execute.3" = "Use Repair and continue after an Actions failure. A successful repair resumes only in the same repository and branch. Cancellation, failure or a protection review stops execution.";
 "help.goals.execute.4" = "A goal stops if the checked-out branch differs from its target branch. Switch back, then refresh or continue.";
 "help.goals.release.title" = "Merge and release";
 "help.goals.release.1" = "A complete release checks the README and translation, version and build, changelog, and release workflow before committing and pushing.";
@@ -1406,8 +1406,8 @@
 "goal.guide.feature.3" = "Each step is decided from actual Git, pull request, review, and Actions state.";
 "goal.guide.feature.4" = "Merge, release, and installation each require confirmation.";
 "goal.guide.step.1" = "Open a local repository and enter Goals.";
-"goal.guide.step.2" = "Choose New goal, select a type and fill in its fields. Review the steps and confirm creation.";
-"goal.guide.step.3" = "Follow the next action in the detail view. Save edited commit messages first; expand steps to inspect evidence and errors.";
+"goal.guide.step.2" = "Choose commit and push, create PR, release, or describe a custom goal. The repository and branch are filled in automatically.";
+"goal.guide.step.3" = "Review the scope and select Start. Follow progress on the goal page; open detailed steps or history when needed.";
 "goal.guide.step.4" = "Check the remote result, then confirm merge, release, or installation.";
 "goal.guide.note" = "A goal is bound to its repository and branch. If the branch changes, switch back before continuing.";
 "goal.custom.error.empty" = "Describe the target result.";
@@ -1424,12 +1424,12 @@
 "goal.commit_message" = "Commit message";
 "goal.commit_message.placeholder" = "Enter a commit message";
 "goal.action.create" = "Create Goal";
-"goal.action.prepare_release" = "Prepare with Agent";
+"goal.action.prepare_release" = "Prepare and continue";
 "goal.action.publish_release" = "Publish Release";
 "goal.action.install_release" = "Install and Verify";
 "goal.action.open_release" = "View Release";
 "goal.action.continue" = "Continue";
-"goal.action.agent_repair" = "Repair with Agent";
+"goal.action.agent_repair" = "Repair and continue";
 "goal.action.merge" = "Merge PR";
 "goal.action.cancel" = "Cancel Goal";
 "goal.action.refresh" = "Refresh Status";
@@ -2382,13 +2382,7 @@
 "lumen.settings.save_error" = "Colors could not be saved. Try applying them again.";
 
 "goal.workspace.empty" = "Choose a goal to work through a commit, delivery, or release.";
-"goal.workspace.type" = "Goal type";
-"goal.workspace.template.deliverChanges" = "Commit and push current changes, then check Actions.";
-"goal.workspace.template.githubDelivery" = "Commit changes, open a PR, check reviews and builds, then confirm the merge.";
-"goal.workspace.template.completeRelease" = "Check documentation, version and release setup; publish the package, then confirm local installation.";
-"goal.workspace.template.custom" = "Describe the result. Review the steps proposed by Agent before creating the goal.";
 "goal.workspace.plan" = "Review steps";
-"goal.workspace.create_note" = "Creating saves the goal only. You initiate execution, merging, publishing and installation separately.";
 "goal.workspace.one_active" = "This repository already has an active goal. Complete or stop it before creating another.";
 "goal.workspace.search" = "Search goals or branches";
 "goal.workspace.filter" = "Filter goals";
@@ -2404,7 +2398,6 @@
 "goal.workspace.waiting" = "Waiting for external results. Refresh to check the latest status.";
 "goal.workspace.commit_message" = "Commit message";
 "goal.workspace.save" = "Save";
-"goal.workspace.save_first" = "Save the commit message before continuing.";
 "goal.workspace.agent_unavailable" = "Agent is unavailable. Check its configuration in Settings.";
 "goal.workspace.no_evidence" = "No execution evidence for this step yet.";
 "goal.workspace.steps" = "Execution steps";
@@ -2637,3 +2630,39 @@
 "help.identities.start" = "Open Project Tools → Commit identities. Create a name/email profile with an optional public signing-key identifier, then bind it to a repository or directory. Inspect the effective values and their configuration sources.";
 "help.identities.result" = "Directory bindings use Git includeIf rules. Before a commit, the identity check compares the actual author, including environment overrides, with the selected profile. Resolve a mismatch at its reported source rather than changing unrelated global settings.";
 "help.identities.caution" = "Commit identity is separate from GitHub login and remote permissions. Profiles do not store private keys or tokens; signing still requires your configured key and tooling. Removing a profile cleans its owned bindings, not unrelated Git configuration.";
+
+"goal.workspace.current" = "Current goal";
+
+"goal.workspace.start" = "Start";
+
+"goal.quick.deliverChanges" = "Commit and push";
+
+"goal.quick.githubDelivery" = "Create PR";
+
+"goal.quick.completeRelease" = "Release";
+
+"goal.quick.custom" = "Custom";
+
+"goal.scope.deliverChanges" = "Stage and commit all changes in this repository, then push the current branch.";
+
+"goal.scope.githubDelivery" = "Commit and push the current branch, create a PR and check remote results. Merging requires confirmation.";
+
+"goal.scope.completeRelease" = "Agent prepares release files, then commits and pushes. Publishing and installing each require confirmation.";
+
+"goal.workspace.waiting_auto" = "Waiting for remote results. Status updates automatically.";
+
+"goal.workspace.agent_record" = "Agent history";
+
+"goal.workspace.agent_continuation" = "After a successful repair or preparation, continue committing and pushing automatically. Merge, release and installation still require confirmation.";
+
+"goal.phase.prepare" = "Prepare files";
+
+"goal.phase.submit" = "Commit and push";
+
+"goal.phase.verify" = "Remote checks";
+
+"goal.phase.publish" = "Publish";
+
+"goal.phase.merge" = "Merge PR";
+
+"goal.phase.install" = "Install and verify";

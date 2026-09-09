@@ -11,6 +11,8 @@ struct ProjectGoalComposerView: View {
     @State private var version = ""
     @State private var build = ""
     @State private var isCreating = false
+    @State private var showsPlan = false
+    @State private var showsBuild = false
     @State private var planningTask: Task<Void, Never>?
     @FocusState private var focusedField: Field?
     private enum Field: Hashable { case message, intent, version }
@@ -52,13 +54,15 @@ struct ProjectGoalComposerView: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text(L10n.text("goal.new")).font(.system(size: 18, weight: .semibold))
                     Spacer()
-                    Button(L10n.text("action.cancel")) {
-                        planningTask?.cancel()
-                        onCancel()
+                    if !model.currentRepositoryGoals.isEmpty {
+                        Button(L10n.text("action.cancel")) {
+                            planningTask?.cancel()
+                            onCancel()
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .disabled(isCreating)
+                        .keyboardShortcut(.cancelAction)
                     }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .disabled(isCreating)
-                    .keyboardShortcut(.cancelAction)
                 }
                 if let activeGoal, !isCreating {
                     Text(L10n.text("goal.workspace.one_active"))
@@ -70,49 +74,54 @@ struct ProjectGoalComposerView: View {
                     .buttonStyle(PrimaryButtonStyle())
                 } else {
                     context(palette)
-                    Picker(L10n.text("goal.workspace.type"), selection: $kind) {
-                        ForEach(ProjectGoalKind.templates, id: \.self) { kind in
-                            Text(L10n.text(kind.titleKey)).tag(kind)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 10)], spacing: 10) {
+                        ForEach(ProjectGoalKind.templates, id: \.self) { option in
+                            Button { kind = option } label: {
+                                Text(L10n.text("goal.quick.\(option.rawValue)"))
+                                    .fontWeight(kind == option ? .semibold : .regular)
+                                    .frame(maxWidth: .infinity, minHeight: 38)
+                                    .background(kind == option ? palette.accentSoft : palette.raisedSurface.opacity(0.6), in: RoundedRectangle(cornerRadius: 9))
+                                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(kind == option ? palette.accent : palette.divider))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(kind == option ? .isSelected : [])
                         }
                     }
-                    .pickerStyle(.menu)
                     .disabled(busy)
                     .accessibilityIdentifier("goals.template")
-                    Text(L10n.text("goal.workspace.template.\(kind.rawValue)"))
-                        .foregroundStyle(palette.subtleInk)
-                        .fixedSize(horizontal: false, vertical: true)
                     fields(palette)
                     if !steps.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.text("goal.workspace.plan")).fontWeight(.semibold)
-                            if let candidate = model.projectGoalCandidate, kind == .custom {
-                                Text(candidate.title).fontWeight(.medium)
-                                Text(candidate.commitMessage).textSelection(.enabled)
-                                if let version = candidate.releaseVersion {
-                                    Text("v\(version) · \(candidate.releaseBuildNumber ?? "")")
-                                        .font(.system(size: 12, design: .monospaced))
+                        DisclosureGroup(L10n.text("goal.workspace.plan"), isExpanded: $showsPlan) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                if let candidate = model.projectGoalCandidate, kind == .custom {
+                                    Text(candidate.title).fontWeight(.medium)
+                                    Text(candidate.commitMessage).textSelection(.enabled)
+                                    if let version = candidate.releaseVersion {
+                                        Text("v\(version) · \(candidate.releaseBuildNumber ?? "")")
+                                            .font(.system(size: 12, design: .monospaced))
+                                    }
                                 }
-                            }
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), alignment: .leading)], alignment: .leading, spacing: 12) {
-                                ForEach(Array(steps.enumerated()), id: \.element) { index, step in
-                                    HStack(alignment: .top, spacing: 9) {
-                                        Text("\(index + 1)").monospacedDigit().foregroundStyle(palette.subtleInk)
-                                            .frame(width: 22, alignment: .trailing)
-                                        Text(L10n.text("goal.step.\(step.rawValue)"))
-                                            .fixedSize(horizontal: false, vertical: true)
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), alignment: .leading)], alignment: .leading, spacing: 12) {
+                                    ForEach(Array(steps.enumerated()), id: \.element) { index, step in
+                                        HStack(alignment: .top, spacing: 9) {
+                                            Text("\(index + 1)").monospacedDigit().foregroundStyle(palette.subtleInk)
+                                                .frame(width: 22, alignment: .trailing)
+                                            Text(L10n.text("goal.step.\(step.rawValue)"))
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
                                     }
                                 }
                             }
-                            Divider()
-                            Text(L10n.text("goal.workspace.create_note"))
-                                .foregroundStyle(palette.subtleInk)
-                                .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 12)
                         }
                         .padding(16)
                         .background(palette.raisedSurface.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(palette.divider))
                     }
                     if kind != .custom || model.projectGoalCandidate != nil {
+                        Text(L10n.text("goal.scope.\(kind == .custom ? (steps.contains(.releaseTag) ? "completeRelease" : steps.contains(.pullRequest) ? "githubDelivery" : "deliverChanges") : kind.rawValue)"))
+                            .foregroundStyle(palette.subtleInk)
+                            .fixedSize(horizontal: false, vertical: true)
                         Button {
                             isCreating = true
                             Task {
@@ -127,12 +136,15 @@ struct ProjectGoalComposerView: View {
                                 case .custom: created = await model.confirmCustomProjectGoalCandidate()
                                 }
                                 isCreating = false
-                                if created { onCreated() }
+                                if created, let id = model.selectedProjectGoal?.id {
+                                    onCreated()
+                                    await model.startProjectGoal(id: id)
+                                }
                             }
                         } label: {
                             HStack(spacing: 8) {
                                 if isCreating { ProgressView().controlSize(.small) }
-                                Text(L10n.text("goal.custom.action.confirm"))
+                                Text(L10n.text("goal.workspace.start"))
                             }
                         }
                         .buttonStyle(PrimaryButtonStyle())
@@ -149,6 +161,7 @@ struct ProjectGoalComposerView: View {
             .frame(maxWidth: .infinity, alignment: .top)
         }
         .task(id: kind) {
+            if message.isEmpty { message = model.commitMessage }
             focusedField = kind == .custom ? .intent : kind == .completeRelease ? .version : .message
             if kind == .completeRelease, version.isEmpty {
                 await model.prepareProjectReleaseDraftIfNeeded()
@@ -159,6 +172,9 @@ struct ProjectGoalComposerView: View {
             }
         }
         .onChange(of: kind) { _, _ in model.cancelCustomProjectGoalCandidate() }
+        .onChange(of: model.projectGoalCandidate) { _, candidate in
+            if candidate != nil { showsPlan = true }
+        }
         .onDisappear {
             planningTask?.cancel()
             model.cancelCustomProjectGoalCandidate()
@@ -222,8 +238,9 @@ struct ProjectGoalComposerView: View {
                                let suggested = ProjectReleaseInspector.buildNumber(for: newValue) { build = suggested }
                         }
                 }
-                LabeledContent(L10n.text("goal.release.build")) {
+                DisclosureGroup(L10n.text("goal.release.build"), isExpanded: $showsBuild) {
                     TextField(L10n.text("goal.release.build.placeholder"), text: $build).textFieldStyle(.roundedBorder)
+                        .padding(.top, 8)
                 }
                 if !version.isEmpty, ProjectReleaseInspector.buildNumber(for: version) == nil {
                     Text(ProjectGoalRuntimeError.invalidReleaseVersion.localizedDescription).foregroundStyle(palette.warning)

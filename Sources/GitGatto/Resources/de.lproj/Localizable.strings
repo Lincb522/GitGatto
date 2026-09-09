@@ -391,14 +391,14 @@
 "help.topic.goals.title" = "Projektziele";
 "help.topic.goals.summary" = "Speichern Sie ein Lieferergebnis als wiederherstellbare Prüfungen, die vom Repository und dem tatsächlich beobachteten GitHub-Status fortgesetzt werden.";
 "help.goals.create.title" = "Erstellen Sie ein Ziel";
-"help.goals.create.1" = "Öffnen Sie ein lokales Repository und geben Sie dann Ziele ein. Ein Repository kann jeweils nur ein unvollendetes Ziel haben.";
-"help.goals.create.2" = "Ein benutzerdefiniertes Ziel fordert Agent auf, das Ergebnis in unterstützte Bedingungen umzuwandeln. Die Planung ist schreibgeschützt; Das Ziel wird erst erstellt, nachdem Sie den Kandidaten bestätigt haben.";
+"help.goals.create.1" = "Öffne ein Repository, wähle unter Ziele eine Aktion, gib Commit-Nachricht oder Version ein und starte. Pro Repository ist ein Ziel gleichzeitig aktiv.";
+"help.goals.create.2" = "Beschreibe das gewünschte Ergebnis. Agent schlägt nach einer schreibgeschützten Analyse Schritte vor. Prüfe den Umfang und starte.";
 "help.goals.create.3" = "Schnelle Ziele umfassen Commit und Push, GitHub Lieferung und vollständige Veröffentlichung. Für die GitHub-Auslieferung ist ein anderer Zweig als der Standardzweig erforderlich.";
 "help.goals.create.4" = "Das Ziel zeichnet sein Repository, seinen Zweig, seinen Baseline-Commit, seine Schritte und Beweise auf. Durch das Wechseln von Repositorys wird deren Status nicht verwechselt.";
 "help.goals.execute.title" = "Ausführen und wiederherstellen";
-"help.goals.execute.1" = "„Weiter“ führt nur den aktuell umsetzbaren Schritt aus und lädt dann nach jedem Schritt den Status Git und GitHub neu.";
+"help.goals.execute.1" = "Autorisierte Schritte laufen nacheinander; nach jedem Schritt wird der Git- und GitHub-Status neu gelesen. Merge, Veröffentlichung und Installation warten auf Bestätigung.";
 "help.goals.execute.2" = "Ein fehlgeschlagener Schritt behält seinen ursprünglichen Beweis und stoppt bei „Benötigt Aufmerksamkeit“. Abgeschlossene Schritte überleben einen App-Neustart.";
-"help.goals.execute.3" = "Wenn Aktionen fehlschlagen, ist die Agent-Reparatur ab diesem Schritt verfügbar. Das Fernergebnis muss nach der Reparatur noch überprüft werden.";
+"help.goals.execute.3" = "Bei Actions-Fehlern wähle Reparieren und fortfahren. Nur eine erfolgreiche Reparatur im selben Repository und Branch wird fortgesetzt. Abbruch, Fehler oder eine Schutzprüfung stoppen den Ablauf.";
 "help.goals.execute.4" = "Ein Ziel stoppt, wenn der ausgecheckte Zweig von seinem Zielzweig abweicht. Zurückschalten, dann aktualisieren oder fortfahren.";
 "help.goals.release.title" = "Zusammenführen und freigeben";
 "help.goals.release.1" = "Bei einem vollständigen Release werden README und Übersetzung, Version und Build, Änderungsprotokoll und Release-Workflow vor dem Festschreiben und Pushen überprüft.";
@@ -1406,8 +1406,8 @@
 "goal.guide.feature.3" = "Jeder Schritt wird anhand des tatsächlichen Git, der Pull-Anfrage, der Überprüfung und des Aktionsstatus entschieden.";
 "goal.guide.feature.4" = "Zusammenführung, Freigabe und Installation erfordern jeweils eine Bestätigung.";
 "goal.guide.step.1" = "Öffnen Sie ein lokales Repository und geben Sie Ziele ein.";
-"goal.guide.step.2" = "Wähle Neues Ziel und einen Typ, fülle die Felder aus und bestätige nach der Prüfung der Schritte.";
-"goal.guide.step.3" = "Folge der nächsten Aktion in den Details. Speichere geänderte Commit-Nachrichten zuerst; klappe Schritte für Nachweise und Fehler auf.";
+"goal.guide.step.2" = "Wähle Commit und Push, PR, Release oder ein eigenes Ziel. Repository und Branch werden automatisch übernommen.";
+"goal.guide.step.3" = "Prüfe den Umfang und starte. Der Fortschritt steht auf der Zielseite; Details und Verlauf lassen sich bei Bedarf öffnen.";
 "goal.guide.step.4" = "Überprüfen Sie das Remote-Ergebnis und bestätigen Sie dann die Zusammenführung, Freigabe oder Installation.";
 "goal.guide.note" = "Ein Ziel ist an sein Repository und seinen Zweig gebunden. Wenn sich die Verzweigung ändert, wechseln Sie zurück, bevor Sie fortfahren.";
 "goal.custom.error.empty" = "Beschreiben Sie das Zielergebnis.";
@@ -1424,12 +1424,12 @@
 "goal.commit_message" = "Commit-Nachricht";
 "goal.commit_message.placeholder" = "Geben Sie eine Commit-Nachricht ein";
 "goal.action.create" = "Ziel erstellen";
-"goal.action.prepare_release" = "Vorbereiten mit Agent";
+"goal.action.prepare_release" = "Vorbereiten und fortfahren";
 "goal.action.publish_release" = "Veröffentlichung veröffentlichen";
 "goal.action.install_release" = "Installieren und überprüfen";
 "goal.action.open_release" = "Version anzeigen";
 "goal.action.continue" = "Weiter";
-"goal.action.agent_repair" = "Reparatur mit Agent";
+"goal.action.agent_repair" = "Reparieren und fortfahren";
 "goal.action.merge" = "PR zusammenführen";
 "goal.action.cancel" = "Ziel abbrechen";
 "goal.action.refresh" = "Status aktualisieren";
@@ -2382,13 +2382,7 @@
 "lumen.settings.save_error" = "Farben konnten nicht gespeichert werden. Bitte erneut anwenden.";
 
 "goal.workspace.empty" = "Wähle ein Ziel für Commit, Auslieferung oder Release.";
-"goal.workspace.type" = "Zieltyp";
-"goal.workspace.template.deliverChanges" = "Aktuelle Änderungen committen und pushen, dann Actions prüfen.";
-"goal.workspace.template.githubDelivery" = "Änderungen committen, PR erstellen, Reviews und Builds prüfen und den Merge bestätigen.";
-"goal.workspace.template.completeRelease" = "Dokumentation, Version und Release-Konfiguration prüfen, Paket veröffentlichen und lokale Installation bestätigen.";
-"goal.workspace.template.custom" = "Beschreibe das Ergebnis. Prüfe die vom Agent vorgeschlagenen Schritte vor dem Erstellen.";
 "goal.workspace.plan" = "Schritte prüfen";
-"goal.workspace.create_note" = "Erstellen speichert nur das Ziel. Ausführung, Merge, Veröffentlichung und Installation startest du einzeln.";
 "goal.workspace.one_active" = "Dieses Repository hat bereits ein aktives Ziel. Schließe es ab oder stoppe es zuerst.";
 "goal.workspace.search" = "Ziele oder Branches suchen";
 "goal.workspace.filter" = "Ziele filtern";
@@ -2404,7 +2398,6 @@
 "goal.workspace.waiting" = "Warten auf externe Ergebnisse. Aktualisiere den Status bei Bedarf.";
 "goal.workspace.commit_message" = "Commit-Nachricht";
 "goal.workspace.save" = "Speichern";
-"goal.workspace.save_first" = "Speichere die Commit-Nachricht, bevor du fortfährst.";
 "goal.workspace.agent_unavailable" = "Agent ist nicht verfügbar. Prüfe die Konfiguration in den Einstellungen.";
 "goal.workspace.no_evidence" = "Noch kein Ausführungsnachweis für diesen Schritt.";
 "goal.workspace.steps" = "Ausführungsschritte";
@@ -2637,3 +2630,39 @@
 "help.identities.start" = "Unter Projektwerkzeuge Name, E-Mail und optional öffentliche Signaturschlüssel-ID speichern und an Repository oder Verzeichnis binden. Wirksame Werte und Konfigurationsquellen ansehen.";
 "help.identities.result" = "Verzeichnisbindung nutzt Git includeIf. Vor Commit wird der tatsächliche Autor einschließlich Umgebungsvariablen abgeglichen. Abweichungen an der angegebenen Quelle beheben, nicht wahllos globale Einstellungen ändern.";
 "help.identities.caution" = "Commit-Identität ist unabhängig von GitHub-Login und Remote-Rechten. Keine privaten Schlüssel oder Tokens werden gespeichert; Signieren benötigt vorhandenen Schlüssel und Werkzeuge. Profil entfernen bereinigt nur eigene Bindungen, nicht fremde Git-Konfiguration.";
+
+"goal.workspace.current" = "Aktuelles Ziel";
+
+"goal.workspace.start" = "Starten";
+
+"goal.quick.deliverChanges" = "Commit und Push";
+
+"goal.quick.githubDelivery" = "PR erstellen";
+
+"goal.quick.completeRelease" = "Release";
+
+"goal.quick.custom" = "Benutzerdefiniert";
+
+"goal.scope.deliverChanges" = "Alle Änderungen dieses Repositorys stagen und committen, dann den aktuellen Branch pushen.";
+
+"goal.scope.githubDelivery" = "Den aktuellen Branch committen und pushen, einen PR erstellen und Remote-Ergebnisse prüfen. Der Merge wird separat bestätigt.";
+
+"goal.scope.completeRelease" = "Agent bereitet Release-Dateien vor und führt Commit und Push aus. Veröffentlichung und Installation erfordern jeweils eine Bestätigung.";
+
+"goal.workspace.waiting_auto" = "Warten auf Remote-Ergebnisse. Der Status wird automatisch aktualisiert.";
+
+"goal.workspace.agent_record" = "Agent-Verlauf";
+
+"goal.workspace.agent_continuation" = "Nach erfolgreicher Reparatur oder Vorbereitung folgen Commit und Push automatisch. Merge, Release und Installation müssen bestätigt werden.";
+
+"goal.phase.prepare" = "Vorbereiten";
+
+"goal.phase.submit" = "Commit und Push";
+
+"goal.phase.verify" = "Remote-Prüfung";
+
+"goal.phase.publish" = "Veröffentlichen";
+
+"goal.phase.merge" = "PR mergen";
+
+"goal.phase.install" = "Installation prüfen";

@@ -10,7 +10,9 @@ struct ProjectGoalDetailView: View {
     @State private var confirmation: Confirmation?
     @State private var browserPage: InAppBrowserPage?
     @State private var showsMetadata = false
-    @State private var showsLog = true
+    @State private var showsLog = false
+    @State private var showsSteps = false
+    @State private var showsMessage = false
 
     private enum Confirmation: String, Identifiable {
         case merge, publish, install, cancel
@@ -49,16 +51,27 @@ struct ProjectGoalDetailView: View {
     }
 
     private var unsavedMessage: Bool { goal.canEditCommitMessage && message != goal.commitMessage }
-    private var executing: Bool { model.activeProjectGoalID == goal.id && !isSavingMessage }
+    private var agentExecuting: Bool { model.projectGoalAgentID == goal.id }
+    private var executing: Bool { (model.activeProjectGoalID == goal.id && !isSavingMessage) || agentExecuting }
+    private var automaticallyMonitored: Bool {
+        model.appPreferences.monitoringEngineEnabled && model.appPreferences.projectGoalMonitoringEnabled
+    }
 
     var body: some View {
         let palette = AppPalette(colorScheme)
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 header(palette)
+                phases(palette)
                 if !goal.status.isTerminal { nextStep(palette) }
-                if goal.canEditCommitMessage { messageEditor(palette) }
-                steps(palette)
+                if goal.canEditCommitMessage {
+                    DisclosureGroup(L10n.text("goal.workspace.commit_message"), isExpanded: $showsMessage) {
+                        messageEditor(palette).padding(.top, 12)
+                    }
+                }
+                DisclosureGroup(L10n.text("goal.workspace.steps"), isExpanded: $showsSteps) {
+                    steps(palette).padding(.top, 8)
+                }
                 if let failure = goal.lastActionFailure { failureDetails(failure, palette) }
                 metadata(palette)
             }
@@ -114,6 +127,9 @@ struct ProjectGoalDetailView: View {
                         Button(L10n.text("goal.action.open_release")) { browserPage = InAppBrowserPage(url: url, persistent: true) }
                     }
                     Button(L10n.text("goal.workspace.metadata")) { showsMetadata = true }
+                    Button(L10n.text("goal.workspace.agent_record")) { model.selectedSection = .codex }
+                    Button(L10n.text("goal.action.refresh")) { Task { await model.refreshProjectGoals() } }
+                        .disabled(model.isRefreshingProjectGoals || executing)
                     if !goal.status.isTerminal {
                         Divider()
                         Button(L10n.text("goal.action.cancel"), role: .destructive) { confirmation = .cancel }
@@ -160,15 +176,22 @@ struct ProjectGoalDetailView: View {
                 if executing { ProgressView().controlSize(.small) }
                 Text(L10n.text(executing ? "goal.workspace.executing" : "goal.workspace.next"))
                     .foregroundStyle(palette.subtleInk)
-                if let next = goal.nextStep {
+                if agentExecuting {
+                    Text("Agent").fontWeight(.semibold)
+                } else if let next = goal.nextStep {
                     Text(L10n.text("goal.step.\(next.rawValue)")).fontWeight(.semibold)
                 }
             }
-            if let error = goal.lastError, !error.isEmpty {
+            if agentExecuting {
+                Text(model.codexActivity ?? L10n.text("codex.status.running"))
+                    .foregroundStyle(palette.subtleInk)
+                Button(L10n.text("action.cancel")) { model.cancelCodex() }
+                    .buttonStyle(SecondaryButtonStyle())
+            } else if let error = goal.lastError, !error.isEmpty {
                 Text(error).foregroundStyle(palette.danger).textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             } else if goal.status == .waiting {
-                Text(L10n.text("goal.workspace.waiting")).foregroundStyle(palette.subtleInk)
+                Text(L10n.text(automaticallyMonitored ? "goal.workspace.waiting_auto" : "goal.workspace.waiting")).foregroundStyle(palette.subtleInk)
             }
             if let url = goal.pullRequestURL {
                 Button(L10n.text("goal.action.open_pr")) {
@@ -176,14 +199,17 @@ struct ProjectGoalDetailView: View {
                 }
                 .buttonStyle(SecondaryButtonStyle())
             }
-            if let action = goal.nextAction {
+            if !executing, let action = goal.nextAction,
+               !(action == .refresh && goal.status == .waiting && automaticallyMonitored) {
                 Button(L10n.text(action.titleKey)) { perform(action) }
                     .buttonStyle(PrimaryButtonStyle())
-                    .disabled(!model.canPerformProjectGoalAction(action) || unsavedMessage)
+                    .disabled(!model.canPerformProjectGoalAction(action) || isSavingMessage || (unsavedMessage && message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                     .accessibilityIdentifier("goals.nextAction")
-                if unsavedMessage {
-                    Text(L10n.text("goal.workspace.save_first")).foregroundStyle(palette.warning)
-                } else if action.requiresAgent, model.codexAvailability.state != .available {
+                if action == .repair || action == .prepareRelease {
+                    Text(L10n.text("goal.workspace.agent_continuation"))
+                        .foregroundStyle(palette.subtleInk).fixedSize(horizontal: false, vertical: true)
+                }
+                if action.requiresAgent, model.codexAvailability.state != .available {
                     Text(L10n.text("goal.workspace.agent_unavailable")).foregroundStyle(palette.warning)
                 }
             }
@@ -196,7 +222,6 @@ struct ProjectGoalDetailView: View {
 
     private func messageEditor(_ palette: AppPalette) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(L10n.text("goal.workspace.commit_message")).fontWeight(.semibold)
             TextField(L10n.text("goal.commit_message.placeholder"), text: $message, axis: .vertical)
                 .lineLimit(2...6).textFieldStyle(.roundedBorder)
                 .disabled(model.activeProjectGoalID == goal.id || model.isCodexRunning)
@@ -229,7 +254,6 @@ struct ProjectGoalDetailView: View {
 
     private func steps(_ palette: AppPalette) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(L10n.text("goal.workspace.steps")).font(.system(size: 13, weight: .semibold)).padding(.bottom, 12)
             ForEach(Array(goal.steps.enumerated()), id: \.element.id) { index, step in
                 DisclosureGroup(isExpanded: Binding(
                     get: { expandedSteps.contains(step.kind) },
@@ -333,15 +357,46 @@ struct ProjectGoalDetailView: View {
     }
 
     private func perform(_ action: ProjectGoalAction) {
-        guard model.selectedProjectGoal?.id == goal.id else { return }
-        switch action {
-        case .continueDelivery: Task { await model.continueSelectedProjectGoal() }
-        case .repair: Task { await model.repairSelectedProjectGoalWithAgent() }
-        case .prepareRelease: model.prepareSelectedReleaseWithAgent()
-        case .publish: confirmation = .publish
-        case .install: confirmation = .install
-        case .merge: confirmation = .merge
-        case .refresh: Task { await model.refreshProjectGoals() }
+        guard model.selectedProjectGoal?.id == goal.id, !isSavingMessage else { return }
+        isSavingMessage = true
+        Task {
+            if unsavedMessage, !(await model.updateSelectedProjectGoalCommitMessage(message)) {
+                isSavingMessage = false
+                return
+            }
+            isSavingMessage = false
+            guard model.selectedProjectGoal?.id == goal.id else { return }
+            switch action {
+            case .continueDelivery: await model.continueSelectedProjectGoal()
+            case .repair: await model.repairSelectedProjectGoalWithAgent()
+            case .prepareRelease: await model.prepareSelectedReleaseWithAgent()
+            case .publish: confirmation = .publish
+            case .install: confirmation = .install
+            case .merge: confirmation = .merge
+            case .refresh: await model.refreshProjectGoals()
+            }
+        }
+    }
+
+    private func phases(_ palette: AppPalette) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), alignment: .leading)], alignment: .leading, spacing: 10) {
+            ForEach(goal.phases) { phase in
+                let complete = goal.phaseIsComplete(phase)
+                let current = goal.nextStep.map { ProjectGoalPhase.phase(for: $0) == phase } == true && !goal.status.isTerminal
+                HStack(spacing: 8) {
+                    Image(gattoSymbol: complete ? "checkmark.circle" : current ? "play.circle" : "circle")
+                        .frame(width: 20, height: 20).accessibilityHidden(true)
+                    Text(L10n.text("goal.phase.\(phase == .deliver ? (goal.usesReleaseFlow ? "publish" : "merge") : phase.rawValue)"))
+                        .fontWeight(current ? .semibold : .regular)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(complete ? palette.success : current ? palette.accent : palette.subtleInk)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(current ? palette.accentSoft : palette.raisedSurface.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(L10n.text(complete ? "goal.step.status.completed" : current ? "goal.status.\(goal.status.rawValue)" : "goal.step.status.pending"))
+            }
         }
     }
 }

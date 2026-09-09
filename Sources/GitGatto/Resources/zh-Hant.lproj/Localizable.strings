@@ -391,14 +391,14 @@
 "help.topic.goals.title" = "計畫目標";
 "help.topic.goals.summary" = "將交付結果儲存為可恢復的檢查，該檢查繼續從儲存庫和實際觀察到的GitHub 狀態。";
 "help.goals.create.title" = "建立一個目標";
-"help.goals.create.1" = "開啟本機儲存庫，然後輸入目標。一個儲存庫一次只能有一個未完成的目標。";
-"help.goals.create.2" = "自訂目標要求Agent 將結果轉換為支援的條件。規劃是唯讀的；僅在您確認候選人後才創建目標。";
+"help.goals.create.1" = "開啟儲存庫後進入「目標」，選擇快捷操作，填寫提交訊息或版本號，點擊「開始執行」。同一儲存庫一次進行一個目標。";
+"help.goals.create.2" = "自訂目標先描述結果，由 Agent 唯讀分析並擬定步驟；核對操作範圍後，點擊「開始執行」。";
 "help.goals.create.3" = "快速目標涵蓋提交和推送、GitHub 交付和完整發布。 GitHub 傳遞需要預設分支以外的分支。";
 "help.goals.create.4" = "目標記錄其儲存庫、分支、基線提交、步驟和證據。切換存儲庫不會混合它們的狀態。";
 "help.goals.execute.title" = "運行並恢復";
-"help.goals.execute.1" = "繼續僅執行目前可操作的步驟，然後在每個步驟後重新載入 Git 和 GitHub 狀態。";
+"help.goals.execute.1" = "開始後會連續執行已授權的步驟，每一步都重新讀取 Git 與 GitHub 狀態。合併、發佈和安裝會停下等待確認。";
 "help.goals.execute.2" = "失敗的步驟保留其原始證據並停止在「需要注意」處。完成的步驟在應用程式重新啟動後仍然有效。";
-"help.goals.execute.3" = "當操作失敗時，可從此步驟進行Agent 修復。修復後仍需檢查遠端結果。";
+"help.goals.execute.3" = "Actions 失敗時點擊「修復並繼續」。修復成功且儲存庫、分支未變時自動繼續；取消、失敗或保護檢查要求複核時會停下。";
 "help.goals.execute.4" = "如果簽出分支與其目標分支不同，目標就會停止。切換回來，然後刷新或繼續。";
 "help.goals.release.title" = "合併與發布";
 "help.goals.release.1" = "完整的發布會在提交和推送之前檢查README 和翻譯、版本和建置、變更日誌和發布工作流程。";
@@ -1406,8 +1406,8 @@
 "goal.guide.feature.3" = "每個步驟都是根據實際的Git、拉取請求、審核和操作狀態決定的。";
 "goal.guide.feature.4" = "合併、發布、安裝都需要確認。";
 "goal.guide.step.1" = "開啟本機儲存庫並輸入目標。";
-"goal.guide.step.2" = "點擊「新建目標」，選擇類型並填寫資訊，核對步驟後確認建立。";
-"goal.guide.step.3" = "在詳情查看下一步；修改提交訊息後先儲存。展開步驟可查看證據和錯誤。";
+"goal.guide.step.2" = "選擇提交並推送、建立 PR、發佈版本，或描述自訂目標。儲存庫和分支會自動帶入。";
+"goal.guide.step.3" = "核對操作範圍後點擊「開始執行」。目前進度直接顯示在目標頁，詳細步驟和歷史記錄可按需展開。";
 "goal.guide.step.4" = "檢查遠端結果，然後確認合併、發布或安裝。";
 "goal.guide.note" = "目標與其儲存庫和分支綁定。如果分支發生變化，請先切換回來，然後再繼續。";
 "goal.custom.error.empty" = "描述目標結果。";
@@ -1424,12 +1424,12 @@
 "goal.commit_message" = "提交訊息";
 "goal.commit_message.placeholder" = "輸入提交訊息";
 "goal.action.create" = "建立目標";
-"goal.action.prepare_release" = "準備Agent";
+"goal.action.prepare_release" = "準備並繼續";
 "goal.action.publish_release" = "發布版本";
 "goal.action.install_release" = "安裝並驗證";
 "goal.action.open_release" = "查看版本";
 "goal.action.continue" = "繼續";
-"goal.action.agent_repair" = "用Agent修復";
+"goal.action.agent_repair" = "修復並繼續";
 "goal.action.merge" = "合併 PR";
 "goal.action.cancel" = "取消目標";
 "goal.action.refresh" = "刷新狀態";
@@ -2382,13 +2382,7 @@
 "lumen.settings.save_error" = "無法儲存配色，請重新套用。";
 
 "goal.workspace.empty" = "選擇一個目標，逐步完成提交、交付或發佈。";
-"goal.workspace.type" = "目標類型";
-"goal.workspace.template.deliverChanges" = "提交並推送目前的變更，檢查 Actions 結果。";
-"goal.workspace.template.githubDelivery" = "提交變更、建立 PR，檢查審查與建置結果，再確認合併。";
-"goal.workspace.template.completeRelease" = "檢查文件、版本和發佈設定，發佈安裝套件，再確認本機安裝。";
-"goal.workspace.template.custom" = "描述要達到的結果，由 Agent 擬定步驟，確認後建立。";
 "goal.workspace.plan" = "核對步驟";
-"goal.workspace.create_note" = "建立只儲存目標；執行、合併、發佈和安裝由你分別發起。";
 "goal.workspace.one_active" = "目前儲存庫已有進行中的目標。請先完成或停止它，再建立新目標。";
 "goal.workspace.search" = "搜尋目標或分支";
 "goal.workspace.filter" = "篩選目標";
@@ -2404,7 +2398,6 @@
 "goal.workspace.waiting" = "等待外部結果，可重新整理查看最新狀態。";
 "goal.workspace.commit_message" = "提交訊息";
 "goal.workspace.save" = "儲存";
-"goal.workspace.save_first" = "請先儲存提交訊息，再繼續執行。";
 "goal.workspace.agent_unavailable" = "Agent 目前無法使用，請在設定中檢查組態。";
 "goal.workspace.no_evidence" = "此步驟尚無執行證據。";
 "goal.workspace.steps" = "執行步驟";
@@ -2637,3 +2630,39 @@
 "help.identities.start" = "進入“項目工具 → 提交身份”，建立姓名、郵箱及可選的簽名公鑰標識配置，再綁定到倉庫或目錄。面板可查看實際生效值和配置來源。";
 "help.identities.result" = "目錄綁定使用 Git includeIf 規則。提交前會對照所選身份檢查實際作者，包括環境變量的覆蓋。發現不一致時按來源修正，不要直接改動無關的全局設置。";
 "help.identities.caution" = "提交身份與 GitHub 登錄、遠程訪問權限無關。身份配置不保存私鑰或令牌，簽名仍依賴已經配置好的密鑰和工具。刪除身份只清理它自己管理的綁定，不改無關的 Git 配置。";
+
+"goal.workspace.current" = "目前目標";
+
+"goal.workspace.start" = "開始執行";
+
+"goal.quick.deliverChanges" = "提交並推送";
+
+"goal.quick.githubDelivery" = "建立 PR";
+
+"goal.quick.completeRelease" = "發佈版本";
+
+"goal.quick.custom" = "自訂";
+
+"goal.scope.deliverChanges" = "將暫存並提交目前儲存庫的全部變更，然後推送目前分支。";
+
+"goal.scope.githubDelivery" = "將提交並推送目前分支、建立 PR 並檢查遠端結果。合併前會再次確認。";
+
+"goal.scope.completeRelease" = "Agent 會準備發佈檔案，然後提交並推送。發佈版本和安裝應用程式前會分別確認。";
+
+"goal.workspace.waiting_auto" = "正在等待遠端結果，狀態會自動更新。";
+
+"goal.workspace.agent_record" = "Agent 記錄";
+
+"goal.workspace.agent_continuation" = "Agent 修復或準備完成後，會自動繼續提交、推送。合併、發佈和安裝仍需確認。";
+
+"goal.phase.prepare" = "準備檔案";
+
+"goal.phase.submit" = "提交推送";
+
+"goal.phase.verify" = "遠端檢查";
+
+"goal.phase.publish" = "發佈版本";
+
+"goal.phase.merge" = "合併 PR";
+
+"goal.phase.install" = "安裝驗證";

@@ -643,7 +643,8 @@ struct ProjectGoalTests {
         #expect(prompt.contains("GitGatto will add its prerequisites deterministically"))
     }
 
-    @Test("Runs a delivery goal through a real repository and remote")
+    @MainActor
+    @Test("Starts a confirmed delivery through a real repository and remote in one action")
     func deliversRealRepository() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GitGattoGoalRuntimeTests-\(UUID().uuidString)", isDirectory: true)
@@ -680,23 +681,19 @@ struct ProjectGoalTests {
             repositoryService: GitRepositoryService(),
             actionsService: NoWorkflowGoalActionsService()
         )
-        var goal = ProjectGoal(
-            repositoryPath: repository.path,
-            repositoryName: "workspace",
-            branchName: "main",
-            baselineHeadSHA: baseline,
-            commitMessage: "feat: deliver runtime goal"
+        let model = WorkspaceViewModel(
+            projectGoalStore: ProjectGoalStore(fileURL: root.appendingPathComponent("goals.json")),
+            makeProjectGoalRuntime: { _, _ in runtime }
         )
-
-        for _ in 0..<4 {
-            goal = ProjectGoalReconciler.reconcile(goal, with: try await runtime.observe(goal))
-            guard !goal.status.isTerminal, let step = goal.nextStep else { break }
-            let result = try await runtime.execute(step, goal: goal)
-            if case let .committed(hash) = result {
-                goal.targetHeadSHA = hash
-            }
-        }
-        goal = ProjectGoalReconciler.reconcile(goal, with: try await runtime.observe(goal))
+        model.appPreferences.monitoringEngineEnabled = false
+        model.selectedSection = .goals
+        model.apply(try await GitRepositoryService().loadRepositoryOverview(at: repository))
+        model.projectGoalCommitMessage = "feat: deliver runtime goal"
+        #expect(await model.createProjectDeliveryGoal())
+        let created = try #require(model.selectedProjectGoal)
+        #expect(try runGitOutput(["rev-parse", "HEAD"], at: repository) == baseline)
+        await model.startProjectGoal(id: created.id)
+        let goal = try #require(model.selectedProjectGoal)
 
         #expect(goal.status == .completed)
         #expect(goal.targetHeadSHA != baseline)
