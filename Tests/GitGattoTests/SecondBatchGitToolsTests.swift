@@ -255,7 +255,7 @@ struct SecondBatchGitToolsTests {
         )
         let syncModel = RepositorySyncViewModel(service: StaticSyncService(status: status))
         syncModel.load(repositories: [repository], force: true)
-        try await waitUntil { syncModel.statuses.count == 1 }
+        try await waitUntil(timeout: .seconds(15)) { syncModel.statuses.count == 1 }
 
         let sync = RepositorySyncWorkspaceView(syncModel: syncModel, openRepository: { _ in })
             .frame(width: 1_080, height: 680)
@@ -272,7 +272,7 @@ struct SecondBatchGitToolsTests {
         )
         issueModel.configure(repositories: [github.repository])
         issueModel.loadIssues()
-        try await waitUntil { issueModel.selectedIssue != nil && !issueModel.isLoadingIssueComments }
+        try await waitUntil(timeout: .seconds(15)) { issueModel.selectedIssue != nil && !issueModel.isLoadingIssueComments }
         let issues = GitHubIssuesView(
             collaborationModel: issueModel,
             openURL: { _ in },
