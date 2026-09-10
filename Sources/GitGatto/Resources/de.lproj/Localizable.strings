@@ -153,8 +153,8 @@
 "codex.draft.auto_staged" = "%d Änderungen werden automatisch bereitgestellt";
 
 "ai.title" = "Agent";
-"ai.settings.title" = "Agent & Übersetzung CLI";
-"ai.settings.subtitle" = "Konfigurieren Sie separate Befehlszeilen-Engines für Repository-Aufgaben und Übersetzung.";
+"ai.settings.title" = "Agent und Übersetzung";
+"ai.settings.subtitle" = "CLI oder API für Projektaufgaben und Übersetzungen konfigurieren.";
 "ai.settings.project" = "Projekt Agent";
 "ai.settings.project.body" = "Liest das ausgewählte Repository und kann es nur bearbeiten, wenn „Änderungen zulassen“ aktiv ist.";
 "ai.settings.translation" = "Übersetzungs-KI";
@@ -170,7 +170,7 @@
 "ai.settings.translation_arguments" = "Übersetzung";
 "ai.settings.output" = "Ausgabe";
 "ai.settings.arguments.help" = "Ein Argument pro Zeile. Verfügbare Werte: {prompt}, {repository} und {empty}. Wenn {prompt} weggelassen wird, wird die Eingabeaufforderung über die Standardeingabe gesendet.";
-"ai.settings.credentials" = "Jeder CLI verwendet seine vorhandene lokale Anmeldung; GitGatto liest oder speichert seine Anmeldeinformationen nicht.";
+"ai.settings.credentials" = "CLIs verwenden ihre eigene lokale Anmeldung. API-Schlüssel werden getrennt im Schlüsselbund gespeichert.";
 "ai.settings.save" = "Speichern und prüfen";
 "ai.settings.open" = "Agent Einstellungen";
 "ai.provider.codex" = "Codex CLI";
@@ -2666,3 +2666,27 @@
 "goal.phase.merge" = "PR mergen";
 
 "goal.phase.install" = "Installation prüfen";
+
+"ai.api.url" = "API-Basis-URL";
+"ai.api.model" = "Modell";
+"ai.api.model.placeholder" = "Modellkennung";
+"ai.api.key.saved" = "Schlüssel gespeichert";
+"ai.api.key.placeholder" = "Für Dienste ohne Authentifizierung leer lassen";
+"ai.api.key.save" = "Schlüssel speichern";
+"ai.api.key.remove" = "Schlüssel entfernen";
+"ai.api.help" = "Unterstützt OpenAI-kompatible Chat Completions und Tool-Aufrufe. Projektinhalte werden an diese API gesendet. Schlüssel liegen im Schlüsselbund; CLI-Einstellungen bleiben unverändert. Anschließend speichern und prüfen.";
+"ai.api.error.configuration" = "Modell und HTTPS-API-URL eingeben. HTTP ist nur für lokale Dienste erlaubt. Keine Schlüssel in der URL angeben.";
+"ai.api.error.keychain" = "API-Schlüssel konnte nicht gespeichert oder gelesen werden. Schlüsselbund entsperren und erneut versuchen.";
+"ai.api.error.response" = "Leere, unvollständige oder inkompatible API-Antwort. Modell und Chat-Completions-Kompatibilität prüfen und erneut versuchen.";
+"ai.api.error.limit" = "Limit für Tool-Aufrufe erreicht. Ergebnis prüfen und mit einer kleineren Aufgabe fortfahren.";
+"ai.api.error.tool" = "Nicht unterstützter Tool-Aufruf. Ein Modell mit Unterstützung für Funktionsaufrufe auswählen.";
+"ai.api.error.path" = "Dieser Pfad ist nicht beschreibbar. Bearbeitungsmodus aktivieren und einen Pfad im aktuellen Projekt verwenden.";
+"ai.api.error.busy" = "Auf diesem Kanal läuft bereits eine API-Aufgabe. Abschluss abwarten oder abbrechen.";
+"ai.api.error.http" = "API-Anfrage fehlgeschlagen (HTTP %d). URL, Schlüssel, Modellzugriff und Kontingent prüfen und erneut versuchen.";
+"ai.api.progress.tool" = "Aufgabenbefehl wird ausgeführt";
+"ai.provider.dsh" = "DeepSeek Harness";
+"ai.provider.cursor" = "Cursor Agent";
+"ai.provider.copilot" = "GitHub Copilot CLI";
+"ai.provider.qwen" = "Qwen Code";
+"ai.provider.openAICompatible" = "OpenAI-compatible API";
+"ai.provider.deepseek" = "DeepSeek API";

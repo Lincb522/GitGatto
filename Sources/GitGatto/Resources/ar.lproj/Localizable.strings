@@ -153,8 +153,8 @@
 "codex.draft.auto_staged" = "%d يتم تنظيم التغييرات تلقائيًا";
 
 "ai.title" = "Agent";
-"ai.settings.title" = "Agent والترجمة CLI";
-"ai.settings.subtitle" = "قم بتكوين محركات سطر أوامر منفصلة لمهام المستودع والترجمة.";
+"ai.settings.title" = "Agent والترجمة";
+"ai.settings.subtitle" = "اضبط CLI أو API لمهام المشروع والترجمة.";
 "ai.settings.project" = "المشروع Agent";
 "ai.settings.project.body" = "يقرأ المستودع المحدد ولا يمكنه تحريره إلا عندما يكون السماح بالتحرير نشطًا.";
 "ai.settings.translation" = "الترجمة AI";
@@ -170,7 +170,7 @@
 "ai.settings.translation_arguments" = "الترجمة";
 "ai.settings.output" = "الإخراج";
 "ai.settings.arguments.help" = "وسيطة واحدة لكل سطر. القيم المتاحة: {prompt} و{repository} و{empty}. إذا تم حذف {prompt}، فسيتم إرسال المطالبة من خلال الإدخال القياسي.";
-"ai.settings.credentials" = "يستخدم كل CLI تسجيل الدخول المحلي الحالي الخاص به؛ GitGatto لا يقرأ أو يخزن بيانات الاعتماد الخاصة به.";
+"ai.settings.credentials" = "تستخدم أدوات CLI تسجيل الدخول المحلي الخاص بها. تُحفظ مفاتيح API بشكل منفصل في سلسلة المفاتيح.";
 "ai.settings.save" = "احفظ وتحقق";
 "ai.settings.open" = "Agent الإعدادات";
 "ai.provider.codex" = "Codex CLI";
@@ -2666,3 +2666,27 @@
 "goal.phase.merge" = "دمج PR";
 
 "goal.phase.install" = "تثبيت وتحقق";
+
+"ai.api.url" = "عنوان API الأساسي";
+"ai.api.model" = "النموذج";
+"ai.api.model.placeholder" = "معرّف النموذج";
+"ai.api.key.saved" = "تم حفظ المفتاح";
+"ai.api.key.placeholder" = "يمكن تركه فارغًا للخدمات التي لا تتطلب مصادقة";
+"ai.api.key.save" = "حفظ المفتاح";
+"ai.api.key.remove" = "إزالة المفتاح";
+"ai.api.help" = "يدعم Chat Completions واستدعاء الأدوات المتوافقين مع OpenAI. يُرسل محتوى المشروع إلى هذا العنوان. تُحفظ المفاتيح في سلسلة المفاتيح دون تغيير إعدادات CLI. احفظ الاتصال وتحقق منه بعد الإعداد.";
+"ai.api.error.configuration" = "أدخل نموذجًا وعنوان API عبر HTTPS. يُسمح بـ HTTP للخدمات المحلية فقط. لا تضع المفتاح في العنوان.";
+"ai.api.error.keychain" = "تعذر حفظ مفتاح API أو قراءته. افتح قفل سلسلة المفاتيح وحاول مجددًا.";
+"ai.api.error.response" = "استجابة API فارغة أو غير مكتملة أو غير متوافقة. تحقق من النموذج ودعم Chat Completions ثم حاول مجددًا.";
+"ai.api.error.limit" = "تم بلوغ حد استدعاءات الأدوات. راجع النتيجة وقسّم المهمة قبل المتابعة.";
+"ai.api.error.tool" = "طُلب استدعاء أداة غير مدعوم. اختر نموذجًا يدعم استدعاء الوظائف وحاول مجددًا.";
+"ai.api.error.path" = "لا يمكن الكتابة في هذا المسار. فعّل وضع التعديل واستخدم مسارًا داخل المشروع الحالي.";
+"ai.api.error.busy" = "توجد مهمة API قيد التشغيل في هذه القناة. انتظر اكتمالها أو ألغها.";
+"ai.api.error.http" = "فشل طلب API ‏(HTTP %d). تحقق من العنوان والمفتاح وصلاحيات النموذج والحصة ثم حاول مجددًا.";
+"ai.api.progress.tool" = "جارٍ تنفيذ أمر المهمة";
+"ai.provider.dsh" = "DeepSeek Harness";
+"ai.provider.cursor" = "Cursor Agent";
+"ai.provider.copilot" = "GitHub Copilot CLI";
+"ai.provider.qwen" = "Qwen Code";
+"ai.provider.openAICompatible" = "OpenAI-compatible API";
+"ai.provider.deepseek" = "DeepSeek API";

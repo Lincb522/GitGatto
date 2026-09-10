@@ -189,6 +189,9 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             ]
         case .agent:
             [
+                .init("ai.settings.title", bullets: [
+                    "ai.api.help", "ai.settings.credentials", "ai.settings.arguments.help"
+                ]),
                 .init("help.agent.scope.title", bullets: [
                     "help.agent.scope.1",
                     "help.agent.scope.2",

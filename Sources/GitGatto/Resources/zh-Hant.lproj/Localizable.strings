@@ -153,8 +153,8 @@
 "codex.draft.auto_staged" = "%d更改自動上演";
 
 "ai.title" = "Agent";
-"ai.settings.title" = "Agent & 譯 CLI";
-"ai.settings.subtitle" = "為儲存庫任務和翻譯配置單獨的命令列引擎。";
+"ai.settings.title" = "Agent 與翻譯";
+"ai.settings.subtitle" = "分別設定專案操作與翻譯使用的 CLI 或 API。";
 "ai.settings.project" = "項目Agent";
 "ai.settings.project.body" = "讀取選定的儲存庫，並且僅當「允許編輯」處於活動狀態時才能對其進行編輯。";
 "ai.settings.translation" = "人工智慧翻譯";
@@ -170,7 +170,7 @@
 "ai.settings.translation_arguments" = "翻譯";
 "ai.settings.output" = "輸出";
 "ai.settings.arguments.help" = "每行一個參數。可用值：{prompt}、{repository} 和 {empty}。如果省略 {prompt}，則透過標準輸入發送提示。";
-"ai.settings.credentials" = "每個CLI 使用其現有的本地登入； GitGatto 不讀取或儲存其憑證。";
+"ai.settings.credentials" = "CLI 繼續使用各自的本機登入狀態；API 金鑰獨立儲存在鑰匙圈。";
 "ai.settings.save" = "保存並檢查";
 "ai.settings.open" = "Agent設置";
 "ai.provider.codex" = "CodexCLI";
@@ -2666,3 +2666,27 @@
 "goal.phase.merge" = "合併 PR";
 
 "goal.phase.install" = "安裝驗證";
+
+"ai.api.url" = "API 位址";
+"ai.api.model" = "模型";
+"ai.api.model.placeholder" = "模型識別碼";
+"ai.api.key.saved" = "金鑰已儲存";
+"ai.api.key.placeholder" = "無需驗證的服務可留空";
+"ai.api.key.save" = "儲存金鑰";
+"ai.api.key.remove" = "移除金鑰";
+"ai.api.help" = "支援 OpenAI 相容的 Chat Completions 與工具呼叫。專案內容會傳送至此介面。金鑰獨立儲存在鑰匙圈，不修改 CLI 設定。設定後點選「儲存並檢查」。";
+"ai.api.error.configuration" = "請填寫模型與 HTTPS 介面位址；本機服務可使用 HTTP。不要將金鑰填入位址。";
+"ai.api.error.keychain" = "無法儲存或讀取 API 金鑰。請解鎖鑰匙圈後重試。";
+"ai.api.error.response" = "介面回應為空、不完整或格式不相容。請檢查模型與 Chat Completions 支援情況後重試。";
+"ai.api.error.limit" = "已達單次任務的工具呼叫上限。請檢查結果，縮小任務後繼續。";
+"ai.api.error.tool" = "介面要求了不支援的工具呼叫。請選擇支援工具呼叫的模型後重試。";
+"ai.api.error.path" = "Agent 無法寫入此路徑。請開啟修改模式，並選擇目前專案內的路徑。";
+"ai.api.error.busy" = "此通道已有 API 任務執行中。請等待完成或先取消。";
+"ai.api.error.http" = "API 請求失敗（HTTP %d）。請檢查位址、金鑰、模型權限與服務額度後重試。";
+"ai.api.progress.tool" = "正在執行任務命令";
+"ai.provider.dsh" = "DeepSeek Harness";
+"ai.provider.cursor" = "Cursor Agent";
+"ai.provider.copilot" = "GitHub Copilot CLI";
+"ai.provider.qwen" = "Qwen Code";
+"ai.provider.openAICompatible" = "OpenAI 相容 API";
+"ai.provider.deepseek" = "DeepSeek API";

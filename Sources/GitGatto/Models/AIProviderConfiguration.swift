@@ -12,7 +12,13 @@ enum AIProviderPreset: String, CaseIterable, Identifiable, Codable, Sendable {
     case claude
     case gemini
     case opencode
+    case dsh
+    case cursor
+    case copilot
+    case qwen
     case custom
+    case openAICompatible
+    case deepseek
 
     var id: String { rawValue }
 
@@ -24,7 +30,13 @@ enum AIProviderPreset: String, CaseIterable, Identifiable, Codable, Sendable {
         case .claude: "Claude Code"
         case .gemini: "Gemini CLI"
         case .opencode: "OpenCode"
+        case .dsh: "DeepSeek Harness"
+        case .cursor: "Cursor Agent"
+        case .copilot: "GitHub Copilot CLI"
+        case .qwen: "Qwen Code"
         case .custom: "Custom CLI"
+        case .openAICompatible: "OpenAI-compatible API"
+        case .deepseek: "DeepSeek API"
         }
     }
 
@@ -34,8 +46,29 @@ enum AIProviderPreset: String, CaseIterable, Identifiable, Codable, Sendable {
         case .claude: "claude"
         case .gemini: "gemini"
         case .opencode: "opencode"
-        case .custom: ""
+        case .dsh: "dsh"
+        case .cursor: "agent"
+        case .copilot: "copilot"
+        case .qwen: "qwen"
+        case .custom, .openAICompatible, .deepseek: ""
         }
+    }
+
+    var usesAPI: Bool { self == .openAICompatible || self == .deepseek }
+
+    var requiresProjectSandbox: Bool { [.dsh, .cursor, .copilot, .qwen].contains(self) }
+
+    var stateDirectory: URL? {
+        let name: String
+        switch self {
+        case .dsh: name = ProcessInfo.processInfo.environment["DSH_HOME"] ?? "~/.dsh"
+        case .cursor: name = "~/.cursor"
+        case .copilot: name = ProcessInfo.processInfo.environment["COPILOT_HOME"] ?? "~/.copilot"
+        case .qwen: name = "~/.qwen"
+        default: return nil
+        }
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return URL(fileURLWithPath: NSString(string: name).expandingTildeInPath, isDirectory: true)
     }
 }
 
@@ -55,6 +88,7 @@ struct AIProviderConfiguration: Codable, Sendable, Equatable {
     var editArguments: String
     var translationArguments: String
     var outputFormat: AIOutputFormat
+    var api: AIAPIConfiguration?
 
     static func preset(_ preset: AIProviderPreset) -> AIProviderConfiguration {
         switch preset {
@@ -102,6 +136,18 @@ struct AIProviderConfiguration: Codable, Sendable, Equatable {
                 translationArguments: "run\n{prompt}",
                 outputFormat: .plainText
             )
+        case .dsh, .cursor, .copilot, .qwen:
+            cliPreset(preset)
+        case .openAICompatible, .deepseek:
+            AIProviderConfiguration(
+                preset: preset, displayName: preset.defaultName, executable: "",
+                versionArguments: "", analyzeArguments: "", editArguments: "",
+                translationArguments: "", outputFormat: .plainText,
+                api: AIAPIConfiguration(
+                    baseURL: preset == .deepseek ? "https://api.deepseek.com" : "",
+                    model: preset == .deepseek ? "deepseek-v4-flash" : ""
+                )
+            )
         case .custom:
             AIProviderConfiguration(
                 preset: preset,
@@ -114,6 +160,33 @@ struct AIProviderConfiguration: Codable, Sendable, Equatable {
                 outputFormat: .plainText
             )
         }
+    }
+
+    private static func cliPreset(_ preset: AIProviderPreset) -> AIProviderConfiguration {
+        let analyze: String
+        let edit: String
+        switch preset {
+        case .dsh:
+            analyze = "--profile\nheadless\n{prompt}"
+            edit = analyze
+        case .cursor:
+            analyze = "--print\n--output-format\ntext\n--mode\nask\n{prompt}"
+            edit = "--print\n--output-format\ntext\n--sandbox\nenabled\n{prompt}"
+        case .copilot:
+            let common = "--silent\n--no-ask-user\n--disable-builtin-mcps\n--no-auto-update\n"
+            analyze = common + "--plan\n--allow-tool\nread\n-p\n{prompt}"
+            edit = common + "--allow-tool\nread\n--allow-tool\nwrite\n--allow-tool\nshell\n-p\n{prompt}"
+        case .qwen:
+            analyze = "--output-format\ntext\n--approval-mode\nplan\n--prompt\n{prompt}"
+            edit = "--output-format\ntext\n--approval-mode\nauto-edit\n--prompt\n{prompt}"
+        default:
+            preconditionFailure("Not an additional CLI preset")
+        }
+        return AIProviderConfiguration(
+            preset: preset, displayName: preset.defaultName, executable: preset.defaultExecutable,
+            versionArguments: "--version", analyzeArguments: analyze, editArguments: edit,
+            translationArguments: analyze, outputFormat: .plainText
+        )
     }
 
     var resolvedName: String {

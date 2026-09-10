@@ -153,12 +153,12 @@
 "codex.draft.auto_staged" = "已自动暂存 %d 项改动";
 
 "ai.title" = "Agent";
-"ai.settings.title" = "Agent 与翻译 CLI";
-"ai.settings.subtitle" = "分别配置项目操作与翻译使用的命令行引擎。";
+"ai.settings.title" = "Agent 与翻译";
+"ai.settings.subtitle" = "分别配置项目操作与翻译使用的 CLI 或 API。";
 "ai.settings.project" = "项目 Agent";
 "ai.settings.project.body" = "读取当前选择的仓库，仅在“允许修改”开启时修改项目。";
 "ai.settings.translation" = "翻译 AI";
-"ai.settings.translation.body" = "使用独立进程通道，Agent 运行时仍可继续翻译。";
+"ai.settings.translation.body" = "使用独立任务通道，Agent 运行时仍可继续翻译。";
 "ai.settings.provider" = "预设";
 "ai.settings.name" = "名称";
 "ai.settings.executable" = "可执行文件";
@@ -170,7 +170,7 @@
 "ai.settings.translation_arguments" = "翻译";
 "ai.settings.output" = "输出";
 "ai.settings.arguments.help" = "每行一个参数。可使用 {prompt}、{repository} 和 {empty}；未填写 {prompt} 时会通过标准输入发送提示词。";
-"ai.settings.credentials" = "各 CLI 直接使用现有本机登录状态；GitGatto 不读取或保存凭据。";
+"ai.settings.credentials" = "CLI 继续使用各自的本机登录状态；API 密钥单独保存在钥匙串。";
 "ai.settings.save" = "保存并检测";
 "ai.settings.open" = "Agent 设置";
 "ai.provider.codex" = "Codex CLI";
@@ -2666,3 +2666,27 @@
 "goal.phase.merge" = "合并 PR";
 
 "goal.phase.install" = "安装验证";
+
+"ai.api.url" = "API 地址";
+"ai.api.model" = "模型";
+"ai.api.model.placeholder" = "模型标识";
+"ai.api.key.saved" = "密钥已保存";
+"ai.api.key.placeholder" = "无需鉴权的服务可留空";
+"ai.api.key.save" = "保存密钥";
+"ai.api.key.remove" = "移除密钥";
+"ai.api.help" = "支持 OpenAI 兼容的 Chat Completions 和工具调用。项目内容会发送至该接口。密钥单独保存在钥匙串，不改 CLI 配置。配置后点击“保存并检测”。";
+"ai.api.error.configuration" = "请填写模型和 HTTPS 接口地址；本机服务可用 HTTP。不要把密钥填入地址。";
+"ai.api.error.keychain" = "无法保存或读取 API 密钥。请解锁钥匙串后重试。";
+"ai.api.error.response" = "接口返回为空、不完整或格式不兼容。请检查模型与 Chat Completions 支持情况后重试。";
+"ai.api.error.limit" = "已达到单次任务的工具调用上限。请检查结果，缩小任务后继续。";
+"ai.api.error.tool" = "接口请求了不支持的工具调用。请选择支持工具调用的模型后重试。";
+"ai.api.error.path" = "Agent 无法写入该路径。请开启修改模式，并选择当前项目内的路径。";
+"ai.api.error.busy" = "此通道已有 API 任务运行。请等待完成或先取消。";
+"ai.api.error.http" = "API 请求失败（HTTP %d）。请检查地址、密钥、模型权限及服务额度后重试。";
+"ai.api.progress.tool" = "正在执行任务命令";
+"ai.provider.dsh" = "DeepSeek Harness";
+"ai.provider.cursor" = "Cursor Agent";
+"ai.provider.copilot" = "GitHub Copilot CLI";
+"ai.provider.qwen" = "Qwen Code";
+"ai.provider.openAICompatible" = "OpenAI 兼容 API";
+"ai.provider.deepseek" = "DeepSeek API";

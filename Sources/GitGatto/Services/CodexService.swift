@@ -131,6 +131,8 @@ actor CodexService: CodexServing {
 
     private var currentInvocation: CodexCommandInvocation?
     private let gitRunner = GitCommandRunner()
+    private let apiClient: AIAPIClient
+    private let configurationSource: @Sendable (AIExecutionLane) -> AIProviderConfiguration
     private let lane: AIExecutionLane
     private let translationRunTimeout: Duration
     private let homebrewManager: any DevelopmentToolHomebrewManaging
@@ -138,15 +140,23 @@ actor CodexService: CodexServing {
     init(
         lane: AIExecutionLane = .project,
         translationRunTimeout: Duration = CodexService.defaultTranslationRunTimeout,
-        homebrewManager: any DevelopmentToolHomebrewManaging = DevelopmentToolHomebrewService()
+        homebrewManager: any DevelopmentToolHomebrewManaging = DevelopmentToolHomebrewService(),
+        apiClient: AIAPIClient = AIAPIClient(),
+        configurationSource: @escaping @Sendable (AIExecutionLane) -> AIProviderConfiguration = AIProviderSettings.load
     ) {
         self.lane = lane
         self.translationRunTimeout = translationRunTimeout
         self.homebrewManager = homebrewManager
+        self.apiClient = apiClient
+        self.configurationSource = configurationSource
     }
 
     func probe() async -> CodexAvailability {
-        let configuration = AIProviderSettings.load(lane)
+        let configuration = configurationSource(lane)
+        if configuration.preset.usesAPI {
+            guard let api = configuration.api else { return .unavailable }
+            return await apiClient.probe(api)
+        }
         guard let executableURL = CodexExecutableLocator.find(command: configuration.executable) else {
             return .unavailable
         }
@@ -162,14 +172,14 @@ actor CodexService: CodexServing {
         )
 
         do {
-            let output = try await invocation.run()
+            let output = try await Self.probeInvocation(invocation)
             guard output.exitCode == 0 else { return .unavailable }
             if configuration.preset == .codex {
-                let loginStatus = try await CodexCommandInvocation(
+                let loginStatus = try await Self.probeInvocation(CodexCommandInvocation(
                     executableURL: executableURL,
                     arguments: ["login", "status"],
                     input: nil
-                ).run()
+                ))
                 guard loginStatus.exitCode == 0 else { return .unavailable }
             }
             let version = String(decoding: output.standardOutput, as: UTF8.self)
@@ -180,18 +190,44 @@ actor CodexService: CodexServing {
         }
     }
 
+    private static func probeInvocation(_ invocation: CodexCommandInvocation) async throws -> CodexCommandOutput {
+        try await withTaskCancellationHandler {
+            try await withThrowingTaskGroup(of: CodexCommandOutput.self) { group in
+                group.addTask { try await invocation.run() }
+                group.addTask {
+                    try await Task.sleep(for: .seconds(10))
+                    invocation.cancel()
+                    throw CodexServiceError.timedOut
+                }
+                defer { group.cancelAll() }
+                guard let result = try await group.next() else { throw CodexServiceError.missingResponse }
+                return result
+            }
+        } onCancel: { invocation.cancel() }
+    }
+
     func run(
         prompt: String,
         context: [CodexMessage],
         in repositoryURL: URL,
         mode: CodexRunMode
     ) async throws -> CodexRunResult {
-        let configuration = AIProviderSettings.load(lane)
+        let configuration = configurationSource(lane)
+        let instruction = Self.instruction(prompt: prompt, context: context, mode: mode)
+        let projectDirectories = configuration.preset.usesAPI || configuration.preset.requiresProjectSandbox
+            ? try await projectDirectories(in: repositoryURL) : [repositoryURL]
+        if configuration.preset.usesAPI {
+            guard let api = configuration.api else { throw AIAPIError.invalidConfiguration }
+            return try await apiClient.run(
+                configuration: api, prompt: instruction, timeout: Self.projectRunTimeout,
+                tools: AIAPIToolRunner(directory: repositoryURL,
+                    writableDirectories: mode == .edit ? projectDirectories : [], allowsNetwork: false,
+                    additionalReadableDirectories: projectDirectories)
+            )
+        }
         guard let executableURL = CodexExecutableLocator.find(command: configuration.executable) else {
             throw CodexServiceError.executableNotFound
         }
-
-        let instruction = Self.instruction(prompt: prompt, context: context, mode: mode)
         if configuration.preset != .codex {
             return try await runConfigured(
                 executableURL: executableURL,
@@ -199,7 +235,9 @@ actor CodexService: CodexServing {
                 arguments: configuration.arguments(for: .project, mode: mode),
                 prompt: instruction,
                 currentDirectoryURL: repositoryURL,
-                timeout: Self.projectRunTimeout
+                timeout: Self.projectRunTimeout,
+                projectMode: mode,
+                projectWritableDirectories: projectDirectories
             )
         }
 
@@ -260,6 +298,18 @@ actor CodexService: CodexServing {
             throw CodexServiceError.executionFailed(output.exitCode)
         }
         return try CodexJSONLParser.parse(output.standardOutput)
+    }
+
+    private func projectDirectories(in repository: URL) async throws -> [URL] {
+        let result = try await gitRunner.run(at: repository,
+            arguments: ["rev-parse", "--git-common-dir"], acceptedExitCodes: [0, 128])
+        // Non-Git folders can still be used for Agent tasks; linked worktrees additionally need
+        // access to their shared Git metadata outside the working directory.
+        guard result.exitCode == 0 else { return [repository] }
+        let path = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { return [repository] }
+        let common = path.hasPrefix("/") ? URL(fileURLWithPath: path) : repository.appendingPathComponent(path)
+        return [repository, common.standardizedFileURL]
     }
 
     func runWithProvidedContext(
@@ -433,10 +483,8 @@ actor CodexService: CodexServing {
         progress: @escaping @Sendable (AgentInstallProgress) async -> Void
     ) async throws -> CodexRunResult {
         await progress(AgentInstallProgress(.preparing))
-        let configuration = AIProviderSettings.load(lane)
-        guard let executableURL = CodexExecutableLocator.find(command: configuration.executable) else {
-            throw CodexServiceError.executableNotFound
-        }
+        let configuration = configurationSource(lane)
+        let executableURL = try Self.installExecutable(for: configuration)
         let workingDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("GitGatto-Artifact-Install-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workingDirectory, withIntermediateDirectories: true)
@@ -460,10 +508,8 @@ actor CodexService: CodexServing {
         progress: @escaping @Sendable (AgentInstallProgress) async -> Void
     ) async throws -> CodexRunResult {
         await progress(AgentInstallProgress(.preparing))
-        let configuration = AIProviderSettings.load(lane)
-        guard let executableURL = CodexExecutableLocator.find(command: configuration.executable) else {
-            throw CodexServiceError.executableNotFound
-        }
+        let configuration = configurationSource(lane)
+        let executableURL = try Self.installExecutable(for: configuration)
         let workingDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("GitGatto-Tool-Install-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workingDirectory, withIntermediateDirectories: true)
@@ -525,10 +571,8 @@ actor CodexService: CodexServing {
         progress: @escaping @Sendable (AgentInstallProgress) async -> Void
     ) async throws -> CodexRunResult {
         await progress(AgentInstallProgress(.preparing))
-        let configuration = AIProviderSettings.load(lane)
-        guard let executableURL = CodexExecutableLocator.find(command: configuration.executable) else {
-            throw CodexServiceError.executableNotFound
-        }
+        let configuration = configurationSource(lane)
+        let executableURL = try Self.installExecutable(for: configuration)
         let workingDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("GitGatto-Tool-Upgrade-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workingDirectory, withIntermediateDirectories: true)
@@ -593,8 +637,20 @@ actor CodexService: CodexServing {
         return Self.installerResult(result)
     }
 
+    private static func installExecutable(for configuration: AIProviderConfiguration) throws -> URL? {
+        if configuration.preset.usesAPI {
+            guard let api = configuration.api else { throw AIAPIError.invalidConfiguration }
+            try api.validate()
+            return nil
+        }
+        guard let executable = CodexExecutableLocator.find(command: configuration.executable) else {
+            throw CodexServiceError.executableNotFound
+        }
+        return executable
+    }
+
     private func runInstaller(
-        executableURL: URL,
+        executableURL: URL?,
         configuration: AIProviderConfiguration,
         prompt: String,
         workingDirectory: URL,
@@ -606,6 +662,16 @@ actor CodexService: CodexServing {
         let writableDirectories = Self.agentInstallWritableDirectories(
             additionalWritableDirectories
         )
+        if configuration.preset.usesAPI {
+            guard let api = configuration.api else { throw AIAPIError.invalidConfiguration }
+            return try await apiClient.run(
+                configuration: api, prompt: prompt, timeout: .seconds(900),
+                tools: AIAPIToolRunner(directory: workingDirectory,
+                    writableDirectories: writableDirectories + [workingDirectory], allowsNetwork: allowsNetwork),
+                progress: progress
+            )
+        }
+        guard let executableURL else { throw CodexServiceError.executableNotFound }
         if configuration.preset != .codex {
             await progress(AgentInstallProgress(.installing))
             let result = try await runConfigured(
@@ -804,7 +870,7 @@ actor CodexService: CodexServing {
             writableDirectories + [fileManager.temporaryDirectory]
         ).filter { fileManager.fileExists(atPath: $0.path) }
         let exceptions = ([URL(fileURLWithPath: "/dev", isDirectory: true)] + roots)
-            .map { $0.standardizedFileURL.resolvingSymlinksInPath().path }
+            .map { AgentSandboxPath.canonical($0) }
             .reduce(into: [String]()) { values, path in
                 if !values.contains(path) { values.append(path) }
             }
@@ -815,7 +881,7 @@ actor CodexService: CodexServing {
         // Later SBPL rules take precedence, so these denials override both `(allow default)` and
         // any writable root that happens to contain a protected path.
         let protectedRules = installerSandboxProtectedPaths()
-            .map { $0.standardizedFileURL.resolvingSymlinksInPath().path }
+            .map { AgentSandboxPath.canonical($0) }
             .reduce(into: [String]()) { values, path in
                 if !values.contains(path) { values.append(path) }
             }
@@ -1019,7 +1085,11 @@ actor CodexService: CodexServing {
         prompt: String,
         timeout: Duration
     ) async throws -> CodexRunResult {
-        let configuration = AIProviderSettings.load(lane)
+        let configuration = configurationSource(lane)
+        if configuration.preset.usesAPI {
+            guard let api = configuration.api else { throw AIAPIError.invalidConfiguration }
+            return try await apiClient.run(configuration: api, prompt: prompt, timeout: timeout)
+        }
         guard let executableURL = CodexExecutableLocator.find(command: configuration.executable) else {
             throw CodexServiceError.executableNotFound
         }
@@ -1039,7 +1109,8 @@ actor CodexService: CodexServing {
                 arguments: arguments,
                 prompt: prompt,
                 currentDirectoryURL: temporaryDirectory,
-                timeout: timeout
+                timeout: timeout,
+                projectMode: .analyze
             )
         }
 
@@ -1100,7 +1171,9 @@ actor CodexService: CodexServing {
         prompt: String,
         currentDirectoryURL: URL,
         timeout: Duration,
-        controlledWritableDirectories: [URL]? = nil
+        controlledWritableDirectories: [URL]? = nil,
+        projectMode: CodexRunMode? = nil,
+        projectWritableDirectories: [URL] = []
     ) async throws -> CodexRunResult {
         let containsPromptPlaceholder = arguments.contains { $0.contains("{prompt}") }
         let expandedArguments = arguments.map {
@@ -1110,19 +1183,25 @@ actor CodexService: CodexServing {
         }
         let launchExecutableURL: URL
         let launchArguments: [String]
-        if let controlledWritableDirectories {
+        let needsProjectSandbox = configuration.preset.requiresProjectSandbox && projectMode != nil
+        if controlledWritableDirectories != nil || needsProjectSandbox {
             let sandboxURL = URL(fileURLWithPath: "/usr/bin/sandbox-exec")
             guard FileManager.default.isExecutableFile(atPath: sandboxURL.path) else {
                 throw CodexServiceError.installerSandboxUnavailable
             }
             launchExecutableURL = sandboxURL
-            launchArguments = [
-                "-p",
-                Self.installerSandboxProfile(
-                    writableDirectories: controlledWritableDirectories + [currentDirectoryURL]
-                ),
-                executableURL.path
-            ] + expandedArguments
+            let stateDirectories = configuration.preset.stateDirectory.map { [$0] } ?? []
+            var profile = Self.installerSandboxProfile(
+                writableDirectories: (controlledWritableDirectories ?? []) + stateDirectories
+                    + ((projectMode == .analyze) ? [] : [currentDirectoryURL] + projectWritableDirectories)
+            )
+            if projectMode == .analyze {
+                // The temp directory may contain the repository; its generic cache exception
+                // must not make an analysis task writable.
+                let root = Self.sandboxEscaped(AgentSandboxPath.canonical(currentDirectoryURL))
+                profile += "\n(deny file-write* (subpath \"\(root)\"))"
+            }
+            launchArguments = ["-p", profile, executableURL.path] + expandedArguments
         } else {
             launchExecutableURL = executableURL
             launchArguments = expandedArguments
@@ -1175,6 +1254,7 @@ actor CodexService: CodexServing {
 
     func cancel() async {
         currentInvocation?.cancel()
+        await apiClient.cancel()
         await homebrewManager.cancel()
     }
 
@@ -1313,17 +1393,18 @@ enum CodexResponseFormatter {
     }
 }
 
-private struct CodexCommandOutput: Sendable {
+struct CodexCommandOutput: Sendable {
     let standardOutput: Data
     let standardError: Data
     let exitCode: Int32
 }
 
-private final class CodexCommandInvocation: @unchecked Sendable {
+final class CodexCommandInvocation: @unchecked Sendable {
     private let executableURL: URL
     private let arguments: [String]
     private let input: String?
     private let currentDirectoryURL: URL?
+    private let environmentOverride: [String: String]?
     private let process = Process()
     private let lock = NSLock()
     private var hasStarted = false
@@ -1333,12 +1414,14 @@ private final class CodexCommandInvocation: @unchecked Sendable {
         executableURL: URL,
         arguments: [String],
         input: String?,
-        currentDirectoryURL: URL? = nil
+        currentDirectoryURL: URL? = nil,
+        environment: [String: String]? = nil
     ) {
         self.executableURL = executableURL
         self.arguments = arguments
         self.input = input
         self.currentDirectoryURL = currentDirectoryURL
+        self.environmentOverride = environment
     }
 
     func run() async throws -> CodexCommandOutput {
@@ -1377,8 +1460,9 @@ private final class CodexCommandInvocation: @unchecked Sendable {
         process.standardError = errorPipe
         process.standardInput = inputPipe
         process.currentDirectoryURL = currentDirectoryURL
-        var environment = ProcessInfo.processInfo.environment
+        var environment = environmentOverride ?? ProcessInfo.processInfo.environment
         environment["NO_COLOR"] = "1"
+        environment["PATH"] = GitCommandRunner.commandPath(inheritedPath: environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin")
         process.environment = environment
 
         lock.lock()

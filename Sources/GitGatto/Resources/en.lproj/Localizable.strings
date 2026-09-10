@@ -153,8 +153,8 @@
 "codex.draft.auto_staged" = "%d changes automatically staged";
 
 "ai.title" = "Agent";
-"ai.settings.title" = "Agent & Translation CLI";
-"ai.settings.subtitle" = "Configure separate command-line engines for repository tasks and translation.";
+"ai.settings.title" = "Agent & translation";
+"ai.settings.subtitle" = "Configure the CLI or API used for project tasks and translation.";
 "ai.settings.project" = "Project Agent";
 "ai.settings.project.body" = "Reads the selected repository and can edit it only when Allow Edits is active.";
 "ai.settings.translation" = "Translation AI";
@@ -170,7 +170,7 @@
 "ai.settings.translation_arguments" = "Translation";
 "ai.settings.output" = "Output";
 "ai.settings.arguments.help" = "One argument per line. Available values: {prompt}, {repository}, and {empty}. If {prompt} is omitted, the prompt is sent through standard input.";
-"ai.settings.credentials" = "Each CLI uses its existing local sign-in; GitGatto does not read or store its credentials.";
+"ai.settings.credentials" = "CLIs use their own local sign-in state. API keys are stored separately in Keychain.";
 "ai.settings.save" = "Save & Check";
 "ai.settings.open" = "Agent Settings";
 "ai.provider.codex" = "Codex CLI";
@@ -2666,3 +2666,27 @@
 "goal.phase.merge" = "Merge PR";
 
 "goal.phase.install" = "Install and verify";
+
+"ai.api.url" = "API base URL";
+"ai.api.model" = "Model";
+"ai.api.model.placeholder" = "Model identifier";
+"ai.api.key.saved" = "Key saved";
+"ai.api.key.placeholder" = "Leave blank for a service without authentication";
+"ai.api.key.save" = "Save key";
+"ai.api.key.remove" = "Remove key";
+"ai.api.help" = "Supports OpenAI-compatible Chat Completions and tool calls. Project content is sent to this endpoint. Keys are stored in Keychain, not CLI settings. Use Save & Check after configuring the connection.";
+"ai.api.error.configuration" = "Enter a model and an HTTPS API URL. HTTP is allowed only for a local service. Do not put keys in the URL.";
+"ai.api.error.keychain" = "The API key could not be saved or read. Unlock Keychain and try again.";
+"ai.api.error.response" = "The API returned an empty, incomplete, or unsupported response. Check the model and Chat Completions compatibility, then retry.";
+"ai.api.error.limit" = "The Agent reached its tool-call limit. Review the result before continuing with a smaller task.";
+"ai.api.error.tool" = "The API requested an unsupported tool call. Select a model that supports function calling and retry.";
+"ai.api.error.path" = "The Agent cannot write to this path. Use edit mode and a path within the current project.";
+"ai.api.error.busy" = "An API task is already running on this channel. Cancel it or wait for it to finish.";
+"ai.api.error.http" = "API request failed (HTTP %d). Check the endpoint, key, model access, and service quota, then retry.";
+"ai.api.progress.tool" = "Executing a task command";
+"ai.provider.dsh" = "DeepSeek Harness";
+"ai.provider.cursor" = "Cursor Agent";
+"ai.provider.copilot" = "GitHub Copilot CLI";
+"ai.provider.qwen" = "Qwen Code";
+"ai.provider.openAICompatible" = "OpenAI-compatible API";
+"ai.provider.deepseek" = "DeepSeek API";

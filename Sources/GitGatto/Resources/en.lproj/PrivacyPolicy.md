@@ -1,6 +1,6 @@
 # GitGatto Privacy Policy
 
-Effective: September 2, 2026
+Effective: September 10, 2026
 
 ## 1. Local-first storage
 
@@ -8,7 +8,7 @@ Repository locations, settings, Agent conversations, operation records, and docu
 
 ## 2. Credentials
 
-GitGatto uses existing Git, SSH, GitHub CLI, and Agent CLI sessions. It does not read, display, or store access tokens, passwords, or private keys. Credentials remain managed by the system Keychain or the relevant CLI.
+Git, SSH, GitHub CLI, and Agent CLI continue using their own authentication stores. For a custom API, GitGatto stores the key you provide in the system Keychain and reads it only when contacting the corresponding endpoint. The key is not written to regular settings, conversation records, or tool-process environments. You can remove it in Agent or translation settings.
 
 ## 3. Network requests
 
@@ -24,7 +24,7 @@ Removing a repository from the sidebar does not delete it from disk or automatic
 
 ## 6. Sharing
 
-GitGatto does not sell personal information. Data is processed by another service only when you initiate a remote action, use a third-party CLI, or disclosure is legally required.
+GitGatto does not sell personal information. Data is processed by another service only when you initiate a remote action, use a third-party CLI or API, or disclosure is legally required.
 
 ## 7. Changes and contact
 

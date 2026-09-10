@@ -153,8 +153,8 @@
 "codex.draft.auto_staged" = "%d автоматически вносятся изменения";
 
 "ai.title" = "Agent";
-"ai.settings.title" = "Agent и перевод CLI";
-"ai.settings.subtitle" = "Настройте отдельные механизмы командной строки для задач репозитория и перевода.";
+"ai.settings.title" = "Agent и перевод";
+"ai.settings.subtitle" = "Настройте CLI или API для задач проекта и перевода.";
 "ai.settings.project" = "Проект Agent";
 "ai.settings.project.body" = "Читает выбранный репозиторий и может редактировать его только тогда, когда активен параметр «Разрешить редактирование».";
 "ai.settings.translation" = "ИИ-переводчик";
@@ -170,7 +170,7 @@
 "ai.settings.translation_arguments" = "Перевод";
 "ai.settings.output" = "Вывод";
 "ai.settings.arguments.help" = "Один аргумент в строке. Доступные значения: {prompt}, {repository} и {empty}. Если {prompt} опущено, приглашение отправляется через стандартный ввод.";
-"ai.settings.credentials" = "Каждый CLI использует существующую локальную систему входа; GitGatto не считывает и не сохраняет свои учетные данные.";
+"ai.settings.credentials" = "CLI используют собственную локальную авторизацию. Ключи API хранятся отдельно в Связке ключей.";
 "ai.settings.save" = "Сохранить и проверить";
 "ai.settings.open" = "Agent Настройки";
 "ai.provider.codex" = "Codex CLI";
@@ -2666,3 +2666,27 @@
 "goal.phase.merge" = "Слияние PR";
 
 "goal.phase.install" = "Установка";
+
+"ai.api.url" = "Базовый URL API";
+"ai.api.model" = "Модель";
+"ai.api.model.placeholder" = "Идентификатор модели";
+"ai.api.key.saved" = "Ключ сохранён";
+"ai.api.key.placeholder" = "Можно оставить пустым для сервиса без авторизации";
+"ai.api.key.save" = "Сохранить ключ";
+"ai.api.key.remove" = "Удалить ключ";
+"ai.api.help" = "Поддерживает OpenAI-совместимые Chat Completions и вызовы инструментов. Содержимое проекта отправляется в этот API. Ключи хранятся в Связке ключей, настройки CLI не меняются. После настройки сохраните и проверьте подключение.";
+"ai.api.error.configuration" = "Укажите модель и HTTPS-адрес API. HTTP разрешён только для локальных сервисов. Не указывайте ключ в URL.";
+"ai.api.error.keychain" = "Не удалось сохранить или прочитать ключ API. Разблокируйте Связку ключей и повторите попытку.";
+"ai.api.error.response" = "Ответ API пуст, неполон или несовместим. Проверьте модель и поддержку Chat Completions.";
+"ai.api.error.limit" = "Достигнут лимит вызовов инструментов. Проверьте результат и разделите задачу перед продолжением.";
+"ai.api.error.tool" = "Запрошен неподдерживаемый инструмент. Выберите модель с поддержкой вызова функций.";
+"ai.api.error.path" = "Запись по этому пути недоступна. Включите режим редактирования и выберите путь внутри текущего проекта.";
+"ai.api.error.busy" = "В этом канале уже выполняется задача API. Дождитесь завершения или отмените её.";
+"ai.api.error.http" = "Ошибка запроса API (HTTP %d). Проверьте адрес, ключ, доступ к модели и квоту, затем повторите попытку.";
+"ai.api.progress.tool" = "Выполняется команда задачи";
+"ai.provider.dsh" = "DeepSeek Harness";
+"ai.provider.cursor" = "Cursor Agent";
+"ai.provider.copilot" = "GitHub Copilot CLI";
+"ai.provider.qwen" = "Qwen Code";
+"ai.provider.openAICompatible" = "OpenAI-compatible API";
+"ai.provider.deepseek" = "DeepSeek API";

@@ -1683,7 +1683,7 @@ private struct SettingsControlRow<Control: View>: View {
     }
 }
 
-private struct AIConfigurationEditor: View {
+struct AIConfigurationEditor: View {
     let titleKey: String
     let descriptionKey: String
     let lane: AIExecutionLane
@@ -1717,8 +1717,9 @@ private struct AIConfigurationEditor: View {
                     }
                 }
                 .labelsHidden()
-                .frame(width: 180)
-                Spacer()
+                .frame(maxWidth: 280, alignment: .leading)
+                .accessibilityLabel(L10n.text("ai.settings.provider"))
+                Spacer(minLength: 0)
             }
 
             HStack(spacing: 10) {
@@ -1727,60 +1728,68 @@ private struct AIConfigurationEditor: View {
                     .textFieldStyle(.roundedBorder)
             }
 
-            HStack(spacing: 10) {
-                fieldLabel("ai.settings.executable")
-                TextField(L10n.text("ai.settings.executable.placeholder"), text: $configuration.executable)
-                    .textFieldStyle(.roundedBorder)
-                Button(L10n.text("github.action.choose")) { chooseExecutable() }
-                    .buttonStyle(SecondaryButtonStyle())
-            }
-
-            DisclosureGroup(isExpanded: $showsArguments) {
-                VStack(alignment: .leading, spacing: 12) {
-                    argumentField(titleKey: "ai.settings.version_arguments", text: $configuration.versionArguments, minHeight: 42)
-
-                    if lane == .project {
-                        argumentField(titleKey: "ai.settings.analyze_arguments", text: $configuration.analyzeArguments)
-                        argumentField(titleKey: "ai.settings.edit_arguments", text: $configuration.editArguments)
-                    } else {
-                        argumentField(titleKey: "ai.settings.translation_arguments", text: $configuration.translationArguments)
-                    }
-
-                    HStack {
-                        Text(L10n.text("ai.settings.output"))
-                            .font(.system(size: 11.5, weight: .medium))
-                            .foregroundStyle(palette.mutedInk)
-                        Picker("", selection: $configuration.outputFormat) {
-                            ForEach(AIOutputFormat.allCases) { format in
-                                Text(L10n.text("ai.output.\(format.rawValue)")).tag(format)
-                            }
-                        }
-                        .labelsHidden()
-                        .frame(width: 180)
-                        Spacer()
-                    }
-
-                    Text(L10n.text("ai.settings.arguments.help"))
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(palette.subtleInk)
+            if let apiBinding = Binding($configuration.api), configuration.preset.usesAPI {
+                AIAPIConfigurationEditor(configuration: apiBinding)
+            } else {
+                HStack(spacing: 10) {
+                    fieldLabel("ai.settings.executable")
+                    TextField(L10n.text("ai.settings.executable.placeholder"), text: $configuration.executable)
+                        .textFieldStyle(.roundedBorder)
+                    Button(L10n.text("github.action.choose")) { chooseExecutable() }
+                        .buttonStyle(SecondaryButtonStyle())
                 }
-                .padding(.top, 10)
-            } label: {
-                Text(L10n.text("ai.settings.arguments"))
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .foregroundStyle(palette.mutedInk)
-            }
 
-            Text(L10n.text("ai.settings.credentials"))
-                .font(.system(size: 10.5))
-                .foregroundStyle(palette.subtleInk)
+                DisclosureGroup(isExpanded: $showsArguments) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        argumentField(titleKey: "ai.settings.version_arguments", text: $configuration.versionArguments, minHeight: 42)
+
+                        if lane == .project {
+                            argumentField(titleKey: "ai.settings.analyze_arguments", text: $configuration.analyzeArguments)
+                            argumentField(titleKey: "ai.settings.edit_arguments", text: $configuration.editArguments)
+                        } else {
+                            argumentField(titleKey: "ai.settings.translation_arguments", text: $configuration.translationArguments)
+                        }
+
+                        HStack {
+                            Text(L10n.text("ai.settings.output"))
+                                .font(.system(size: 11.5, weight: .medium))
+                                .foregroundStyle(palette.mutedInk)
+                            Picker("", selection: $configuration.outputFormat) {
+                                ForEach(AIOutputFormat.allCases) { format in
+                                    Text(L10n.text("ai.output.\(format.rawValue)")).tag(format)
+                                }
+                            }
+                            .labelsHidden()
+                            .frame(width: 180)
+                            Spacer()
+                        }
+
+                        Text(L10n.text("ai.settings.arguments.help"))
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(palette.subtleInk)
+                    }
+                    .padding(.top, 10)
+                } label: {
+                    Text(L10n.text("ai.settings.arguments"))
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(palette.mutedInk)
+                }
+
+                Text(L10n.text("ai.settings.credentials"))
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(palette.subtleInk)
+            }
         }
     }
 
     private var providerBinding: Binding<AIProviderPreset> {
         Binding(
             get: { configuration.preset },
-            set: { configuration = .preset($0) }
+            set: {
+                var value = AIProviderConfiguration.preset($0)
+                value.api?.credentialID = lane.rawValue
+                configuration = value
+            }
         )
     }
 

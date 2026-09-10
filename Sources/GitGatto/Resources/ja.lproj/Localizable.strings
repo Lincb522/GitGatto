@@ -153,8 +153,8 @@
 "codex.draft.auto_staged" = "%d 変更は自動的にステージングされます";
 
 "ai.title" = "Agent";
-"ai.settings.title" = "Agent & 翻訳 CLI";
-"ai.settings.subtitle" = "リポジトリ タスクと変換用に別個のコマンドライン エンジンを構成します。";
+"ai.settings.title" = "Agent と翻訳";
+"ai.settings.subtitle" = "プロジェクトと翻訳で使用する CLI または API を設定します。";
 "ai.settings.project" = "プロジェクト Agent";
 "ai.settings.project.body" = "選択したリポジトリを読み取り、[編集を許可] がアクティブな場合にのみ編集できます。";
 "ai.settings.translation" = "翻訳AI";
@@ -170,7 +170,7 @@
 "ai.settings.translation_arguments" = "翻訳";
 "ai.settings.output" = "出力";
 "ai.settings.arguments.help" = "1 行に 1 つの引数。使用可能な値: {prompt}、{repository}、および {empty}。 {prompt} を省略した場合、プロンプトは標準入力を通じて送信されます。";
-"ai.settings.credentials" = "各 CLI は既存のローカル サインインを使用します。 GitGatto は、認証情報の読み取りや保存を行いません。";
+"ai.settings.credentials" = "CLI は既存のログイン状態を使用します。API キーはキーチェーンに別途保存します。";
 "ai.settings.save" = "保存して確認";
 "ai.settings.open" = "Agent 設定";
 "ai.provider.codex" = "Codex CLI";
@@ -2666,3 +2666,27 @@
 "goal.phase.merge" = "PR をマージ";
 
 "goal.phase.install" = "インストール確認";
+
+"ai.api.url" = "API URL";
+"ai.api.model" = "モデル";
+"ai.api.model.placeholder" = "モデル ID";
+"ai.api.key.saved" = "キーを保存済み";
+"ai.api.key.placeholder" = "認証不要のサービスでは空欄にできます";
+"ai.api.key.save" = "キーを保存";
+"ai.api.key.remove" = "キーを削除";
+"ai.api.help" = "OpenAI 互換の Chat Completions とツール呼び出しに対応。プロジェクトの内容はこの API に送信されます。キーはキーチェーンに保存し、CLI 設定は変更しません。設定後に「保存して確認」を実行してください。";
+"ai.api.error.configuration" = "モデルと HTTPS の API URL を入力してください。HTTP はローカルサービスのみ使用できます。URL にキーを含めないでください。";
+"ai.api.error.keychain" = "API キーを保存または読み取れません。キーチェーンのロックを解除して再試行してください。";
+"ai.api.error.response" = "API の応答が空、不完全、または非対応の形式です。モデルと Chat Completions の互換性を確認して再試行してください。";
+"ai.api.error.limit" = "ツール呼び出しの上限に達しました。結果を確認し、タスクを分けて続行してください。";
+"ai.api.error.tool" = "非対応のツール呼び出しが要求されました。ツール呼び出し対応モデルを選択して再試行してください。";
+"ai.api.error.path" = "このパスには書き込めません。編集モードで現在のプロジェクト内のパスを指定してください。";
+"ai.api.error.busy" = "このチャネルでは API タスクを実行中です。完了を待つかキャンセルしてください。";
+"ai.api.error.http" = "API リクエストに失敗しました（HTTP %d）。URL、キー、モデル権限、利用枠を確認して再試行してください。";
+"ai.api.progress.tool" = "タスクのコマンドを実行中";
+"ai.provider.dsh" = "DeepSeek Harness";
+"ai.provider.cursor" = "Cursor Agent";
+"ai.provider.copilot" = "GitHub Copilot CLI";
+"ai.provider.qwen" = "Qwen Code";
+"ai.provider.openAICompatible" = "OpenAI-compatible API";
+"ai.provider.deepseek" = "DeepSeek API";

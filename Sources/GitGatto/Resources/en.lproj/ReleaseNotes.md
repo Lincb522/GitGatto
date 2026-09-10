@@ -1,10 +1,6 @@
-## Improved
+## Added
 
-- Batch monitoring refreshes and ignore-rule checks during continuous saves and builds to reduce repeated Git commands.
-- Reuse live status for activity records and unchanged history for commit statistics; multi-repository monitoring refreshes only repositories with changes.
-
-## Fixed
-
-- Fixed backup comparison copies repeatedly triggering their own checks and consuming CPU.
-- Fixed background status reads updating the Git index and triggering another monitoring refresh.
-- Fixed continuous changes repeatedly cancelling and restarting scans, adding overhead and delaying status updates.
+- Custom OpenAI-compatible APIs and a DeepSeek API preset, with configurable endpoint, model and key. Project and translation Agents can be configured separately; keys are stored in the system Keychain.
+- DeepSeek Harness (dsh), Cursor Agent, GitHub Copilot CLI and Qwen Code integrations.
+- API Agents can read projects, run commands and make controlled file changes. Installation and upgrade tasks use the existing progress reporting and result checks.
+- API and CLI setup instructions in the guide, with new settings text in all 11 interface languages.
