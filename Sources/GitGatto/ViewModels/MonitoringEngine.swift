@@ -13,7 +13,10 @@ final class MonitoringEngine: ObservableObject {
     @Published private(set) var lastActivityAt: Date?
 
     private let backgroundService: BackgroundMonitoringService
-    private var activityTask: Task<Void, Never>?
+    private let activityScheduler = RepositoryEventScheduler()
+    private var pendingActivityRepositories = Set<URL>()
+    private var pendingRecordedRepositories = Set<URL>()
+    private var activityByRepository: [URL: [RepositoryDailyActivity]] = [:]
 
     init(backgroundService: BackgroundMonitoringService = BackgroundMonitoringService()) {
         self.backgroundService = backgroundService
@@ -26,10 +29,6 @@ final class MonitoringEngine: ObservableObject {
                 detail: nil
             )
         }
-    }
-
-    deinit {
-        activityTask?.cancel()
     }
 
     var overallState: MonitoringOverallState {
@@ -175,64 +174,44 @@ final class MonitoringEngine: ObservableObject {
         guard isEnabled else { return }
         let repository = repositoryURL.standardizedFileURL
         lastActivityAt = Date()
-        Task { [weak self, backgroundService] in
-            do {
-                let count = try await backgroundService.recordRepositoryChange(at: repository)
-                guard let self else { return }
-                if self.selectedRepositoryURL == nil {
-                    self.refreshActivity()
-                    return
-                }
-                guard self.selectedRepositoryURL == repository,
-                      let index = self.dailyActivity.lastIndex(where: {
-                          Calendar.current.isDateInToday($0.date)
-                      }) else { return }
-                self.dailyActivity[index].monitoredChangeCount = count
-                self.activityError = nil
-            } catch is CancellationError {
-                return
-            } catch {
-                self?.activityError = error.localizedDescription
-            }
-        }
+        pendingRecordedRepositories.insert(repository)
+        enqueueActivity(for: [repository])
     }
 
     func refreshActivity() {
-        activityTask?.cancel()
-        let selection = selectedRepositoryURL
-        let targets = selection.map { [$0] } ?? repositories
+        let targets = selectedRepositoryURL.map { [$0] } ?? repositories
         guard !targets.isEmpty else {
             dailyActivity = []
             activityError = nil
             return
         }
-        activityTask = Task { [weak self, backgroundService] in
+        activityByRepository = activityByRepository.filter { repositories.contains($0.key) }
+        enqueueActivity(for: targets)
+    }
+
+    private func enqueueActivity(for repositories: [URL]) {
+        pendingActivityRepositories.formUnion(repositories)
+        activityScheduler.schedule(key: "activity", delay: .milliseconds(500)) { [weak self] in
+            guard let self else { return }
+            let targets = self.pendingActivityRepositories.sorted { $0.path < $1.path }
+            self.pendingActivityRepositories.removeAll()
             do {
-                let activitySets = try await withThrowingTaskGroup(
-                    of: [RepositoryDailyActivity].self
-                ) { group in
-                    for repository in targets {
-                        group.addTask {
-                            try await backgroundService.dailyActivity(for: repository)
-                        }
+                // Only changed repositories are read, and only one history reader runs at a time.
+                for repository in targets where self.repositories.contains(repository) {
+                    try Task.checkCancellation()
+                    if self.pendingRecordedRepositories.remove(repository) != nil {
+                        try await self.backgroundService.recordRepositoryChange(at: repository)
                     }
-                    var result: [[RepositoryDailyActivity]] = []
-                    for try await activity in group {
-                        result.append(activity)
-                    }
-                    return result
+                    self.activityByRepository[repository] = try await self.backgroundService.dailyActivity(for: repository)
                 }
                 try Task.checkCancellation()
-                guard let self,
-                      self.selectedRepositoryURL == selection,
-                      self.repositories == targets || selection != nil
-                else { return }
-                self.dailyActivity = Self.mergedActivity(activitySets)
+                let displayed = self.selectedRepositoryURL.map { [$0] } ?? self.repositories
+                self.dailyActivity = Self.mergedActivity(displayed.compactMap { self.activityByRepository[$0] })
                 self.activityError = nil
             } catch is CancellationError {
                 return
             } catch {
-                self?.activityError = error.localizedDescription
+                self.activityError = error.localizedDescription
             }
         }
     }

@@ -8,6 +8,93 @@ import Testing
 @Suite("Monitoring engine")
 struct MonitoringEngineTests {
     @MainActor
+    @Test("All-repository activity refreshes only the changed repository and coalesces event bursts")
+    func refreshesOnlyChangedRepository() async throws {
+        let root = temporaryDirectory("ActivityEvents")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let first = try makeRepository(named: "first", in: root)
+        let second = try makeRepository(named: "second", in: root)
+        let service = BackgroundMonitoringService(rootURL: root.appendingPathComponent("store"))
+        let engine = MonitoringEngine(backgroundService: service)
+        engine.configure(preferences: AppPreferences(), repositories: [first, second])
+        var deadline = ContinuousClock.now.advanced(by: .seconds(45))
+        while engine.todayActivity?.commitCount != 2, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(engine.todayActivity?.commitCount == 2)
+        #expect(await service.referenceQueryCount == 2)
+        for _ in 0..<100 { engine.recordRepositoryChange(at: first) }
+        deadline = ContinuousClock.now.advanced(by: .seconds(45))
+        while engine.todayActivity?.monitoredChangeCount != 1, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(engine.todayActivity?.monitoredChangeCount == 1)
+        #expect(engine.todayActivity?.commitCount == 2)
+        #expect(await service.referenceQueryCount == 3)
+        #expect(await service.historyQueryCount == 2)
+    }
+
+    @Test("History cache survives saves and invalidates on any ref, detached HEAD and day changes")
+    func cachesHistoryByAllReferences() async throws {
+        let root = temporaryDirectory("HistoryCache")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = try makeRepository(named: "repository", in: root)
+        let service = BackgroundMonitoringService(rootURL: root.appendingPathComponent("store"))
+        let day = Date()
+        _ = try await service.dailyActivity(for: repository, endingAt: day)
+        for index in 0..<5 {
+            try "save \(index)\n".write(to: repository.appendingPathComponent("activity.txt"), atomically: true, encoding: .utf8)
+            _ = try await service.recordRepositoryChange(at: repository, minimumInterval: 0)
+            _ = try await service.dailyActivity(for: repository, endingAt: day)
+        }
+        #expect(await service.historyQueryCount == 1)
+        try run(["checkout", "-b", "other"], at: repository)
+        try run(["add", "."], at: repository)
+        try run(["commit", "-m", "Other branch"], at: repository)
+        try run(["checkout", "--detach", "HEAD~1"], at: repository)
+        let twoCommits = try await service.dailyActivity(for: repository, endingAt: day)
+        #expect(twoCommits.reduce(0) { $0 + $1.commitCount } == 2)
+        #expect(await service.historyQueryCount == 2)
+        // HEAD stays unchanged; deleting an unmerged branch must still invalidate --all history.
+        try run(["branch", "-D", "other"], at: repository)
+        let oneCommit = try await service.dailyActivity(for: repository, endingAt: day)
+        #expect(oneCommit.reduce(0) { $0 + $1.commitCount } == 1)
+        #expect(await service.historyQueryCount == 3)
+        try run(["tag", "retained"], at: repository)
+        _ = try await service.dailyActivity(for: repository, endingAt: day)
+        #expect(await service.historyQueryCount == 4)
+        let tomorrow = try #require(Calendar.current.date(byAdding: .day, value: 1, to: day))
+        _ = try await service.dailyActivity(for: repository, endingAt: tomorrow)
+        #expect(await service.historyQueryCount == 5)
+    }
+
+    @Test("Concurrent activity consumers share the history read, including linked worktrees")
+    func coalescesHistoryReads() async throws {
+        let root = temporaryDirectory("ConcurrentHistory")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = try makeRepository(named: "repository", in: root)
+        let worktree = root.appendingPathComponent("linked")
+        try run(["worktree", "add", "-b", "linked", worktree.path], at: repository)
+        let service = BackgroundMonitoringService(rootURL: root.appendingPathComponent("store"))
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<12 {
+                group.addTask {
+                    let result = try await service.dailyActivity(for: worktree)
+                    #expect(result.reduce(0) { $0 + $1.commitCount } == 1)
+                }
+            }
+            try await group.waitForAll()
+        }
+        #expect(await service.historyQueryCount == 1)
+        try "linked\n".write(to: worktree.appendingPathComponent("new.txt"), atomically: true, encoding: .utf8)
+        try run(["add", "."], at: worktree)
+        try run(["commit", "-m", "Linked change"], at: worktree)
+        let result = try await service.dailyActivity(for: worktree)
+        #expect(result.reduce(0) { $0 + $1.commitCount } == 2)
+        #expect(await service.historyQueryCount == 2)
+    }
+
+    @MainActor
     @Test("Menu bar receives state changes without channel timestamp redraws")
     func menuBarStateDeduplicatesChannelUpdates() {
         let engine = MonitoringEngine()

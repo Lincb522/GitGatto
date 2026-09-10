@@ -19,6 +19,12 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
     private let decoder: JSONDecoder
     private var baselines: [String: Snapshot] = [:]
     private var activePaths = Set<String>()
+    private enum SnapshotInput {
+        case readRepository
+        case liveState(RepositoryLiveState)
+    }
+    private var pendingSnapshots: [String: SnapshotInput] = [:]
+    private(set) var statusQueryCount = 0
 
     init(
         rootURL: URL? = nil,
@@ -41,20 +47,39 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
     func seed(_ repositoryURLs: [URL]) async {
         for repositoryURL in repositoryURLs {
             let repository = repositoryURL.standardizedFileURL
-            guard baselines[repository.path] == nil,
-                  let snapshot = try? await snapshot(in: repository)
-            else { continue }
-            baselines[repository.path] = snapshot
+            guard baselines[repository.path] == nil, !activePaths.contains(repository.path) else { continue }
+            await recordChange(in: repository)
         }
     }
 
     func recordChange(in repositoryURL: URL) async {
+        await recordChange(in: repositoryURL, liveState: nil)
+    }
+
+    func recordChange(in repositoryURL: URL, liveState: RepositoryLiveState?) async {
         let repository = repositoryURL.standardizedFileURL
         let path = repository.path
+        // A live result arriving during a disk read may be older than that read's eventual result.
+        // Re-read once at the follow-up boundary rather than applying snapshots out of order.
+        pendingSnapshots[path] = activePaths.contains(path)
+            ? .readRepository
+            : liveState.map(SnapshotInput.liveState) ?? .readRepository
         guard !activePaths.contains(path) else { return }
         activePaths.insert(path)
         defer { activePaths.remove(path) }
-        guard let current = try? await snapshot(in: repository) else { return }
+        while let input = pendingSnapshots.removeValue(forKey: path), !Task.isCancelled {
+            let state: RepositoryLiveState?
+            switch input {
+            case .readRepository: state = nil
+            case let .liveState(value): state = value
+            }
+            guard let current = try? await snapshot(in: repository, liveState: state) else { continue }
+            await record(current, in: repository)
+        }
+    }
+
+    private func record(_ current: Snapshot, in repository: URL) async {
+        let path = repository.path
         guard let previous = baselines[path] else {
             baselines[path] = current
             return
@@ -117,7 +142,7 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
         }
     }
 
-    private func snapshot(in repositoryURL: URL) async throws -> Snapshot {
+    private func snapshot(in repositoryURL: URL, liveState: RepositoryLiveState?) async throws -> Snapshot {
         async let headResult = gitRunner.run(
             at: repositoryURL,
             arguments: ["rev-parse", "--verify", "HEAD"],
@@ -128,19 +153,27 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
             arguments: ["symbolic-ref", "--quiet", "--short", "HEAD"],
             acceptedExitCodes: [0, 1]
         )
-        async let statusResult = gitRunner.run(
-            at: repositoryURL,
-            arguments: ["status", "--porcelain=v1", "-z", "--untracked-files=all"]
-        )
-        let (head, branch, status) = try await (headResult, branchResult, statusResult)
         var states: [String: String] = [:]
-        for field in status.output.split(separator: 0) {
-            let value = String(decoding: field, as: UTF8.self)
-            guard value.count >= 4 else { continue }
-            let code = String(value.prefix(2))
-            let path = String(value.dropFirst(3))
-            states[path] = code
+        if let liveState {
+            for change in liveState.changes {
+                states[change.path] = change.indexStatus.rawValue + change.workTreeStatus.rawValue
+            }
+        } else {
+            statusQueryCount += 1
+            let status = try await gitRunner.run(
+                at: repositoryURL,
+                arguments: ["status", "--porcelain=v1", "-z", "--untracked-files=all"]
+            )
+            var fields = status.output.split(separator: 0).makeIterator()
+            while let field = fields.next() {
+                let value = String(decoding: field, as: UTF8.self)
+                guard value.count >= 4 else { continue }
+                let code = String(value.prefix(2))
+                states[String(value.dropFirst(3))] = code
+                if code.contains("R") || code.contains("C") { _ = fields.next() }
+            }
         }
+        let (head, branch) = try await (headResult, branchResult)
         return Snapshot(
             headSHA: head.exitCode == 0
                 ? head.text.trimmingCharacters(in: .whitespacesAndNewlines)

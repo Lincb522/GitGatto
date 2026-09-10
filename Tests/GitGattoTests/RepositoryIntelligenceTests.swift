@@ -282,6 +282,30 @@ struct RepositoryIntelligenceTests {
         }
     }
 
+    @Test("Activity ledger reuses live status and subsequently captures new untracked files")
+    func reusesLiveRepositoryStatus() async throws {
+        let fixture = try IntelligenceFixture()
+        defer { fixture.remove() }
+        let file = fixture.repository.appendingPathComponent("Sources/Ledger.swift")
+        try "let state = 1\n".write(to: file, atomically: true, encoding: .utf8)
+        try fixture.git(["add", "."])
+        try fixture.git(["commit", "-m", "Initial"])
+        let ledger = RepositoryActivityLedger(rootURL: fixture.ledger)
+        await ledger.seed([fixture.repository])
+        #expect(await ledger.statusQueryCount == 1)
+        try "let state = 2\n".write(to: file, atomically: true, encoding: .utf8)
+        let live = try await GitRepositoryService().loadLiveState(at: fixture.repository)
+        try "new\n".write(to: fixture.repository.appendingPathComponent("later.txt"), atomically: true, encoding: .utf8)
+        await ledger.recordChange(in: fixture.repository, liveState: live)
+        #expect(await ledger.statusQueryCount == 1)
+        let firstEvents = await ledger.events(for: fixture.repository)
+        #expect(firstEvents.first?.changedPaths == ["Sources/Ledger.swift"])
+        await ledger.recordChange(in: fixture.repository)
+        #expect(await ledger.statusQueryCount == 2)
+        let events = await ledger.events(for: fixture.repository)
+        #expect(events.contains { $0.changedPaths.contains("later.txt") })
+    }
+
     @MainActor
     @Test("Change Center renders real repository data in light and dark appearances")
     func rendersChangeCenter() async throws {

@@ -59,15 +59,21 @@ struct GitCommandRunner: Sendable {
         environment environmentOverrides: [String: String] = [:],
         acceptedExitCodes: Set<Int32> = [0]
     ) async throws -> GitCommandResult {
+        // Status must not refresh the on-disk index: our own read would wake the file monitors.
+        var environment = environmentOverrides
+        if arguments.first == "status" {
+            environment["GIT_OPTIONAL_LOCKS"] = "0"
+        }
         if arguments.first == "commit" {
             try await RepositoryIdentityService.verifyBinding(repository: repositoryURL, environment: environmentOverrides)
         }
+        let commandEnvironment = environment
         let processBox = GitCommandProcessBox()
         let task = Task.detached(priority: .userInitiated) {
             try Self.runBlocking(
                 at: repositoryURL,
                 arguments: arguments,
-                environmentOverrides: environmentOverrides,
+                environmentOverrides: commandEnvironment,
                 acceptedExitCodes: acceptedExitCodes,
                 processBox: processBox
             )

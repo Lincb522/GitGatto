@@ -280,8 +280,8 @@ final class WorkspaceViewModel: ObservableObject {
     private var readmeApplyTask: Task<Void, Never>?
     private var liveRefreshTask: Task<Void, Never>?
     private var remoteRefreshTask: Task<Void, Never>?
-    private var repositoryEventRefreshTask: Task<Void, Never>?
-    private var activeRepositoryEventRefreshID: UUID?
+    private let repositoryEventScheduler = RepositoryEventScheduler()
+    private let repositoryActivityScheduler = RepositoryEventScheduler()
     private var repositoryMutationGeneration = 0
     private var repositoryChangeMonitor: RepositoryChangeMonitor?
     private var repositorySnapshotTask: Task<RepositorySnapshot, Error>?
@@ -302,8 +302,7 @@ final class WorkspaceViewModel: ObservableObject {
     private var repositoryBackupTasks: [String: Task<Void, Never>] = [:]
     private var repositoryBackupMonitors: [String: RepositoryChangeMonitor] = [:]
     private var repositoryProtectionArmingTask: Task<Void, Never>?
-    private var repositoryProtectionAuditTasks: [String: Task<Void, Never>] = [:]
-    private var repositoryProtectionAuditTokens: [String: UUID] = [:]
+    private let repositoryProtectionAuditScheduler = RepositoryEventScheduler()
     private var repositoryProtectionReadFailure: (path: String, message: String)?
     private var repositoryProtectionBaselines: [String: RepositoryBackup] = [:]
     private var repositoryProtectionBaselineCreations = Set<String>()
@@ -3413,12 +3412,13 @@ final class WorkspaceViewModel: ObservableObject {
                 filtersIgnoredPaths: true
             ) { [weak self] in
                 Task { @MainActor in
-                    guard let self else { return }
-                    self.monitoringEngine.recordRepositoryChange(at: repository)
-                    self.monitoringEngine.markMonitoring(.repositoryProtection)
-                    Task {
-                        await RepositoryActivityLedger.shared.recordChange(in: repository)
+                    guard let self, self.repositoryProtectionGeneration == generation else { return }
+                    if self.repositoryChangeMonitor == nil
+                        || self.snapshot?.rootURL.standardizedFileURL != repository {
+                        self.monitoringEngine.recordRepositoryChange(at: repository)
+                        self.recordRepositoryActivity(at: repository)
                     }
+                    self.monitoringEngine.markMonitoring(.repositoryProtection)
                     if self.appPreferences.externalRepositoryProtectionEnabled {
                         self.scheduleExternalRepositoryProtectionAudit(
                             for: repository,
@@ -3475,11 +3475,8 @@ final class WorkspaceViewModel: ObservableObject {
             task.cancel()
         }
         repositoryBackupTasks = [:]
-        for task in repositoryProtectionAuditTasks.values {
-            task.cancel()
-        }
-        repositoryProtectionAuditTasks = [:]
-        repositoryProtectionAuditTokens = [:]
+        repositoryProtectionAuditScheduler.cancelAll()
+        repositoryActivityScheduler.cancelAll()
         repositoryProtectionBaselines = [:]
         for monitor in repositoryBackupMonitors.values {
             monitor.stop()
@@ -3500,15 +3497,7 @@ final class WorkspaceViewModel: ObservableObject {
               repositoryProtectionSuppressedUntil[path].map({ $0 <= Date() }) ?? true,
               !repositoryProtectionIncidents.contains(where: { $0.repositoryPath == path })
         else { return }
-        repositoryProtectionAuditTasks[path]?.cancel()
-        let auditToken = UUID()
-        repositoryProtectionAuditTokens[path] = auditToken
-        repositoryProtectionAuditTasks[path] = Task { [weak self] in
-            do {
-                try await Task.sleep(for: .seconds(1.5))
-            } catch {
-                return
-            }
+        repositoryProtectionAuditScheduler.schedule(key: path, delay: .seconds(1.5)) { [weak self] in
             guard let self,
                   !Task.isCancelled,
                   self.repositoryProtectionGeneration == generation else { return }
@@ -3516,11 +3505,6 @@ final class WorkspaceViewModel: ObservableObject {
                 for: repository,
                 generation: generation
             )
-            if self.repositoryProtectionGeneration == generation,
-               self.repositoryProtectionAuditTokens[path] == auditToken {
-                self.repositoryProtectionAuditTasks[path] = nil
-                self.repositoryProtectionAuditTokens[path] = nil
-            }
         }
     }
 
@@ -3814,11 +3798,9 @@ final class WorkspaceViewModel: ObservableObject {
         liveRefreshTask = nil
         remoteRefreshTask?.cancel()
         remoteRefreshTask = nil
-        repositoryEventRefreshTask?.cancel()
-        repositoryEventRefreshTask = nil
+        repositoryEventScheduler.cancelAll()
         repositorySurfacePreloadTask?.cancel()
         repositorySurfacePreloadTask = nil
-        activeRepositoryEventRefreshID = nil
         repositoryChangeMonitor?.stop()
         repositoryChangeMonitor = nil
         isLiveRefreshing = false
@@ -3829,13 +3811,11 @@ final class WorkspaceViewModel: ObservableObject {
             Task {
                 await RepositoryActivityLedger.shared.seed([repositoryURL])
             }
-            let monitor = RepositoryChangeMonitor(repositoryURL: repositoryURL) { [weak self] in
+            let monitor = RepositoryChangeMonitor(repositoryURL: repositoryURL, filtersIgnoredPaths: true) { [weak self] in
                 Task { @MainActor in
-                    self?.monitoringEngine.recordRepositoryChange(at: repositoryURL)
-                    Task {
-                        await RepositoryActivityLedger.shared.recordChange(in: repositoryURL)
-                    }
-                    self?.scheduleRepositoryEventRefresh()
+                    guard let self, self.snapshot?.rootURL == repositoryURL else { return }
+                    self.monitoringEngine.recordRepositoryChange(at: repositoryURL)
+                    self.scheduleRepositoryEventRefresh()
                 }
             }
             repositoryChangeMonitor = monitor
@@ -3896,6 +3876,7 @@ final class WorkspaceViewModel: ObservableObject {
                   repositoryMutationGeneration == mutationGeneration else { return }
             apply(liveState)
             apply(operationState)
+            recordRepositoryActivity(at: repositoryURL, liveState: liveState)
             if liveSyncError != nil {
                 liveSyncError = nil
             }
@@ -3916,33 +3897,25 @@ final class WorkspaceViewModel: ObservableObject {
     private func scheduleRepositoryEventRefresh() {
         guard appPreferences.monitoringEngineEnabled,
               appPreferences.liveRefreshEnabled,
-              snapshot != nil else { return }
-        // Coalesce event bursts without cancelling a refresh that is already reading Git state.
-        // Git may refresh its index while answering status queries, which can itself emit an event.
-        guard repositoryEventRefreshTask == nil else { return }
-        let refreshID = UUID()
-        activeRepositoryEventRefreshID = refreshID
+              let repository = snapshot?.rootURL else { return }
         let delay = max(0.15, min(appPreferences.liveRefreshInterval, 2))
-        repositoryEventRefreshTask = Task { [weak self] in
-            do {
-                try await Task.sleep(for: .seconds(delay))
-            } catch {
-                return
-            }
-            guard let self, activeRepositoryEventRefreshID == refreshID else { return }
-            while isLiveRefreshing || activeOperation != nil {
+        repositoryEventScheduler.schedule(key: repository.path, delay: .seconds(delay)) { [weak self] in
+            guard let self, self.snapshot?.rootURL == repository else { return }
+            while isRefreshing || isLiveRefreshing || activeOperation != nil {
                 do {
                     try await Task.sleep(for: .milliseconds(150))
                 } catch {
                     return
                 }
-                guard activeRepositoryEventRefreshID == refreshID else { return }
+                guard !Task.isCancelled, snapshot?.rootURL == repository else { return }
             }
             await refreshLiveRepositoryState()
-            if activeRepositoryEventRefreshID == refreshID {
-                activeRepositoryEventRefreshID = nil
-                repositoryEventRefreshTask = nil
-            }
+        }
+    }
+
+    private func recordRepositoryActivity(at repository: URL, liveState: RepositoryLiveState? = nil) {
+        repositoryActivityScheduler.schedule(key: repository.standardizedFileURL.path, delay: .milliseconds(500)) {
+            await RepositoryActivityLedger.shared.recordChange(in: repository, liveState: liveState)
         }
     }
 
@@ -4298,9 +4271,7 @@ final class WorkspaceViewModel: ObservableObject {
         let paths = Array(Set(changes.map(\.path)))
         let previousSnapshot = snapshot
         repositoryMutationGeneration += 1
-        repositoryEventRefreshTask?.cancel()
-        repositoryEventRefreshTask = nil
-        activeRepositoryEventRefreshID = nil
+        repositoryEventScheduler.cancelAll()
         activeOperation = operation
         pendingStagePaths.formUnion(paths)
         applyOptimisticStaging(paths: Set(paths), stages: stages)
@@ -7751,9 +7722,7 @@ final class WorkspaceViewModel: ObservableObject {
         liveRefreshTask = nil
         remoteRefreshTask?.cancel()
         remoteRefreshTask = nil
-        repositoryEventRefreshTask?.cancel()
-        repositoryEventRefreshTask = nil
-        activeRepositoryEventRefreshID = nil
+        repositoryEventScheduler.cancelAll()
         repositoryChangeMonitor?.stop()
         repositoryChangeMonitor = nil
         cancelCodex()

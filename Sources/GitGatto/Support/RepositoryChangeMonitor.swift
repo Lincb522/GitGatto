@@ -12,26 +12,31 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
     private let includesGitMetadata: Bool
     private let includesGitObjectChanges: Bool
     private let filtersIgnoredPaths: Bool
+    private let eventStreamEnabled: Bool
     private let queueKey = DispatchSpecificKey<UInt8>()
     private var pendingPaths = Set<String>()
+    private var filterScheduled = false
     private var filterTask: Task<Void, Never>?
     private var filterGeneration = UUID()
     private var stream: FSEventStreamRef?
     private var watchdog: DispatchSourceTimer?
     /// Only read or written on `callbackQueue`; `start`/`stop` never touch it directly.
     private var watchdogFingerprint: RepositoryWatchdogFingerprint?
+    private var watchdogUsesRootIdentityOnly = false
 
     init(
         repositoryURL: URL,
         includesGitMetadata: Bool = true,
         includesGitObjectChanges: Bool = false,
         filtersIgnoredPaths: Bool = false,
+        eventStreamEnabled: Bool = true,
         onChange: @escaping @Sendable () -> Void
     ) {
         rootPath = Self.fileSystemPath(repositoryURL)
         self.includesGitMetadata = includesGitMetadata
         self.includesGitObjectChanges = includesGitObjectChanges
         self.filtersIgnoredPaths = filtersIgnoredPaths
+        self.eventStreamEnabled = eventStreamEnabled
         callbackQueue.setSpecific(key: queueKey, value: 1)
         self.onChange = onChange
     }
@@ -49,6 +54,10 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
 
     func start() {
         guard stream == nil, watchdog == nil else { return }
+        guard eventStreamEnabled else {
+            startWatchdog()
+            return
+        }
         var context = FSEventStreamContext(
             version: 0,
             info: Unmanaged.passUnretained(self).toOpaque(),
@@ -99,6 +108,7 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
             self.filterGeneration = UUID()
             self.filterTask?.cancel()
             self.filterTask = nil
+            self.filterScheduled = false
             self.pendingPaths.removeAll()
         }
         if DispatchQueue.getSpecific(key: queueKey) != nil { cancelFilter() }
@@ -147,19 +157,25 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         return String(path.dropFirst(rootPath.count + 1))
     }
 
-    private func shouldRefresh(path: String, flags: FSEventStreamEventFlags) -> Bool {
+    func shouldRefresh(path: String, flags: FSEventStreamEventFlags) -> Bool {
         if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs | kFSEventStreamEventFlagRootChanged) != 0 {
             return true
         }
+        // APFS also reports cloning on the unchanged source of a backup comparison copy.
+        // Keep coalesced writes, creation, removal, metadata changes and unknown event bits.
+        let cloneSourceFlags = FSEventStreamEventFlags(
+            kFSEventStreamEventFlagItemCloned | kFSEventStreamEventFlagItemIsFile | kFSEventStreamEventFlagOwnEvent
+        )
+        if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemCloned) != 0,
+           flags & ~cloneSourceFlags == 0 { return false }
         guard let relative = relativePath(path), relative != ".DS_Store" else { return false }
         if relative == ".git" || relative.hasPrefix(".git/") {
             guard includesGitMetadata else { return false }
-            if filtersIgnoredPaths {
-                if relative.hasSuffix(".lock") || relative == ".git/FETCH_HEAD"
-                    || relative.hasPrefix(".git/logs/") { return false }
-                if relative == ".git" {
-                    return flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemRemoved | kFSEventStreamEventFlagItemRenamed) != 0
-                }
+            if relative.hasSuffix(".lock") || relative == ".git/FETCH_HEAD"
+                || relative.hasPrefix(".git/logs/") { return false }
+            if relative == ".git" {
+                // Directory mtime also changes for transient locks; actual metadata has its own events.
+                return flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemRemoved | kFSEventStreamEventFlagItemRenamed | kFSEventStreamEventFlagItemIsFile) != 0
             }
             if includesGitObjectChanges { return true }
         }
@@ -169,6 +185,18 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
     }
 
     private func filterPendingPaths() {
+        guard !filterScheduled, filterTask == nil, !pendingPaths.isEmpty else { return }
+        filterScheduled = true
+        let generation = filterGeneration
+        // Batch atomic-save events before starting Git, not just the subsequent status refresh.
+        callbackQueue.asyncAfter(deadline: .now() + .milliseconds(500)) { [weak self] in
+            guard let self, self.filterGeneration == generation else { return }
+            self.filterScheduled = false
+            self.runPendingPathFilter()
+        }
+    }
+
+    private func runPendingPathFilter() {
         guard filterTask == nil, !pendingPaths.isEmpty else { return }
         let paths = pendingPaths.sorted()
         pendingPaths.removeAll()
@@ -202,7 +230,9 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         // Establish the baseline before returning from start(). Otherwise a Git command issued
         // immediately after opening a repository can race the asynchronous seed and disappear
         // into the first fingerprint instead of producing a change callback.
+        let usesRootIdentityOnly = filtersIgnoredPaths && stream != nil
         callbackQueue.sync {
+            watchdogUsesRootIdentityOnly = usesRootIdentityOnly
             watchdogFingerprint = currentWatchdogFingerprint()
         }
         let watchdog = DispatchSource.makeTimerSource(queue: callbackQueue)
@@ -240,7 +270,7 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         }
         return RepositoryWatchdogFingerprint(
             entries: paths.map {
-                RepositoryWatchdogEntry(path: $0, identityOnly: filtersIgnoredPaths && ($0 == rootPath || $0 == "\(rootPath)/.git"))
+                RepositoryWatchdogEntry(path: $0, identityOnly: $0 == "\(rootPath)/.git" || (watchdogUsesRootIdentityOnly && $0 == rootPath))
             }
         )
     }
@@ -276,6 +306,7 @@ private struct RepositoryWatchdogEntry: Equatable {
         exists = true
         device = UInt64(value.st_dev)
         inode = UInt64(value.st_ino)
+        let identityOnly = identityOnly && (value.st_mode & S_IFMT) == S_IFDIR
         size = identityOnly ? 0 : Int64(value.st_size)
         modifiedSeconds = identityOnly ? 0 : Int64(value.st_mtimespec.tv_sec)
         modifiedNanoseconds = identityOnly ? 0 : Int64(value.st_mtimespec.tv_nsec)

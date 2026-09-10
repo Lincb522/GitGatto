@@ -11,6 +11,21 @@ actor BackgroundMonitoringService {
     private let fileManager: FileManager
     private var lastRecordedAtByRepository: [String: Date] = [:]
     private var cachedArchive: ActivityArchive?
+    private struct HistoryRequest: Hashable {
+        let path: String
+        let startDate: Date
+        let endDay: Date
+        let timeZone: String
+    }
+    private struct HistoryCache {
+        let request: HistoryRequest
+        let references: Data
+        let counts: [String: Int]
+    }
+    private var historyCache: [String: HistoryCache] = [:]
+    private var historyTasks: [HistoryRequest: Task<[String: Int], Error>] = [:]
+    private(set) var historyQueryCount = 0
+    private(set) var referenceQueryCount = 0
 
     init(
         rootURL: URL = BackgroundMonitoringService.defaultRootURL(),
@@ -72,7 +87,8 @@ actor BackgroundMonitoringService {
 
         let commitCounts = try await commitCounts(
             for: repositoryURL,
-            startingAt: startDay
+            startingAt: startDay,
+            endingAt: endDay
         )
         let path = repositoryURL.standardizedFileURL.path
         let storedEvents = try loadArchive().eventsByRepository[path] ?? [:]
@@ -94,27 +110,60 @@ actor BackgroundMonitoringService {
 
     private func commitCounts(
         for repositoryURL: URL,
-        startingAt startDate: Date
+        startingAt startDate: Date,
+        endingAt endDay: Date
     ) async throws -> [String: Int] {
+        let request = HistoryRequest(
+            path: repositoryURL.standardizedFileURL.path,
+            startDate: startDate,
+            endDay: endDay,
+            timeZone: TimeZone.current.identifier
+        )
+        if let task = historyTasks[request] { return try await task.value }
+        let task = Task { try await self.loadCommitCounts(for: repositoryURL, request: request) }
+        historyTasks[request] = task
+        defer { historyTasks[request] = nil }
+        let counts = try await task.value
+        try Task.checkCancellation()
+        return counts
+    }
+
+    private func loadCommitCounts(for repositoryURL: URL, request: HistoryRequest) async throws -> [String: Int] {
+        // --all includes branches, tags and remote refs, not just the checked-out HEAD.
+        // Asking Git also supports packed refs and linked worktrees without duplicating its storage rules.
+        referenceQueryCount += 1
+        let references = try await runner.run(
+            at: repositoryURL,
+            arguments: ["show-ref", "--head"],
+            environment: ["GIT_OPTIONAL_LOCKS": "0"],
+            acceptedExitCodes: [0, 1]
+        ).output
+        if let cached = historyCache[request.path],
+           cached.request == request, cached.references == references { return cached.counts }
+
         let formatter = ISO8601DateFormatter()
+        historyQueryCount += 1
         let result = try await runner.run(
             at: repositoryURL,
             arguments: [
                 "log",
                 "--all",
-                "--since=\(formatter.string(from: startDate))",
+                "--since=\(formatter.string(from: request.startDate))",
                 "--date=format:%Y-%m-%d",
                 "--pretty=format:%ad",
             ],
+            environment: ["GIT_OPTIONAL_LOCKS": "0"],
             acceptedExitCodes: [0, 128]
         )
         guard result.exitCode == 0 else { return [:] }
-        return result.text
+        let counts: [String: Int] = result.text
             .split(whereSeparator: \Character.isNewline)
             .map(String.init)
             .reduce(into: [:]) { counts, day in
                 counts[day, default: 0] += 1
             }
+        historyCache[request.path] = HistoryCache(request: request, references: references, counts: counts)
+        return counts
     }
 
     private func loadArchive() throws -> ActivityArchive {
@@ -157,4 +206,3 @@ actor BackgroundMonitoringService {
         ))
     }
 }
-

@@ -215,10 +215,13 @@ struct GitRepositoryServiceTests {
         try "changed\n".write(to: root.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
 
         let model = WorkspaceViewModel()
+        model.appPreferences.monitoringEngineEnabled = true
         model.appPreferences.liveRefreshEnabled = true
         model.appPreferences.liveRefreshInterval = 0.5
         model.appPreferences.remoteRefreshEnabled = false
         await model.openRepository(root)
+        #expect(model.activeError == nil)
+        #expect(!model.isRefreshing)
         #expect(model.snapshot?.unstagedChanges.map(\.path) == ["tracked.txt"])
 
         try runGit(["add", "tracked.txt"], at: root)
