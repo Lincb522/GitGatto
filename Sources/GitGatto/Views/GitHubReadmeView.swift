@@ -10,6 +10,34 @@ final class GitHubReadmeWebView: WKWebView {
 
     var loadedContent: Content?
     var onScrollAwayFromTop: () -> Void = {}
+    private var pendingStyle: String?
+
+    func display(_ content: Content, pageHTML: @autoclosure () -> String, style: @autoclosure () -> String) {
+        guard loadedContent != content else { return }
+        let documentChanged = loadedContent?.document != content.document
+        loadedContent = content
+        pendingStyle = style()
+        appearance = NSAppearance(named: content.colorScheme == .dark ? .darkAqua : .aqua)
+        if documentChanged {
+            resetScrollDetection()
+            loadHTMLString(pageHTML(), baseURL: content.document.linkBaseURL)
+        } else if !isLoading {
+            applyPendingStyle()
+        }
+    }
+
+    func applyPendingStyle() {
+        guard let style = pendingStyle else { return }
+        // The page cannot run scripts. Only the app updates its own stylesheet.
+        callAsyncJavaScript(
+            "document.getElementById('gitgatto-readme-style').textContent = style;",
+            arguments: ["style": style], in: nil, in: .defaultClient
+        ) { [weak self] result in
+            if case .success = result, self?.pendingStyle == style {
+                self?.pendingStyle = nil
+            }
+        }
+    }
 
     private var accumulatedScrollDistance: CGFloat = 0
     private var didReportScrollAwayFromTop = false
@@ -45,7 +73,7 @@ final class GitHubReadmeRendererCache: NSObject, ObservableObject, WKNavigationD
 
     func acquire(for content: GitHubReadmeWebView.Content) -> Lease {
         let webView: GitHubReadmeWebView
-        if let idleRenderer, idleRenderer.loadedContent == content {
+        if let idleRenderer, idleRenderer.loadedContent?.document == content.document {
             webView = idleRenderer
         } else {
             let configuration = WKWebViewConfiguration()
@@ -67,6 +95,10 @@ final class GitHubReadmeRendererCache: NSObject, ObservableObject, WKNavigationD
         lease.webView.pauseAllMediaPlayback(completionHandler: nil)
         lease.webView.navigationDelegate = self
         idleRenderer = lease.webView
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        (webView as? GitHubReadmeWebView)?.applyPendingStyle()
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
@@ -105,10 +137,7 @@ struct GitHubReadmeView: NSViewRepresentable {
         context.coordinator.onOpenLink = onOpenLink
         context.coordinator.linkBaseURL = document.linkBaseURL
         let content = GitHubReadmeWebView.Content(document: document, colorScheme: colorScheme, lumenColors: lumenColors)
-        guard webView.loadedContent != content else { return }
-        webView.loadedContent = content
-        webView.resetScrollDetection()
-        webView.loadHTMLString(pageHTML, baseURL: document.linkBaseURL)
+        webView.display(content, pageHTML: pageHTML, style: pageStyle)
     }
 
     static func dismantleNSView(_ webView: GitHubReadmeWebView, coordinator: Coordinator) {
@@ -120,7 +149,7 @@ struct GitHubReadmeView: NSViewRepresentable {
         }
     }
 
-    private var pageHTML: String {
+    var pageStyle: String {
         let dark = colorScheme == .dark
         func themed(_ role: LumenColorRole, light: String, dark: String) -> String {
             if let lumenColors, let rgba = LumenRGBA(lumenColors[role]) { return rgba.hex }
@@ -137,12 +166,6 @@ struct GitHubReadmeView: NSViewRepresentable {
         let attention = themed(.warning, light: "#9a6700", dark: "#d29922")
 
         return """
-        <!doctype html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
             :root { color-scheme: \(dark ? "dark" : "light"); }
             * { box-sizing: border-box; }
             html { background: \(canvas); }
@@ -179,6 +202,8 @@ struct GitHubReadmeView: NSViewRepresentable {
             .markdown-heading:hover .anchor .octicon { visibility: visible; }
             img, picture, video, svg { max-width: 100%; }
             img, video { height: auto; }
+            [href$="#gh-\(dark ? "light" : "dark")-mode-only"],
+            [src$="#gh-\(dark ? "light" : "dark")-mode-only"] { display: none !important; }
             img { box-sizing: content-box; background-color: \(canvas); }
             img[align="right"] { padding-left: 20px; }
             img[align="left"] { padding-right: 20px; }
@@ -214,7 +239,16 @@ struct GitHubReadmeView: NSViewRepresentable {
             .markdown-alert-caution { border-left-color: \(danger); }
             .footnotes { color: \(muted); font-size: 12px; border-top: 1px solid \(border); }
             @media (max-width: 700px) { .markdown-body { padding: 24px 22px 48px; } }
-          </style>
+        """
+    }
+
+    var pageHTML: String {
+        """
+        <!doctype html>
+        <html><head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style id="gitgatto-readme-style">\(pageStyle)</style>
         </head>
         <body><article class="markdown-body">\(normalizedHTML)</article></body>
         </html>
@@ -267,6 +301,10 @@ struct GitHubReadmeView: NSViewRepresentable {
                 onOpenLink(url)
             }
             decisionHandler(.cancel)
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            (webView as? GitHubReadmeWebView)?.applyPendingStyle()
         }
 
         func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {

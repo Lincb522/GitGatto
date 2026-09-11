@@ -161,6 +161,7 @@ struct ApplicationMarketplaceView: View {
                         ForEach(model.applications) { application in
                             MarketplaceApplicationRow(
                                 application: application,
+                                logoURL: model.applicationDetails[application.id]?.logoURL,
                                 selected: model.selectedApplication?.id == application.id,
                                 isFavorite: model.collection == .favorites,
                                 isInstalled: installedRepositoryNameSet.contains(
@@ -168,6 +169,9 @@ struct ApplicationMarketplaceView: View {
                                 )
                             ) {
                                 model.select(application)
+                            }
+                            .task(id: application.id) {
+                                await model.loadApplicationLogo(application)
                             }
                         }
                         if model.canLoadMore {
@@ -353,7 +357,6 @@ struct ApplicationMarketplaceView: View {
         HStack(alignment: .top, spacing: logoSize >= 70 ? 16 : 12) {
             MarketplaceLogoView(
                 url: model.selectedLogoURL,
-                language: application.repository.language,
                 size: logoSize
             )
             VStack(alignment: .leading, spacing: 7) {

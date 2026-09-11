@@ -124,6 +124,139 @@ struct CodexJSONLParserTests {
     }
 }
 
+@Suite("Document translation response integrity")
+struct DocumentTranslationIntegrityTests {
+    @Test("Markdown translation retains code indentation and headings", arguments: [AIOutputFormat.plainText, .codexJSONL])
+    func preservesMarkdownFormatting(format: AIOutputFormat) async throws {
+        let source = "# Guide\n\nRun this example:\n\n```python\ndef answer():\n    # Keep this comment\n    return 42\n```\n"
+        let translation = "# 指南\n\n运行这个示例：\n\n```python\ndef answer():\n    # Keep this comment\n    return 42\n```\n"
+        try await withCLI(response: translation, format: format) { service in
+            let result = try await service.translateMarkdown(source, target: .simplifiedChinese)
+            #expect(result == translation)
+        }
+    }
+
+    @Test("HTML translation accepts unchanged URLs and equivalent entities")
+    func restoresHTMLTranslation() async throws {
+        let response = #"{"translations":["请参阅 https://example.invalid/docs，然后重启。","命令 &#38; 示例"]}"#
+        try await withCLI(response: response) { service in
+            let result = try await service.translateHTML(
+                "<article><p>Read https://example.invalid/docs, then restart.</p><p>Commands &amp; examples</p><pre><code>  npm install</code></pre></article>",
+                target: .simplifiedChinese
+            )
+            #expect(result == "<article><p>请参阅 https://example.invalid/docs，然后重启。</p><p>命令 &#38; 示例</p><pre><code>  npm install</code></pre></article>")
+        }
+    }
+
+    @Test("Only fragments that changed protected values are retried")
+    func repairsChangedFragments() async throws {
+        let response = #"{"translations":["安装指南","于 2026 年 9 月 5 日生效。","如果你是 GitHub 员工，请阅读指南。"]}"#
+        let repaired = #"{"translations":["于 2026 年九月 5 日生效。","如果你是内部员工，请阅读指南。"]}"#
+        try await withCLI(response: response, repairResponse: repaired, expectedCalls: 2) { service in
+            let result = try await service.translateHTML(
+                "<h1>Installation guide</h1><p>Effective September 5, 2026.</p><p>If you are a hubber, read the guide.</p>",
+                target: .simplifiedChinese
+            )
+            #expect(result == "<h1>安装指南</h1><p>于 2026 年九月 5 日生效。</p><p>如果你是内部员工，请阅读指南。</p>")
+        }
+    }
+
+    @Test("Protected content repair stops after one retry")
+    func boundsRepairAttempts() async throws {
+        let response = #"{"translations":["Visit https://other.invalid/docs"]}"#
+        try await withCLI(response: response, expectedCalls: 2) { service in
+            await #expect(throws: CodexServiceError.self) {
+                try await service.translateHTML("<p>Visit https://example.invalid/docs</p>", target: .simplifiedChinese)
+            }
+        }
+    }
+
+    @Test("Markdown validation retries once without dropping code or formatting")
+    func repairsMarkdownProtectedValues() async throws {
+        let source = "# Guide\n\nEffective September 5, 2026.\n\n```sh\n  echo ready\n```\n"
+        let response = "# 指南\n\n于 2026 年 9 月 5 日生效。\n\n```sh\n  echo ready\n```\n"
+        let repaired = "# 指南\n\n于 2026 年九月 5 日生效。\n\n```sh\n  echo ready\n```\n"
+        try await withCLI(response: response, repairResponse: repaired, expectedCalls: 2) { service in
+            let result = try await service.translateMarkdown(source, target: .simplifiedChinese)
+            #expect(result == repaired)
+        }
+    }
+
+    @Test("Markdown still fails when the retry changes a protected URL")
+    func boundsMarkdownRepairAttempts() async throws {
+        try await withCLI(response: "See https://other.invalid/docs", expectedCalls: 2) { service in
+            await #expect(throws: CodexServiceError.self) {
+                try await service.translateMarkdown("See https://example.invalid/docs", target: .simplifiedChinese)
+            }
+        }
+    }
+
+    @Test("Malformed, missing and changed translation content is still rejected", arguments: [
+        #"{"translations":["访问 https://other.invalid/docs。"]}"#,
+        #"{"translations":[]}"#,
+        #"{"translations":[""]}"#,
+        #"{"translations":["访问 https://example.invalid/docs。","多余段落"]}"#,
+        #"{"translations":["truncated""#,
+    ])
+    func rejectsInvalidHTMLTranslation(response: String) async throws {
+        try await withCLI(response: response) { service in
+            await #expect(throws: CodexServiceError.self) {
+                try await service.translateHTML("<p>Visit https://example.invalid/docs.</p>", target: .simplifiedChinese)
+            }
+        }
+    }
+
+    private func withCLI(
+        response: String,
+        format: AIOutputFormat = .plainText,
+        repairResponse: String? = nil,
+        expectedCalls: Int? = nil,
+        operation: (CodexService) async throws -> Void
+    ) async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("GitGatto-translation-integrity-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let responseURL = directory.appendingPathComponent("response")
+        let data: Data
+        switch format {
+        case .plainText:
+            data = Data(response.utf8)
+        case .codexJSONL:
+            data = try JSONSerialization.data(withJSONObject: [
+                "type": "item.completed", "item": ["type": "agent_message", "text": response]
+            ])
+        }
+        try data.write(to: responseURL)
+        let repairedURL = directory.appendingPathComponent("repaired-response")
+        try (repairResponse.map { Data($0.utf8) } ?? data).write(to: repairedURL)
+        let callsURL = directory.appendingPathComponent("calls")
+        let executable = directory.appendingPathComponent("translation-cli")
+        try """
+        #!/bin/sh
+        cat >/dev/null
+        if [ -f '\(callsURL.path)' ]; then
+            printf x >> '\(callsURL.path)'
+            exec /bin/cat '\(repairedURL.path)'
+        fi
+        printf x > '\(callsURL.path)'
+        exec /bin/cat '\(responseURL.path)'
+
+        """.write(to: executable, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+        var configured = AIProviderConfiguration.preset(.custom)
+        configured.executable = executable.path
+        configured.versionArguments = ""
+        configured.translationArguments = ""
+        configured.outputFormat = format
+        let configuration = configured
+        let service = CodexService(lane: .translation, configurationSource: { _ in configuration })
+        try await operation(service)
+        if let expectedCalls {
+            #expect(try Data(contentsOf: callsURL).count == expectedCalls)
+        }
+    }
+}
+
 @Suite("Independent Agent CLI lanes", .serialized)
 struct IndependentAILaneTests {
     @Test("Translation remains available while a project CLI is running")

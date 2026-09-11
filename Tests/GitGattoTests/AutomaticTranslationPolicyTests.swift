@@ -84,4 +84,55 @@ extension AutomaticTranslationPolicyTests {
         #expect(TranslationContentGuard.preservesProtectedContent(source: "Réessayez", translation: "重试"))
     }
 
+    @Test("Sentence punctuation around bare URLs is translatable")
+    func translatedURLPunctuation() {
+        for (source, translation) in [
+            ("Visit https://example.invalid/docs for details.", "详情请访问 https://example.invalid/docs。"),
+            ("Read https://example.invalid/docs.", "阅读 https://example.invalid/docs。"),
+            ("See https://example.invalid/docs, then restart.", "请参阅 https://example.invalid/docs，然后重启。"),
+            ("Open https://example.invalid/docs?lang=en#setup!", "打开 https://example.invalid/docs?lang=en#setup！"),
+        ] {
+            #expect(TranslationContentGuard.preservesProtectedContent(source: source, translation: translation))
+        }
+    }
+
+    @Test("URL destinations remain protected after punctuation normalization")
+    func retainsURLIntegrity() {
+        let source = "Visit https://example.invalid/docs?lang=en#setup."
+        for translation in [
+            "访问 https://other.invalid/docs?lang=en#setup。",
+            "访问 https://example.invalid/other?lang=en#setup。",
+            "访问 https://example.invalid/docs?lang=zh#setup。",
+            "访问 https://example.invalid/docs?lang=en#other。",
+            "访问 https://example.invalid/docs?lang=en#setup。 https://example.invalid/extra",
+        ] {
+            #expect(!TranslationContentGuard.preservesProtectedContent(source: source, translation: translation))
+        }
+        #expect(!TranslationContentGuard.preservesProtectedContent(
+            source: "[Guide](https://example.invalid/docs.)",
+            translation: "[指南](https://example.invalid/docs)"
+        ))
+        #expect(!TranslationContentGuard.preservesProtectedContent(
+            source: "<a href=\"https://example.invalid/docs.\">Guide</a>",
+            translation: "<a href=\"https://example.invalid/docs\">指南</a>"
+        ))
+    }
+
+    @Test("Equivalent HTML entity encodings preserve text content")
+    func equivalentHTMLEntities() {
+        #expect(TranslationContentGuard.preservesProtectedContent(
+            source: "Alice&#39;s guide &amp; examples &quot;quoted&quot;",
+            translation: "Alice&apos;s 指南 &#38; 示例 &#x22;引用&#X22;"
+        ))
+        #expect(!TranslationContentGuard.preservesProtectedContent(
+            source: "Commands &amp; examples", translation: "命令 &lt; 示例"
+        ))
+        #expect(!TranslationContentGuard.preservesProtectedContent(
+            source: "Commands &amp; examples", translation: "命令和示例"
+        ))
+        #expect(!TranslationContentGuard.preservesProtectedContent(
+            source: "Use `echo &amp;`", translation: "使用 `echo &#38;`"
+        ))
+    }
+
 }

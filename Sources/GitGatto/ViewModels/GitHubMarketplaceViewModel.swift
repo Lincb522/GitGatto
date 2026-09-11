@@ -13,6 +13,10 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published var selectedReleaseID: Int64?
     @Published private(set) var selectedDetails: MarketplaceApplicationDetails?
     @Published private(set) var selectedLogoURL: URL?
+    @Published private(set) var applicationDetails: [String: MarketplaceApplicationDetails] = [:]
+    private var applicationDetailsTasks: [String: Task<MarketplaceApplicationDetails, Error>] = [:]
+    private var applicationDetailsLanes: [Task<MarketplaceApplicationDetails, Error>?] = Array(repeating: nil, count: 3)
+    private var nextApplicationDetailsLane = 0
     @Published private(set) var isLoadingDetails = false
     @Published private(set) var isLoadingReleases = false
     @Published private(set) var detailError: String?
@@ -232,7 +236,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         selectedDetails = application.map {
             MarketplaceApplicationDetails.fallback(description: $0.repository.description)
         }
-        selectedLogoURL = application?.ownerAvatarURL
+        selectedLogoURL = application.flatMap { applicationDetails[$0.id]?.logoURL }
         isLoadingDetails = application != nil
         isLoadingReleases = false
         loadedReleaseApplicationID = nil
@@ -270,18 +274,10 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 }
             }
             do {
-                let document = try await github.readme(for: application.repository)
+                let details = try await loadApplicationDetails(application)
                 guard !Task.isCancelled, selectedApplication?.id == application.id else { return }
-                let details = document.map {
-                    MarketplaceApplicationDetailsExtractor.extract(
-                        from: $0,
-                        repositoryDescription: application.repository.description
-                    )
-                } ?? MarketplaceApplicationDetails.fallback(
-                    description: application.repository.description
-                )
                 selectedDetails = details
-                selectedLogoURL = details.logoURL ?? application.ownerAvatarURL
+                selectedLogoURL = details.logoURL
                 restoreTranslations(
                     for: application,
                     release: selectedRelease ?? application.latestRelease,
@@ -295,7 +291,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                     description: application.repository.description
                 )
                 selectedDetails = details
-                selectedLogoURL = application.ownerAvatarURL
+                selectedLogoURL = nil
                 restoreTranslations(
                     for: application,
                     release: selectedRelease ?? application.latestRelease,
@@ -303,6 +299,36 @@ final class GitHubMarketplaceViewModel: ObservableObject {
                 )
             }
         }
+    }
+
+    func loadApplicationLogo(_ application: MarketplaceApplication) async {
+        _ = try? await loadApplicationDetails(application)
+    }
+
+    private func loadApplicationDetails(_ application: MarketplaceApplication) async throws -> MarketplaceApplicationDetails {
+        if let cached = applicationDetails[application.id] { return cached }
+        if let task = applicationDetailsTasks[application.id] { return try await task.value }
+        let github = self.github
+        let lane = nextApplicationDetailsLane
+        nextApplicationDetailsLane = (lane + 1) % applicationDetailsLanes.count
+        let predecessor = applicationDetailsLanes[lane]
+        let task = Task {
+            _ = try? await predecessor?.value
+            try Task.checkCancellation()
+            let document = try await github.readme(for: application.repository)
+            try Task.checkCancellation()
+            return document.map {
+                MarketplaceApplicationDetailsExtractor.extract(
+                    from: $0, repositoryDescription: application.repository.description
+                )
+            } ?? .fallback(description: application.repository.description)
+        }
+        applicationDetailsLanes[lane] = task
+        applicationDetailsTasks[application.id] = task
+        defer { applicationDetailsTasks[application.id] = nil }
+        let details = try await task.value
+        applicationDetails[application.id] = details
+        return details
     }
 
     func loadReleasesIfNeeded() {

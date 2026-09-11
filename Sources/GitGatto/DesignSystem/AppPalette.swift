@@ -403,14 +403,11 @@ struct AppThemeRoot<Content: View>: View {
     @Environment(\.colorScheme) private var systemColorScheme
 
     let content: Content
-    let resetsContentOnStyleChange: Bool
 
     init(
-        resetsContentOnStyleChange: Bool = true,
         @ViewBuilder content: () -> Content
     ) {
         self.content = content()
-        self.resetsContentOnStyleChange = resetsContentOnStyleChange
     }
 
     private var appearance: AppAppearance {
@@ -429,10 +426,6 @@ struct AppThemeRoot<Content: View>: View {
         AppAccentChoice(rawValue: accentRaw) ?? .coral
     }
 
-    private var styleSignature: String {
-        [appearanceRaw, theme.rawValue, accentRaw, customAccentHex].joined(separator: ":")
-    }
-
     var body: some View {
         let palette = AppPalette(
             effectiveColorScheme,
@@ -446,20 +439,13 @@ struct AppThemeRoot<Content: View>: View {
                 colorScheme: effectiveColorScheme
             )
 
-            Group {
-                if resetsContentOnStyleChange {
-                    content.id(styleSignature)
-                } else {
-                    content
-                }
-            }
+            content
         }
         .tint(palette.primary)
         .progressViewStyle(GattoProgressViewStyle())
         .environment(\.layoutDirection, .leftToRight)
         .preferredColorScheme(appearance.colorScheme)
-        .onAppear { AppIconAssets.updateApplicationIcon(appearanceRaw: appearanceRaw) }
-        .onChange(of: styleSignature) { _, _ in
+        .onChange(of: effectiveColorScheme, initial: true) { _, _ in
             AppIconAssets.updateApplicationIcon(appearanceRaw: appearanceRaw)
         }
     }

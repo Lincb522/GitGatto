@@ -135,6 +135,64 @@ struct GitHubMarketplaceViewModelTests {
         #expect(details.logoURL == nil)
     }
 
+    @Test("Application logos never fall back to author avatars, generic images, or screenshots")
+    func requiresAnApplicationLogo() throws {
+        let base = try #require(URL(string: "https://raw.githubusercontent.com/example/app/main/"))
+        for image in [
+            "<img src='https://avatars.githubusercontent.com/u/1' alt='Logo'>",
+            "<img src='author.png' alt='Author avatar'>",
+            "<img src='https://github.com/owner.png?size=160' alt='Logo'>",
+            "<img src='diagram.png' alt='Architecture'>",
+            "<img src='https://raw.githubusercontent.com/example/logo-app/main/diagram.png' alt='Architecture'>",
+            "<img src='Screenshots/logo-preview.png' alt='Screenshot'>"
+        ] {
+            let document = GitHubReadmeDocument(path: "README.md", html: image,
+                linkBaseURL: base, linkRootURL: base, assetBaseURL: base, assetRootURL: base)
+            #expect(MarketplaceApplicationDetailsExtractor.extract(from: document, repositoryDescription: nil).logoURL == nil)
+        }
+    }
+
+    @Test("Visible app rows and details share one README logo lookup", .timeLimit(.minutes(1)))
+    @MainActor
+    func sharesApplicationLogoLookup() async throws {
+        let fixture = try MarketplaceGitHubFixture()
+        let repository = try #require(try await fixture.searchRepositories(query: "GitGatto", page: 1).first)
+        let release = try #require(try await fixture.marketplaceRelease(for: repository))
+        let application = MarketplaceApplication(repository: repository, latestRelease: release, matchingAssets: release.assets)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let model = GitHubMarketplaceViewModel(github: fixture,
+            historyStore: MarketplaceHistoryStore(directoryURL: directory), automaticallyTranslates: false)
+        async let first: Void = model.loadApplicationLogo(application)
+        async let second: Void = model.loadApplicationLogo(application)
+        _ = await (first, second)
+        #expect(await fixture.readmeLoadCount == 1)
+        #expect(model.applicationDetails[application.id]?.logoURL?.lastPathComponent == "AppIcon.svg")
+        model.select(application)
+        for await loading in model.$isLoadingDetails.values { if !loading { break } }
+        #expect(await fixture.readmeLoadCount == 1)
+        #expect(model.selectedLogoURL == model.applicationDetails[application.id]?.logoURL)
+    }
+
+    @Test("Missing README uses the default icon in the list and details", .timeLimit(.minutes(1)))
+    @MainActor
+    func missingReadmeHasNoAvatar() async throws {
+        let fixture = try PaginatedMarketplaceGitHubFixture()
+        let repository = try #require(try await fixture.searchRepositories(query: "App", page: 1).first)
+        let release = try #require(try await fixture.marketplaceRelease(for: repository))
+        let application = MarketplaceApplication(repository: repository, latestRelease: release, matchingAssets: release.assets)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let model = GitHubMarketplaceViewModel(github: fixture,
+            historyStore: MarketplaceHistoryStore(directoryURL: directory), automaticallyTranslates: false)
+        model.select(application)
+        #expect(model.selectedLogoURL == nil)
+        for await loading in model.$isLoadingDetails.values { if !loading { break } }
+        #expect(model.selectedLogoURL == nil)
+        #expect(model.applicationDetails[application.id]?.logoURL == nil)
+        #expect(model.applicationDetails[application.id] != nil)
+    }
+
     @Test("Preserves detailed introduction structure through translation")
     func preservesTranslatedIntroductionStructure() throws {
         let details = MarketplaceApplicationDetails(
@@ -363,6 +421,7 @@ private actor MarketplaceGitHubFixture: MarketplaceGitHubServing {
     private let release: GitHubRelease
     private(set) var recordedQueries: [String] = []
     private(set) var releaseLoadCount = 0
+    private(set) var readmeLoadCount = 0
     private var delayedReleaseContinuation: CheckedContinuation<Void, Never>?
     private var didFinishDelayedRelease = false
 
@@ -452,6 +511,7 @@ private actor MarketplaceGitHubFixture: MarketplaceGitHubServing {
     }
 
     func readme(for repository: GitHubRepository) async throws -> GitHubReadmeDocument? {
+        readmeLoadCount += 1
         guard let linkRoot = URL(string: "https://github.com/Lincb522/GitGatto/blob/main/"),
               let assetRoot = URL(string: "https://raw.githubusercontent.com/Lincb522/GitGatto/main/") else {
             return nil

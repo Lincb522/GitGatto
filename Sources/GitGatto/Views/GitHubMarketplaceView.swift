@@ -347,7 +347,6 @@ private enum DevelopmentToolLogoAssets {
 
 struct MarketplaceLogoView: View {
     let url: URL?
-    let language: String?
     let size: CGFloat
 
     @Environment(\.colorScheme) private var colorScheme
@@ -384,7 +383,8 @@ struct MarketplaceLogoView: View {
     }
 
     private var fallback: some View {
-        GitHubLanguageIcon(language: language, size: size - 14)
+        GattoIcon(symbol: "square.grid.2x2", size: size * 0.65)
+            .foregroundStyle(AppPalette(colorScheme).subtleInk)
     }
 
     private func loadImage() async {
@@ -412,6 +412,7 @@ struct MarketplaceLogoView: View {
 
 struct MarketplaceApplicationRow: View {
     let application: MarketplaceApplication
+    var logoURL: URL? = nil
     let selected: Bool
     let isFavorite: Bool
     let isInstalled: Bool
@@ -424,8 +425,7 @@ struct MarketplaceApplicationRow: View {
         Button(action: action) {
             HStack(alignment: .top, spacing: 11) {
                 MarketplaceLogoView(
-                    url: application.ownerAvatarURL,
-                    language: application.repository.language,
+                    url: logoURL,
                     size: 44
                 )
                 VStack(alignment: .leading, spacing: 5) {

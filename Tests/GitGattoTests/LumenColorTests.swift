@@ -148,7 +148,7 @@ struct LumenColorTests {
         }
     }
 
-    @Test("README renders selected colors and does not reuse a differently colored page", .timeLimit(.minutes(1)))
+    @Test("README updates selected colors without replacing the page", .timeLimit(.minutes(1)))
     func readmeColors() async throws {
         let url = try #require(URL(string: "https://example.com/repository/"))
         let document = GitHubReadmeDocument(path: "README.md", html: "<h1>Repository</h1><p>README</p>",
@@ -163,7 +163,7 @@ struct LumenColorTests {
         lease.webView.loadedContent = old
         cache.release(lease)
         let themed = GitHubReadmeWebView.Content(document: document, colorScheme: .light, lumenColors: colors)
-        #expect(cache.acquire(for: themed).webView !== lease.webView)
+        #expect(cache.acquire(for: themed).webView === lease.webView)
         let view = GitHubReadmeView(document: document, colorScheme: .light, lumenColors: colors,
             rendererCache: cache, onScrollAwayFromTop: {}, onOpenLink: { _ in })
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 600),
@@ -186,6 +186,21 @@ struct LumenColorTests {
         }
         #expect(ink == "rgb(18, 52, 86)")
         #expect(try await web.evaluateJavaScript("getComputedStyle(document.body).backgroundColor") as? String == "rgb(238, 238, 238)")
+        _ = try await web.evaluateJavaScript("document.body.dataset.retained = 'yes'")
+        settings.set("#654321", for: .ink, appearance: .light)
+        host.rootView = GitHubReadmeView(document: document, colorScheme: .light, lumenColors: settings.resolved(.light),
+            rendererCache: cache, onScrollAwayFromTop: {}, onOpenLink: { _ in })
+        host.layoutSubtreeIfNeeded()
+        #expect(findWeb(host) === web)
+        let recolorDeadline = ContinuousClock.now.advanced(by: .seconds(15))
+        while ContinuousClock.now < recolorDeadline {
+            ink = try await web.evaluateJavaScript("getComputedStyle(document.body).color") as? String
+            if ink == "rgb(101, 67, 33)" { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(ink == "rgb(101, 67, 33)")
+        let retained = try await web.evaluateJavaScript("document.body.dataset.retained") as? String
+        #expect(retained == "yes")
     }
 
     @Test("Color settings render in narrow and wide, light and dark windows")

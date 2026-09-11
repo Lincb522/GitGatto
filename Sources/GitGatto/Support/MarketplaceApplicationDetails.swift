@@ -69,7 +69,6 @@ enum MarketplaceApplicationDetailsExtractor {
         .prefix(8)
         let images = imageCandidates(in: html, headings: headings)
         let logo = images.first(where: \.isLogo)?.url
-            ?? images.first(where: { !$0.isScreenshot })?.url
         let screenshots = images
             .filter { !$0.isLogo && $0.isScreenshot }
             .map(\.url)
@@ -198,13 +197,17 @@ enum MarketplaceApplicationDetailsExtractor {
             guard let source = attribute("src", in: attributes),
                   let url = URL(string: source),
                   ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return nil }
+            guard !(url.host?.lowercased() == "github.com"
+                    && url.pathComponents.count == 2 && url.pathExtension.lowercased() == "png") else { return nil }
             let alt = attribute("alt", in: attributes) ?? ""
             let section = heading(at: match.range.location, in: headings)
-            let identity = "\(source) \(alt) \(section)".lowercased()
+            let imageIdentity = "\(source) \(alt)".lowercased()
+            let logoIdentity = "\(url.lastPathComponent) \(alt)".lowercased()
+            let identity = "\(imageIdentity) \(section)".lowercased()
             guard !discardedImageTerms.contains(where: identity.contains) else { return nil }
             return ImageCandidate(
                 url: url,
-                isLogo: logoTerms.contains(where: identity.contains),
+                isLogo: logoTerms.contains(where: logoIdentity.contains) && !screenshotTerms.contains(where: imageIdentity.contains),
                 isScreenshot: screenshotTerms.contains(where: identity.contains)
             )
         }
@@ -289,6 +292,7 @@ enum MarketplaceApplicationDetailsExtractor {
     ]
     private static let discardedImageTerms = [
         "img.shields.io", "badge", "coverage", "workflow", "build status", "sponsor", "analytics",
+        "avatars.githubusercontent.com", "avatar", "contributor",
     ]
     private static let logoTerms = [
         "appicon", "app-icon", "app_icon", "logo", "brand", "icon.png", "icon.svg",

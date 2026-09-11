@@ -378,6 +378,29 @@ struct ReleaseNotesMarkdownView: View {
                         .padding(.top, 3)
                 case .paragraph:
                     markdownText(block.text, palette: palette)
+                case .image(let attachment):
+                    Button { openURL(attachment.url) } label: {
+                        CachedRemoteImage(url: attachment.url) { image in
+                            image.resizable().interpolation(.high).scaledToFit()
+                        } placeholder: {
+                            Label(attachment.alt.isEmpty ? attachment.url.lastPathComponent : attachment.alt,
+                                  systemImage: "photo")
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(palette.mutedInk)
+                                .padding(12)
+                        }
+                        .frame(maxWidth: attachment.width ?? .infinity, alignment: .leading)
+                        .accessibilityLabel(attachment.alt.isEmpty ? attachment.url.lastPathComponent : attachment.alt)
+                    }
+                    .buttonStyle(.plain)
+                case .code:
+                    Text(block.text)
+                        .font(.system(size: 11.5, design: .monospaced))
+                        .foregroundStyle(palette.ink)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(10)
+                        .background(palette.raisedSurface)
                 case .bullet:
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Circle()
@@ -401,47 +424,6 @@ struct ReleaseNotesMarkdownView: View {
             .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
-    }
-}
-
-private struct ReleaseNotesMarkdownBlock: Identifiable {
-    enum Kind { case heading, paragraph, bullet }
-
-    let id: Int
-    let kind: Kind
-    let text: String
-
-    static func parse(_ source: String) -> [ReleaseNotesMarkdownBlock] {
-        var blocks: [ReleaseNotesMarkdownBlock] = []
-        var paragraph: [String] = []
-
-        func flushParagraph() {
-            guard !paragraph.isEmpty else { return }
-            blocks.append(.init(
-                id: blocks.count,
-                kind: .paragraph,
-                text: paragraph.joined(separator: " ")
-            ))
-            paragraph.removeAll(keepingCapacity: true)
-        }
-
-        for rawLine in source.split(separator: "\n", omittingEmptySubsequences: false) {
-            let line = String(rawLine).trimmingCharacters(in: .whitespaces)
-            if line.isEmpty {
-                flushParagraph()
-            } else if line.hasPrefix("#") {
-                flushParagraph()
-                let heading = line.drop(while: { $0 == "#" || $0 == " " })
-                blocks.append(.init(id: blocks.count, kind: .heading, text: String(heading)))
-            } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
-                flushParagraph()
-                blocks.append(.init(id: blocks.count, kind: .bullet, text: String(line.dropFirst(2))))
-            } else {
-                paragraph.append(line)
-            }
-        }
-        flushParagraph()
-        return blocks
     }
 }
 

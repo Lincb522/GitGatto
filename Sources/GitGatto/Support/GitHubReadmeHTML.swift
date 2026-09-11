@@ -14,6 +14,8 @@ enum GitHubReadmeHTML {
                 resolve(value, baseURL: linkBaseURL, rootURL: linkRootURL)
             case "src", "poster":
                 resolve(value, baseURL: assetBaseURL, rootURL: assetRootURL)
+            case "srcset":
+                rewriteSourceSet(value) { resolve($0, baseURL: assetBaseURL, rootURL: assetRootURL) }
             default:
                 value
             }
@@ -51,14 +53,17 @@ enum GitHubReadmeHTML {
     static func relativeAssetReferences(in html: String) -> [String] {
         var references: [String] = []
         _ = rewriteAttributes(in: html) { name, value in
-            guard name.caseInsensitiveCompare("src") == .orderedSame
-                    || name.caseInsensitiveCompare("poster") == .orderedSame,
-                  isRelative(value),
-                  isEmbeddableImage(value) else { return value }
-            if !references.contains(value) {
-                references.append(value)
+            func record(_ source: String) -> String {
+                if isRelative(source), isEmbeddableImage(source), !references.contains(source) {
+                    references.append(source)
+                }
+                return source
             }
-            return value
+            switch name.lowercased() {
+            case "src", "poster": return record(value)
+            case "srcset": return rewriteSourceSet(value, transform: record)
+            default: return value
+            }
         }
         return references
     }
@@ -68,9 +73,18 @@ enum GitHubReadmeHTML {
         replacements: [String: String]
     ) -> String {
         rewriteAttributes(in: html) { name, value in
-            guard name.caseInsensitiveCompare("src") == .orderedSame
-                    || name.caseInsensitiveCompare("poster") == .orderedSame else { return value }
-            return replacements[value] ?? value
+            func replacement(_ source: String) -> String {
+                guard let embedded = replacements[source] else { return source }
+                if let fragment = source.firstIndex(of: "#") {
+                    return embedded + source[fragment...]
+                }
+                return embedded
+            }
+            switch name.lowercased() {
+            case "src", "poster": return replacement(value)
+            case "srcset": return rewriteSourceSet(value, transform: replacement)
+            default: return value
+            }
         }
     }
 
@@ -155,7 +169,7 @@ enum GitHubReadmeHTML {
         var output = html
         for quote in ["\"", "'"] {
             let escapedQuote = NSRegularExpression.escapedPattern(for: quote)
-            let pattern = "(?i)\\b(href|src|poster)\\s*=\\s*\(escapedQuote)([^\(escapedQuote)]*)\(escapedQuote)"
+            let pattern = "(?i)(?<![\\w:-])(href|srcset|src|poster)\\s*=\\s*\(escapedQuote)([^\(escapedQuote)]*)\(escapedQuote)"
             guard let expression = try? NSRegularExpression(pattern: pattern) else { continue }
             let range = NSRange(output.startIndex..<output.endIndex, in: output)
             let matches = expression.matches(in: output, range: range)
@@ -168,6 +182,30 @@ enum GitHubReadmeHTML {
             }
         }
         return output
+    }
+
+    private static func rewriteSourceSet(_ value: String, transform: (String) -> String) -> String {
+        // A data URL can contain commas; descriptors, not an unconditional comma split,
+        // separate those candidates from their neighbours.
+        var remainder = value[...]
+        var candidates: [String] = []
+        while !remainder.isEmpty {
+            remainder = remainder.drop(while: { $0.isWhitespace || $0 == "," })
+            guard !remainder.isEmpty else { break }
+            let isData = remainder.lowercased().hasPrefix("data:")
+            let source = remainder.prefix(while: { !$0.isWhitespace && (isData || $0 != ",") })
+            remainder = remainder.dropFirst(source.count)
+            var url = String(source)
+            if url.hasSuffix(",") {
+                url.removeLast()
+                candidates.append(transform(url))
+                continue
+            }
+            let descriptor = remainder.prefix(while: { $0 != "," })
+            remainder = remainder.dropFirst(descriptor.count)
+            candidates.append(transform(url) + descriptor)
+        }
+        return candidates.joined(separator: ", ")
     }
 
     private static func resolve(_ value: String, baseURL: URL, rootURL: URL) -> String {

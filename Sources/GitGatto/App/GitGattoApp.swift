@@ -151,7 +151,7 @@ struct GitGattoApp: App {
 #endif
 
         Settings {
-            AppThemeRoot(resetsContentOnStyleChange: false) {
+            AppThemeRoot {
                 AppSettingsView(model: model, updateManager: updateManager)
                     .disabled(!model.hasMonitoringOwnership)
             }

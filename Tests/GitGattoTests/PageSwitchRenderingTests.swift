@@ -64,13 +64,12 @@ struct PageSwitchRenderingTests {
         #expect(resumed.webView.configuration.websiteDataStore.isPersistent == false)
     }
 
-    @Test("Changed content, repository URLs, and appearance do not reuse a stale page")
+    @Test("Changed content and repository URLs do not reuse a stale page")
     func invalidatesStalePages() throws {
         let original = try content()
         for changed in [
             try content(html: "<p>Translated content</p>"),
-            try content(base: "https://example.com/other/repository/"),
-            try content(scheme: .dark)
+            try content(base: "https://example.com/other/repository/")
         ] {
             let cache = GitHubReadmeRendererCache()
             let first = cache.acquire(for: original)
@@ -78,6 +77,15 @@ struct PageSwitchRenderingTests {
             cache.release(first)
             #expect(cache.acquire(for: changed).webView !== first.webView)
         }
+    }
+
+    @Test("Appearance-only changes reuse the document renderer")
+    func appearanceReusesRenderer() throws {
+        let cache = GitHubReadmeRendererCache()
+        let first = cache.acquire(for: try content())
+        first.webView.loadedContent = try content()
+        cache.release(first)
+        #expect(cache.acquire(for: try content(scheme: .dark)).webView === first.webView)
     }
 
     @Test("Detached renderers clear callbacks and recover after WebKit termination")
