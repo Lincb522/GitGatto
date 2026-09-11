@@ -9,7 +9,10 @@ struct RepositoryRecoveryView: View {
 
     private var model: WorkspaceViewModel { observation.model }
     @Environment(\.colorScheme) private var colorScheme
+    @State private var pendingExpectedIncident: RepositoryProtectionIncident?
     @State private var pendingDeletion: BackupDeletionTarget?
+    @State private var inspectedBackup: RepositoryBackup?
+    @State private var inspectionService: RepositoryBackupInspectionService?
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -49,6 +52,9 @@ struct RepositoryRecoveryView: View {
                 await model.reloadRepositoryBackups()
             }
         }
+        .sheet(item: $inspectedBackup) { backup in
+            if let inspectionService { RepositoryBackupInspectionView(backup: backup, service: inspectionService) }
+        }
         .alert(
             deletionTitle,
             isPresented: Binding(
@@ -68,6 +74,15 @@ struct RepositoryRecoveryView: View {
         } message: { target in
             Text(deletionMessage(target))
         }
+        .confirmationDialog(L10n.text("recovery.guard.expected"), isPresented: Binding(
+            get: { pendingExpectedIncident != nil }, set: { if !$0 { pendingExpectedIncident = nil } }
+        ), titleVisibility: .visible) {
+            Button(L10n.text("recovery.guard.expected")) {
+                if let incident = pendingExpectedIncident { model.dismissRepositoryProtectionIncident(incident) }
+                pendingExpectedIncident = nil
+            }
+            Button(L10n.text("action.cancel"), role: .cancel) { pendingExpectedIncident = nil }
+        } message: { Text(L10n.text("recovery.guard.expectedHelp")) }
     }
 
     private func protectionIncident(
@@ -122,9 +137,17 @@ struct RepositoryRecoveryView: View {
                                     : [])
                         )).sorted()
                         if !affectedPaths.isEmpty {
-                            Text(affectedPaths.prefix(5).joined(separator: "  ·  "))
-                                .font(.system(size: 10, design: .monospaced))
-                                .lineLimit(2)
+                            DisclosureGroup(L10n.format("recovery.affectedFiles", affectedPaths.count)) {
+                                ScrollView {
+                                    LazyVStack(alignment: .leading, spacing: 4) {
+                                        ForEach(affectedPaths, id: \.self) { path in
+                                            Text(path).textSelection(.enabled)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }.frame(maxWidth: .infinity, alignment: .leading)
+                                }.frame(maxHeight: 160)
+                            }
+                            .font(.system(size: 10, design: .monospaced))
                         }
                     }
                     if let failureDescription = incident.failureDescription {
@@ -156,16 +179,9 @@ struct RepositoryRecoveryView: View {
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(palette.subtleInk)
 
-            Button {
-                model.dismissRepositoryProtectionIncident(incident)
-            } label: {
-                Image(gattoSymbol: "xmark")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .frame(width: 26, height: 26)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(palette.subtleInk)
-            .help(L10n.text("action.close"))
+            Button(L10n.text("recovery.guard.expected")) { pendingExpectedIncident = incident }
+                .buttonStyle(SecondaryButtonStyle())
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(13)
         .background(palette.raisedSurface)
@@ -469,7 +485,12 @@ struct RepositoryRecoveryView: View {
                             .textSelection(.enabled)
                     }
 
-                    HStack(spacing: 10) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], alignment: .leading, spacing: 10) {
+                        Button(L10n.text("recovery.compare.title")) {
+                            inspectionService = model.makeBackupInspectionService()
+                            inspectedBackup = backup
+                        }.buttonStyle(SecondaryButtonStyle())
+
                         Button(L10n.text("recovery.action.restore")) {
                             model.restoreRepositoryBackup(backup)
                         }

@@ -12,6 +12,7 @@ struct ApplicationMarketplaceView: View {
     @Binding var inAppBrowserPage: InAppBrowserPage?
     @Environment(\.colorScheme) private var colorScheme
     @State private var pendingQuickInstallAsset: GitHubReleaseAsset?
+    @State private var preferredTranslationTarget = AppPreferencesStore.load().defaultTranslationTarget
 
     private var installedRepositoryNameSet: Set<String> {
         Set(installedRepositoryNames.map { $0.lowercased() })
@@ -55,7 +56,10 @@ struct ApplicationMarketplaceView: View {
         } detail: {
             detailPane(palette)
         }
-        .onAppear { model.loadIfNeeded() }
+        .onAppear {
+            preferredTranslationTarget = AppPreferencesStore.load().defaultTranslationTarget
+            model.loadIfNeeded()
+        }
         .onChange(of: model.selectedApplication?.id) { _, _ in
             selectedDetailTab = .overview
             unavailableScreenshotURLs = []
@@ -711,52 +715,13 @@ struct ApplicationMarketplaceView: View {
         }
     }
 
-    @ViewBuilder
     private func translationMenu(_ palette: AppPalette) -> some View {
-        if model.isTranslating {
-            Button {} label: {
-                DocumentTranslationActionLabel(
-                    title: L10n.text("codex.action.translate"),
-                    activeTitle: L10n.text("codex.status.translating"),
-                    isActive: true,
-                    completionID: model.translationCompletionID
-                )
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .disabled(true)
-        } else {
-            let title = model.activeTranslationTarget.map {
-                L10n.text("codex.translate.short.\($0.rawValue)")
-            } ?? L10n.text("codex.action.translate")
-            MotionLabelMenu(
-                accessibilityLabel: title,
-                isDisabled: model.isLoadingDetails
-            ) {
-                Button(L10n.text("marketplace.translation.original")) { model.showOriginal() }
-                if !model.availableTranslationTargets.isEmpty {
-                    Divider()
-                    ForEach(model.availableTranslationTargets) { target in
-                        Button(L10n.text("codex.translate.short.\(target.rawValue)")) {
-                            model.showTranslation(target)
-                        }
-                    }
-                }
-                Divider()
-                ForEach(CodexTranslationTarget.allCases) { target in
-                    Button(L10n.text("codex.translate.\(target.rawValue)")) {
-                        model.translateSelected(to: target)
-                    }
-                }
-            } label: {
-                DocumentTranslationActionLabel(
-                    title: title,
-                    activeTitle: L10n.text("codex.status.translating"),
-                    isActive: false,
-                    completionID: model.translationCompletionID,
-                    showsInitialCompletion: true
-                )
-                .foregroundStyle(model.activeTranslationTarget == nil ? palette.ink : palette.primary)
-            }
-        }
+        DocumentTranslationControls(activeTarget: model.activeTranslationTarget,
+            availableTargets: model.availableTranslationTargets,
+            preferredTarget: model.lastTranslationTarget ?? preferredTranslationTarget,
+            isTranslating: model.isTranslating, isDisabled: model.isLoadingDetails,
+            error: model.translationError, completionID: model.translationCompletionID,
+            showOriginal: model.showOriginal, showTranslation: model.showTranslation,
+            translate: model.translateSelected, cancel: model.cancelTranslation)
     }
 }

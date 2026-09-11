@@ -1,8 +1,13 @@
 import SwiftUI
 
 struct HelpCenterView: View {
+    var openTopic: ((HelpTopic) -> Void)? = nil
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("help.selectedTopic") private var selectedTopicRaw = HelpTopic.gettingStarted.rawValue
+
+    @State private var query = ""
+
+    private var filteredTopics: [HelpTopic] { HelpTopic.allCases.filter { $0.matches(query) } }
 
     private var selectedTopic: HelpTopic {
         HelpTopic(rawValue: selectedTopicRaw) ?? .gettingStarted
@@ -23,10 +28,15 @@ struct HelpCenterView: View {
 
                 Rectangle().fill(palette.divider).frame(height: 1)
 
+                TextField(L10n.text("help.search"), text: $query)
+                    .textFieldStyle(.roundedBorder).padding(12)
+                if filteredTopics.isEmpty {
+                    Text(L10n.text("search.noResults")).font(.caption).padding(12)
+                }
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 4) {
-                            ForEach(HelpTopic.allCases) { topic in
+                            ForEach(filteredTopics) { topic in
                                 HelpTopicButton(
                                     topic: topic,
                                     isSelected: selectedTopic == topic
@@ -47,12 +57,26 @@ struct HelpCenterView: View {
             .background(palette.sidebar.opacity(0.28))
             .appGlassPanel()
 
-            HelpArticleView(topic: selectedTopic)
-                .appGlassPanel()
+            VStack(spacing: 0) {
+                if let openTopic, selectedTopic.workspaceSection != nil || selectedTopic.projectTool != nil {
+                    HStack {
+                        Spacer()
+                        Button(L10n.text("help.openFeature")) { openTopic(selectedTopic) }
+                            .buttonStyle(PrimaryButtonStyle())
+                    }.padding(12)
+                }
+                HelpArticleView(topic: selectedTopic)
+            }
+            .appGlassPanel()
         }
         .padding(AppThemeLayout.workspaceInset)
         .frame(minWidth: 820, minHeight: 600)
         .background(Color.clear)
+        .onChange(of: query) { _, _ in
+            if !filteredTopics.contains(selectedTopic), let first = filteredTopics.first {
+                selectedTopicRaw = first.rawValue
+            }
+        }
 #if DEBUG
         .task {
             if let topic = ProcessInfo.processInfo.environment["GITGATTO_HELP_TOPIC_PREVIEW"],

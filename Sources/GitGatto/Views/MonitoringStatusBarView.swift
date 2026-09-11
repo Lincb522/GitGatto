@@ -235,15 +235,35 @@ struct MonitoringStatusBarView: View {
                 .padding(.bottom, 3)
 
             ForEach(engine.channels) { channel in
-                MonitoringChannelRow(
-                    channel: channel,
-                    detail: monitoringDetail(for: channel),
-                    palette: palette
-                )
+                if !channel.isEnabled {
+                    Button {
+                        model.settingsDestination = "monitoring"
+                        openSettings()
+                    } label: { channelRow(channel) }.buttonStyle(.plain)
+                } else if engine.selectedRepositoryURL == nil,
+                          [.workingTree, .githubActions, .projectGoals].contains(channel.category) {
+                    Menu {
+                        ForEach(engine.repositories, id: \.standardizedFileURL.path) { repository in
+                            Button(repository.lastPathComponent) { openChannel(channel.category, repository: repository) }
+                        }
+                    } label: { channelRow(channel) }.menuStyle(.borderlessButton)
+                } else {
+                    Button { openChannel(channel.category, repository: engine.selectedRepositoryURL) }
+                    label: { channelRow(channel) }.buttonStyle(.plain)
+                }
             }
         }
         .padding(9)
         .monitoringPanel(theme: theme, palette: palette)
+    }
+
+    private func channelRow(_ channel: MonitoringChannelSnapshot) -> some View {
+        MonitoringChannelRow(channel: channel, detail: monitoringDetail(for: channel), palette: palette)
+    }
+
+    private func openChannel(_ category: MonitoringCategory, repository: URL?) {
+        showMainWindow()
+        Task { await model.openMonitoringChannel(category, repositoryURL: repository) }
     }
 
     private var footer: some View {
@@ -388,19 +408,8 @@ struct MonitoringStatusBarView: View {
         }
     }
 
-    private func showMainWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-        if let window = NSApp.windows.first(where: {
-            $0.canBecomeMain && $0.isVisible && !$0.isMiniaturized
-        }) {
-            window.makeKeyAndOrderFront(nil)
-            return
-        }
-        if let window = NSApp.windows.first(where: { $0.canBecomeMain }) {
-            window.deminiaturize(nil)
-            window.makeKeyAndOrderFront(nil)
-        }
-    }
+    private func showMainWindow() { WindowCloseRuntime.showWorkspace() }
+
 }
 
 private struct MonitoringChannelRow: View {
@@ -436,14 +445,15 @@ private struct MonitoringChannelRow: View {
                 Image(gattoSymbol: "exclamationmark.triangle.fill")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(palette.warning)
-            } else if let lastUpdatedAt = channel.lastUpdatedAt, channel.isEnabled {
+            }
+            if let lastUpdatedAt = channel.lastUpdatedAt, channel.isEnabled {
                 Text(lastUpdatedAt, style: .time)
                     .font(.system(size: 8.5, design: .rounded))
                     .foregroundStyle(palette.subtleInk)
             }
         }
         .padding(.horizontal, 7)
-        .frame(height: 44)
+        .frame(minHeight: 44)
         .background(channel.state == .attention ? palette.warningSoft.opacity(0.48) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }

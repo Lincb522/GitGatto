@@ -166,31 +166,25 @@ struct RegressionInvestigationWorkspaceView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
-                    Picker("", selection: $model.regressionMode) {
-                        Text(L10n.text("regression.mode.automatic"))
-                            .tag(RegressionInvestigationMode.automatic)
-                        Text(L10n.text("regression.mode.manual"))
-                            .tag(RegressionInvestigationMode.manual)
+                    field(
+                        L10n.text("regression.setup.good"),
+                        placeholder: L10n.text("regression.field.good.placeholder"),
+                        text: $model.regressionGoodRevision, palette: palette
+                    )
+                    field(
+                        L10n.text("regression.setup.bad"),
+                        placeholder: L10n.text("regression.field.bad.placeholder"),
+                        text: $model.regressionBadRevision, palette: palette
+                    )
+                    Text(L10n.text("regression.setup.method"))
+                        .font(font(11, weight: .semibold)).foregroundStyle(palette.mutedInk)
+                    Picker(L10n.text("regression.setup.method"), selection: $model.regressionMode) {
+                        Text(L10n.text("regression.mode.automatic")).tag(RegressionInvestigationMode.automatic)
+                        Text(L10n.text("regression.mode.manual")).tag(RegressionInvestigationMode.manual)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 310)
-
-                    HStack(spacing: 12) {
-                        field(
-                            L10n.text("regression.field.good"),
-                            placeholder: L10n.text("regression.field.good.placeholder"),
-                            text: $model.regressionGoodRevision,
-                            palette: palette
-                        )
-                        field(
-                            L10n.text("regression.field.bad"),
-                            placeholder: L10n.text("regression.field.bad.placeholder"),
-                            text: $model.regressionBadRevision,
-                            palette: palette
-                        )
-                    }
-
+                    .labelsHidden().pickerStyle(.segmented).frame(maxWidth: 400)
+                    if model.regressionMode == .automatic {
+                        ProjectCommandPicker(repository: model.snapshot?.rootURL, command: $model.regressionVerificationCommand)
                     VStack(alignment: .leading, spacing: 7) {
                             Text(L10n.text("regression.field.command"))
                                 .font(font(11, weight: .semibold))
@@ -209,6 +203,12 @@ struct RegressionInvestigationWorkspaceView: View {
                                 RoundedRectangle(cornerRadius: controlCornerRadius, style: .continuous)
                                     .stroke(palette.divider, lineWidth: 1)
                             }
+                    }
+
+                    } else {
+                        Text(L10n.text("regression.setup.manualHelp"))
+                            .font(font(12, weight: .regular)).foregroundStyle(palette.mutedInk)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     HStack {
@@ -938,7 +938,8 @@ struct RegressionInvestigationWorkspaceView: View {
     }
 
     private var canStartInvestigation: Bool {
-        !model.regressionGoodRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        model.snapshot != nil && model.activeOperation == nil && !model.isSelectedRepositoryAgentEditing
+            && !model.regressionGoodRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !model.regressionBadRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && (model.regressionMode == .manual
                 || !model.regressionVerificationCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

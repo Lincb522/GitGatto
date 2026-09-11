@@ -388,7 +388,7 @@ struct GitRepositoryServiceTests {
         try FileManager.default.createDirectory(at: repository, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
-        try runGit(["init", "--bare", remote.path], at: root)
+        try runGit(["init", "--bare", "-b", "main", remote.path], at: root)
         try runGit(["init", "-b", "main"], at: repository)
         try runGit(["config", "user.name", "GitGatto Test"], at: repository)
         try runGit(["config", "user.email", "gitgatto@example.invalid"], at: repository)

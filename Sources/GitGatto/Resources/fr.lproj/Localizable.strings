@@ -394,7 +394,7 @@
 "help.goals.create.1" = "Ouvrez un dépôt, choisissez une action dans Objectifs, saisissez un message de commit ou une version, puis démarrez. Un seul objectif peut être actif par dépôt.";
 "help.goals.create.2" = "Décrivez le résultat voulu. Agent propose des étapes après une analyse en lecture seule. Vérifiez la portée avant de démarrer.";
 "help.goals.create.3" = "Les objectifs rapides couvrent la validation et le push, la livraison GitHub et la version complète. La livraison GitHub nécessite une branche autre que la branche par défaut.";
-"help.goals.create.4" = "L'objectif enregistre son référentiel, sa branche, sa validation de base, ses étapes et ses preuves. Changer de référentiel ne mélange pas leur état.";
+"help.goals.create.4" = "L'objectif enregistre son référentiel, sa branche, sa validation de base, ses étapes et ses preuves. Changer de référentiel ne mélange pas leur état. Créez aussi un objectif depuis les modifications, une Issue, une PR ou un contrôle échoué. Une commande de projet enregistrée peut vérifier le résultat avant le commit.";
 "help.goals.execute.title" = "Exécuter et récupérer";
 "help.goals.execute.1" = "Les étapes autorisées s’enchaînent et l’état Git et GitHub est relu après chacune. Fusion, publication et installation attendent votre confirmation.";
 "help.goals.execute.2" = "Une étape ayant échoué conserve sa preuve d'origine et s'arrête à Needs Attention. Les étapes terminées survivent au redémarrage de l'application.";
@@ -456,7 +456,7 @@
 "help.translation.channel.title" = "Voie d'exécution indépendante";
 "help.translation.channel.1" = "La traduction CLI et le projet Agent ont une configuration et des processus distincts, donc la traduction reste disponible pendant que Agent fonctionne.";
 "help.translation.channel.2" = "La traduction automatique détecte le texte lisible et utilise la cible configurée. Un texte déjà dans cette langue ou trop court peut rester intact. Sans réaction, vérifiez moteur et langue dans les réglages.";
-"help.translation.channel.3" = "La traduction peut être arrêtée et a un délai d'attente ; les échecs ne suppriment pas les traductions déjà enregistrées.";
+"help.translation.channel.3" = "La traduction peut être arrêtée et a un délai d'attente ; les échecs ne suppriment pas les traductions déjà enregistrées. Réessayer conserve la langue de la requête échouée. Le texte original reste accessible en cas d’échec.";
 
 "help.topic.cliSettings.title" = "Paramètres";
 "help.topic.cliSettings.summary" = "Configurez l'interface de l'application, l'espace de travail de démarrage, la surveillance en direct Git, Agent et la traduction à partir d'une seule fenêtre.\nApplication";
@@ -481,7 +481,7 @@
 "help.shortcuts.actions.title" = "Actions courantes";
 "help.shortcuts.actions.1" = "⌘O : Ouvrez un référentiel local ; ⌘R : Actualisez le référentiel actuel.";
 "help.shortcuts.actions.2" = "⌘↩ : Validez le contenu intermédiaire avec le message de validation actuel.";
-"help.shortcuts.actions.3" = "⌘K ouvre la palette. Un clic droit sur fichier modifié ou dépôt récent affiche ses actions. Le menu d’aide permet d’ouvrir le guide de la page actuelle.";
+"help.shortcuts.actions.3" = "⌘K ouvre la palette. Un clic droit sur fichier modifié ou dépôt récent affiche ses actions. Le menu d’aide permet d’ouvrir le guide de la page actuelle. Épinglez les commandes fréquentes ; les entrées récentes remontent. Sélectionnez avec les flèches et lancez avec Entrée.";
 
 "help.topic.troubleshooting.title" = "Dépannage";
 "help.topic.troubleshooting.summary" = "Confirmez le projet sélectionné, la connexion locale CLI et l'erreur signalée avant de réessayer l'opération qui a échoué.";
@@ -579,7 +579,7 @@
 "error.operation.push" = "Pousser";
 "error.operation.agent" = "Exécuter Agent";
 "error.section.output" = "Sortie d'erreur complète";
-"error.section.explanation" = "Explication";
+"error.section.explanation" = "Cause";
 "error.section.details" = "Détails de l'erreur";
 "error.section.recovery" = "Récupération";
 "error.detail.code" = "Code d'erreur";
@@ -708,7 +708,7 @@
 
 "settings.open" = "Paramètres";
 "settings.title" = "Paramètres";
-"settings.save" = "Enregistrer et vérifier";
+"settings.save" = "Enregistrer";
 "settings.saved" = "Paramètres enregistrés";
 "settings.appearance.title" = "Apparence";
 "settings.appearance.mode" = "Mode Apparence";
@@ -2143,16 +2143,16 @@
 "github.issues.editor.milestone" = "Milestone number";
 "github.issues.agent.prompt" = "Work on GitHub issue %1$@ #%2$d: %3$@\n\n%4$@\n\nInspect the repository first, implement the narrowest complete fix, run relevant validation, and summarize the changed files.";
 "command_palette.title" = "Palette de commandes";
-"command_palette.placeholder" = "Search commands, repositories or branches";
-"command_palette.empty" = "No matching commands";
-"command_palette.group.navigate" = "Navigate";
-"command_palette.group.repositories" = "Repositories";
+"command_palette.placeholder" = "Rechercher une commande, un dépôt ou une branche";
+"command_palette.empty" = "Aucune commande correspondante";
+"command_palette.group.navigate" = "Navigation";
+"command_palette.group.repositories" = "Dépôts";
 "command_palette.group.branches" = "Branches";
-"command_palette.group.git" = "Git actions";
+"command_palette.group.git" = "Actions Git";
 "command_palette.group.application" = "Application";
-"command_palette.hint.navigate" = "Navigate";
-"command_palette.hint.run" = "Run";
-"command_palette.count" = "%d commands";
+"command_palette.hint.navigate" = "Parcourir";
+"command_palette.hint.run" = "Exécuter";
+"command_palette.count" = "%d commandes";
 "commit_search.title" = "Recherche de commits";
 "commit_search.action" = "Search";
 "commit_search.hash" = "Commit SHA";
@@ -2183,49 +2183,43 @@
 "intelligence.tab.provenance" = "Contexte du code";
 "intelligence.tab.capsules" = "Capsules d’échec";
 "intelligence.tab.activity" = "Activité Agent";
-"intelligence.intent.title" = "Commit Plan";
-"intelligence.intent.summary" = "%d change units · %d commits";
-"intelligence.intent.loading" = "Analyzing working-tree changes…";
-"intelligence.intent.empty.title" = "No changes to organize";
-"intelligence.intent.empty.body" = "Edit files in this repository, then refresh to build an atomic commit plan.";
-"intelligence.intent.select.title" = "Select a change unit";
-"intelligence.intent.select.body" = "Choose a hunk to inspect the exact patch assigned to this commit.";
-"intelligence.intent.add_group" = "Add commit";
-"intelligence.intent.agent" = "Refine with Agent";
-"intelligence.intent.apply" = "Create commits";
-"intelligence.intent.confirm.title" = "Create the planned commits?";
-"intelligence.intent.confirm.body" = "GitGatto will create %d local commits in this order. A recovery point is created first.";
-"intelligence.intent.group_title" = "Commit purpose";
-"intelligence.intent.commit_message" = "Commit message";
-"intelligence.intent.verify_placeholder" = "Optional verification command after each commit";
-"intelligence.intent.group_empty" = "Move at least one change unit into this commit.";
-"intelligence.intent.whole_file" = "Whole file";
-"intelligence.intent.whole_file.title" = "Whole-file change";
-"intelligence.intent.whole_file.body" = "This binary, new, deleted, or metadata-only file is committed as one unit.";
-"intelligence.intent.result.title" = "Commit series created";
-"intelligence.intent.result.body" = "Created %d local commits. They have not been pushed.";
-"intelligence.intent.refresh" = "Analyze remaining changes";
-"intelligence.intent.new_group" = "New commit";
-"intelligence.intent.notice.refined" = "The Agent plan is ready for review.";
-"intelligence.intent.notice.applied" = "Created %d local commits.";
-"intelligence.intent.kind.implementation" = "Implementation";
-"intelligence.intent.kind.fix" = "Fix";
-"intelligence.intent.kind.refactor" = "Refactor";
+"intelligence.intent.summary" = "%d fichiers · %d commits";
+"intelligence.intent.loading" = "Lecture des changements…";
+"intelligence.intent.empty.title" = "Aucun changement à organiser";
+"intelligence.intent.empty.body" = "Aucun changement à organiser. Modifiez des fichiers, puis actualisez.";
+"intelligence.intent.add_group" = "Ajouter un commit";
+"intelligence.intent.agent" = "Organiser avec Agent";
+"intelligence.intent.apply" = "Créer les commits";
+"intelligence.intent.confirm.title" = "Créer ces commits ?";
+"intelligence.intent.confirm.body" = "GitGatto enregistre un point de restauration, puis crée %d commits locaux dans cet ordre.";
+"intelligence.intent.group_title" = "But du commit";
+"intelligence.intent.commit_message" = "Message du commit";
+"intelligence.intent.verify_placeholder" = "Commande de vérification par commit (facultatif)";
+"intelligence.intent.group_empty" = "Déplacez au moins un fichier ou bloc de code ici.";
+"intelligence.intent.whole_file.title" = "Modification du fichier entier";
+"intelligence.intent.whole_file.body" = "Cette modification est intégrée en entier. Aucun aperçu textuel disponible.";
+"intelligence.intent.result.title" = "Commits créés";
+"intelligence.intent.result.body" = "%d commits locaux créés, sans push.";
+"intelligence.intent.refresh" = "Lire les changements restants";
+"intelligence.intent.new_group" = "Nouveau commit";
+"intelligence.intent.kind.implementation" = "Fonctionnalité";
+"intelligence.intent.kind.fix" = "Correction";
+"intelligence.intent.kind.refactor" = "Refactorisation";
 "intelligence.intent.kind.tests" = "Tests";
 "intelligence.intent.kind.documentation" = "Documentation";
 "intelligence.intent.kind.configuration" = "Configuration";
-"intelligence.intent.kind.assets" = "Assets";
-"intelligence.intent.kind.other" = "Other";
-"intelligence.intent.error.no_changes" = "There are no working-tree changes to organize.";
-"intelligence.intent.error.conflicts" = "Resolve the current conflicts before building a commit plan.";
-"intelligence.intent.error.changed" = "The repository changed after this plan was created. Refresh the plan before applying it.";
-"intelligence.intent.error.status" = "Git returned an unreadable working-tree status.";
-"intelligence.intent.error.repository" = "This plan belongs to a different repository.";
-"intelligence.intent.error.assignment" = "Every change unit must belong to exactly one non-empty commit.";
-"intelligence.intent.error.empty_group" = "“%@” did not stage any changes.";
-"intelligence.intent.error.unsupported" = "The change in “%@” cannot be staged independently.";
-"intelligence.intent.error.verification" = "Verification command failed: %@\n%@";
-"intelligence.intent.error.agent_plan" = "Agent returned an invalid commit plan.";
+"intelligence.intent.kind.assets" = "Ressources";
+"intelligence.intent.kind.other" = "Autre";
+"intelligence.intent.error.no_changes" = "Aucun changement à organiser.";
+"intelligence.intent.error.conflicts" = "Résolvez les conflits avant de planifier les commits.";
+"intelligence.intent.error.changed" = "Les fichiers ou l’index ont changé. Actualisez le plan avant de créer les commits.";
+"intelligence.intent.error.status" = "Git a renvoyé un état illisible du répertoire de travail.";
+"intelligence.intent.error.repository" = "Ce plan appartient à un autre dépôt. Ouvrez ce dépôt ou actualisez.";
+"intelligence.intent.error.assignment" = "Chaque changement doit appartenir à un seul commit non vide.";
+"intelligence.intent.error.empty_group" = "« %@ » n’a indexé aucun changement.";
+"intelligence.intent.error.unsupported" = "Le changement dans « %@ » ne peut pas être indexé séparément.";
+"intelligence.intent.error.verification" = "Échec de la commande de vérification : %@\n%@";
+"intelligence.intent.error.agent_plan" = "Agent a renvoyé un plan de commits invalide. Réessayez l’organisation.";
 "intelligence.provenance.path" = "Repository-relative file path";
 "intelligence.provenance.line" = "Line";
 "intelligence.provenance.trace" = "Trace";
@@ -2305,9 +2299,9 @@
 "help.topic.intelligence.title" = "Change Center";
 "help.topic.intelligence.summary" = "Build atomic commits, trace code context, move failures, and inspect Agent activity.";
 "help.intelligence.intent.title" = "Commit Plan";
-"help.intelligence.intent.1" = "Open Change Center and refresh after editing files. GitGatto splits text patches into independently assignable hunks and keeps binary or new files whole.";
-"help.intelligence.intent.2" = "Review commit order, purpose, message, and hunk assignment. Agent refinement changes only the proposed plan and still requires your confirmation.";
-"help.intelligence.intent.3" = "An optional command can verify every commit. Create commits makes a recovery point first and never pushes the resulting commits automatically.";
+"help.intelligence.intent.1" = "Après vos modifications, ouvrez le plan de commits. Précisez le but si nécessaire, choisissez la répartition ou un commit unique, puis Organiser avec Agent.";
+"help.intelligence.intent.2" = "Chaque carte affiche un message et ses fichiers. Modifier et répartir permet de réaffecter fichiers et blocs de code. Le menu règle l’ordre ou fusionne les groupes. La planification ne modifie pas le dépôt.";
+"help.intelligence.intent.3" = "Autres options permet de définir une commande de vérification après chaque commit. La création enregistre un point de restauration, puis crée les commits locaux dans l’ordre, sans push.";
 "help.intelligence.provenance.title" = "Code Context";
 "help.intelligence.provenance.1" = "Enter a tracked repository-relative path and a positive line number.";
 "help.intelligence.provenance.2" = "Git blame identifies the originating local commit and the files changed by it.";
@@ -2478,8 +2472,7 @@
 "tools.commands.help" = "Les commandes nécessitent confirmation. La détection n’exécute aucun fichier. Fermer le panneau laisse les commandes actives ; quitter l’app les arrête.";
 "tools.command.custom" = "Ajouter ou modifier une commande";
 "tools.command.executable" = "Exécutable ou chemin absolu";
-"tools.command.arguments" = "Arguments en tableau JSON";
-"tools.command.argvHelp" = "Exemple : [\"run\", \"dev\"]. Les arguments sont transmis séparément, sans expansion shell.";
+"tools.command.arguments" = "Arguments";
 "tools.command.timeout" = "Délai : %d secondes";
 "tools.command.localURL" = "URL locale (facultative)";
 "tools.command.empty" = "Aucun script trouvé. Ajoutez une commande ci-dessus.";
@@ -2533,7 +2526,7 @@
 "tools.error.binding" = "Chemin déjà associé ou incompatible. Retirez d’abord l’ancienne association.";
 "tools.error.bound" = "Ce profil est encore associé. Retirez d’abord ses associations.";
 "tools.error.identityMismatch" = "L’identité effective diffère du profil. Vérifiez Outils du projet → Identités de commit avant de commiter.";
-"tools.error.command" = "Indiquez exécutable, arguments JSON, délai de 1 à 86 400 secondes et URL localhost facultative.";
+"tools.error.command" = "Saisissez un programme, des arguments séparés, un délai de 1 à 86 400 secondes et éventuellement une URL localhost.";
 "tools.error.timeout" = "Délai dépassé ; commande arrêtée. Vérifiez la sortie ou ajustez le délai avant de relancer.";
 "tools.error.previewLimit" = "Plus de 100 000 fichiers. Réduisez le contenu du dépôt avant l’aperçu.";
 "tools.error.previewRequired" = "Prévisualisez les règles avant d’enregistrer.";
@@ -2558,7 +2551,7 @@
 "help.topic.fileHistory.title" = "Historique des fichiers";
 "help.topic.fileHistory.summary" = "Retrouver l’origine d’un fichier ou d’une ligne.";
 "help.fileHistory.start" = "Choisissez un fichier puis une révision dans l’historique des fichiers. Examinez contenu, différences et attribution des lignes pour retrouver commit et auteur.";
-"help.fileHistory.result" = "Ouvrez le commit pour les changements associés. Restaurer remplace le fichier actuel après confirmation ; contrôlez ensuite le diff de travail. L’historique contient des commits, pas chaque enregistrement de l’éditeur.";
+"help.fileHistory.result" = "Consultez la différence avant de restaurer un fichier. La confirmation remplace le fichier de travail ; si celui-ci a changé depuis l’aperçu, actualisez d’abord l’aperçu.";
 "help.fileHistory.caution" = "Si le fichier manque, vérifiez dépôt, chemin et filtres. Pour du travail perdu non committé, cherchez dans les points de restauration ou les stashes ; Git ne l’a pas nécessairement conservé.";
 "help.topic.branches.title" = "Branches, tags et remotes";
 "help.topic.branches.summary" = "Gérer les références et retrouver un commit.";
@@ -2582,7 +2575,7 @@
 "help.recovery.caution" = "Trois générations maximum par dépôt ; les limites peuvent exclure des fichiers. Changer d’emplacement migre les sauvegardes existantes. Une alerte signale un changement à examiner, pas une attaque prouvée : vérifiez la raison et le point avant restauration.";
 "help.topic.monitoring.title" = "Surveillance et barre des menus";
 "help.topic.monitoring.summary" = "Voir changements, amont, protection, Actions et objectifs.";
-"help.monitoring.start" = "Dans Réglages → Surveillance, activez le moteur puis chaque canal et intervalle séparément. L’affichage dans la barre des menus se règle ici ; masquer l’icône n’arrête pas la surveillance.";
+"help.monitoring.start" = "Dans Réglages → Surveillance, activez le moteur puis chaque canal et intervalle séparément. L’affichage dans la barre des menus se règle ici ; masquer l’icône n’arrête pas la surveillance. Chaque dépôt peut utiliser Automatique, Actif ou Basse fréquence. Les limites sur batterie et les contrôles urgents restent actifs.";
 "help.monitoring.result" = "Le panneau permet de choisir tous les dépôts ou un seul indépendamment de la fenêtre principale. Il affiche changements, synchronisation, points de restauration et activité quotidienne. L’activité compte commits et signaux de changement, pas des heures de travail.";
 "help.monitoring.caution" = "La surveillance continue fenêtre minimisée tant que l’app tourne, pas après Quitter. La protection Agent/CLI externe observe les dépôts gérés et conserve des bases de restauration ; elle n’intercepte pas toute commande destructive et ne garantit pas les fichiers non enregistrés ou exclus.";
 "help.topic.applications.title" = "Dépôt d’applications";
@@ -2593,7 +2586,7 @@
 "help.topic.developerTools.title" = "Outils de développement";
 "help.topic.developerTools.summary" = "Détecter, installer, configurer et mettre à jour.";
 "help.developerTools.start" = "Actualisez la détection locale dans Outils de développement, puis sélectionnez installation ou mise à jour Agent. Plusieurs outils actualisables peuvent être sélectionnés. Les files montrent les tâches en attente et en cours.";
-"help.developerTools.result" = "Jusqu’à trois tâches parallèles ; les verrous d’écriture du gestionnaire peuvent imposer une attente. Ouvrez une tâche pour ses étapes et sorties. Les réglages nécessaires, dont PATH et enregistrement de plugins, précèdent la vérification locale du programme et de sa version.";
+"help.developerTools.result" = "Jusqu’à trois tâches parallèles ; les verrous d’écriture du gestionnaire peuvent imposer une attente. Ouvrez une tâche pour ses étapes et sorties. Les réglages nécessaires, dont PATH et enregistrement de plugins, précèdent la vérification locale du programme et de sa version. Les ensembles ajoutent les outils choisis à la file. Vérifiez la portée avant l’installation ; le compte rendu distingue la vérification de l’exécutable, les changements de PATH et la configuration par Agent.";
 "help.developerTools.caution" = "Le message final d’Agent ne suffit pas. Action requise indique une installation, configuration ou vérification de version inachevée. Utilisez l’autorisation et la reprise proposées. Connexion et autorisation macOS restent personnelles ; être déconnecté seul n’invalide pas une installation vérifiée. Ne supprimez pas les verrous Homebrew actifs.";
 "help.topic.collaboration.title" = "Synchronisation et collaboration";
 "help.topic.collaboration.summary" = "Gérer plusieurs dépôts, notifications, Issues et PR.";
@@ -2617,7 +2610,7 @@
 "help.workScenes.caution" = "Après blocage ou interruption, examinez phase et dépôt. Marquer traité n’est qu’un acquittement, pas une restauration. Supprimer le contexte retire sa fiche et sa référence privée mais conserve le stash d’origine.";
 "help.topic.projectCommands.title" = "Exécuter des commandes";
 "help.topic.projectCommands.summary" = "Exécuter et contrôler les commandes du projet.";
-"help.projectCommands.start" = "Détectez les commandes depuis les métadonnées du paquet, Make ou Swift dans les outils du projet. Vérifiez programme, dossier, arguments et délai avant confirmation. Arguments personnalisés en tableau JSON, pas en chaîne shell.";
+"help.projectCommands.start" = "Ouvrez Outils du projet → Exécuter des commandes. Vérifiez le programme, le dossier, les arguments et le délai. Saisissez chaque argument séparément ; les espaces y sont conservés.";
 "help.projectCommands.result" = "Épinglez des commandes, consultez sortie, durée et code de fin. Arrêtez, relancez, ouvrez les liens localhost ou envoyez un brouillon de journal à Agent. Fermer le panneau laisse tourner ; quitter l’app arrête ses processus.";
 "help.projectCommands.caution" = "Exécution non interactive : utilisez un terminal pour les mots de passe. Un délai dépassé n’est pas un succès. Seules les 20 dernières exécutions restent en mémoire dans la session ; sauvegardez les sorties utiles avant de quitter. Relisez les scripts inconnus.";
 "help.topic.ignoreRules.title" = "Règles d’exclusion";
@@ -2690,3 +2683,249 @@
 "ai.provider.qwen" = "Qwen Code";
 "ai.provider.openAICompatible" = "OpenAI-compatible API";
 "ai.provider.deepseek" = "DeepSeek API";
+
+"intelligence.intent.advanced" = "Autres options";
+"intelligence.intent.refresh_confirm" = "Recharger les modifications ?";
+"intelligence.intent.refresh_confirm.body" = "Les groupes et messages de commit seront régénérés.";
+"intelligence.intent.instruction" = "Quel est le but des changements ou comment les répartir ? (facultatif)";
+"intelligence.intent.planning" = "Lecture des changements et préparation des commits…";
+"intelligence.intent.draft_hint" = "Groupés selon les liens entre fichiers. Agent peut affiner le plan à partir du contenu.";
+"intelligence.intent.split_mode" = "Répartition des commits";
+"intelligence.intent.split.automatic" = "Séparer par objectif";
+"intelligence.intent.split.single" = "Un seul commit";
+"intelligence.intent.replan" = "Réorganiser";
+"intelligence.intent.merge_all" = "Fusionner en un commit";
+"intelligence.intent.applying" = "Création des commits…";
+"intelligence.intent.local_only" = "Crée des commits locaux sans les pousser.";
+"intelligence.intent.incomplete" = "Chaque commit doit contenir des changements et un message.";
+"intelligence.intent.move_up" = "Déplacer avant";
+"intelligence.intent.move_down" = "Déplacer après";
+"intelligence.intent.merge_group" = "Fusionner avec le premier commit restant";
+"intelligence.intent.commit_actions" = "Actions du commit";
+"intelligence.intent.files_less" = "Réduire la liste";
+"intelligence.intent.files_more" = "Afficher tous les fichiers";
+"intelligence.intent.edit" = "Modifier et répartir";
+"intelligence.intent.category" = "Type";
+"intelligence.intent.move_changes" = "Déplacer les changements";
+"intelligence.intent.split_file" = "Commit séparé";
+
+"settings.pending" = "Modifications non enregistrées";
+
+"settings.discard" = "Annuler les modifications";
+
+"settings.saveFailed" = "Impossible d’enregistrer. Vérifiez les valeurs et réessayez.";
+
+"settings.search" = "Rechercher un réglage";
+
+"settings.applyHelp" = "L’apparence, les mises à jour, le dossier de sauvegarde et les clés API sont enregistrés immédiatement. Enregistrez les autres changements avant de fermer.";
+
+"search.noResults" = "Aucun résultat correspondant";
+
+"help.search" = "Rechercher dans les guides";
+
+"help.openFeature" = "Ouvrir cette fonction";
+
+"error.action.workflowPermission" = "Autoriser l’accès aux workflows";
+
+"error.action.agentSettings" = "Ouvrir les réglages Agent";
+
+"error.action.refreshRepository" = "Revérifier le dépôt";
+
+"error.action.inspectRepository" = "Ouvrir le diagnostic du dépôt";
+
+"tools.command.argument" = "Argument";
+
+"tools.command.addArgument" = "Ajouter un argument";
+
+"tools.command.removeArgument" = "Supprimer l’argument";
+
+"tools.command.argumentsLiteral" = "Un argument par ligne. Les espaces et arguments vides sont conservés, sans expansion shell.";
+
+"ai.api.loadModels" = "Charger les modèles";
+
+"ai.api.chooseModel" = "Choisir un modèle";
+
+"ai.api.testChat" = "Tester la conversation";
+
+"ai.api.testTools" = "Tester les appels d’outils";
+
+"ai.api.testHelp" = "Les tests envoient de courtes requêtes et peuvent utiliser votre quota. Aucun programme ni écriture de fichier n’est exécuté.";
+
+"ai.api.catalogOnly" = "Modèle répertorié · exécution non testée";
+
+"ai.api.notTested" = "Configuré · exécution non testée";
+
+"ai.api.modelMissing" = "Le modèle choisi est absent de la liste du serveur";
+
+"ai.api.noModels" = "Le serveur a renvoyé une liste vide";
+
+"ai.api.chatVerified" = "Réponse vérifiée";
+
+"ai.api.toolsVerified" = "Format d’appel vérifié ; aucun outil exécuté";
+
+"developer_tools.tasks.title" = "Tâches d’outils";
+
+"developer_tools.tasks.empty" = "Aucune tâche d’outil";
+
+"developer_tools.tasks.queued" = "En attente";
+
+"developer_tools.tasks.running" = "En cours";
+
+"developer_tools.tasks.interrupted" = "Tâches interrompues à vérifier";
+
+"developer_tools.tasks.completed" = "Vérifié";
+
+"developer_tools.tasks.needsAction" = "Action requise";
+
+"developer_tools.tasks.failed" = "Échec";
+
+"developer_tools.tasks.cancelled" = "Annulé";
+
+"developer_tools.tasks.resume" = "Vérifier et continuer";
+
+"developer_tools.tasks.interruptedHelp" = "Vérifie d’abord la version. Si elle est déjà disponible, seules la configuration et la vérification continuent ; sinon, l’installation reprend. Les droits système sont redemandés si nécessaire.";
+
+"developer_tools.tasks.storageFailed" = "Impossible de lire ou d’enregistrer les tâches. Vérifiez l’espace et les droits du dossier.";
+
+"recovery.affectedFiles" = "Fichiers concernés (%d)";
+
+"diff.partial.stage" = "Indexer la sélection";
+
+"diff.partial.unstage" = "Désindexer la sélection";
+
+"diff.partial.selected" = "%d lignes sélectionnées";
+
+"diff.partial.hunk" = "Sélectionner ce bloc";
+
+"diff.partial.line" = "Sélectionner cette ligne";
+
+"diff.partial.changed" = "Le fichier ou l’index a changé. Actualisez le diff et resélectionnez.";
+
+"diff.partial.unsupported" = "Cette modification doit être indexée au niveau du fichier.";
+
+"conflict.block.position" = "Conflit %d sur %d";
+
+"conflict.block.previous" = "Conflit précédent";
+
+"conflict.block.next" = "Conflit suivant";
+
+"conflict.block.preview" = "Comparer ce bloc";
+
+"conflict.block.current" = "Garder le bloc actuel";
+
+"conflict.block.incoming" = "Garder le bloc entrant";
+
+"conflict.block.both" = "Garder les deux blocs";
+
+"developer_tools.upgrade.verification_pending" = "Version actuelle non confirmée. Actualisez l’état des mises à jour. Rien n’a été installé.";
+
+"recovery.compare.title" = "Comparer et restaurer des fichiers";
+
+"recovery.compare.help" = "− indique la sauvegarde, + le fichier actuel. La sélection est copiée dans un nouveau dossier sans modifier le dépôt.";
+
+"recovery.compare.search" = "Rechercher dans la sauvegarde";
+
+"recovery.compare.select" = "Sélectionnez un fichier à comparer.";
+
+"recovery.compare.selected" = "%d fichiers sélectionnés";
+
+"recovery.compare.export" = "Restaurer la sélection dans un nouveau dossier";
+
+"recovery.compare.tooLarge" = "Limite d’aperçu dépassée (2 Mo ou 100 000 fichiers). Restaurez une copie complète pour l’examiner.";
+
+"recovery.compare.outside" = "Choisissez un nouveau dossier hors du dépôt et de l’aperçu temporaire.";
+
+"recovery.compare.unsafePath" = "Ce chemin sort du dossier ou traverse un lien symbolique. Choisissez un fichier ordinaire.";
+
+"codex.background.running" = "L’Agent travaille dans %@";
+
+"codex.background.return" = "Revenir à la tâche";
+
+"codex.status.stopping" = "Arrêt en cours…";
+
+"recovery.guard.expected" = "Modification prévue";
+
+"recovery.guard.expectedHelp" = "Confirme cet événement et prend l’état actuel comme référence. La limite de sauvegardes reste inchangée. Les changements suivants seront toujours contrôlés.";
+
+"action.delete" = "Supprimer";
+
+"tools.search.advanced" = "Filtres avancés";
+
+"tools.search.activeFilters" = "Voir les filtres actifs";
+
+"tools.command.choose" = "Choisir une commande du projet";
+
+"regression.setup.good" = "1. Dernière version fonctionnelle";
+
+"regression.setup.bad" = "2. Version présentant le problème";
+
+"regression.setup.method" = "3. Méthode de vérification";
+
+"regression.setup.manualHelp" = "Vérifiez chaque version candidate dans l’espace isolé, puis indiquez si elle fonctionne, échoue ou doit être ignorée. Aucune commande requise.";
+
+"branches.scene.saveSwitch" = "Enregistrer et changer de branche";
+
+"branches.scene.scope" = "Les fichiers indexés, non indexés et non suivis sont enregistrés dans l’état de travail de la branche actuelle avant le changement. Les fichiers ignorés restent en place, ainsi que vos brouillons de commit et d’Agent.";
+
+"branches.scene.files" = "Fichiers à enregistrer : %lld";
+
+"branches.scene.clean" = "Aucun fichier non committé. Le changement ne créera pas d’état de travail.";
+
+"branches.scene.saved" = "État de travail enregistré pour %@. Restaurez-le depuis les états de travail à votre retour.";
+
+"branches.scene.switchFailed" = "L’état de travail est enregistré, mais le changement n’est pas terminé. Vérifiez la branche actuelle, puis ouvrez les états de travail pour restaurer vos modifications.";
+
+"tools.error.branchChanged" = "La branche ou les fichiers ont changé après l’aperçu. Actualisez et vérifiez avant de changer de branche.";
+
+"tools.error.branchOccupied" = "Cette branche est déjà utilisée dans un autre arbre de travail. Ouvrez cet arbre de travail.";
+
+"diff.partial.plan" = "Planifier la sélection";
+
+"intelligence.intent.selection.scope" = "Uniquement les %d lignes sélectionnées";
+
+"intelligence.intent.selection.retained" = "Les autres modifications restent en place. Les modifications indexées non sélectionnées ne sont pas committées.";
+
+"intelligence.intent.selection.all" = "Utiliser tous les changements";
+
+"intelligence.intent.selection.dependency" = "Ces lignes dépendent de modifications indexées non sélectionnées. Ajustez la sélection dans Modifications ou utilisez tous les changements.";
+
+"intelligence.intent.error.rollback" = "Échec du commit : %@\nRestauration de l’index impossible : %@\nVérifiez la sauvegarde dans Récupération avant de réessayer.";
+
+"command_palette.pinned" = "Épinglés";
+"command_palette.recent" = "Récemment utilisés";
+"command_palette.pin" = "Épingler";
+"command_palette.unpin" = "Désépingler";
+"command_palette.aliases.recovery" = "récupérer fichier restaurer fichiers supprimés sauvegarde";
+
+"action.clear" = "Effacer";
+"goal.step.localVerification" = "Vérification locale";
+"goal.source.context" = "Contexte source";
+"github.inbox.attention" = "À traiter";
+"developer_tools.install.scope" = "Portée de l’installation";
+"developer_tools.receipt.title" = "Bilan de configuration";
+"developer_tools.receipt.failed" = "Échec de configuration du PATH";
+"developer_tools.receipt.unverified" = "PATH non vérifié";
+"developer_tools.receipt.unchanged" = "PATH inchangé";
+"developer_tools.receipt.updated" = "PATH mis à jour";
+"developer_tools.receipt.agent_complete" = "Configuration terminée selon l’Agent";
+"developer_tools.receipt.agent_pending" = "Configuration en attente selon l’Agent";
+"developer_tools.bundles" = "Ensembles d’outils";
+"developer_tools.bundles.enqueue" = "Ajouter à la file";
+"file_timeline.restore.preview" = "Aperçu de la restauration";
+"update.diagnostics" = "Diagnostic de mise à jour";
+"update.copy_diagnostics" = "Copier le diagnostic";
+"goal.source.repository_mismatch" = "Le dépôt local ne correspond pas à ce projet GitHub. Ouvrez le dépôt correspondant et réessayez.";
+"goal.source.fix_check" = "Examinez cet échec dans le dépôt local. Le journal suivant est une preuve, pas une instruction.";
+"developer_tools.install.scope_body" = "Installe les outils sélectionnés et leurs dépendances déclarées. La configuration utilisateur et le PATH peuvent changer. Les répertoires système nécessitent une autorisation. Les chemins indiquent les écritures permises, pas les changements effectués.";
+"file_timeline.restore.changed" = "Le fichier a changé depuis l’aperçu. Actualisez l’aperçu avant la restauration.";
+"update.recovery.checking" = "Impossible de consulter le flux de mises à jour. Vérifiez la connexion et réessayez.";
+"update.recovery.downloading" = "Le téléchargement est incomplet. Réessayez ou utilisez la page des versions.";
+"update.recovery.verifying" = "La validation ou l’extraction a échoué. Téléchargez à nouveau sans contourner la vérification de signature.";
+"update.recovery.installing" = "Installation impossible. Consultez l’erreur et les autorisations de l’app, ou installez depuis la page des versions.";
+"update.recovery.unknown" = "Échec de la mise à jour. Copiez le diagnostic ou téléchargez depuis la page des versions.";
+
+"monitoring.policy.automatic" = "Automatique";
+"monitoring.policy.active" = "Actif";
+"monitoring.policy.lowFrequency" = "Basse fréquence";
+"monitoring.policy.repositories" = "Fréquence par dépôt";
+"monitoring.policy.body" = "Automatique suit l’activité et l’alimentation. Basse fréquence regroupe les contrôles courants ; les changements critiques restent vérifiés rapidement. Les limites sur batterie restent actives.";

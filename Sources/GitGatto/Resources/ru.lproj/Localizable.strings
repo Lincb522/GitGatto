@@ -394,7 +394,7 @@
 "help.goals.create.1" = "Откройте репозиторий, выберите действие в разделе целей, введите сообщение коммита или версию и нажмите «Начать». В репозитории может быть только одна активная цель.";
 "help.goals.create.2" = "Опишите нужный результат. Agent предложит шаги после анализа без записи. Проверьте область действий и начните.";
 "help.goals.create.3" = "Быстрые цели включают в себя фиксацию и отправку, доставку GitHub и полный выпуск. Для доставки GitHub требуется ветка, отличная от ветки по умолчанию.";
-"help.goals.create.4" = "Цель записывает репозиторий, ветку, базовую фиксацию, шаги и доказательства. Переключение репозиториев не смешивает их состояние.";
+"help.goals.create.4" = "Цель записывает репозиторий, ветку, базовую фиксацию, шаги и доказательства. Переключение репозиториев не смешивает их состояние. Цель можно создать из изменений, Issue, PR или сбоя проверки. Сохранённая команда проекта может выполнить проверку перед коммитом.";
 "help.goals.execute.title" = "Беги и восстанавливайся";
 "help.goals.execute.1" = "Разрешённые шаги выполняются последовательно с повторной проверкой Git и GitHub после каждого. Слияние, публикация и установка ждут подтверждения.";
 "help.goals.execute.2" = "Неудачный шаг сохраняет исходное свидетельство и останавливается на пункте «Требует внимания». Выполненные шаги сохраняются после перезапуска приложения.";
@@ -456,7 +456,7 @@
 "help.translation.channel.title" = "Независимая полоса исполнения";
 "help.translation.channel.1" = "Перевод CLI и проект Agent имеют отдельные конфигурации и процессы, поэтому перевод остаётся доступным, пока работает Agent.";
 "help.translation.channel.2" = "Автоперевод определяет читаемый текст и использует заданный язык. Текст уже на нём или слишком короткий может не измениться. Без реакции проверьте движок и язык в настройках.";
-"help.translation.channel.3" = "Трансляцию можно остановить и имеет тайм-аут; сбои не удаляют уже сохраненные переводы.";
+"help.translation.channel.3" = "Трансляцию можно остановить и имеет тайм-аут; сбои не удаляют уже сохраненные переводы. Повтор использует язык неудавшегося запроса. При ошибке перевода исходный текст остаётся доступен.";
 
 "help.topic.cliSettings.title" = "Настройки";
 "help.topic.cliSettings.summary" = "Настройте интерфейс приложения, рабочее пространство при запуске, мониторинг Git в реальном времени, Agent и перевод из одного окна.\nПриложение";
@@ -481,7 +481,7 @@
 "help.shortcuts.actions.title" = "Общие действия";
 "help.shortcuts.actions.1" = "⌘O: Откройте локальный репозиторий; ⌘R: Обновить текущий репозиторий.";
 "help.shortcuts.actions.2" = "⌘↩: Зафиксировать промежуточный контент с текущим сообщением о фиксации.";
-"help.shortcuts.actions.3" = "⌘K открывает палитру. Правый клик по изменённому файлу или недавнему репозиторию показывает действия. Меню помощи открывает руководство текущей страницы.";
+"help.shortcuts.actions.3" = "⌘K открывает палитру. Правый клик по изменённому файлу или недавнему репозиторию показывает действия. Меню помощи открывает руководство текущей страницы. Закрепляйте частые команды; недавние команды отображаются выше. Выбирайте стрелками, запускайте клавишей Enter.";
 
 "help.topic.troubleshooting.title" = "Устранение неполадок";
 "help.topic.troubleshooting.summary" = "Подтвердите выбранный проект, локальный вход CLI и сообщение об ошибке, прежде чем повторить неудачную операцию.";
@@ -579,7 +579,7 @@
 "error.operation.push" = "Нажмите";
 "error.operation.agent" = "Беги Agent";
 "error.section.output" = "Полный вывод ошибки";
-"error.section.explanation" = "Объяснение";
+"error.section.explanation" = "Причина";
 "error.section.details" = "Подробности об ошибке";
 "error.section.recovery" = "Восстановление";
 "error.detail.code" = "Код ошибки";
@@ -708,7 +708,7 @@
 
 "settings.open" = "Настройки";
 "settings.title" = "Настройки";
-"settings.save" = "Сохранить и проверить";
+"settings.save" = "Сохранить";
 "settings.saved" = "Настройки сохранены.";
 "settings.appearance.title" = "Внешний вид";
 "settings.appearance.mode" = "Режим внешнего вида";
@@ -1481,10 +1481,10 @@
 "goal.evidence.commit" = "Зафиксировать %@";
 "goal.evidence.run" = "Запустите %@";
 "goal.evidence.pr" = "PR #%lld → %@";
-"goal.evidence.review_waiting" = "Ждём %lстарых рецензентов";
+"goal.evidence.review_waiting" = "Ожидание рецензентов: %lld";
 "goal.evidence.review_required" = "Ожидание необходимой проверки";
 "goal.evidence.pr_draft" = "Ждем, пока запрос на отзыв станет доступным для проверки.";
-"goal.evidence.review_approved" = "%lдопуски";
+"goal.evidence.review_approved" = "Одобрений: %lld";
 "goal.evidence.merged" = "PR #%lld объединен";
 "goal.actions.failure" = "Не удалось выполнить действия.";
 "goal.actions.conclusion.failure" = "Не удалось выполнить один или несколько этапов рабочего процесса.";
@@ -2143,16 +2143,16 @@
 "github.issues.editor.milestone" = "Milestone number";
 "github.issues.agent.prompt" = "Work on GitHub issue %1$@ #%2$d: %3$@\n\n%4$@\n\nInspect the repository first, implement the narrowest complete fix, run relevant validation, and summarize the changed files.";
 "command_palette.title" = "Палитра команд";
-"command_palette.placeholder" = "Search commands, repositories or branches";
-"command_palette.empty" = "No matching commands";
-"command_palette.group.navigate" = "Navigate";
-"command_palette.group.repositories" = "Repositories";
-"command_palette.group.branches" = "Branches";
-"command_palette.group.git" = "Git actions";
-"command_palette.group.application" = "Application";
-"command_palette.hint.navigate" = "Navigate";
-"command_palette.hint.run" = "Run";
-"command_palette.count" = "%d commands";
+"command_palette.placeholder" = "Поиск команд, репозиториев и веток";
+"command_palette.empty" = "Подходящих команд нет";
+"command_palette.group.navigate" = "Навигация";
+"command_palette.group.repositories" = "Репозитории";
+"command_palette.group.branches" = "Ветки";
+"command_palette.group.git" = "Действия Git";
+"command_palette.group.application" = "Приложение";
+"command_palette.hint.navigate" = "Выбрать";
+"command_palette.hint.run" = "Выполнить";
+"command_palette.count" = "Команд: %d";
 "commit_search.title" = "Поиск коммитов";
 "commit_search.action" = "Search";
 "commit_search.hash" = "Commit SHA";
@@ -2183,49 +2183,43 @@
 "intelligence.tab.provenance" = "Контекст кода";
 "intelligence.tab.capsules" = "Капсулы сбоев";
 "intelligence.tab.activity" = "Активность Agent";
-"intelligence.intent.title" = "Commit Plan";
-"intelligence.intent.summary" = "%d change units · %d commits";
-"intelligence.intent.loading" = "Analyzing working-tree changes…";
-"intelligence.intent.empty.title" = "No changes to organize";
-"intelligence.intent.empty.body" = "Edit files in this repository, then refresh to build an atomic commit plan.";
-"intelligence.intent.select.title" = "Select a change unit";
-"intelligence.intent.select.body" = "Choose a hunk to inspect the exact patch assigned to this commit.";
-"intelligence.intent.add_group" = "Add commit";
-"intelligence.intent.agent" = "Refine with Agent";
-"intelligence.intent.apply" = "Create commits";
-"intelligence.intent.confirm.title" = "Create the planned commits?";
-"intelligence.intent.confirm.body" = "GitGatto will create %d local commits in this order. A recovery point is created first.";
-"intelligence.intent.group_title" = "Commit purpose";
-"intelligence.intent.commit_message" = "Commit message";
-"intelligence.intent.verify_placeholder" = "Optional verification command after each commit";
-"intelligence.intent.group_empty" = "Move at least one change unit into this commit.";
-"intelligence.intent.whole_file" = "Whole file";
-"intelligence.intent.whole_file.title" = "Whole-file change";
-"intelligence.intent.whole_file.body" = "This binary, new, deleted, or metadata-only file is committed as one unit.";
-"intelligence.intent.result.title" = "Commit series created";
-"intelligence.intent.result.body" = "Created %d local commits. They have not been pushed.";
-"intelligence.intent.refresh" = "Analyze remaining changes";
-"intelligence.intent.new_group" = "New commit";
-"intelligence.intent.notice.refined" = "The Agent plan is ready for review.";
-"intelligence.intent.notice.applied" = "Created %d local commits.";
-"intelligence.intent.kind.implementation" = "Implementation";
-"intelligence.intent.kind.fix" = "Fix";
-"intelligence.intent.kind.refactor" = "Refactor";
-"intelligence.intent.kind.tests" = "Tests";
-"intelligence.intent.kind.documentation" = "Documentation";
-"intelligence.intent.kind.configuration" = "Configuration";
-"intelligence.intent.kind.assets" = "Assets";
-"intelligence.intent.kind.other" = "Other";
-"intelligence.intent.error.no_changes" = "There are no working-tree changes to organize.";
-"intelligence.intent.error.conflicts" = "Resolve the current conflicts before building a commit plan.";
-"intelligence.intent.error.changed" = "The repository changed after this plan was created. Refresh the plan before applying it.";
-"intelligence.intent.error.status" = "Git returned an unreadable working-tree status.";
-"intelligence.intent.error.repository" = "This plan belongs to a different repository.";
-"intelligence.intent.error.assignment" = "Every change unit must belong to exactly one non-empty commit.";
-"intelligence.intent.error.empty_group" = "“%@” did not stage any changes.";
-"intelligence.intent.error.unsupported" = "The change in “%@” cannot be staged independently.";
-"intelligence.intent.error.verification" = "Verification command failed: %@\n%@";
-"intelligence.intent.error.agent_plan" = "Agent returned an invalid commit plan.";
+"intelligence.intent.summary" = "Файлов: %d · Коммитов: %d";
+"intelligence.intent.loading" = "Чтение изменений…";
+"intelligence.intent.empty.title" = "Нет изменений для группировки";
+"intelligence.intent.empty.body" = "Нет изменений для группировки. Измените файлы и обновите.";
+"intelligence.intent.add_group" = "Добавить коммит";
+"intelligence.intent.agent" = "Упорядочить с Agent";
+"intelligence.intent.apply" = "Создать коммиты";
+"intelligence.intent.confirm.title" = "Создать эти коммиты?";
+"intelligence.intent.confirm.body" = "GitGatto сохранит точку восстановления и создаст %d локальных коммитов в этом порядке.";
+"intelligence.intent.group_title" = "Цель коммита";
+"intelligence.intent.commit_message" = "Сообщение коммита";
+"intelligence.intent.verify_placeholder" = "Команда проверки после коммита (необязательно)";
+"intelligence.intent.group_empty" = "Перенесите сюда хотя бы один файл или блок кода.";
+"intelligence.intent.whole_file.title" = "Изменение целого файла";
+"intelligence.intent.whole_file.body" = "Изменение включается целиком. Текстовый просмотр недоступен.";
+"intelligence.intent.result.title" = "Коммиты созданы";
+"intelligence.intent.result.body" = "Создано локальных коммитов: %d. Они не отправлены.";
+"intelligence.intent.refresh" = "Прочитать оставшиеся изменения";
+"intelligence.intent.new_group" = "Новый коммит";
+"intelligence.intent.kind.implementation" = "Функция";
+"intelligence.intent.kind.fix" = "Исправление";
+"intelligence.intent.kind.refactor" = "Рефакторинг";
+"intelligence.intent.kind.tests" = "Тесты";
+"intelligence.intent.kind.documentation" = "Документация";
+"intelligence.intent.kind.configuration" = "Конфигурация";
+"intelligence.intent.kind.assets" = "Ресурсы";
+"intelligence.intent.kind.other" = "Другое";
+"intelligence.intent.error.no_changes" = "Нет изменений для группировки.";
+"intelligence.intent.error.conflicts" = "Разрешите конфликты перед планированием коммитов.";
+"intelligence.intent.error.changed" = "Файлы или индекс изменились. Обновите план перед созданием коммитов.";
+"intelligence.intent.error.status" = "Git вернул нечитаемый статус рабочей директории.";
+"intelligence.intent.error.repository" = "План относится к другому репозиторию. Откройте его или обновите план.";
+"intelligence.intent.error.assignment" = "Каждое изменение должно входить ровно в один непустой коммит.";
+"intelligence.intent.error.empty_group" = "«%@» не добавил изменений в индекс.";
+"intelligence.intent.error.unsupported" = "Изменение в «%@» нельзя добавить в индекс отдельно.";
+"intelligence.intent.error.verification" = "Ошибка команды проверки: %@\n%@";
+"intelligence.intent.error.agent_plan" = "Agent вернул неверный план коммитов. Повторите группировку.";
 "intelligence.provenance.path" = "Repository-relative file path";
 "intelligence.provenance.line" = "Line";
 "intelligence.provenance.trace" = "Trace";
@@ -2305,9 +2299,9 @@
 "help.topic.intelligence.title" = "Change Center";
 "help.topic.intelligence.summary" = "Build atomic commits, trace code context, move failures, and inspect Agent activity.";
 "help.intelligence.intent.title" = "Commit Plan";
-"help.intelligence.intent.1" = "Open Change Center and refresh after editing files. GitGatto splits text patches into independently assignable hunks and keeps binary or new files whole.";
-"help.intelligence.intent.2" = "Review commit order, purpose, message, and hunk assignment. Agent refinement changes only the proposed plan and still requires your confirmation.";
-"help.intelligence.intent.3" = "An optional command can verify every commit. Create commits makes a recovery point first and never pushes the resulting commits automatically.";
+"help.intelligence.intent.1" = "После редактирования откройте план коммитов. При желании опишите цель, выберите разделение или один коммит и нажмите «Упорядочить с Agent».";
+"help.intelligence.intent.2" = "Карточка показывает сообщение и файлы. В разделе редактирования можно менять сообщения и переносить файлы или блоки кода. Меню меняет порядок и объединяет коммиты. Планирование не записывает данные в репозиторий.";
+"help.intelligence.intent.3" = "В дополнительных параметрах можно задать проверку после каждого коммита. После подтверждения создаётся точка восстановления, затем локальные коммиты по порядку, без автоматической отправки.";
 "help.intelligence.provenance.title" = "Code Context";
 "help.intelligence.provenance.1" = "Enter a tracked repository-relative path and a positive line number.";
 "help.intelligence.provenance.2" = "Git blame identifies the originating local commit and the files changed by it.";
@@ -2478,8 +2472,7 @@
 "tools.commands.help" = "Команды запускаются после подтверждения. Поиск скриптов ничего не выполняет. Закрытие панели не останавливает команды, выход из приложения — останавливает.";
 "tools.command.custom" = "Добавить или изменить команду";
 "tools.command.executable" = "Программа или абсолютный путь";
-"tools.command.arguments" = "Аргументы в JSON-массиве";
-"tools.command.argvHelp" = "Пример: [\"run\", \"dev\"]. Аргументы передаются отдельно, без раскрытия оболочкой.";
+"tools.command.arguments" = "Аргументы";
 "tools.command.timeout" = "Тайм-аут: %d с";
 "tools.command.localURL" = "Локальный URL (необязательно)";
 "tools.command.empty" = "Скрипты не найдены. Добавьте команду выше.";
@@ -2533,7 +2526,7 @@
 "tools.error.binding" = "Путь уже привязан или непригоден для правила. Сначала удалите старую привязку.";
 "tools.error.bound" = "Профиль ещё используется. Сначала удалите привязки.";
 "tools.error.identityMismatch" = "Действующая идентичность отличается от профиля. Проверьте Инструменты проекта → Идентификация коммитов перед коммитом.";
-"tools.error.command" = "Укажите программу, JSON-аргументы, тайм-аут 1–86400 с и необязательный localhost URL.";
+"tools.error.command" = "Укажите программу, отдельные аргументы, тайм-аут 1–86 400 секунд и необязательный URL localhost.";
 "tools.error.timeout" = "Команда остановлена по тайм-ауту. Проверьте вывод или увеличьте лимит перед повтором.";
 "tools.error.previewLimit" = "Более 100000 файлов. Сократите область перед предпросмотром правил.";
 "tools.error.previewRequired" = "Просмотрите правила перед сохранением.";
@@ -2558,7 +2551,7 @@
 "help.topic.fileHistory.title" = "История файлов";
 "help.topic.fileHistory.summary" = "Поиск происхождения файлов и строк.";
 "help.fileHistory.start" = "Выберите файл и ревизию. Содержимое, diff и авторство строк позволяют найти соответствующий коммит и автора.";
-"help.fileHistory.result" = "Откройте историю коммитов для связанных изменений. Восстановление заменяет текущий файл после подтверждения; затем проверьте рабочий diff. Это история коммитов, не каждого сохранения в редакторе.";
+"help.fileHistory.result" = "Перед восстановлением просмотрите отличия. Подтверждение заменяет рабочий файл. Если после просмотра файл изменился, сначала обновите просмотр.";
 "help.fileHistory.caution" = "Если файл не найден, проверьте репозиторий, путь и фильтры. Потерянные незакоммиченные изменения ищите в точках восстановления и stash, а не только в истории Git.";
 "help.topic.branches.title" = "Ветки, теги и remotes";
 "help.topic.branches.summary" = "Управление ссылками и восстановление записанных коммитов.";
@@ -2582,7 +2575,7 @@
 "help.recovery.caution" = "Не более трёх поколений на репозиторий; ограничения могут исключать файлы. Смена расположения переносит существующие копии. Предупреждение означает изменение для проверки, не доказанную атаку. Перед восстановлением изучите причину и точку.";
 "help.topic.monitoring.title" = "Мониторинг и строка меню";
 "help.topic.monitoring.summary" = "Изменения, upstream, защита, Actions и цели.";
-"help.monitoring.start" = "В настройках мониторинга включите движок и настройте каждый канал и интервал отдельно. Там же включается значок строки меню; скрытие значка не останавливает мониторинг.";
+"help.monitoring.start" = "В настройках мониторинга включите движок и настройте каждый канал и интервал отдельно. Там же включается значок строки меню; скрытие значка не останавливает мониторинг. Для каждого репозитория доступны автоматический, активный и редкий режимы. Ограничения батареи и срочные проверки сохраняются.";
 "help.monitoring.result" = "Выбирайте все репозитории или один независимо от главного окна. Панель показывает изменения, синхронизацию, точки восстановления и активность по дням. Это коммиты и сигналы изменений, не часы программирования.";
 "help.monitoring.caution" = "Работает при свёрнутом окне, пока приложение запущено, но не после выхода. Защита внешних Agent/CLI наблюдает управляемые репозитории и хранит базовые копии; она не перехватывает каждую разрушительную команду и не гарантирует несохранённые или исключённые файлы.";
 "help.topic.applications.title" = "Репозиторий приложений";
@@ -2593,7 +2586,7 @@
 "help.topic.developerTools.title" = "Инструменты разработки";
 "help.topic.developerTools.summary" = "Обнаружение, установка, настройка и обновление.";
 "help.developerTools.start" = "Обновите локальное обнаружение и выберите установку или обновление Agent. Можно выбрать несколько доступных обновлений. Очереди установки и обновления показывают ожидающие и текущие задачи.";
-"help.developerTools.result" = "До трёх параллельных задач; блокировки записи менеджера пакетов могут задерживать шаги. Откройте задачу для этапа и вывода. Необходимые настройки пользователя, включая PATH и регистрацию плагинов, завершаются локальной проверкой программы и версии.";
+"help.developerTools.result" = "До трёх параллельных задач; блокировки записи менеджера пакетов могут задерживать шаги. Откройте задачу для этапа и вывода. Необходимые настройки пользователя, включая PATH и регистрацию плагинов, завершаются локальной проверкой программы и версии. Наборы добавляют выбранные инструменты в очередь. До установки можно проверить область изменений; отчёт отдельно показывает проверку программы, изменения PATH и настройку Agent.";
 "help.developerTools.caution" = "Сообщение Agent не является проверкой. Требуется действие означает незавершённую установку, настройку или проверку версии. При проблеме прав используйте предложенное разрешение и повтор. Вход в аккаунт и разрешение macOS выполняются лично; отсутствие входа само по себе не отменяет проверенную установку. Не удаляйте активные блокировки Homebrew.";
 "help.topic.collaboration.title" = "Синхронизация и совместная работа";
 "help.topic.collaboration.summary" = "Несколько репозиториев, входящие, Issues и PR.";
@@ -2617,7 +2610,7 @@
 "help.workScenes.caution" = "При блокировке или прерывании проверьте этап и репозиторий. Отметка обработки лишь подтверждает запись, не восстанавливает файлы. Удаление сцены убирает запись и собственную ссылку, но оставляет исходный stash.";
 "help.topic.projectCommands.title" = "Запуск команд";
 "help.topic.projectCommands.summary" = "Выполнение и проверка команд проекта.";
-"help.projectCommands.start" = "Обнаружьте команды из метаданных пакетов, Make или Swift. Перед подтверждением проверьте программу, каталог, аргументы и тайм-аут. Свои аргументы вводите как массив JSON, не строку shell.";
+"help.projectCommands.start" = "Откройте инструменты проекта → Запуск команд. Проверьте программу, папку, аргументы и тайм-аут. Каждый аргумент вводится отдельно; пробелы сохраняются внутри него.";
 "help.projectCommands.result" = "Закрепляйте команды, смотрите вывод, время и код выхода. Останавливайте, повторяйте, открывайте localhost-ссылки или передавайте журнал Agent как черновик. Закрытие панели не останавливает задачи; выход из приложения останавливает его процессы.";
 "help.projectCommands.caution" = "Режим неинтерактивный: пароли вводите через терминал. Тайм-аут не успех. Последние 20 записей остаются только в памяти сеанса; нужный вывод сохраните перед выходом. Неизвестные скрипты сначала проверяйте.";
 "help.topic.ignoreRules.title" = "Правила исключения";
@@ -2690,3 +2683,249 @@
 "ai.provider.qwen" = "Qwen Code";
 "ai.provider.openAICompatible" = "OpenAI-compatible API";
 "ai.provider.deepseek" = "DeepSeek API";
+
+"intelligence.intent.advanced" = "Другие параметры";
+"intelligence.intent.refresh_confirm" = "Перечитать изменения?";
+"intelligence.intent.refresh_confirm.body" = "Группы и сообщения коммитов будут созданы заново.";
+"intelligence.intent.instruction" = "Что изменилось или как разделить коммиты? (необязательно)";
+"intelligence.intent.planning" = "Чтение изменений и подготовка коммитов…";
+"intelligence.intent.draft_hint" = "Сгруппировано по связям файлов. Agent может уточнить план по содержимому изменений.";
+"intelligence.intent.split_mode" = "Группировка коммитов";
+"intelligence.intent.split.automatic" = "Разделить по смыслу";
+"intelligence.intent.split.single" = "Один коммит";
+"intelligence.intent.replan" = "Перегруппировать";
+"intelligence.intent.merge_all" = "Объединить в один коммит";
+"intelligence.intent.applying" = "Создание коммитов…";
+"intelligence.intent.local_only" = "Создаёт локальные коммиты без отправки.";
+"intelligence.intent.incomplete" = "Каждому коммиту нужны изменения и сообщение.";
+"intelligence.intent.move_up" = "Переместить раньше";
+"intelligence.intent.move_down" = "Переместить позже";
+"intelligence.intent.merge_group" = "Объединить с первым оставшимся коммитом";
+"intelligence.intent.commit_actions" = "Действия с коммитом";
+"intelligence.intent.files_less" = "Свернуть файлы";
+"intelligence.intent.files_more" = "Показать все файлы";
+"intelligence.intent.edit" = "Редактировать и разделить";
+"intelligence.intent.category" = "Тип";
+"intelligence.intent.move_changes" = "Перенести изменения";
+"intelligence.intent.split_file" = "Отдельный коммит";
+
+"settings.pending" = "Есть несохранённые изменения";
+
+"settings.discard" = "Отменить изменения";
+
+"settings.saveFailed" = "Не удалось сохранить. Проверьте значения и повторите.";
+
+"settings.search" = "Поиск настроек";
+
+"settings.applyHelp" = "Оформление, обновления, папка резервных копий и ключи API сохраняются сразу. Остальные изменения нужно сохранить до закрытия.";
+
+"search.noResults" = "Совпадений нет";
+
+"help.search" = "Поиск по руководству";
+
+"help.openFeature" = "Открыть функцию";
+
+"error.action.workflowPermission" = "Разрешить доступ к workflow";
+
+"error.action.agentSettings" = "Открыть настройки Agent";
+
+"error.action.refreshRepository" = "Проверить репозиторий снова";
+
+"error.action.inspectRepository" = "Открыть диагностику репозитория";
+
+"tools.command.argument" = "Аргумент";
+
+"tools.command.addArgument" = "Добавить аргумент";
+
+"tools.command.removeArgument" = "Удалить аргумент";
+
+"tools.command.argumentsLiteral" = "Один аргумент на строку. Пробелы и пустые аргументы сохраняются, без подстановок оболочки.";
+
+"ai.api.loadModels" = "Загрузить модели";
+
+"ai.api.chooseModel" = "Выбрать модель";
+
+"ai.api.testChat" = "Проверить диалог";
+
+"ai.api.testTools" = "Проверить вызовы инструментов";
+
+"ai.api.testHelp" = "Тесты отправляют короткие запросы и могут расходовать квоту. Команды не выполняются, файлы не изменяются.";
+
+"ai.api.catalogOnly" = "Модель в списке · выполнение не проверено";
+
+"ai.api.notTested" = "Настроено · выполнение не проверено";
+
+"ai.api.modelMissing" = "Выбранной модели нет в списке сервера";
+
+"ai.api.noModels" = "Сервер вернул пустой список";
+
+"ai.api.chatVerified" = "Ответ проверен";
+
+"ai.api.toolsVerified" = "Формат вызова проверен; инструменты не выполнялись";
+
+"developer_tools.tasks.title" = "Задачи инструментов";
+
+"developer_tools.tasks.empty" = "Задач пока нет";
+
+"developer_tools.tasks.queued" = "В очереди";
+
+"developer_tools.tasks.running" = "Выполняется";
+
+"developer_tools.tasks.interrupted" = "Нужно проверить прерванные задачи";
+
+"developer_tools.tasks.completed" = "Проверено";
+
+"developer_tools.tasks.needsAction" = "Нужно действие";
+
+"developer_tools.tasks.failed" = "Ошибка";
+
+"developer_tools.tasks.cancelled" = "Отменено";
+
+"developer_tools.tasks.resume" = "Проверить и продолжить";
+
+"developer_tools.tasks.interruptedHelp" = "Сначала проверяется версия. Если она уже установлена, выполняются только настройка и проверка; иначе установка или обновление продолжается. Права запрашиваются заново при необходимости.";
+
+"developer_tools.tasks.storageFailed" = "Не удалось прочитать или сохранить задачи. Проверьте место и права папки.";
+
+"recovery.affectedFiles" = "Затронутые файлы (%d)";
+
+"diff.partial.stage" = "Индексировать выбранное";
+
+"diff.partial.unstage" = "Убрать выбранное из индекса";
+
+"diff.partial.selected" = "Выбрано строк: %d";
+
+"diff.partial.hunk" = "Выбрать блок изменений";
+
+"diff.partial.line" = "Выбрать строку";
+
+"diff.partial.changed" = "Файл или индекс изменился. Обновите diff и повторите выбор.";
+
+"diff.partial.unsupported" = "Это изменение можно индексировать только целиком.";
+
+"conflict.block.position" = "Конфликт %d из %d";
+
+"conflict.block.previous" = "Предыдущий конфликт";
+
+"conflict.block.next" = "Следующий конфликт";
+
+"conflict.block.preview" = "Сравнить этот блок";
+
+"conflict.block.current" = "Оставить текущий блок";
+
+"conflict.block.incoming" = "Оставить входящий блок";
+
+"conflict.block.both" = "Оставить оба блока";
+
+"developer_tools.upgrade.verification_pending" = "Не удалось подтвердить версию. Обновите состояние обновлений. Установка не выполнялась.";
+
+"recovery.compare.title" = "Сравнение и восстановление файлов";
+
+"recovery.compare.help" = "− — резервная копия, + — текущий файл. Выбранное копируется в новую папку без изменения репозитория.";
+
+"recovery.compare.search" = "Поиск файлов в копии";
+
+"recovery.compare.select" = "Выберите файл для сравнения.";
+
+"recovery.compare.selected" = "Выбрано файлов: %d";
+
+"recovery.compare.export" = "Восстановить выбранное в новую папку";
+
+"recovery.compare.tooLarge" = "Превышен лимит просмотра: 2 МБ или 100 000 файлов. Восстановите полную копию для проверки.";
+
+"recovery.compare.outside" = "Выберите новую папку вне репозитория и временного просмотра.";
+
+"recovery.compare.unsafePath" = "Путь выходит из папки или проходит через символьную ссылку. Выберите обычный файл.";
+
+"codex.background.running" = "Agent работает в %@";
+
+"codex.background.return" = "Вернуться к задаче";
+
+"codex.status.stopping" = "Остановка…";
+
+"recovery.guard.expected" = "Изменение ожидаемо";
+
+"recovery.guard.expectedHelp" = "Подтвердить событие и принять текущее состояние за базу мониторинга. Лимит копий сохраняется. Последующие изменения по-прежнему проверяются.";
+
+"action.delete" = "Удалить";
+
+"tools.search.advanced" = "Расширенные фильтры";
+
+"tools.search.activeFilters" = "Показать активные фильтры";
+
+"tools.command.choose" = "Выбрать команду проекта";
+
+"regression.setup.good" = "1. Последняя рабочая версия";
+
+"regression.setup.bad" = "2. Версия с ошибкой";
+
+"regression.setup.method" = "3. Способ проверки";
+
+"regression.setup.manualHelp" = "Проверьте каждую версию в изолированной рабочей области и отметьте: работает, ошибка или пропустить. Команда не требуется.";
+
+"branches.scene.saveSwitch" = "Сохранить состояние и переключить";
+
+"branches.scene.scope" = "Перед переключением индексированные, неиндексированные и неотслеживаемые файлы сохраняются в состоянии текущей ветки. Игнорируемые файлы остаются на месте. Черновики коммита и Agent сохраняются.";
+
+"branches.scene.files" = "Файлов для сохранения: %lld";
+
+"branches.scene.clean" = "Нет незакоммиченных файлов. Состояние работы не будет создано.";
+
+"branches.scene.saved" = "Состояние ветки %@ сохранено. При возврате восстановите его в разделе состояний работы.";
+
+"branches.scene.switchFailed" = "Состояние сохранено, но переключение не завершено. Проверьте текущую ветку и откройте состояния работы для восстановления изменений.";
+
+"tools.error.branchChanged" = "Ветка или файлы изменились после предпросмотра. Обновите и проверьте перед переключением.";
+
+"tools.error.branchOccupied" = "Эта ветка уже открыта в другом рабочем дереве. Откройте это дерево.";
+
+"diff.partial.plan" = "Планировать выбранное";
+
+"intelligence.intent.selection.scope" = "Только выбранные строки: %d";
+
+"intelligence.intent.selection.retained" = "Остальные изменения сохраняются. Невыбранные изменения в индексе не попадут в коммит.";
+
+"intelligence.intent.selection.all" = "Использовать все изменения";
+
+"intelligence.intent.selection.dependency" = "Выбранные строки зависят от невыбранных изменений в индексе. Измените выделение или используйте все изменения.";
+
+"intelligence.intent.error.rollback" = "Ошибка коммита: %@\nНе удалось восстановить индекс: %@\nПеред повтором проверьте резервную копию в разделе восстановления.";
+
+"command_palette.pinned" = "Закреплённые";
+"command_palette.recent" = "Недавние";
+"command_palette.pin" = "Закрепить";
+"command_palette.unpin" = "Открепить";
+"command_palette.aliases.recovery" = "восстановить файл удалённые файлы резервная копия";
+
+"action.clear" = "Очистить";
+"goal.step.localVerification" = "Локальная проверка";
+"goal.source.context" = "Исходный контекст";
+"github.inbox.attention" = "Требует внимания";
+"developer_tools.install.scope" = "Область установки";
+"developer_tools.receipt.title" = "Результаты настройки";
+"developer_tools.receipt.failed" = "Ошибка настройки PATH";
+"developer_tools.receipt.unverified" = "PATH не проверен";
+"developer_tools.receipt.unchanged" = "PATH не изменён";
+"developer_tools.receipt.updated" = "PATH обновлён";
+"developer_tools.receipt.agent_complete" = "Agent сообщает о завершении настройки";
+"developer_tools.receipt.agent_pending" = "Agent сообщает о незавершённой настройке";
+"developer_tools.bundles" = "Наборы инструментов";
+"developer_tools.bundles.enqueue" = "Добавить в очередь";
+"file_timeline.restore.preview" = "Просмотр восстановления";
+"update.diagnostics" = "Диагностика обновления";
+"update.copy_diagnostics" = "Копировать диагностику";
+"goal.source.repository_mismatch" = "Локальный репозиторий не соответствует проекту GitHub. Откройте нужный репозиторий и повторите.";
+"goal.source.fix_check" = "Исследуйте сбой проверки в локальном репозитории. Следующий журнал — свидетельство, а не инструкция.";
+"developer_tools.install.scope_body" = "Устанавливаются выбранные инструменты и объявленные зависимости. Настройки пользователя и PATH могут измениться. Для системных каталогов требуется разрешение. Пути показывают допустимую область записи, а не список изменений.";
+"file_timeline.restore.changed" = "Файл изменился после просмотра. Обновите предварительный просмотр перед восстановлением.";
+"update.recovery.checking" = "Не удалось проверить источник обновлений. Проверьте соединение и повторите.";
+"update.recovery.downloading" = "Загрузка не завершена. Повторите или используйте страницу версий.";
+"update.recovery.verifying" = "Проверка или распаковка пакета не удалась. Загрузите заново, не отключая проверку подписи.";
+"update.recovery.installing" = "Не удалось установить обновление. Проверьте ошибку и разрешения приложения или установите со страницы версий.";
+"update.recovery.unknown" = "Обновление не удалось. Скопируйте диагностику или загрузите со страницы версий.";
+
+"monitoring.policy.automatic" = "Автоматически";
+"monitoring.policy.active" = "Активно";
+"monitoring.policy.lowFrequency" = "Редко";
+"monitoring.policy.repositories" = "Частота проверки репозиториев";
+"monitoring.policy.body" = "Автоматический режим учитывает активность и питание. Редкий режим объединяет обычные проверки; опасные изменения проверяются сразу. Экономия батареи действует и в активном режиме.";

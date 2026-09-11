@@ -6,6 +6,16 @@ import Testing
 
 @Suite("Repository change intelligence", .serialized)
 struct RepositoryIntelligenceTests {
+    @Test("An empty new repository shows no changes without requiring a first commit")
+    func emptyNewRepository() async throws {
+        let fixture = try IntelligenceFixture()
+        defer { fixture.remove() }
+        let service = ChangeIntentService(backupService: RepositoryBackupService(rootURL: fixture.backups))
+        await #expect(throws: ChangeIntentError.noChanges) {
+            _ = try await service.makePlan(in: fixture.repository)
+        }
+    }
+
     @Test("Splits distant hunks into verified atomic commits")
     func appliesAtomicCommitPlan() async throws {
         let fixture = try IntelligenceFixture()
@@ -168,6 +178,51 @@ struct RepositoryIntelligenceTests {
         #expect(try String(contentsOf: unstagedFile, encoding: .utf8) == "let unstaged = 2\n")
     }
 
+    @Test("Rejects stale tracked and untracked contents before backup or Git writes", arguments: [false, true])
+    func rejectsStaleContents(untracked: Bool) async throws {
+        let fixture = try IntelligenceFixture()
+        defer { fixture.remove() }
+        let file = fixture.repository.appendingPathComponent("Sources/Feature.swift")
+        try "let value = 1\n".write(to: file, atomically: true, encoding: .utf8)
+        try fixture.git(["add", "."])
+        try fixture.git(["commit", "-m", "Initial"])
+        let target = untracked ? fixture.repository.appendingPathComponent("Sources/New.swift") : file
+        try "let value = 2\n".write(to: target, atomically: true, encoding: .utf8)
+        let service = ChangeIntentService(backupService: RepositoryBackupService(rootURL: fixture.backups))
+        let plan = try await service.makePlan(in: fixture.repository)
+        let head = try fixture.gitOutput(["rev-parse", "HEAD"])
+        let status = try fixture.gitOutput(["status", "--porcelain"])
+        try "let value = 3\n".write(to: target, atomically: true, encoding: .utf8)
+        #expect(try fixture.gitOutput(["status", "--porcelain"]) == status)
+        await #expect(throws: ChangeIntentError.repositoryChanged) {
+            _ = try await service.apply(plan, verificationCommand: nil, in: fixture.repository)
+        }
+        #expect(try fixture.gitOutput(["rev-parse", "HEAD"]) == head)
+        #expect(try fixture.gitOutput(["diff", "--cached"]).isEmpty)
+        #expect(try String(contentsOf: target, encoding: .utf8) == "let value = 3\n")
+        #expect(!FileManager.default.fileExists(atPath: fixture.backups.path))
+    }
+
+    @Test("Untracked planning previews are bounded and omit private files and symlink targets")
+    func boundedUntrackedPreview() async throws {
+        let fixture = try IntelligenceFixture()
+        defer { fixture.remove() }
+        try "initial".write(to: fixture.repository.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
+        try fixture.git(["add", "."])
+        try fixture.git(["commit", "-m", "Initial"])
+        try String(repeating: "text\n", count: 5_000).write(to: fixture.repository.appendingPathComponent("Sources/New.swift"), atomically: true, encoding: .utf8)
+        try "synthetic-private".write(to: fixture.repository.appendingPathComponent(".env.test"), atomically: true, encoding: .utf8)
+        let outside = fixture.root.appendingPathComponent("outside.txt")
+        try "outside".write(to: outside, atomically: true, encoding: .utf8)
+        try FileManager.default.createSymbolicLink(at: fixture.repository.appendingPathComponent("linked.txt"), withDestinationURL: outside)
+        let plan = try await ChangeIntentService(backupService: RepositoryBackupService(rootURL: fixture.backups)).makePlan(in: fixture.repository)
+        let preview = try #require(plan.units.first { $0.path == "Sources/New.swift" }?.contextPreview)
+        #expect(preview.utf8.count == 12_000)
+        #expect(plan.units.first { $0.path == "Sources/New.swift" }?.contextIsTruncated == true)
+        #expect(plan.units.first { $0.path == ".env.test" }?.contextPreview == nil)
+        #expect(plan.units.first { $0.path == "linked.txt" }?.contextPreview == nil)
+    }
+
     @Test("Traces a line to its local originating commit")
     func tracesLocalCodeProvenance() async throws {
         let fixture = try IntelligenceFixture()
@@ -183,6 +238,12 @@ struct RepositoryIntelligenceTests {
             in: fixture.repository
         )
 
+        let historical = try await CodeProvenanceService().trace(commitHash: report.commit.hash,
+            filePath: "Sources/Origin.swift", line: 1, in: fixture.repository)
+        #expect(historical.commit.hash == report.commit.hash)
+        await #expect(throws: CodeProvenanceError.self) {
+            _ = try await CodeProvenanceService().trace(commitHash: "--bad-revision", filePath: "Sources/Origin.swift", line: 1, in: fixture.repository)
+        }
         #expect(report.sourceText == "let answer = 42")
         #expect(report.commit.subject == "Add answer")
         #expect(report.commit.changedPaths == ["Sources/Origin.swift"])

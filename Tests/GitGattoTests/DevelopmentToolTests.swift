@@ -119,7 +119,7 @@ struct DevelopmentToolTests {
             compose,
             packageName: "docker-compose"
         )
-        #expect(postInstallPrompt.contains("already installed through its controlled Homebrew runner"))
+        #expect(postInstallPrompt.contains("Preserve its existing installation source; do not switch package managers"))
         #expect(postInstallPrompt.contains("Write only inside the controlled directories supplied by GitGatto"))
         #expect(postInstallPrompt.contains("These runtime states do not block installation"))
         #expect(postInstallPrompt.contains("GITGATTO_RESULT: ACTION_REQUIRED"))
@@ -952,6 +952,30 @@ struct DevelopmentToolTests {
         }
     }
 
+    @MainActor @Test("Restarted install tasks revalidate first and only finish configuration when the tool exists")
+    func restoredInstallation() async throws {
+        let fixture = DevelopmentToolInstallFixture()
+        let tool = try #require(DevelopmentTool.catalog.first { $0.id == "git-lfs" })
+        await fixture.seedInstalled(tool.id)
+        let record = DevelopmentToolTaskRecord(id: UUID(), toolID: tool.id, operation: .install,
+            createdAt: Date(), updatedAt: Date(), state: .running)
+        let store = FixtureDevelopmentTaskStore(records: [record])
+        let model = DeveloperToolsViewModel(installer: fixture, probe: fixture, updateChecker: fixture,
+            environmentConfigurator: fixture, systemAuthorizer: fixture, taskStore: store)
+        #expect(model.queuedOperations.isEmpty)
+        #expect(model.activeOperations.isEmpty)
+        #expect(model.taskRecords.first?.state == .interrupted)
+        #expect(await fixture.installAttemptCount == 0)
+        model.resumeTask(try #require(model.taskRecords.first))
+        try await waitUntil { model.taskRecords.first?.state == .completed }
+        #expect(await fixture.installAttemptCount == 0)
+        #expect(await fixture.configurationAttemptCount == 1)
+        #expect(model.taskRecords.first?.executablePath == "/Users/fixture/.local/bin/git-lfs")
+        #expect(store.records.first?.state == .completed)
+        model.resumeTask(record)
+        #expect(await fixture.configurationAttemptCount == 1)
+    }
+
     @MainActor
     private func waitUntil(
         timeout: Duration = .seconds(60),
@@ -1146,6 +1170,7 @@ private actor DevelopmentToolInstallFixture:
     private(set) var configuredExecutableNames: [String] = []
     private(set) var authorizationCount = 0
     private(set) var installAttemptCount = 0
+    private(set) var configurationAttemptCount = 0
     private(set) var updateCheckCount = 0
     private var holdsInstallation = false
     private var heldInstallation: CheckedContinuation<Void, Never>?
@@ -1305,6 +1330,11 @@ private actor DevelopmentToolInstallFixture:
         throw CodexServiceError.executionFailed(-1)
     }
 
+    func configureDevelopmentTool(_ tool: DevelopmentTool, progress: @escaping @Sendable (AgentInstallProgress) async -> Void) async throws -> CodexRunResult {
+        configurationAttemptCount += 1
+        return CodexRunResult(response: "Configuration verified", commandCount: 1, fileChangeCount: 0)
+    }
+
     func installDevelopmentTool(
         _ tool: DevelopmentTool,
         progress: @escaping @Sendable (AgentInstallProgress) async -> Void
@@ -1367,4 +1397,11 @@ private actor AuthorizationCommandRecorder {
         commands.append(command)
         prompts.append(prompt)
     }
+}
+
+@MainActor private final class FixtureDevelopmentTaskStore: DevelopmentToolTaskStoring {
+    var records: [DevelopmentToolTaskRecord]
+    init(records: [DevelopmentToolTaskRecord]) { self.records = records }
+    func load() throws -> [DevelopmentToolTaskRecord] { records }
+    func save(_ records: [DevelopmentToolTaskRecord]) throws { self.records = records }
 }

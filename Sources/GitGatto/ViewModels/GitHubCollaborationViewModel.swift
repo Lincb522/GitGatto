@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class GitHubCollaborationViewModel: ObservableObject {
     @Published private(set) var inboxItems: [GitHubInboxItem] = []
+    @Published var inboxNeedsAttentionOnly = false
     @Published var inboxCategory: GitHubInboxCategory?
     @Published var inboxQuery = ""
     @Published private(set) var isLoadingInbox = false
@@ -22,11 +23,15 @@ final class GitHubCollaborationViewModel: ObservableObject {
     @Published private(set) var isLoadingIssueComments = false
     @Published private(set) var isSavingIssue = false
     @Published private(set) var issueError: String?
-    @Published var issueReplyDraft = ""
+    @Published var issueReplyDraft = "" {
+        didSet { draftStore.save(issueReplyDraft, for: draftKey) }
+    }
     @Published private(set) var isDraftingIssueReply = false
     @Published private(set) var issueReplyError: String?
     @Published private(set) var issueReplyCompletionID: UUID?
 
+    private let draftStore: GitHubReplyDraftStore
+    private var draftKey: GitHubReplyDraftStore.Key?
     private let service: any GitHubServing
     private let replyService: any CodexServing
     private var inboxTask: Task<Void, Never>?
@@ -42,8 +47,10 @@ final class GitHubCollaborationViewModel: ObservableObject {
 
     init(
         service: any GitHubServing = GitHubService(),
-        replyService: any CodexServing = CodexService(lane: .project)
+        replyService: any CodexServing = CodexService(lane: .project),
+        draftStore: GitHubReplyDraftStore = .shared
     ) {
+        self.draftStore = draftStore
         self.service = service
         self.replyService = replyService
     }
@@ -56,7 +63,7 @@ final class GitHubCollaborationViewModel: ObservableObject {
                 || item.title.localizedCaseInsensitiveContains(needle)
                 || item.repositoryName.localizedCaseInsensitiveContains(needle)
                 || item.author?.localizedCaseInsensitiveContains(needle) == true
-            return matchesCategory && matchesQuery
+            return matchesCategory && matchesQuery && (!inboxNeedsAttentionOnly || item.needsAttention)
         }
     }
 
@@ -213,8 +220,11 @@ final class GitHubCollaborationViewModel: ObservableObject {
         commentsTask?.cancel()
         cancelIssueReplyDraft()
         selectedIssue = issue
+        draftKey = issue.flatMap { issue in
+            selectedRepository.map { .init(repository: $0.fullName, number: issue.number, kind: .issue) }
+        }
         issueComments = []
-        issueReplyDraft = ""
+        issueReplyDraft = draftStore.text(for: draftKey)
         issueReplyError = nil
         issueReplyCompletionID = nil
         isLoadingIssueComments = false
@@ -301,11 +311,15 @@ final class GitHubCollaborationViewModel: ObservableObject {
         issueError = nil
         do {
             let comment = try await service.addIssueComment(trimmed, to: issue, in: repository)
-            issueComments.append(comment)
+            if selectedRepository?.id == repository.id, selectedIssue?.id == issue.id {
+                issueComments.append(comment)
+            }
             isSavingIssue = false
             return true
         } catch {
-            issueError = error.localizedDescription
+            if selectedRepository?.id == repository.id, selectedIssue?.id == issue.id {
+                issueError = error.localizedDescription
+            }
             isSavingIssue = false
             return false
         }
@@ -366,11 +380,16 @@ final class GitHubCollaborationViewModel: ObservableObject {
     }
 
     func publishIssueReply() async -> Bool {
-        let didPublish = await addComment(issueReplyDraft)
+        let submitted = issueReplyDraft
+        let key = draftKey
+        let didPublish = await addComment(submitted)
         if didPublish {
-            issueReplyDraft = ""
-            issueReplyError = nil
-            issueReplyCompletionID = nil
+            draftStore.remove(key, matching: submitted)
+            if draftKey == key, issueReplyDraft == submitted {
+                issueReplyDraft = ""
+                issueReplyError = nil
+                issueReplyCompletionID = nil
+            }
         }
         return didPublish
     }
@@ -384,6 +403,7 @@ final class GitHubCollaborationViewModel: ObservableObject {
         issuePage = 0
         issues = []
         selectedIssue = nil
+        draftKey = nil
         issueComments = []
         canLoadMoreIssues = false
         isLoadingIssues = false

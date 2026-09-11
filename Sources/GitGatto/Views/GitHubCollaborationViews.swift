@@ -26,17 +26,24 @@ struct GitHubInboxView: View {
                 collaborationError(error, retry: { collaborationModel.loadInbox(force: true) })
             } else if collaborationModel.filteredInboxItems.isEmpty {
                 InspectorEmptyState(
-                    image: "tray",
+                    image: "tray.and.arrow.down",
                     titleKey: "github.inbox.empty.title",
                     bodyKey: "github.inbox.empty.body"
                 )
             } else {
                 GeometryReader { proxy in
-                    HStack(spacing: 0) {
-                        inboxList(palette)
-                            .frame(width: min(430, max(290, proxy.size.width * 0.4)))
-                        Rectangle().fill(palette.divider).frame(width: 1)
-                        inboxDetail(selectedItem, palette: palette)
+                    if proxy.size.width < 760 {
+                        VStack(spacing: 0) {
+                            inboxList(palette).frame(height: max(150, proxy.size.height * 0.38))
+                            Divider()
+                            inboxDetail(selectedItem, palette: palette)
+                        }
+                    } else {
+                        HStack(spacing: 0) {
+                            inboxList(palette).frame(width: min(430, max(290, proxy.size.width * 0.4)))
+                            Rectangle().fill(palette.divider).frame(width: 1)
+                            inboxDetail(selectedItem, palette: palette)
+                        }
                     }
                 }
             }
@@ -96,7 +103,8 @@ struct GitHubInboxView: View {
 
     private func categoryMenu(_ palette: AppPalette) -> some View {
         Menu {
-            Button(L10n.text("github.inbox.category.all")) { collaborationModel.inboxCategory = nil }
+            Button(L10n.text("github.inbox.category.all")) { collaborationModel.inboxCategory = nil; collaborationModel.inboxNeedsAttentionOnly = false }
+            Toggle(L10n.text("github.inbox.attention"), isOn: $collaborationModel.inboxNeedsAttentionOnly)
             Divider()
             ForEach(GitHubInboxCategory.allCases) { category in
                 Button(L10n.text("github.inbox.category.\(category.rawValue)")) {
@@ -107,9 +115,9 @@ struct GitHubInboxView: View {
             HStack(spacing: 6) {
                 Image(gattoSymbol: "line.3.horizontal.decrease.circle")
                 Text(
-                    collaborationModel.inboxCategory.map {
+                    (collaborationModel.inboxNeedsAttentionOnly ? L10n.text("github.inbox.attention") + " · " : "") + (collaborationModel.inboxCategory.map {
                         L10n.text("github.inbox.category.\($0.rawValue)")
-                    } ?? L10n.text("github.inbox.category.all")
+                    } ?? L10n.text("github.inbox.category.all"))
                 )
                 Image(gattoSymbol: "chevron.down")
                     .font(.system(size: 8, weight: .bold))
@@ -258,7 +266,7 @@ struct GitHubInboxView: View {
             }
         } else {
             InspectorEmptyState(
-                image: "tray",
+                image: "tray.and.arrow.down",
                 titleKey: "github.inbox.empty.title",
                 bodyKey: "github.inbox.empty.body"
             )
@@ -283,6 +291,7 @@ struct GitHubIssuesView: View {
     let localRepositoryURL: (GitHubRepository) -> URL?
     let createBranch: (GitHubIssue, GitHubRepository, URL) -> Void
     let sendToAgent: (GitHubIssue, GitHubRepository, URL) -> Void
+    var createGoal: (GitHubIssue, GitHubRepository, URL) -> Void = { _, _, _ in }
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var editorContext: IssueEditorContext?
@@ -297,7 +306,7 @@ struct GitHubIssuesView: View {
 
             if collaborationModel.selectedRepository == nil {
                 InspectorEmptyState(
-                    image: "circle.dotted",
+                    image: "circle.dashed",
                     titleKey: "github.issues.repository.empty.title",
                     bodyKey: "github.issues.repository.empty.body"
                 )
@@ -449,7 +458,7 @@ struct GitHubIssuesView: View {
                     Button { collaborationModel.selectIssue(issue) } label: {
                         VStack(alignment: .leading, spacing: 7) {
                             HStack(spacing: 7) {
-                                Image(gattoSymbol: issue.state == .open ? "circle.dotted" : "checkmark.circle")
+                                Image(gattoSymbol: issue.state == .open ? "circle.dashed" : "checkmark.circle")
                                     .foregroundStyle(issue.state == .open ? palette.success : palette.subtleInk)
                                 Text("#\(issue.number)")
                                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
@@ -514,7 +523,7 @@ struct GitHubIssuesView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(alignment: .top, spacing: 12) {
-                            Image(gattoSymbol: issue.state == .open ? "circle.dotted" : "checkmark.circle")
+                            Image(gattoSymbol: issue.state == .open ? "circle.dashed" : "checkmark.circle")
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(issue.state == .open ? palette.success : palette.subtleInk)
                                 .frame(width: 40, height: 40)
@@ -575,6 +584,8 @@ struct GitHubIssuesView: View {
                                     Label(L10n.text("github.issues.create_branch"), systemImage: "arrow.triangle.branch")
                                 }
                                 .buttonStyle(.bordered)
+                                Button(L10n.text("goal.new")) { createGoal(issue, repository, localURL) }
+                                    .buttonStyle(.bordered)
                                 Button { sendToAgent(issue, repository, localURL) } label: {
                                     Label(L10n.text("github.issues.send_agent"), systemImage: "sparkles")
                                 }
@@ -677,7 +688,7 @@ struct GitHubIssuesView: View {
             }
         } else if collaborationModel.issues.isEmpty {
             InspectorEmptyState(
-                image: "circle.dotted",
+                image: "circle.dashed",
                 titleKey: "github.issues.empty.title",
                 bodyKey: "github.issues.empty.body"
             )
@@ -837,12 +848,12 @@ private extension GitHubIssue {
 private extension GitHubInboxSubjectKind {
     var symbol: String {
         switch self {
-        case .pullRequest: "arrow.triangle.pull"
-        case .issue: "circle.dotted"
+        case .pullRequest: "git.pull.request"
+        case .issue: "circle.dashed"
         case .action: "play.circle"
         case .release: "shippingbox"
         case .discussion: "bubble.left.and.bubble.right"
-        case .other: "bell"
+        case .other: "info.circle"
         }
     }
 }

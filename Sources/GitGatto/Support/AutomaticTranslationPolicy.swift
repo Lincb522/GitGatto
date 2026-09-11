@@ -14,21 +14,18 @@ enum AutomaticTranslationPolicy {
         preferredTarget: CodexTranslationTarget
     ) -> CodexTranslationTarget? {
         let sample = normalizedSample(text)
-        guard sample.unicodeScalars.filter({ CharacterSet.letters.contains($0) }).count >= 12 else {
-            return nil
+        // Inspect paragraphs independently so target-language headings do not hide foreign prose.
+        let passages = sample.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        for passage in passages {
+            let letters = passage.unicodeScalars.filter { CharacterSet.letters.contains($0) }.count
+            let words = passage.split(whereSeparator: \.isWhitespace)
+            let hasNonLatin = passage.unicodeScalars.contains { $0.value > 0x2FF && CharacterSet.letters.contains($0) }
+            guard letters >= 4, hasNonLatin || words.count >= 2 else { continue }
+            let recognizer = NLLanguageRecognizer()
+            recognizer.processString(passage)
+            if recognizer.dominantLanguage != preferredTarget.naturalLanguage { return preferredTarget }
         }
-
-        let recognizer = NLLanguageRecognizer()
-        recognizer.processString(sample)
-        let language = recognizer.dominantLanguage
-        let confidence = language.map {
-            recognizer.languageHypotheses(withMaximum: 1)[$0, default: 0]
-        } ?? 0
-
-        if confidence >= 0.35, language == preferredTarget.naturalLanguage {
-            return nil
-        }
-        return preferredTarget
+        return nil
     }
 
     private static func readableText(fromHTML html: String) -> String {
@@ -38,6 +35,7 @@ enum AutomaticTranslationPolicy {
                 with: " ",
                 options: .regularExpression
             )
+            .replacingOccurrences(of: #"(?i)</(?:p|div|h[1-6]|li|section)>|<br\s*/?>"#, with: "\n", options: .regularExpression)
             .replacingOccurrences(of: #"(?s)<[^>]+>"#, with: " ", options: .regularExpression)
             .replacingOccurrences(of: #"&(?:#\d+|#x[0-9a-fA-F]+|[A-Za-z]+);"#, with: " ", options: .regularExpression)
     }
@@ -49,7 +47,8 @@ enum AutomaticTranslationPolicy {
             options: .regularExpression
         )
         let normalized = withoutFencedCode
-            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"`[^`]*`|https?://[^\s]+"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: #"[^\S\n]+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return String(normalized.prefix(8_000))
     }

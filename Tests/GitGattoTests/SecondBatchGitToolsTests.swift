@@ -433,6 +433,10 @@ actor GitHubAgentReplyGitHubFixture: GitHubServing {
     let repository: GitHubRepository
     let issue: GitHubIssue
     private(set) var publishedBodies: [String] = []
+    private var publicationWaiter: CheckedContinuation<Void, Never>?
+    private var holdsPublication = false
+    func holdPublication() { holdsPublication = true }
+    func finishPublication() { holdsPublication = false; publicationWaiter?.resume(); publicationWaiter = nil }
     let authorized: Bool
     let failsAuthorization: Bool
 
@@ -508,6 +512,7 @@ actor GitHubAgentReplyGitHubFixture: GitHubServing {
     }
     func addIssueComment(_ body: String, to issue: GitHubIssue, in repository: GitHubRepository) async throws -> GitHubIssueComment {
         publishedBodies.append(body)
+        if holdsPublication { await withCheckedContinuation { publicationWaiter = $0 } }
         return GitHubIssueComment(id: 2, author: "maintainer", body: body, createdAt: Date(), updatedAt: Date())
     }
     func pullRequestContext(for pullRequest: GitHubPullRequest, in repository: GitHubRepository) async throws -> GitHubPullRequestContext {

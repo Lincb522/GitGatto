@@ -19,6 +19,8 @@ final class DeveloperToolsObservation: ObservableObject {
             changes += [
                 model.$statuses.map { $0.mapValues(CatalogStatus.init) }
                     .removeDuplicates().dropFirst().map { _ in () }.eraseToAnyPublisher(),
+                model.$taskRecords.removeDuplicates().dropFirst().map { _ in () }.eraseToAnyPublisher(),
+                model.$taskPersistenceError.removeDuplicates().dropFirst().map { _ in () }.eraseToAnyPublisher(),
                 model.$query.removeDuplicates().dropFirst().map { _ in () }.eraseToAnyPublisher(),
                 model.$category.removeDuplicates().dropFirst().map { _ in () }.eraseToAnyPublisher(),
                 model.$selectedTool.removeDuplicates().dropFirst().map { _ in () }.eraseToAnyPublisher(),

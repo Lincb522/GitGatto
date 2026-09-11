@@ -140,6 +140,10 @@ struct DeveloperToolDetailView: View {
                             developerToolUpdateStatus(status, palette: palette)
                         }
 
+                        DevelopmentToolInstallScopeView(tool: tool)
+                        if let receipt = developerTools.taskRecords.last(where: { $0.toolID == tool.id })?.receipt {
+                            DevelopmentToolReceiptView(receipt: receipt)
+                        }
                         developerToolInstallationStatus(tool, status: status, palette: palette)
                     }
                     .padding(24)

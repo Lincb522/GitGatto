@@ -2,8 +2,10 @@ import SwiftUI
 
 struct DownloadCenterView: View {
     @ObservedObject var manager: AppDownloadManager
+    var tools: DeveloperToolsViewModel? = nil
     @Environment(\.colorScheme) private var colorScheme
     @State private var pendingInstallID: UUID?
+    @State private var showsToolTasks = false
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -32,7 +34,15 @@ struct DownloadCenterView: View {
 
             Rectangle().fill(palette.divider).frame(height: 1)
 
-            if manager.records.isEmpty {
+            if tools != nil {
+                Picker("", selection: $showsToolTasks) {
+                    Text(L10n.text("downloads.title")).tag(false)
+                    Text(L10n.text("developer_tools.tasks.title")).tag(true)
+                }.pickerStyle(.segmented).labelsHidden().padding(12)
+            }
+            if showsToolTasks, let tools {
+                ScrollView { DeveloperToolTaskList(model: tools).padding(14) }
+            } else if manager.records.isEmpty {
                 VStack(spacing: 10) {
                     Image(gattoSymbol: "tray.and.arrow.down")
                         .font(.system(size: 24, weight: .medium))
@@ -54,6 +64,7 @@ struct DownloadCenterView: View {
             }
         }
         .background(palette.background)
+        .onAppear { showsToolTasks = manager.records.isEmpty && tools != nil }
         .confirmationDialog(
             L10n.text("installer.confirm.start.title"),
             isPresented: Binding(

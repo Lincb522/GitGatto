@@ -18,6 +18,10 @@ final class DeveloperToolsViewModel: ObservableObject {
     private let updateChecker: any DevelopmentToolUpdateChecking
     private let environmentConfigurator: any DevelopmentToolEnvironmentConfiguring
     private let systemAuthorizer: any DevelopmentToolSystemAuthorizing
+    @Published private(set) var taskRecords: [DevelopmentToolTaskRecord] = []
+    @Published private(set) var taskPersistenceError: String?
+    private let taskStore: (any DevelopmentToolTaskStoring)?
+    private var taskStoreLoaded = false
     private let maximumConcurrentOperations: Int
     private var operationTasks: [String: Task<Void, Never>] = [:]
     private var operationInstallers: [String: any CodexServing] = [:]
@@ -34,7 +38,8 @@ final class DeveloperToolsViewModel: ObservableObject {
         updateChecker: any DevelopmentToolUpdateChecking = DevelopmentToolUpdateService(),
         environmentConfigurator: any DevelopmentToolEnvironmentConfiguring = DevelopmentToolEnvironmentConfigurator(),
         systemAuthorizer: any DevelopmentToolSystemAuthorizing = DevelopmentToolSystemAuthorizer(),
-        maximumConcurrentOperations: Int = 3
+        maximumConcurrentOperations: Int = 3,
+        taskStore: (any DevelopmentToolTaskStoring)? = nil
     ) {
         if let installer {
             installerFactory = { installer }
@@ -46,6 +51,18 @@ final class DeveloperToolsViewModel: ObservableObject {
         self.environmentConfigurator = environmentConfigurator
         self.systemAuthorizer = systemAuthorizer
         self.maximumConcurrentOperations = max(1, maximumConcurrentOperations)
+        self.taskStore = taskStore
+        do {
+            taskRecords = try taskStore?.load() ?? []
+            taskStoreLoaded = true
+            for index in taskRecords.indices where taskRecords[index].needsReview {
+                taskRecords[index].state = .interrupted
+                statuses[taskRecords[index].toolID] = DevelopmentToolStatus(
+                    state: .actionRequired, detail: L10n.text("developer_tools.tasks.interrupted"),
+                    retryOperation: taskRecords[index].operation
+                )
+            }
+        } catch { taskPersistenceError = L10n.text("developer_tools.tasks.storageFailed") }
         selectedTool = DevelopmentTool.catalog.first
 
 #if DEBUG
@@ -55,6 +72,41 @@ final class DeveloperToolsViewModel: ObservableObject {
             applyPreviewState()
         }
 #endif
+    }
+
+    func resumeTask(_ record: DevelopmentToolTaskRecord) {
+        guard record.needsReview,
+              let current = taskRecords.first(where: { $0.id == record.id }), current.needsReview,
+              let tool = DevelopmentTool.catalog.first(where: { $0.id == record.toolID }) else { return }
+        enqueue(record.operation, tool: tool, requiresRevalidation: true, recordID: record.id)
+    }
+
+    func dismissInterruptedTask(_ record: DevelopmentToolTaskRecord) {
+        guard taskRecords.first(where: { $0.id == record.id })?.state == .interrupted else { return }
+        updateRecord(id: record.id, state: .cancelled)
+    }
+
+    private func updateRecord(id: UUID, state: DevelopmentToolTaskRecord.State) {
+        guard let index = taskRecords.firstIndex(where: { $0.id == id }) else { return }
+        taskRecords[index].state = state
+        taskRecords[index].updatedAt = Date()
+        persistTasks()
+    }
+
+    @discardableResult
+    private func persistTasks() -> Bool {
+        guard taskStoreLoaded else { return false }
+        let pending = taskRecords.filter(\.needsReview)
+        let history = taskRecords.filter { !$0.needsReview }.suffix(200)
+        taskRecords = (pending + history).sorted { $0.createdAt < $1.createdAt }
+        do {
+            try taskStore?.save(taskRecords)
+            taskPersistenceError = nil
+            return true
+        } catch {
+            taskPersistenceError = L10n.text("developer_tools.tasks.storageFailed")
+            return false
+        }
     }
 
     var filteredTools: [DevelopmentTool] {
@@ -282,12 +334,14 @@ final class DeveloperToolsViewModel: ObservableObject {
 
     func retry(_ tool: DevelopmentTool) {
         let status = status(for: tool)
-        enqueue(retryOperation(for: status), tool: tool)
+        let interrupted = taskRecords.last { $0.toolID == tool.id && $0.state == .interrupted }
+        enqueue(retryOperation(for: status), tool: tool, requiresRevalidation: true, recordID: interrupted?.id)
     }
 
     func cancel(_ tool: DevelopmentTool) {
         if let index = queuedOperations.firstIndex(where: { $0.toolID == tool.id }) {
-            queuedOperations.remove(at: index)
+            let item = queuedOperations.remove(at: index)
+            updateRecord(id: item.id, state: .cancelled)
             restoreAfterCancellation(tool)
             scheduleQueuedOperations()
             return
@@ -315,7 +369,9 @@ final class DeveloperToolsViewModel: ObservableObject {
     private func enqueue(
         _ operation: DevelopmentToolOperation,
         tool: DevelopmentTool,
-        authorizationRequest: DevelopmentToolSystemAuthorizationRequest? = nil
+        authorizationRequest: DevelopmentToolSystemAuthorizationRequest? = nil,
+        requiresRevalidation: Bool = false,
+        recordID: UUID? = nil
     ) {
         guard !isQueuedOrRunning(tool) else { return }
         let startingStatus = statuses[tool.id] ?? DevelopmentToolStatus()
@@ -323,10 +379,16 @@ final class DeveloperToolsViewModel: ObservableObject {
         if operation == .upgrade, packageName == nil { return }
 
         let item = DevelopmentToolQueueItem(
-            toolID: tool.id,
-            operation: operation,
-            authorizationRequest: authorizationRequest
+            id: recordID ?? UUID(), toolID: tool.id, operation: operation,
+            requiresRevalidation: requiresRevalidation, authorizationRequest: authorizationRequest
         )
+        if let index = taskRecords.firstIndex(where: { $0.id == item.id }) {
+            taskRecords[index].state = .queued
+        } else {
+            taskRecords.append(DevelopmentToolTaskRecord(id: item.id, toolID: tool.id, operation: operation,
+                createdAt: item.enqueuedAt, updatedAt: item.enqueuedAt, state: .queued))
+        }
+        guard persistTasks() else { return }
         operationRevisions[tool.id, default: 0] += 1
         queuedOperations.append(item)
 
@@ -371,6 +433,7 @@ final class DeveloperToolsViewModel: ObservableObject {
 
             let installer = installerFactory()
             activeOperations[tool.id] = item
+            updateRecord(id: item.id, state: .running)
             operationInstallers[tool.id] = installer
             operationTasks[tool.id] = Task { [weak self] in
                 guard let self else { return }
@@ -380,7 +443,8 @@ final class DeveloperToolsViewModel: ObservableObject {
                     packageName: packageName,
                     startingStatus: startingStatus,
                     authorizationRequest: item.authorizationRequest,
-                    installer: installer
+                    installer: installer,
+                    requiresRevalidation: item.requiresRevalidation
                 )
                 if Task.isCancelled {
                     self.restoreAfterCancellation(tool)
@@ -396,7 +460,8 @@ final class DeveloperToolsViewModel: ObservableObject {
         packageName: String?,
         startingStatus: DevelopmentToolStatus,
         authorizationRequest: DevelopmentToolSystemAuthorizationRequest?,
-        installer: any CodexServing
+        installer: any CodexServing,
+        requiresRevalidation: Bool
     ) async {
         let probe = self.probe
         let checker = self.updateChecker
@@ -415,13 +480,26 @@ final class DeveloperToolsViewModel: ObservableObject {
                 hasAuthorizedSystemRepair = true
             }
 
-            var result = try await runAgentOperation(
-                operation,
-                tool: tool,
-                packageName: packageName,
-                startingStatus: startingStatus,
-                installer: installer
-            )
+            let before = requiresRevalidation ? await probe.probe(tool) : nil
+            var configurationOnly = operation == .install && before?.isInstalled == true
+            if operation == .upgrade, before?.isInstalled == true {
+                let update = await checker.checkUpdates(for: [tool])[tool.id]
+                guard update?.availability == .current || update?.availability == .available else {
+                    throw DevelopmentToolTaskError.updateNotVerified
+                }
+                configurationOnly = update?.availability == .current
+            }
+            var result: CodexRunResult
+            if configurationOnly {
+                result = try await installer.configureDevelopmentTool(tool) { [weak self] progress in
+                    await self?.apply(progress, operation: operation, to: tool)
+                }
+            } else {
+                result = try await runAgentOperation(
+                    operation, tool: tool, packageName: packageName,
+                    startingStatus: startingStatus, installer: installer
+                )
+            }
 
             try Task.checkCancellation()
             var discovery = await probe.probe(tool)
@@ -481,6 +559,20 @@ final class DeveloperToolsViewModel: ObservableObject {
                 : [:]
             let updateResult = updateResults[tool.id]
 
+            if let id = activeOperations[tool.id]?.id, let index = taskRecords.firstIndex(where: { $0.id == id }) {
+                taskRecords[index].executablePath = verification.executableURL?.path
+                taskRecords[index].version = verification.version
+                let profilePath: String?
+                if case let .updated(url) = environmentConfiguration { profilePath = url.path }
+                else { profilePath = nil }
+                taskRecords[index].receipt = .init(executableVerified: verification.isInstalled,
+                    verificationDetail: verification.failureDetail,
+                    profilePath: profilePath,
+                    environmentState: environmentConfigurationError != nil ? "failed" : (!discovery.isInstalled || discovery.executableURL == nil) ? "unverified" : profilePath == nil ? "unchanged" : "updated",
+                    environmentError: environmentConfigurationError.map { ProjectCommandOutput.redact($0.localizedDescription) },
+                    agentConfigurationComplete: !result.requiresUserAction)
+
+            }
             var completed = statuses[tool.id] ?? DevelopmentToolStatus()
             completed.operation = nil
             completed.phase = nil
@@ -584,6 +676,12 @@ final class DeveloperToolsViewModel: ObservableObject {
     }
 
     private func finishOperation(for tool: DevelopmentTool) {
+        if let id = activeOperations[tool.id]?.id {
+            let status = statuses[tool.id]
+            let state: DevelopmentToolTaskRecord.State = operationTasks[tool.id]?.isCancelled == true ? .cancelled
+                : status?.state == .installed ? .completed : status?.state == .failed ? .failed : .needsAction
+            updateRecord(id: id, state: state)
+        }
         operationTasks[tool.id] = nil
         operationInstallers[tool.id] = nil
         activeOperations[tool.id] = nil

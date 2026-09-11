@@ -6,6 +6,40 @@ import Testing
 
 @Suite("Repository disaster recovery", .serialized)
 struct RepositoryBackupServiceTests {
+    @Test("Inspecting and exporting selected backup files never overwrites the source or retained backups")
+    func inspectAndExportFiles() async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let backing = RepositoryBackupService(rootURL: fixture.root.appendingPathComponent("backups"))
+        let backup = try #require(await backing.createBackup(for: fixture.repository, reason: .manual, policy: .standard))
+        let before = try await backing.loadBackups()
+        try "current edit\n".write(to: fixture.repository.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        try FileManager.default.removeItem(at: fixture.repository.appendingPathComponent("deleted.txt"))
+        let inspection = RepositoryBackupInspectionService(backups: backing)
+        let files = try await inspection.prepare(backup)
+        #expect(Set(files.map(\.path)) == ["tracked.txt", "deleted.txt"])
+        let diff = try await inspection.compare(path: "tracked.txt")
+        #expect(diff.lines.contains { $0.text == "-base" })
+        #expect(diff.lines.contains { $0.text == "+current edit" })
+        let deleted = try await inspection.compare(path: "deleted.txt")
+        #expect(deleted.lines.contains { $0.text == "-delete me" })
+        let destination = fixture.root.appendingPathComponent("selected")
+        let exported = try await inspection.export(paths: ["tracked.txt"], to: destination)
+        #expect(try String(contentsOf: exported.appendingPathComponent("tracked.txt"), encoding: .utf8) == "base\n")
+        #expect(!FileManager.default.fileExists(atPath: exported.appendingPathComponent("deleted.txt").path))
+        await #expect(throws: RepositoryBackupError.destinationExists) {
+            try await inspection.export(paths: ["tracked.txt"], to: destination)
+        }
+        await #expect(throws: BackupInspectionError.chooseOutsideRepository) {
+            try await inspection.export(paths: ["tracked.txt"], to: fixture.repository.appendingPathComponent("new"))
+        }
+        await #expect(throws: (any Error).self) { try await inspection.compare(path: "../tracked.txt") }
+        try await inspection.close()
+        await #expect(throws: RepositoryBackupError.backupMissing) { try await inspection.compare(path: "tracked.txt") }
+        #expect(try String(contentsOf: fixture.repository.appendingPathComponent("tracked.txt"), encoding: .utf8) == "current edit\n")
+        #expect(try await backing.loadBackups() == before)
+    }
+
     @MainActor
     @Test("External repository deletion keeps a restorable pre-operation baseline")
     func protectsRepositoryFromExternalDeletion() async throws {

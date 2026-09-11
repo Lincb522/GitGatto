@@ -13,7 +13,6 @@ struct GitHubWorkspaceView: View {
     @State private var isRepositoryHeaderCollapsed = false
     @State private var githubFileQuery = ""
     @State private var readmeCardMovesBackward = false
-    @State private var workspaceMode: GitHubWorkspaceMode = .repositories
     @StateObject private var syncModel = RepositorySyncViewModel()
     @StateObject private var collaborationModel = GitHubCollaborationViewModel()
 
@@ -36,15 +35,15 @@ struct GitHubWorkspaceView: View {
             loadWorkspaceMode()
         }
         .onChange(of: model.localRepositories) { _, repositories in
-            if workspaceMode == .synchronization {
+            if model.githubWorkspaceMode == .synchronization {
                 syncModel.load(repositories: repositories)
             }
         }
         .onChange(of: model.githubAccountRepositories) { _, repositories in
             collaborationModel.configure(repositories: repositories)
-            if workspaceMode == .issues { collaborationModel.loadIssues() }
+            if model.githubWorkspaceMode == .issues { collaborationModel.loadIssues() }
         }
-        .onChange(of: workspaceMode) { _, _ in
+        .onChange(of: model.githubWorkspaceMode) { _, _ in
             loadWorkspaceMode()
         }
     }
@@ -55,17 +54,17 @@ struct GitHubWorkspaceView: View {
                 .emeraldSurface(.elevated, cornerRadius: 16)
             Rectangle().fill(palette.divider).frame(height: 1)
 
-            if workspaceMode == .synchronization {
+            if model.githubWorkspaceMode == .synchronization {
                 RepositorySyncWorkspaceView(syncModel: syncModel) { repositoryURL in
                     Task { await model.openRepository(repositoryURL) }
                 }
             } else if model.githubAvailability.state == .unavailable {
                 unavailableState(palette)
-            } else if workspaceMode == .inbox {
+            } else if model.githubWorkspaceMode == .inbox {
                 GitHubInboxView(collaborationModel: collaborationModel) { url in
                     inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
                 }
-            } else if workspaceMode == .issues {
+            } else if model.githubWorkspaceMode == .issues {
                 GitHubIssuesView(
                     collaborationModel: collaborationModel,
                     openURL: { url in
@@ -73,7 +72,15 @@ struct GitHubWorkspaceView: View {
                     },
                     localRepositoryURL: localRepositoryURL,
                     createBranch: createIssueBranch,
-                    sendToAgent: sendIssueToAgent
+                    sendToAgent: sendIssueToAgent,
+                    createGoal: { issue, repository, localURL in
+                        Task {
+                            await model.openRepository(localURL)
+                            await model.prepareGoalFromContext(title: issue.title,
+                                context: "#\(issue.number) \(issue.title)\n\(issue.webURL.absoluteString)\n\(issue.body ?? "")",
+                                remoteName: repository.fullName)
+                        }
+                    }
                 )
             } else {
                 Group {
@@ -193,13 +200,13 @@ struct GitHubWorkspaceView: View {
                     Menu {
                         ForEach(GitHubWorkspaceMode.allCases) { mode in
                             Button(L10n.text("github.workspace.mode.\(mode.rawValue)")) {
-                                workspaceMode = mode
+                                model.githubWorkspaceMode = mode
                             }
                         }
                     } label: {
                         HStack(spacing: 6) {
-                            Image(gattoSymbol: workspaceMode.symbol)
-                            Text(L10n.text("github.workspace.mode.\(workspaceMode.rawValue)"))
+                            Image(gattoSymbol: model.githubWorkspaceMode.symbol)
+                            Text(L10n.text("github.workspace.mode.\(model.githubWorkspaceMode.rawValue)"))
                             Image(gattoSymbol: "chevron.down")
                                 .font(.system(size: 8, weight: .bold))
                         }
@@ -208,7 +215,7 @@ struct GitHubWorkspaceView: View {
                     .menuStyle(.borderlessButton)
                     .fixedSize()
                 } else {
-                    Picker("", selection: $workspaceMode) {
+                    Picker("", selection: $model.githubWorkspaceMode) {
                         ForEach(GitHubWorkspaceMode.allCases) { mode in
                             Text(L10n.text("github.workspace.mode.\(mode.rawValue)"))
                                 .tag(mode)
@@ -221,7 +228,7 @@ struct GitHubWorkspaceView: View {
 
                 Spacer(minLength: 6)
 
-                if workspaceMode == .repositories {
+                if model.githubWorkspaceMode == .repositories {
                     Menu {
                         ForEach(GitHubSearchScope.allCases) { scope in
                             Button(L10n.text("github.search.scope.\(scope.rawValue)")) {
@@ -1092,68 +1099,18 @@ struct GitHubWorkspaceView: View {
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(!model.canApplyReadmeRewrite)
-            } else if model.isTranslatingGitHubReadme {
-                Button {
-                    model.cancelGitHubReadmeTranslation()
-                } label: {
-                    DocumentTranslationActionLabel(
-                        title: githubReadmeTranslationStatus,
-                        activeTitle: githubReadmeTranslationStatus,
-                        isActive: true,
-                        completionID: model.githubReadmeTranslationCompletionID,
-                        showsCancelIndicator: true
-                    )
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                .help(L10n.text("github.action.cancel"))
             } else {
-                if !model.availableGitHubReadmeTranslationTargets.isEmpty {
-                    HStack(spacing: 2) {
-                        translationVersionButton(
-                            title: L10n.text("github.readme.original"),
-                            selected: model.githubReadmeTranslationTarget == nil,
-                            palette: palette
-                        ) {
-                            readmeCardMovesBackward = true
-                            model.showOriginalGitHubReadme()
-                        }
-                        ForEach(model.availableGitHubReadmeTranslationTargets) { target in
-                            translationVersionButton(
-                                title: L10n.text("codex.translate.short.\(target.rawValue)"),
-                                selected: model.githubReadmeTranslationTarget == target,
-                                palette: palette
-                            ) {
-                                readmeCardMovesBackward = false
-                                model.showGitHubReadmeTranslation(target)
-                            }
-                        }
-                    }
-                    .padding(2)
-                    .background(palette.raisedSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                }
-
-                MotionLabelMenu(
-                    accessibilityLabel: L10n.text("codex.action.translate"),
-                    isDisabled: !model.canTranslateGitHubReadme
-                ) {
-                    ForEach(CodexTranslationTarget.allCases) { target in
-                        Button(L10n.text("codex.translate.\(target.rawValue)")) {
-                            model.translateGitHubReadme(to: target)
-                        }
-                    }
-                } label: {
-                    DocumentTranslationActionLabel(
-                        title: L10n.text("codex.action.translate"),
-                        activeTitle: L10n.text("github.readme.translating"),
-                        isActive: false,
-                        completionID: model.githubReadmeTranslationCompletionID,
-                        showsInitialCompletion: true
-                    )
-                    .font(.system(size: 10.5, weight: .semibold))
-                }
-
-                readmeAgentMenu(titleKey: "github.readme.agent")
+                DocumentTranslationControls(activeTarget: model.githubReadmeTranslationTarget,
+                    availableTargets: model.availableGitHubReadmeTranslationTargets,
+                    preferredTarget: model.githubReadmeLastTranslationTarget ?? model.codexTranslationTarget,
+                    isTranslating: model.isTranslatingGitHubReadme,
+                    isDisabled: !model.canTranslateGitHubReadme && !model.isTranslatingGitHubReadme,
+                    error: model.githubReadmeTranslationError, completionID: model.githubReadmeTranslationCompletionID,
+                    showOriginal: { readmeCardMovesBackward = true; model.showOriginalGitHubReadme() },
+                    showTranslation: { readmeCardMovesBackward = false; model.showGitHubReadmeTranslation($0) },
+                    translate: model.translateGitHubReadme, cancel: model.cancelGitHubReadmeTranslation,
+                    progressTitle: model.githubReadmeTranslationProgress.map { L10n.format("github.readme.translating_progress", $0.current, $0.total) })
+                if !model.isTranslatingGitHubReadme { readmeAgentMenu(titleKey: "github.readme.agent") }
             }
         }
         .padding(.horizontal, 14)
@@ -1181,34 +1138,6 @@ struct GitHubWorkspaceView: View {
         }
     }
 
-    private var githubReadmeTranslationStatus: String {
-        guard let progress = model.githubReadmeTranslationProgress else {
-            return L10n.text("github.readme.translating")
-        }
-        return L10n.format(
-            "github.readme.translating_progress",
-            progress.current,
-            progress.total
-        )
-    }
-
-    private func translationVersionButton(
-        title: String,
-        selected: Bool,
-        palette: AppPalette,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 10.5, weight: .semibold))
-                .foregroundStyle(selected ? palette.primary : palette.mutedInk)
-                .padding(.horizontal, 8)
-                .frame(height: 24)
-                .background(selected ? palette.primarySoft : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
 
     private func codeBrowser(_ repository: GitHubRepository, palette: AppPalette) -> some View {
         HSplitView {
@@ -1416,7 +1345,7 @@ struct GitHubWorkspaceView: View {
     }
 
     private func loadWorkspaceMode() {
-        switch workspaceMode {
+        switch model.githubWorkspaceMode {
         case .repositories:
             break
         case .synchronization:
@@ -1805,8 +1734,8 @@ private extension GitHubWorkspaceMode {
         switch self {
         case .repositories: "square.grid.2x2"
         case .synchronization: "arrow.triangle.2.circlepath"
-        case .inbox: "tray"
-        case .issues: "circle.dotted"
+        case .inbox: "tray.and.arrow.down"
+        case .issues: "circle.dashed"
         }
     }
 }

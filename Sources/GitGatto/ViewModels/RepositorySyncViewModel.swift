@@ -8,6 +8,7 @@ final class RepositorySyncViewModel: ObservableObject {
     @Published private(set) var lastResults: [String: RepositoryBatchResult] = [:]
     @Published var selectedRepositoryIDs = Set<String>()
     @Published private(set) var isRefreshing = false
+    @Published private(set) var isCancelling = false
     @Published private(set) var activeBatchOperation: RepositoryBatchOperation?
 
     private let service: any RepositorySyncServing
@@ -15,6 +16,7 @@ final class RepositorySyncViewModel: ObservableObject {
     private var operationTask: Task<Void, Never>?
     private var loadedRepositoryIDs = Set<String>()
     private var refreshRequestID: UUID?
+    private var batchID: UUID?
 
     init(service: any RepositorySyncServing = RepositorySyncService()) {
         self.service = service
@@ -25,6 +27,10 @@ final class RepositorySyncViewModel: ObservableObject {
             $0.repositoryURL.lastPathComponent.localizedStandardCompare($1.repositoryURL.lastPathComponent)
                 == .orderedAscending
         }
+    }
+
+    var failedOperations: [RepositoryBatchOperation] {
+        RepositoryBatchOperation.allCases.filter { operation in failedResults.contains { $0.operation == operation } }
     }
 
     func load(repositories: [URL], force: Bool = false) {
@@ -79,21 +85,32 @@ final class RepositorySyncViewModel: ObservableObject {
 
         operationTask?.cancel()
         activeBatchOperation = operation
-        lastResults = lastResults.filter { $0.value.operation != operation }
+        let id = UUID()
+        batchID = id
+        let selectedIDs = Set(selected.map(\.id))
+        lastResults = lastResults.filter { $0.value.operation != operation || !selectedIDs.contains($0.value.repositoryURL.standardizedFileURL.path) }
         let service = self.service
         operationTask = Task {
+            defer {
+                if batchID == id {
+                    batchID = nil
+                    activeBatchOperation = nil
+                    operationTask = nil
+                    isCancelling = false
+                    runningRepositories.removeAll()
+                }
+            }
             let values = await Self.boundedMap(selected, limit: 3) { status in
-                await MainActor.run { self.runningRepositories[status.id] = operation }
+                await MainActor.run { if self.batchID == id && !self.isCancelling { self.runningRepositories[status.id] = operation } }
                 let result = await service.perform(operation, in: status.repositoryURL)
                 await MainActor.run {
+                    guard self.batchID == id, !self.isCancelling else { return }
                     self.runningRepositories[status.id] = nil
                     self.lastResults[result.id] = result
                 }
                 return result
             }
-            guard !Task.isCancelled else { return }
-            activeBatchOperation = nil
-            operationTask = nil
+            guard !Task.isCancelled, batchID == id else { return }
             load(repositories: statuses.map(\.repositoryURL), force: true)
             if values.allSatisfy(\.succeeded) {
                 selectedRepositoryIDs.removeAll()
@@ -101,18 +118,16 @@ final class RepositorySyncViewModel: ObservableObject {
         }
     }
 
-    func retryFailures() {
-        guard let operation = failedResults.first?.operation,
-              failedResults.allSatisfy({ $0.operation == operation }) else { return }
-        selectedRepositoryIDs = Set(failedResults.map { $0.repositoryURL.standardizedFileURL.path })
+    func retryFailures(_ operation: RepositoryBatchOperation) {
+        guard activeBatchOperation == nil else { return }
+        selectedRepositoryIDs = Set(failedResults.filter { $0.operation == operation }.map { $0.repositoryURL.standardizedFileURL.path })
         run(operation)
     }
 
     func cancel() {
+        guard operationTask != nil, !isCancelling else { return }
+        isCancelling = true
         operationTask?.cancel()
-        operationTask = nil
-        activeBatchOperation = nil
-        runningRepositories.removeAll()
     }
 
     private static func compareStatus(_ lhs: RepositorySyncStatus, _ rhs: RepositorySyncStatus) -> Bool {
@@ -147,6 +162,7 @@ final class RepositorySyncViewModel: ObservableObject {
         return await withTaskGroup(of: (Int, Output).self) { group in
             var iterator = values.enumerated().makeIterator()
             for _ in 0..<min(max(1, limit), values.count) {
+                guard !Task.isCancelled else { break }
                 if let (index, value) = iterator.next() {
                     group.addTask { (index, await transform(value)) }
                 }
@@ -154,7 +170,7 @@ final class RepositorySyncViewModel: ObservableObject {
             var results = Array<Output?>(repeating: nil, count: values.count)
             while let (index, output) = await group.next() {
                 results[index] = output
-                if let (nextIndex, nextValue) = iterator.next() {
+                if !Task.isCancelled, let (nextIndex, nextValue) = iterator.next() {
                     group.addTask { (nextIndex, await transform(nextValue)) }
                 }
             }

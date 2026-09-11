@@ -4,6 +4,10 @@ struct DiffInspectorView: View {
     let change: WorkingTreeChange?
     let document: DiffDocument?
     let previewURL: URL?
+    var onStageSelection: ((Set<UUID>, DiffDocument, WorkingTreeChange) -> Void)? = nil
+    var onPlanSelection: ((Set<UUID>, DiffDocument, WorkingTreeChange) -> Void)? = nil
+    var isEditingIndex = false
+    @State private var selectedLineIDs: Set<UUID> = []
 
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
@@ -105,7 +109,21 @@ struct DiffInspectorView: View {
                     fileName: change.path
                 )
             } else if let document {
-                DiffCodeView(document: document)
+                if let change, onStageSelection != nil, PartialDiffPatch.supports(document) {
+                    DiffSelectionActions(count: selectedLineIDs.count, isStaged: change.isStaged,
+                        isBusy: isEditingIndex, onStage: { onStageSelection?(selectedLineIDs, document, change) },
+                        onPlan: onPlanSelection.map { action in { action(selectedLineIDs, document, change) } })
+                    DiffCodeView(document: document, selectedLineIDs: selectedLineIDs, onToggleLine: { line in
+                        guard !isEditingIndex else { return }
+                        if line.kind == .hunk, let start = document.lines.firstIndex(where: { $0.id == line.id }) {
+                            let following = document.lines.dropFirst(start + 1).prefix { $0.kind != .hunk }
+                            let ids = Set(following.filter { $0.kind == .addition || $0.kind == .deletion }.map(\.id))
+                            if ids.isSubset(of: selectedLineIDs) { selectedLineIDs.subtract(ids) }
+                            else { selectedLineIDs.formUnion(ids) }
+                        } else if !selectedLineIDs.insert(line.id).inserted { selectedLineIDs.remove(line.id) }
+                    })
+                    .disabled(isEditingIndex)
+                } else { DiffCodeView(document: document) }
             } else {
                 GattoLoadingState(text: L10n.text("loading.generic"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -113,8 +131,11 @@ struct DiffInspectorView: View {
             }
         }
         .background(theme == .folio ? palette.surface : palette.background)
+        .onChange(of: document?.lines.first?.id) { _, _ in selectedLineIDs = [] }
+        .onChange(of: document?.sourceText) { _, _ in selectedLineIDs = [] }
         .onChange(of: change?.id) { _, _ in
             presentation = .preview
+            selectedLineIDs = []
         }
     }
 
@@ -135,6 +156,8 @@ struct DiffInspectorView: View {
 struct DiffCodeView: View {
     let document: DiffDocument
     var onSelectLine: ((DiffLine) -> Void)? = nil
+    var selectedLineIDs: Set<UUID> = []
+    var onToggleLine: ((DiffLine) -> Void)? = nil
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
@@ -159,7 +182,9 @@ struct DiffCodeView: View {
                                     fileName: document.path,
                                     theme: theme,
                                     palette: palette,
-                                    onSelect: onSelectLine
+                                    onSelect: onSelectLine,
+                                    isSelected: selectedLineIDs.contains(line.id),
+                                    onToggle: onToggleLine
                                 )
                             }
                         }
@@ -186,10 +211,21 @@ private struct DiffLineView: View {
     let theme: AppVisualTheme
     let palette: AppPalette
     let onSelect: ((DiffLine) -> Void)?
+    var isSelected = false
+    var onToggle: ((DiffLine) -> Void)? = nil
     @State private var hovering = false
 
     var body: some View {
         HStack(spacing: 0) {
+            if let onToggle, [.addition, .deletion, .hunk].contains(line.kind) {
+                Button { onToggle(line) } label: {
+                    Image(gattoSymbol: line.kind == .hunk ? "square.stack.3d.up" : (isSelected ? "checkmark.square.fill" : "square"))
+                        .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
+                        .frame(width: 28, height: 22)
+                }.buttonStyle(.plain)
+                    .accessibilityLabel(L10n.text(line.kind == .hunk ? "diff.partial.hunk" : "diff.partial.line"))
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+            } else if onToggle != nil { Color.clear.frame(width: 28) }
             Text(statusSymbol)
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .foregroundStyle(statusColor(palette))
@@ -382,5 +418,39 @@ struct InspectorEmptyState: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(palette.background)
+    }
+}
+
+struct DiffSelectionActions: View {
+    let count: Int
+    let isStaged: Bool
+    let isBusy: Bool
+    let onStage: () -> Void
+    let onPlan: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            summary
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { actions }.fixedSize()
+                VStack(alignment: .leading, spacing: 10) { actions }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(10)
+    }
+
+    private var summary: some View {
+        Text(L10n.format("diff.partial.selected", count)).font(.caption).fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder private var actions: some View {
+        if let onPlan {
+            Button(L10n.text("diff.partial.plan"), action: onPlan)
+                .buttonStyle(SecondaryButtonStyle()).disabled(count == 0 || isBusy)
+        }
+        Button(L10n.text(isStaged ? "diff.partial.unstage" : "diff.partial.stage"), action: onStage)
+            .buttonStyle(PrimaryButtonStyle()).disabled(count == 0 || isBusy)
     }
 }

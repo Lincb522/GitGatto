@@ -394,7 +394,7 @@
 "help.goals.create.1" = "افتح مستودعًا واختر إجراءً من الأهداف، وأدخل رسالة إيداع أو رقم إصدار ثم ابدأ. يمكن تشغيل هدف واحد لكل مستودع في الوقت نفسه.";
 "help.goals.create.2" = "صف النتيجة المطلوبة للهدف المخصص. يقترح Agent خطوات بتحليل للقراءة فقط. راجع نطاق العمل ثم ابدأ.";
 "help.goals.create.3" = "الأهداف السريعة تغطي الالتزام والدفع، GitHub التسليم، والإفراج الكامل. GitHub التوصيل يتطلب فرع غير الفرع الافتراضي.";
-"help.goals.create.4" = "يسجل الهدف مستودعه وفرعه والتزامه الأساسي وخطواته وأدلته. تبديل المستودعات لا يخلط بين حالتها.";
+"help.goals.create.4" = "يسجل الهدف مستودعه وفرعه والتزامه الأساسي وخطواته وأدلته. تبديل المستودعات لا يخلط بين حالتها. يمكن إنشاء هدف من التغييرات أو Issue أو PR أو فحص فاشل. اختر أمر مشروع محفوظًا للتحقق قبل الإيداع.";
 "help.goals.execute.title" = "التشغيل والاسترداد";
 "help.goals.execute.1" = "تنفذ الخطوات المصرح بها بالتتابع وتقرأ حالة Git وGitHub بعد كل خطوة. ينتظر الدمج والنشر والتثبيت تأكيدك.";
 "help.goals.execute.2" = "الخطوة الفاشلة تحتفظ بدليلها الأصلي وتتوقف عند \"تحتاج إلى الاهتمام\". تبقى الخطوات المكتملة حتى بعد إعادة تشغيل التطبيق.";
@@ -456,7 +456,7 @@
 "help.translation.channel.title" = "حارة التنفيذ المستقلة";
 "help.translation.channel.1" = "الترجمة CLI والمشروع Agent لهما تكوين وعمليات منفصلة، لذلك تظل الترجمة متاحة أثناء عمل Agent.";
 "help.translation.channel.2" = "تكتشف الترجمة التلقائية النص المقروء وتستخدم اللغة المحددة. قد يبقى النص بلغتها أصلاً أو القصير جداً دون تغيير. عند عدم الاستجابة راجع المحرك واللغة في الإعدادات.";
-"help.translation.channel.3" = "يمكن إيقاف الترجمة ولها مهلة زمنية؛ الفشل لا يؤدي إلى حذف الترجمات المحفوظة بالفعل.";
+"help.translation.channel.3" = "يمكن إيقاف الترجمة ولها مهلة زمنية؛ الفشل لا يؤدي إلى حذف الترجمات المحفوظة بالفعل. تستخدم إعادة المحاولة لغة الطلب الفاشل. يبقى النص الأصلي متاحًا عند فشل الترجمة.";
 
 "help.topic.cliSettings.title" = "الإعدادات";
 "help.topic.cliSettings.summary" = "تكوين واجهة التطبيق ومساحة عمل بدء التشغيل والمراقبة المباشرة Git وAgent والترجمة من نافذة واحدة.";
@@ -481,7 +481,7 @@
 "help.shortcuts.actions.title" = "الإجراءات الشائعة";
 "help.shortcuts.actions.1" = "⌘O: افتح مستودعًا محليًا؛ ⌘R: قم بتحديث المستودع الحالي.";
 "help.shortcuts.actions.2" = "⌘↩: تنفيذ محتوى مرحلي مع رسالة الالتزام الحالية.";
-"help.shortcuts.actions.3" = "يفتح ⌘K لوحة الأوامر. النقر الثانوي على ملف متغير أو مستودع حديث يعرض إجراءاته. تفتح قائمة المساعدة دليل الصفحة الحالية.";
+"help.shortcuts.actions.3" = "يفتح ⌘K لوحة الأوامر. النقر الثانوي على ملف متغير أو مستودع حديث يعرض إجراءاته. تفتح قائمة المساعدة دليل الصفحة الحالية. ثبّت الأوامر المتكررة؛ تظهر الأوامر الحديثة في الأعلى. اختر بالأسهم ونفّذ بزر Enter.";
 
 "help.topic.troubleshooting.title" = "استكشاف الأخطاء وإصلاحها";
 "help.topic.troubleshooting.summary" = "قم بتأكيد المشروع المحدد وتسجيل الدخول المحلي CLI والإبلاغ عن الخطأ قبل إعادة محاولة العملية الفاشلة.";
@@ -579,7 +579,7 @@
 "error.operation.push" = "ادفع";
 "error.operation.agent" = "تشغيل Agent";
 "error.section.output" = "إخراج الخطأ بالكامل";
-"error.section.explanation" = "الشرح";
+"error.section.explanation" = "السبب";
 "error.section.details" = "تفاصيل الخطأ";
 "error.section.recovery" = "الاسترداد";
 "error.detail.code" = "رمز الخطأ";
@@ -708,7 +708,7 @@
 
 "settings.open" = "الإعدادات";
 "settings.title" = "الإعدادات";
-"settings.save" = "احفظ وتحقق";
+"settings.save" = "حفظ";
 "settings.saved" = "تم حفظ الإعدادات";
 "settings.appearance.title" = "المظهر";
 "settings.appearance.mode" = "وضع المظهر";
@@ -1484,7 +1484,7 @@
 "goal.evidence.review_waiting" = "في انتظار %lld مراجعين";
 "goal.evidence.review_required" = "في انتظار المراجعة المطلوبة";
 "goal.evidence.pr_draft" = "في انتظار أن تصبح العلاقات العامة قابلة للمراجعة";
-"goal.evidence.review_approved" = "%lالموافقات النهائية";
+"goal.evidence.review_approved" = "عدد الموافقات: %lld";
 "goal.evidence.merged" = "العلاقات العامة #%lld تم الدمج";
 "goal.actions.failure" = "فشلت الإجراءات";
 "goal.actions.conclusion.failure" = "فشلت خطوة واحدة أو أكثر من خطوات سير العمل.";
@@ -2143,16 +2143,16 @@
 "github.issues.editor.milestone" = "Milestone number";
 "github.issues.agent.prompt" = "Work on GitHub issue %1$@ #%2$d: %3$@\n\n%4$@\n\nInspect the repository first, implement the narrowest complete fix, run relevant validation, and summarize the changed files.";
 "command_palette.title" = "لوحة الأوامر";
-"command_palette.placeholder" = "Search commands, repositories or branches";
-"command_palette.empty" = "No matching commands";
-"command_palette.group.navigate" = "Navigate";
-"command_palette.group.repositories" = "Repositories";
-"command_palette.group.branches" = "Branches";
-"command_palette.group.git" = "Git actions";
-"command_palette.group.application" = "Application";
-"command_palette.hint.navigate" = "Navigate";
-"command_palette.hint.run" = "Run";
-"command_palette.count" = "%d commands";
+"command_palette.placeholder" = "البحث عن أمر أو مستودع أو فرع";
+"command_palette.empty" = "لا توجد أوامر مطابقة";
+"command_palette.group.navigate" = "التنقل";
+"command_palette.group.repositories" = "المستودعات";
+"command_palette.group.branches" = "الفروع";
+"command_palette.group.git" = "إجراءات Git";
+"command_palette.group.application" = "التطبيق";
+"command_palette.hint.navigate" = "اختيار";
+"command_palette.hint.run" = "تنفيذ";
+"command_palette.count" = "الأوامر: %d";
 "commit_search.title" = "بحث الالتزامات";
 "commit_search.action" = "Search";
 "commit_search.hash" = "Commit SHA";
@@ -2183,49 +2183,43 @@
 "intelligence.tab.provenance" = "سياق الشفرة";
 "intelligence.tab.capsules" = "كبسولات الأعطال";
 "intelligence.tab.activity" = "نشاط Agent";
-"intelligence.intent.title" = "Commit Plan";
-"intelligence.intent.summary" = "%d change units · %d commits";
-"intelligence.intent.loading" = "Analyzing working-tree changes…";
-"intelligence.intent.empty.title" = "No changes to organize";
-"intelligence.intent.empty.body" = "Edit files in this repository, then refresh to build an atomic commit plan.";
-"intelligence.intent.select.title" = "Select a change unit";
-"intelligence.intent.select.body" = "Choose a hunk to inspect the exact patch assigned to this commit.";
-"intelligence.intent.add_group" = "Add commit";
-"intelligence.intent.agent" = "Refine with Agent";
-"intelligence.intent.apply" = "Create commits";
-"intelligence.intent.confirm.title" = "Create the planned commits?";
-"intelligence.intent.confirm.body" = "GitGatto will create %d local commits in this order. A recovery point is created first.";
-"intelligence.intent.group_title" = "Commit purpose";
-"intelligence.intent.commit_message" = "Commit message";
-"intelligence.intent.verify_placeholder" = "Optional verification command after each commit";
-"intelligence.intent.group_empty" = "Move at least one change unit into this commit.";
-"intelligence.intent.whole_file" = "Whole file";
-"intelligence.intent.whole_file.title" = "Whole-file change";
-"intelligence.intent.whole_file.body" = "This binary, new, deleted, or metadata-only file is committed as one unit.";
-"intelligence.intent.result.title" = "Commit series created";
-"intelligence.intent.result.body" = "Created %d local commits. They have not been pushed.";
-"intelligence.intent.refresh" = "Analyze remaining changes";
-"intelligence.intent.new_group" = "New commit";
-"intelligence.intent.notice.refined" = "The Agent plan is ready for review.";
-"intelligence.intent.notice.applied" = "Created %d local commits.";
-"intelligence.intent.kind.implementation" = "Implementation";
-"intelligence.intent.kind.fix" = "Fix";
-"intelligence.intent.kind.refactor" = "Refactor";
-"intelligence.intent.kind.tests" = "Tests";
-"intelligence.intent.kind.documentation" = "Documentation";
-"intelligence.intent.kind.configuration" = "Configuration";
-"intelligence.intent.kind.assets" = "Assets";
-"intelligence.intent.kind.other" = "Other";
-"intelligence.intent.error.no_changes" = "There are no working-tree changes to organize.";
-"intelligence.intent.error.conflicts" = "Resolve the current conflicts before building a commit plan.";
-"intelligence.intent.error.changed" = "The repository changed after this plan was created. Refresh the plan before applying it.";
-"intelligence.intent.error.status" = "Git returned an unreadable working-tree status.";
-"intelligence.intent.error.repository" = "This plan belongs to a different repository.";
-"intelligence.intent.error.assignment" = "Every change unit must belong to exactly one non-empty commit.";
-"intelligence.intent.error.empty_group" = "“%@” did not stage any changes.";
-"intelligence.intent.error.unsupported" = "The change in “%@” cannot be staged independently.";
-"intelligence.intent.error.verification" = "Verification command failed: %@\n%@";
-"intelligence.intent.error.agent_plan" = "Agent returned an invalid commit plan.";
+"intelligence.intent.summary" = "%d ملفات · %d التزامات";
+"intelligence.intent.loading" = "جارٍ قراءة التغييرات…";
+"intelligence.intent.empty.title" = "لا توجد تغييرات لتنظيمها";
+"intelligence.intent.empty.body" = "لا توجد تغييرات لتنظيمها. عدّل الملفات ثم حدّث.";
+"intelligence.intent.add_group" = "إضافة التزام";
+"intelligence.intent.agent" = "تنظيم باستخدام Agent";
+"intelligence.intent.apply" = "إنشاء الالتزامات";
+"intelligence.intent.confirm.title" = "إنشاء هذه الالتزامات؟";
+"intelligence.intent.confirm.body" = "سيحفظ GitGatto نقطة استعادة ثم ينشئ %d التزامات محلية بهذا الترتيب.";
+"intelligence.intent.group_title" = "غرض الالتزام";
+"intelligence.intent.commit_message" = "رسالة الالتزام";
+"intelligence.intent.verify_placeholder" = "أمر التحقق بعد كل التزام (اختياري)";
+"intelligence.intent.group_empty" = "انقل ملفًا أو مقطع كود واحدًا على الأقل إلى هنا.";
+"intelligence.intent.whole_file.title" = "تغيير ملف كامل";
+"intelligence.intent.whole_file.body" = "سيُضمّن هذا التغيير كملف كامل. لا تتوفر معاينة نصية.";
+"intelligence.intent.result.title" = "تم إنشاء الالتزامات";
+"intelligence.intent.result.body" = "تم إنشاء %d التزامات محلية دون دفعها.";
+"intelligence.intent.refresh" = "قراءة التغييرات المتبقية";
+"intelligence.intent.new_group" = "التزام جديد";
+"intelligence.intent.kind.implementation" = "ميزة";
+"intelligence.intent.kind.fix" = "إصلاح";
+"intelligence.intent.kind.refactor" = "إعادة هيكلة";
+"intelligence.intent.kind.tests" = "اختبارات";
+"intelligence.intent.kind.documentation" = "توثيق";
+"intelligence.intent.kind.configuration" = "إعدادات";
+"intelligence.intent.kind.assets" = "موارد";
+"intelligence.intent.kind.other" = "أخرى";
+"intelligence.intent.error.no_changes" = "لا توجد تغييرات لتنظيمها.";
+"intelligence.intent.error.conflicts" = "حلّ التعارضات قبل تخطيط الالتزامات.";
+"intelligence.intent.error.changed" = "تغيّرت الملفات أو منطقة التجهيز. حدّث الخطة قبل إنشاء الالتزامات.";
+"intelligence.intent.error.status" = "أعاد Git حالة غير قابلة للقراءة لشجرة العمل.";
+"intelligence.intent.error.repository" = "تخص هذه الخطة مستودعًا آخر. افتحه أو حدّث الخطة.";
+"intelligence.intent.error.assignment" = "يجب أن ينتمي كل تغيير إلى التزام واحد غير فارغ فقط.";
+"intelligence.intent.error.empty_group" = "لم يجهّز «%@» أي تغييرات.";
+"intelligence.intent.error.unsupported" = "لا يمكن تجهيز التغيير في «%@» بشكل منفصل.";
+"intelligence.intent.error.verification" = "فشل أمر التحقق: %@\n%@";
+"intelligence.intent.error.agent_plan" = "أعاد Agent خطة غير صالحة. أعد التنظيم.";
 "intelligence.provenance.path" = "Repository-relative file path";
 "intelligence.provenance.line" = "Line";
 "intelligence.provenance.trace" = "Trace";
@@ -2305,9 +2299,9 @@
 "help.topic.intelligence.title" = "Change Center";
 "help.topic.intelligence.summary" = "Build atomic commits, trace code context, move failures, and inspect Agent activity.";
 "help.intelligence.intent.title" = "Commit Plan";
-"help.intelligence.intent.1" = "Open Change Center and refresh after editing files. GitGatto splits text patches into independently assignable hunks and keeps binary or new files whole.";
-"help.intelligence.intent.2" = "Review commit order, purpose, message, and hunk assignment. Agent refinement changes only the proposed plan and still requires your confirmation.";
-"help.intelligence.intent.3" = "An optional command can verify every commit. Create commits makes a recovery point first and never pushes the resulting commits automatically.";
+"help.intelligence.intent.1" = "افتح خطة الالتزامات بعد تعديل الملفات. يمكنك وصف الغرض واختيار التقسيم أو التزام واحد، ثم التنظيم باستخدام Agent.";
+"help.intelligence.intent.2" = "تعرض كل بطاقة الرسالة والملفات. افتح التحرير والتقسيم لتعديل الرسائل ونقل الملفات أو مقاطع الكود. تتيح القائمة إعادة الترتيب والدمج. لا تكتب مرحلة التخطيط في المستودع.";
+"help.intelligence.intent.3" = "يمكن تحديد أمر تحقق بعد كل التزام في الخيارات الإضافية. بعد التأكيد تُنشأ نقطة استعادة ثم الالتزامات المحلية بالترتيب، دون دفع تلقائي.";
 "help.intelligence.provenance.title" = "Code Context";
 "help.intelligence.provenance.1" = "Enter a tracked repository-relative path and a positive line number.";
 "help.intelligence.provenance.2" = "Git blame identifies the originating local commit and the files changed by it.";
@@ -2478,8 +2472,7 @@
 "tools.commands.help" = "تعمل الأوامر بعد التأكيد فقط. اكتشافها لا ينفّذ ملفات المشروع. يستمر التشغيل عند إغلاق اللوحة ويتوقف عند إنهاء التطبيق.";
 "tools.command.custom" = "إضافة أمر أو تعديله";
 "tools.command.executable" = "اسم البرنامج أو مساره المطلق";
-"tools.command.arguments" = "المعاملات كمصفوفة JSON";
-"tools.command.argvHelp" = "مثال: [\"run\", \"dev\"]. تُمرّر المعاملات منفصلة دون توسيعها كأمر shell.";
+"tools.command.arguments" = "المعاملات";
 "tools.command.timeout" = "المهلة: %d ثانية";
 "tools.command.localURL" = "عنوان محلي (اختياري)";
 "tools.command.empty" = "لم تُعثر على سكربتات. أضف أمرًا أعلاه.";
@@ -2533,7 +2526,7 @@
 "tools.error.binding" = "المسار مرتبط بالفعل أو غير صالح للقاعدة. أزل الارتباط السابق أولًا.";
 "tools.error.bound" = "ملف التعريف مرتبط حاليًا. أزل الارتباطات أولًا.";
 "tools.error.identityMismatch" = "الهوية الفعّالة تختلف عن الملف المرتبط. راجع أدوات المشروع ← هويات الإيداع قبل الإيداع.";
-"tools.error.command" = "أدخل البرنامج ومعاملات JSON ومهلة من 1 إلى 86400 ثانية وعنوان localhost اختياريًا.";
+"tools.error.command" = "أدخل البرنامج ومعاملات منفصلة ومهلة من 1 إلى 86,400 ثانية وعنوان localhost اختياريًا.";
 "tools.error.timeout" = "توقف الأمر لانتهاء المهلة. افحص المخرجات أو عدّل المهلة قبل المحاولة مجددًا.";
 "tools.error.previewLimit" = "أكثر من 100000 ملف للفحص. قلّل نطاق الملفات قبل المعاينة.";
 "tools.error.previewRequired" = "عاين القواعد الحالية قبل الحفظ.";
@@ -2558,7 +2551,7 @@
 "help.topic.fileHistory.title" = "سجل الملفات";
 "help.topic.fileHistory.summary" = "معرفة مصدر تغييرات الملفات والأسطر.";
 "help.fileHistory.start" = "اختر ملفاً ثم مراجعة. افحص المحتوى والفروق ونسبة الأسطر لتحديد الالتزام والمؤلف.";
-"help.fileHistory.result" = "افتح سجل الالتزامات لرؤية التغييرات المرتبطة. تستبدل الاستعادة الملف الحالي بعد التأكيد؛ راجع فروق العمل بعدها. السجل يحفظ الالتزامات، لا كل حفظ في المحرر.";
+"help.fileHistory.result" = "عاين الفرق قبل الاستعادة. يستبدل التأكيد ملف العمل؛ إذا تغير الملف بعد المعاينة، حدّث المعاينة أولًا.";
 "help.fileHistory.caution" = "إن لم تجد الملف، تحقق من المستودع والمسار والمرشحات. ابحث عن العمل المفقود غير الملتزم في نقاط الاستعادة أو stashes؛ ليس مضموناً وجوده في سجل Git.";
 "help.topic.branches.title" = "الفروع والوسوم والمصادر البعيدة";
 "help.topic.branches.summary" = "إدارة المراجع واستعادة التزامات مسجلة.";
@@ -2582,7 +2575,7 @@
 "help.recovery.caution" = "تُحتفظ بثلاثة أجيال كحد أقصى لكل مستودع وقد تستبعد الحدود بعض الملفات. تغيير الموقع ينقل النسخ الحالية. التنبيه يعني تغيراً يستحق الفحص لا هجوماً مؤكداً؛ راجع السبب والنقطة قبل الاستعادة.";
 "help.topic.monitoring.title" = "المراقبة وشريط القوائم";
 "help.topic.monitoring.summary" = "عرض التغييرات وupstream والحماية وActions والأهداف.";
-"help.monitoring.start" = "فعّل المحرك في إعدادات المراقبة واضبط كل قناة وفترة تحديث منفصلة. مفتاح رمز شريط القوائم هنا أيضاً؛ إخفاؤه لا يوقف المراقبة.";
+"help.monitoring.start" = "فعّل المحرك في إعدادات المراقبة واضبط كل قناة وفترة تحديث منفصلة. مفتاح رمز شريط القوائم هنا أيضاً؛ إخفاؤه لا يوقف المراقبة. يمكن لكل مستودع استخدام تلقائي أو نشط أو تردد منخفض. تظل قيود البطارية وفحوص الحماية العاجلة سارية.";
 "help.monitoring.result" = "اختر جميع المستودعات أو واحداً مستقلاً عن النافذة الرئيسية. تعرض اللوحة التغييرات والمزامنة ونقاط الاستعادة والنشاط اليومي. النشاط هو التزامات وإشارات تغيير، وليس ساعات برمجة.";
 "help.monitoring.caution" = "تستمر مع تصغير النافذة ما دام التطبيق يعمل، وليس بعد الخروج. تراقب حماية Agent وCLI الخارجية المستودعات المُدارة وتحفظ خطوط استعادة؛ لا تعترض كل أمر تخريبي ولا تضمن استعادة ملفات غير محفوظة أو مستبعدة.";
 "help.topic.applications.title" = "مستودع التطبيقات";
@@ -2593,7 +2586,7 @@
 "help.topic.developerTools.title" = "أدوات التطوير";
 "help.topic.developerTools.summary" = "اكتشاف الأدوات وتثبيتها وضبطها وترقيتها.";
 "help.developerTools.start" = "حدّث الاكتشاف المحلي واختر تثبيت Agent أو ترقيته، أو حدد عدة أدوات قابلة للترقية دفعة واحدة. تعرض طوابير التثبيت والترقية المهام المنتظرة والجارية.";
-"help.developerTools.result" = "تعمل حتى ثلاث مهام بالتوازي، وقد تفرض أقفال مدير الحزم انتظار بعض الخطوات. افتح المهمة للمرحلة والمخرجات. تُنجز إعدادات المستخدم المطلوبة مثل PATH وتسجيل الإضافات، ثم يُفحص الملف التنفيذي والإصدار محلياً.";
+"help.developerTools.result" = "تعمل حتى ثلاث مهام بالتوازي، وقد تفرض أقفال مدير الحزم انتظار بعض الخطوات. افتح المهمة للمرحلة والمخرجات. تُنجز إعدادات المستخدم المطلوبة مثل PATH وتسجيل الإضافات، ثم يُفحص الملف التنفيذي والإصدار محلياً. تضيف المجموعات الأدوات المختارة إلى قائمة الانتظار. راجع النطاق قبل التثبيت؛ يفصل الإيصال بين التحقق من الملف التنفيذي وتغييرات PATH وإعدادات Agent.";
 "help.developerTools.caution" = "قول Agent إنه انتهى ليس تحققاً. الحاجة إلى إجراء تعني تثبيتاً أو ضبطاً أو تحقق إصدار غير مكتمل. استخدم التفويض وإعادة المحاولة عند عرضهما. تسجيل الدخول وتفويض macOS يتطلبان تدخلك؛ عدم تسجيل الدخول وحده لا يفشل تثبيتاً متحققاً منه. لا تحذف أقفال Homebrew النشطة.";
 "help.topic.collaboration.title" = "المزامنة والتعاون";
 "help.topic.collaboration.summary" = "إدارة عدة مستودعات والوارد وIssues وPRs.";
@@ -2617,7 +2610,7 @@
 "help.workScenes.caution" = "عند المنع أو الانقطاع افحص المرحلة والمستودع. وضع علامة المعالجة هو إقرار فقط ولا يستعيد ملفات. حذف المشهد يزيل سجله ومرجعه الخاص لكنه يُبقي stash الأصلي.";
 "help.topic.projectCommands.title" = "تشغيل الأوامر";
 "help.topic.projectCommands.summary" = "تشغيل أوامر المشروع ومراجعة نتائجها.";
-"help.projectCommands.start" = "اكتشف الأوامر من بيانات الحزم أو Make أو Swift. تحقق من البرنامج والمجلد والمعاملات والمهلة قبل التأكيد. المعاملات المخصصة مصفوفة JSON، وليست سلسلة shell.";
+"help.projectCommands.start" = "افتح أدوات المشروع ← تشغيل الأوامر. تحقق من البرنامج والمجلد والمعاملات والمهلة. أدخل كل معامل منفصلًا؛ تبقى المسافات داخله.";
 "help.projectCommands.result" = "ثبّت الأوامر وراجع المخرجات والمدة ورمز الخروج. أوقف أو أعد المحاولة أو افتح روابط localhost أو أرسل السجل كمسودة إلى Agent. إغلاق اللوحة يُبقي العمل؛ الخروج من التطبيق يوقف عملياته.";
 "help.projectCommands.caution" = "التنفيذ غير تفاعلي؛ استخدم الطرفية لكلمات المرور. انتهاء المهلة ليس نجاحاً. تبقى آخر 20 عملية في ذاكرة الجلسة فقط؛ احفظ المخرجات المطلوبة قبل الخروج. راجع النصوص غير الموثوقة أولاً.";
 "help.topic.ignoreRules.title" = "قواعد التجاهل";
@@ -2690,3 +2683,249 @@
 "ai.provider.qwen" = "Qwen Code";
 "ai.provider.openAICompatible" = "OpenAI-compatible API";
 "ai.provider.deepseek" = "DeepSeek API";
+
+"intelligence.intent.advanced" = "خيارات إضافية";
+"intelligence.intent.refresh_confirm" = "إعادة تحميل التغييرات؟";
+"intelligence.intent.refresh_confirm.body" = "ستُنشأ مجموعات الالتزام ورسائلها من جديد.";
+"intelligence.intent.instruction" = "ما الذي تغيّر أو كيف تريد تقسيم الالتزامات؟ (اختياري)";
+"intelligence.intent.planning" = "جارٍ قراءة التغييرات وتنظيم الالتزامات…";
+"intelligence.intent.draft_hint" = "جُمّعت الملفات حسب ترابطها. يمكن لـ Agent تنقيح الخطة بناءً على المحتوى.";
+"intelligence.intent.split_mode" = "تجميع الالتزامات";
+"intelligence.intent.split.automatic" = "تقسيم حسب الغرض";
+"intelligence.intent.split.single" = "التزام واحد";
+"intelligence.intent.replan" = "إعادة التنظيم";
+"intelligence.intent.merge_all" = "دمج في التزام واحد";
+"intelligence.intent.applying" = "جارٍ إنشاء الالتزامات…";
+"intelligence.intent.local_only" = "ينشئ التزامات محلية دون دفعها إلى المستودع البعيد.";
+"intelligence.intent.incomplete" = "يحتاج كل التزام إلى تغييرات ورسالة.";
+"intelligence.intent.move_up" = "تقديم الالتزام";
+"intelligence.intent.move_down" = "تأخير الالتزام";
+"intelligence.intent.merge_group" = "دمج مع أول التزام متبقٍ";
+"intelligence.intent.commit_actions" = "إجراءات الالتزام";
+"intelligence.intent.files_less" = "عرض ملفات أقل";
+"intelligence.intent.files_more" = "عرض جميع الملفات";
+"intelligence.intent.edit" = "تحرير وتقسيم";
+"intelligence.intent.category" = "النوع";
+"intelligence.intent.move_changes" = "نقل التغييرات";
+"intelligence.intent.split_file" = "التزام منفصل";
+
+"settings.pending" = "تغييرات غير محفوظة";
+
+"settings.discard" = "تجاهل التغييرات";
+
+"settings.saveFailed" = "تعذر حفظ الإعدادات. تحقق من القيم وحاول مجددًا.";
+
+"settings.search" = "البحث في الإعدادات";
+
+"settings.applyHelp" = "تُحفظ إعدادات المظهر والتحديثات ومجلد النسخ ومفاتيح API فورًا. احفظ بقية التغييرات قبل إغلاق النافذة.";
+
+"search.noResults" = "لا توجد نتائج مطابقة";
+
+"help.search" = "البحث في الدليل";
+
+"help.openFeature" = "فتح هذه الميزة";
+
+"error.action.workflowPermission" = "منح صلاحية سير العمل";
+
+"error.action.agentSettings" = "فتح إعدادات Agent";
+
+"error.action.refreshRepository" = "إعادة فحص المستودع";
+
+"error.action.inspectRepository" = "فتح تشخيص المستودع";
+
+"tools.command.argument" = "المعامل";
+
+"tools.command.addArgument" = "إضافة معامل";
+
+"tools.command.removeArgument" = "إزالة المعامل";
+
+"tools.command.argumentsLiteral" = "معامل واحد في كل صف. تُحفظ المسافات والمعاملات الفارغة دون توسيع الصدفة.";
+
+"ai.api.loadModels" = "تحميل النماذج";
+
+"ai.api.chooseModel" = "اختيار نموذج";
+
+"ai.api.testChat" = "اختبار المحادثة";
+
+"ai.api.testTools" = "اختبار استدعاء الأدوات";
+
+"ai.api.testHelp" = "ترسل الاختبارات طلبات قصيرة وقد تستهلك من حصتك. لا تنفذ أوامر ولا تكتب ملفات.";
+
+"ai.api.catalogOnly" = "النموذج مدرج · لم يُختبر التنفيذ";
+
+"ai.api.notTested" = "مُعدّ · لم يُختبر التنفيذ";
+
+"ai.api.modelMissing" = "النموذج المختار غير موجود في قائمة الخادم";
+
+"ai.api.noModels" = "أعاد الخادم قائمة نماذج فارغة";
+
+"ai.api.chatVerified" = "تم التحقق من استجابة المحادثة";
+
+"ai.api.toolsVerified" = "تم التحقق من صيغة الاستدعاء؛ لم تُنفّذ أي أداة";
+
+"developer_tools.tasks.title" = "مهام الأدوات";
+
+"developer_tools.tasks.empty" = "لا توجد مهام أدوات بعد";
+
+"developer_tools.tasks.queued" = "في الانتظار";
+
+"developer_tools.tasks.running" = "قيد التنفيذ";
+
+"developer_tools.tasks.interrupted" = "توجد مهام متوقفة تحتاج إلى فحص";
+
+"developer_tools.tasks.completed" = "تم التحقق";
+
+"developer_tools.tasks.needsAction" = "يتطلب إجراءً";
+
+"developer_tools.tasks.failed" = "فشل";
+
+"developer_tools.tasks.cancelled" = "ملغى";
+
+"developer_tools.tasks.resume" = "فحص ومتابعة";
+
+"developer_tools.tasks.interruptedHelp" = "يُفحص الإصدار أولًا. إن كان متاحًا تُستكمل التهيئة والتحقق فقط، وإلا يستمر التثبيت أو التحديث. تُطلب صلاحيات النظام مجددًا عند الحاجة.";
+
+"developer_tools.tasks.storageFailed" = "تعذر حفظ سجلات المهام أو قراءتها. تحقق من المساحة وصلاحيات المجلد.";
+
+"recovery.affectedFiles" = "الملفات المتأثرة (%d)";
+
+"diff.partial.stage" = "إضافة المحدد للفهرس";
+
+"diff.partial.unstage" = "إزالة المحدد من الفهرس";
+
+"diff.partial.selected" = "تم تحديد %d أسطر";
+
+"diff.partial.hunk" = "تحديد كتلة التغييرات";
+
+"diff.partial.line" = "تحديد هذا السطر";
+
+"diff.partial.changed" = "تغير الملف أو الفهرس. حدّث الفروق وحدد الأسطر مجددًا.";
+
+"diff.partial.unsupported" = "يجب التعامل مع هذا التغيير على مستوى الملف بالكامل.";
+
+"conflict.block.position" = "التعارض %d من %d";
+
+"conflict.block.previous" = "التعارض السابق";
+
+"conflict.block.next" = "التعارض التالي";
+
+"conflict.block.preview" = "مقارنة هذه الكتلة";
+
+"conflict.block.current" = "الاحتفاظ بالكتلة الحالية";
+
+"conflict.block.incoming" = "الاحتفاظ بالكتلة الواردة";
+
+"conflict.block.both" = "الاحتفاظ بالكتلتين";
+
+"developer_tools.upgrade.verification_pending" = "تعذر تأكيد الإصدار الحالي. حدّث حالة التحديثات. لم يُثبّت شيء.";
+
+"recovery.compare.title" = "مقارنة الملفات واستعادتها";
+
+"recovery.compare.help" = "− للنسخة الاحتياطية و+ للملف الحالي. تُنسخ الملفات المحددة إلى مجلد جديد دون تغيير المستودع.";
+
+"recovery.compare.search" = "البحث في ملفات النسخة";
+
+"recovery.compare.select" = "حدد ملفًا للمقارنة.";
+
+"recovery.compare.selected" = "تم تحديد %d ملفات";
+
+"recovery.compare.export" = "استعادة المحدد إلى مجلد جديد";
+
+"recovery.compare.tooLarge" = "تجاوز حد المعاينة (2 ميغابايت أو 100,000 ملف). استعد نسخة كاملة لفحصها.";
+
+"recovery.compare.outside" = "اختر مجلدًا جديدًا خارج المستودع والمعاينة المؤقتة.";
+
+"recovery.compare.unsafePath" = "المسار خارج المجلد أو يمر برابط رمزي. اختر ملفًا عاديًا.";
+
+"codex.background.running" = "يعمل Agent في %@";
+
+"codex.background.return" = "العودة إلى المهمة";
+
+"codex.status.stopping" = "جارٍ الإيقاف…";
+
+"recovery.guard.expected" = "هذا التغيير مقصود";
+
+"recovery.guard.expectedHelp" = "يؤكد هذا الحدث ويستخدم الحالة الحالية أساسًا للمراقبة. يبقى حد النسخ محفوظًا وتستمر مراجعة التغييرات التالية.";
+
+"action.delete" = "حذف";
+
+"tools.search.advanced" = "مرشحات متقدمة";
+
+"tools.search.activeFilters" = "عرض المرشحات المطبقة";
+
+"tools.command.choose" = "اختيار أمر المشروع";
+
+"regression.setup.good" = "1. آخر إصدار يعمل";
+
+"regression.setup.bad" = "2. الإصدار الذي به المشكلة";
+
+"regression.setup.method" = "3. طريقة التحقق";
+
+"regression.setup.manualHelp" = "افحص كل إصدار مرشح في مساحة العمل المعزولة ثم حدد يعمل أو معطل أو تخطي. لا يلزم إدخال أمر.";
+
+"branches.scene.saveSwitch" = "حفظ حالة العمل والتبديل";
+
+"branches.scene.scope" = "قبل التبديل تُحفظ الملفات المرحّلة وغير المرحّلة وغير المتتبعة في حالة عمل الفرع الحالي. تبقى الملفات المتجاهلة في مكانها، وتُحفظ مسودات الإيداع وAgent.";
+
+"branches.scene.files" = "الملفات المطلوب حفظها: %lld";
+
+"branches.scene.clean" = "لا توجد ملفات غير مثبتة. لن ينشئ التبديل حالة عمل جديدة.";
+
+"branches.scene.saved" = "تم حفظ حالة العمل للفرع %@. يمكنك استعادتها من حالات العمل عند العودة.";
+
+"branches.scene.switchFailed" = "حُفظت حالة العمل لكن التبديل لم يكتمل. تحقق من الفرع الحالي ثم افتح حالات العمل لاستعادة تغييراتك.";
+
+"tools.error.branchChanged" = "تغير الفرع أو محتوى الملفات بعد المعاينة. حدّث وراجع قبل التبديل.";
+
+"tools.error.branchOccupied" = "هذا الفرع مفتوح بالفعل في شجرة عمل أخرى. افتح شجرة العمل تلك.";
+
+"diff.partial.plan" = "تخطيط التغييرات المحددة";
+
+"intelligence.intent.selection.scope" = "الأسطر المحددة فقط: %d";
+
+"intelligence.intent.selection.retained" = "تبقى التغييرات الأخرى كما هي، ولا تُضمّن التغييرات المجهزة غير المحددة في الإيداع.";
+
+"intelligence.intent.selection.all" = "استخدام كل التغييرات";
+
+"intelligence.intent.selection.dependency" = "تعتمد هذه الأسطر على تغييرات مجهزة غير محددة. عد إلى التغييرات وعدّل التحديد أو استخدم كل التغييرات.";
+
+"intelligence.intent.error.rollback" = "فشل الإيداع: %@\nتعذرت استعادة الفهرس الأصلي: %@\nافحص النسخة الاحتياطية في الاسترداد قبل إعادة المحاولة.";
+
+"command_palette.pinned" = "مثبّتة";
+"command_palette.recent" = "المستخدمة مؤخرًا";
+"command_palette.pin" = "تثبيت";
+"command_palette.unpin" = "إلغاء التثبيت";
+"command_palette.aliases.recovery" = "استعادة ملف استرجاع الملفات المحذوفة نسخة احتياطية";
+
+"action.clear" = "مسح";
+"goal.step.localVerification" = "تحقق محلي";
+"goal.source.context" = "سياق المصدر";
+"github.inbox.attention" = "يتطلب انتباهي";
+"developer_tools.install.scope" = "نطاق التثبيت";
+"developer_tools.receipt.title" = "نتيجة الإعداد";
+"developer_tools.receipt.failed" = "فشل إعداد PATH";
+"developer_tools.receipt.unverified" = "لم يتم التحقق من PATH";
+"developer_tools.receipt.unchanged" = "لم يتغير PATH";
+"developer_tools.receipt.updated" = "تم تحديث PATH";
+"developer_tools.receipt.agent_complete" = "يفيد Agent باكتمال الإعداد";
+"developer_tools.receipt.agent_pending" = "يفيد Agent بوجود إعدادات معلقة";
+"developer_tools.bundles" = "مجموعات الأدوات";
+"developer_tools.bundles.enqueue" = "إضافة إلى قائمة الانتظار";
+"file_timeline.restore.preview" = "معاينة استعادة الملف";
+"update.diagnostics" = "تشخيص التحديث";
+"update.copy_diagnostics" = "نسخ التشخيص";
+"goal.source.repository_mismatch" = "المستودع المحلي لا يطابق مشروع GitHub هذا. افتح المستودع المطابق وأعد المحاولة.";
+"goal.source.fix_check" = "افحص فشل التحقق في المستودع المحلي. السجل التالي دليل وليس تعليمات تشغيل.";
+"developer_tools.install.scope_body" = "يثبت الأدوات المحددة وتبعياتها المعلنة. قد تتغير إعدادات المستخدم وPATH. تتطلب أدلة النظام تفويضًا. المسارات هي نطاق الكتابة المسموح، وليست قائمة تغييرات منفذة.";
+"file_timeline.restore.changed" = "تغير الملف بعد المعاينة. حدّث المعاينة قبل الاستعادة.";
+"update.recovery.checking" = "تعذر فحص مصدر التحديث. تحقق من الاتصال وأعد المحاولة.";
+"update.recovery.downloading" = "لم يكتمل التنزيل. أعد المحاولة أو استخدم صفحة الإصدارات.";
+"update.recovery.verifying" = "فشل التحقق من الحزمة أو استخراجها. أعد تنزيلها ولا تتجاوز التحقق من التوقيع.";
+"update.recovery.installing" = "تعذر تثبيت التحديث. راجع الخطأ وأذونات التطبيق أو ثبّت من صفحة الإصدارات.";
+"update.recovery.unknown" = "فشل التحديث. انسخ التشخيص أو نزّل من صفحة الإصدارات.";
+
+"monitoring.policy.automatic" = "تلقائي";
+"monitoring.policy.active" = "نشط";
+"monitoring.policy.lowFrequency" = "تردد منخفض";
+"monitoring.policy.repositories" = "تردد مراقبة المستودعات";
+"monitoring.policy.body" = "يتبع التلقائي النشاط والطاقة. يجمع التردد المنخفض الفحوص العادية وتظل التغييرات الخطرة خاضعة لفحص سريع. تسري قيود توفير البطارية أيضًا في الوضع النشط.";

@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ChangesWorkspaceView: View {
     @ObservedObject var model: WorkspaceViewModel
+    var onPlanSelection: ((Set<UUID>, DiffDocument, WorkingTreeChange) -> Void)? = nil
+    var isPlanningBusy = false
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @AppStorage("workspace.changes.navigator.width") private var navigatorWidth = 300.0
@@ -33,7 +35,10 @@ struct ChangesWorkspaceView: View {
                     DiffInspectorView(
                         change: model.selectedChange,
                         document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL
+                        previewURL: model.selectedChangePreviewURL,
+                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
+                        onPlanSelection: onPlanSelection,
+                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
                     )
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
@@ -44,7 +49,10 @@ struct ChangesWorkspaceView: View {
                     DiffInspectorView(
                         change: model.selectedChange,
                         document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL
+                        previewURL: model.selectedChangePreviewURL,
+                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
+                        onPlanSelection: onPlanSelection,
+                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
                     )
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .emerald {
@@ -58,7 +66,10 @@ struct ChangesWorkspaceView: View {
                     minimumSecondaryWidth: 280,
                     separatorWidth: 7
                 ) {
-                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL)
+                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL,
+                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
+                        onPlanSelection: onPlanSelection,
+                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
                 } secondary: {
                     ChangeNavigator(model: model, showsTitle: false)
                         .overlay(alignment: .leading) { Rectangle().fill(palette.divider).frame(width: 1) }
@@ -75,7 +86,10 @@ struct ChangesWorkspaceView: View {
                 ) {
                     ChangeNavigator(model: model, showsTitle: false)
                 } secondary: {
-                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL)
+                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL,
+                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
+                        onPlanSelection: onPlanSelection,
+                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
                 }
             } else {
                 HStack(spacing: 8) {
@@ -85,7 +99,10 @@ struct ChangesWorkspaceView: View {
                     DiffInspectorView(
                         change: model.selectedChange,
                         document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL
+                        previewURL: model.selectedChangePreviewURL,
+                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
+                        onPlanSelection: onPlanSelection,
+                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
                     )
                         .appConsolePanel()
                 }
@@ -173,7 +190,10 @@ struct ChangesWorkspaceView: View {
                     if model.snapshot?.changes.isEmpty == true {
                         ChangesEmptyState()
                     } else {
-                        DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL)
+                        DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL,
+                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
+                        onPlanSelection: onPlanSelection,
+                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
                     }
                 }
                 .folioSurface(.panel, cornerRadius: 14)
@@ -389,6 +409,10 @@ private struct ChangeRow: View {
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .contextMenu {
+            Button(L10n.text(RepositoryIntelligenceTab.provenance.titleKey)) {
+                model.inspectFileContext(change.path)
+            }
+            Divider()
             Button {
                 toggleStage()
             } label: {
@@ -528,6 +552,9 @@ private struct CommitComposer: View {
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(palette.mutedInk)
                 Spacer()
+                Button(L10n.text("goal.new")) { Task { await model.prepareGoalFromChanges() } }
+                    .buttonStyle(.borderless)
+                    .disabled(model.snapshot == nil || model.activeProjectGoalID != nil)
                 Text(L10n.format("commit.staged_count", model.snapshot?.stagedChanges.count ?? 0))
                     .font(.system(size: 10.5))
                     .foregroundStyle(palette.subtleInk)

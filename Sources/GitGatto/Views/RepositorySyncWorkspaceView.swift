@@ -110,23 +110,30 @@ struct RepositorySyncWorkspaceView: View {
                 Divider()
                 Button(L10n.text("sync.select.clear")) { syncModel.clearSelection() }
             } label: {
-                Label(L10n.text("sync.select.menu"), systemImage: "checklist")
+                GattoLabel(L10n.text("sync.select.menu"), systemImage: "checklist")
                     .font(.system(size: 11, weight: .medium))
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
 
-            if !syncModel.failedResults.isEmpty {
-                Button {
-                    syncModel.retryFailures()
-                } label: {
-                    Label(
-                        L10n.format("sync.retry_failed", syncModel.failedResults.count),
-                        systemImage: "arrow.clockwise"
-                    )
+            if syncModel.failedOperations.count == 1, let operation = syncModel.failedOperations.first {
+                Button { syncModel.retryFailures(operation) } label: {
+                    GattoLabel(L10n.format("sync.retry_failed", syncModel.failedResults.count), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(palette.danger)
+                .disabled(syncModel.activeBatchOperation != nil)
+            } else if !syncModel.failedResults.isEmpty {
+                Menu {
+                    ForEach(syncModel.failedOperations) { operation in
+                        Button(L10n.text("sync.action.\(operation.rawValue)")) { syncModel.retryFailures(operation) }
+                    }
+                } label: {
+                    GattoLabel(L10n.format("sync.retry_failed", syncModel.failedResults.count), systemImage: "arrow.clockwise")
+                }
+                .menuStyle(.borderlessButton)
+                .foregroundStyle(palette.danger)
+                .disabled(syncModel.activeBatchOperation != nil)
             }
         }
     }
@@ -140,6 +147,7 @@ struct RepositorySyncWorkspaceView: View {
             if syncModel.activeBatchOperation != nil {
                 Button(L10n.text("action.cancel")) { syncModel.cancel() }
                     .buttonStyle(.borderless)
+                    .disabled(syncModel.isCancelling)
             }
         }
     }

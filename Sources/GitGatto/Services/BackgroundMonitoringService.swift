@@ -61,7 +61,6 @@ actor BackgroundMonitoringService {
             return try loadArchive().eventsByRepository[path]?[day] ?? 0
         }
 
-        lastRecordedAtByRepository[path] = date
         var archive = try loadArchive()
         var repositoryEvents = archive.eventsByRepository[path] ?? [:]
         repositoryEvents[day, default: 0] += 1
@@ -71,12 +70,14 @@ actor BackgroundMonitoringService {
         }
         archive.eventsByRepository[path] = repositoryEvents
         try save(archive)
+        lastRecordedAtByRepository[path] = date
         return repositoryEvents[day] ?? 0
     }
 
     func dailyActivity(
         for repositoryURL: URL,
-        endingAt endDate: Date = Date()
+        endingAt endDate: Date = Date(),
+        refreshHistory: Bool = true
     ) async throws -> [RepositoryDailyActivity] {
         let calendar = Calendar.current
         let endDay = calendar.startOfDay(for: endDate)
@@ -88,7 +89,8 @@ actor BackgroundMonitoringService {
         let commitCounts = try await commitCounts(
             for: repositoryURL,
             startingAt: startDay,
-            endingAt: endDay
+            endingAt: endDay,
+            refreshHistory: refreshHistory
         )
         let path = repositoryURL.standardizedFileURL.path
         let storedEvents = try loadArchive().eventsByRepository[path] ?? [:]
@@ -111,7 +113,8 @@ actor BackgroundMonitoringService {
     private func commitCounts(
         for repositoryURL: URL,
         startingAt startDate: Date,
-        endingAt endDay: Date
+        endingAt endDay: Date,
+        refreshHistory: Bool
     ) async throws -> [String: Int] {
         let request = HistoryRequest(
             path: repositoryURL.standardizedFileURL.path,
@@ -119,6 +122,7 @@ actor BackgroundMonitoringService {
             endDay: endDay,
             timeZone: TimeZone.current.identifier
         )
+        if !refreshHistory, let cached = historyCache[request.path], cached.request == request { return cached.counts }
         if let task = historyTasks[request] { return try await task.value }
         let task = Task { try await self.loadCommitCounts(for: repositoryURL, request: request) }
         historyTasks[request] = task

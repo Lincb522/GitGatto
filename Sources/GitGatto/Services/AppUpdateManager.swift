@@ -13,6 +13,8 @@ enum AppUpdateState: Equatable {
 
 @MainActor
 final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
+    @Published private(set) var stage: AppUpdateStage = .unknown
+    @Published private(set) var diagnostic: AppUpdateDiagnostic?
     @Published private(set) var state: AppUpdateState
     @Published private(set) var lastCheckedAt: Date?
     @Published private(set) var automaticallyChecksForUpdates = false
@@ -36,8 +38,8 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     override init() {
         let info = Bundle.main.infoDictionary ?? [:]
-        currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.18.30"
-        currentBuild = info["CFBundleVersion"] as? String ?? "18030"
+        currentVersion = info["CFBundleShortVersionString"] as? String ?? "0.18.31"
+        currentBuild = info["CFBundleVersion"] as? String ?? "18031"
         releaseNotes = Self.bundledReleaseNotes(version: currentVersion)
         state = Self.hasUpdateConfiguration(info) ? .ready : .configurationRequired
         super.init()
@@ -64,6 +66,8 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         guard canCheckForUpdates else { return }
         startIfConfigured()
         state = .checking
+        stage = .checking
+        diagnostic = nil
         lastCheckedAt = Date()
         Task { await refreshReleaseNotes(force: true) }
         updaterController.checkForUpdates(nil)
@@ -122,8 +126,24 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
-        state = Self.stateAfterAborting(with: error)
+        recordUpdateFailure(error)
     }
+
+    func recordUpdateFailure(_ error: any Error) {
+        state = Self.stateAfterAborting(with: error)
+        if case .failed = state { diagnostic = .make(error: error as NSError, lastStage: stage) }
+        else { diagnostic = nil }
+    }
+
+    func updater(_ updater: SPUUpdater, willDownloadUpdate item: SUAppcastItem, with request: NSMutableURLRequest) {
+        stage = .downloading
+        diagnostic = nil
+    }
+
+    func updater(_ updater: SPUUpdater, didDownloadUpdate item: SUAppcastItem) { stage = .verifying }
+    func updater(_ updater: SPUUpdater, willExtractUpdate item: SUAppcastItem) { stage = .verifying }
+    func updater(_ updater: SPUUpdater, willInstallUpdate item: SUAppcastItem) { stage = .installing }
+
 
     static func stateAfterAborting(with error: any Error) -> AppUpdateState {
         let nsError = error as NSError
@@ -153,7 +173,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
             }
         }
         details.append(chain.map { "\($0.domain) · \($0.code)" }.joined(separator: " → "))
-        return details.joined(separator: "\n")
+        return ProjectCommandOutput.redact(details.joined(separator: "\n"))
     }
 
     private static func errorChain(for error: NSError) -> [NSError] {

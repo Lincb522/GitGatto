@@ -61,6 +61,7 @@ extension ProjectGoal {
         if usesReleaseFlow, steps.contains(where: { preparation.contains($0.kind) && $0.status == .blocked }) {
             return .prepareRelease
         }
+        if nextStep == .localVerification { return .continueDelivery }
         guard let next = nextStep, step(next)?.status == .pending, status != .waiting else { return .refresh }
         switch next {
         case .stageChanges, .commit, .push, .pullRequest: return .continueDelivery
@@ -106,6 +107,7 @@ enum ProjectGoalPhase: String, CaseIterable, Identifiable {
     static func phase(for step: ProjectGoalStepKind) -> Self {
         switch step {
         case .readme, .translation, .version, .changelog, .releasePipeline: .prepare
+        case .localVerification: .prepare
         case .stageChanges, .commit, .push: .submit
         case .pullRequest, .review, .actions, .artifact: .verify
         case .merge, .releaseTag, .githubRelease, .dmg, .updateFeed: .deliver

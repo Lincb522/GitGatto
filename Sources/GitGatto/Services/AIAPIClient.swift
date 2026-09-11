@@ -2,10 +2,25 @@ import Foundation
 
 protocol AIAPITransport: Sendable {
     func send(_ request: URLRequest) async throws -> (Data, Int)
+    func stream(_ request: URLRequest, text: @escaping @Sendable (String) async -> Void) async throws -> (Data, Int)
+}
+
+extension AIAPITransport {
+    func stream(_ request: URLRequest, text: @escaping @Sendable (String) async -> Void) async throws -> (Data, Int) {
+        try await send(request)
+    }
 }
 
 final class AIAPIURLTransport: NSObject, AIAPITransport, URLSessionTaskDelegate, @unchecked Sendable {
     func send(_ request: URLRequest) async throws -> (Data, Int) {
+        try await perform(request, text: nil)
+    }
+
+    func stream(_ request: URLRequest, text: @escaping @Sendable (String) async -> Void) async throws -> (Data, Int) {
+        try await perform(request, text: text)
+    }
+
+    private func perform(_ request: URLRequest, text: (@Sendable (String) async -> Void)?) async throws -> (Data, Int) {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 180
         configuration.timeoutIntervalForResource = 180
@@ -16,10 +31,38 @@ final class AIAPIURLTransport: NSObject, AIAPITransport, URLSessionTaskDelegate,
         let (bytes, response) = try await session.bytes(for: request)
         guard let response = response as? HTTPURLResponse else { throw AIAPIError.invalidResponse }
         guard (200..<300).contains(response.statusCode) else { return (Data(), response.statusCode) }
+        let isStream = response.value(forHTTPHeaderField: "Content-Type")?.lowercased().contains("text/event-stream") == true
         var data = Data()
+        var line = Data()
+        var decoder = AIAPIStreamDecoder()
+        var byteCount = 0
+        var pendingText = ""
+        let clock = ContinuousClock()
+        var lastEmission = clock.now.advanced(by: .milliseconds(-100))
         for try await byte in bytes {
-            guard data.count < 2_000_000 else { throw AIAPIError.invalidResponse }
-            data.append(byte)
+            try Task.checkCancellation()
+            byteCount += 1
+            guard byteCount <= 2_000_000 else { throw AIAPIError.invalidResponse }
+            if isStream {
+                if byte == 10 {
+                    guard let string = String(data: line, encoding: .utf8) else { throw AIAPIError.invalidResponse }
+                    if let delta = try decoder.consume(string.trimmingCharacters(in: .newlines)) { pendingText += delta }
+                    line.removeAll(keepingCapacity: true)
+                    if !pendingText.isEmpty, clock.now - lastEmission >= .milliseconds(100) {
+                        await text?(pendingText)
+                        pendingText = ""
+                        lastEmission = clock.now
+                    }
+                } else { line.append(byte) }
+            } else { data.append(byte) }
+        }
+        if isStream {
+            if !line.isEmpty {
+                guard let string = String(data: line, encoding: .utf8) else { throw AIAPIError.invalidResponse }
+                if let delta = try decoder.consume(string.trimmingCharacters(in: .newlines)) { pendingText += delta }
+            }
+            if !pendingText.isEmpty { await text?(pendingText) }
+            return (try decoder.response(), response.statusCode)
         }
         return (data, response.statusCode)
     }
@@ -74,15 +117,67 @@ actor AIAPIClient {
         self.credential = credential
     }
 
+    func models(_ configuration: AIAPIConfiguration) async throws -> [String] {
+        var request = try Self.request(configuration, resource: "models", key: credential(configuration))
+        request.timeoutInterval = 15
+        let (data, status) = try await transport.send(request)
+        guard (200..<300).contains(status) else { throw AIAPIError.http(status) }
+        struct Catalog: Decodable {
+            struct Model: Decodable { let id: String }
+            let data: [Model]
+        }
+        guard let catalog = try? JSONDecoder().decode(Catalog.self, from: data), catalog.data.count <= 10_000 else {
+            throw AIAPIError.invalidResponse
+        }
+        return Array(Set(catalog.data.map(\.id).filter { !$0.isEmpty })).sorted()
+    }
+
     func probe(_ configuration: AIAPIConfiguration) async -> CodexAvailability {
         do {
             try configuration.validate()
-            var request = try Self.request(configuration, resource: "models", key: credential(configuration))
-            request.timeoutInterval = 15
-            let (_, status) = try await transport.send(request)
-            guard (200..<300).contains(status) else { return .unavailable }
-            return CodexAvailability(state: .available, version: configuration.model)
+            let available = try await models(configuration)
+            guard available.contains(configuration.model.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+                return CodexAvailability(state: .unavailable, version: nil, noteKey: "ai.api.modelMissing")
+            }
+            return CodexAvailability(state: .available, version: configuration.model, noteKey: "ai.api.catalogOnly")
+        } catch AIAPIError.http(let status) where status == 404 || status == 405 {
+            // Some compatible servers expose completions without a model catalogue.
+            return CodexAvailability(state: .available, version: configuration.model, noteKey: "ai.api.notTested")
         } catch { return .unavailable }
+    }
+
+    func testConnection(_ configuration: AIAPIConfiguration, tools: Bool) async throws {
+        try configuration.validate()
+        var request = try Self.request(configuration, resource: "chat/completions", key: credential(configuration))
+        request.httpMethod = "POST"
+        request.timeoutInterval = 30
+        var body: [String: Any] = ["model": configuration.model, "stream": false,
+            "messages": [["role": "user", "content": tools ? "Call connection_test with no arguments." : "Reply OK."]]]
+        if tools {
+            body["tools"] = [["type": "function", "function": ["name": "connection_test",
+                "description": "Connection check only. Does not execute commands or modify files.",
+                "parameters": ["type": "object", "properties": [:], "additionalProperties": false]]]]
+            body["tool_choice"] = ["type": "function", "function": ["name": "connection_test"]]
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (data, status) = try await transport.send(request)
+        guard (200..<300).contains(status) else { throw AIAPIError.http(status) }
+        guard let response = try? JSONDecoder().decode(Response.self, from: data),
+              let choice = response.choices.first, choice.message.role == "assistant" else { throw AIAPIError.invalidResponse }
+        if tools {
+            guard choice.finish_reason == "tool_calls", let calls = choice.message.tool_calls, calls.count == 1,
+                  calls[0].type == "function", !calls[0].id.isEmpty,
+                  calls[0].function.name == "connection_test",
+                  let arguments = calls[0].function.arguments.data(using: .utf8),
+                  let object = try? JSONSerialization.jsonObject(with: arguments) as? [String: Any], object.isEmpty else {
+                throw AIAPIError.invalidTool
+            }
+        } else {
+            guard choice.finish_reason == "stop", (choice.message.tool_calls ?? []).isEmpty,
+                  !(choice.message.content ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw AIAPIError.invalidResponse
+            }
+        }
     }
 
     func cancel() { task?.cancel() }
@@ -90,7 +185,8 @@ actor AIAPIClient {
     func run(
         configuration: AIAPIConfiguration, prompt: String, timeout: Duration,
         tools: (any AIAPIToolExecuting)? = nil,
-        progress: @escaping @Sendable (AgentInstallProgress) async -> Void = { _ in }
+        progress: @escaping @Sendable (AgentInstallProgress) async -> Void = { _ in },
+        text: @escaping @Sendable (String) async -> Void = { _ in }
     ) async throws -> CodexRunResult {
         guard task == nil else { throw AIAPIError.busy }
         try configuration.validate()
@@ -101,7 +197,7 @@ actor AIAPIClient {
                 group.addTask {
                     try await Self.conversation(
                         configuration: configuration, key: key, prompt: prompt,
-                        transport: transport, tools: tools, progress: progress
+                        transport: transport, tools: tools, progress: progress, text: text
                     )
                 }
                 group.addTask {
@@ -133,7 +229,8 @@ actor AIAPIClient {
     private static func conversation(
         configuration: AIAPIConfiguration, key: String?, prompt: String,
         transport: any AIAPITransport, tools: (any AIAPIToolExecuting)?,
-        progress: @escaping @Sendable (AgentInstallProgress) async -> Void
+        progress: @escaping @Sendable (AgentInstallProgress) async -> Void,
+        text: @escaping @Sendable (String) async -> Void
     ) async throws -> CodexRunResult {
         var messages = [AIAPIMessage(role: "user", content: prompt)]
         var events: [CodexOperationEvent] = []
@@ -145,12 +242,12 @@ actor AIAPIClient {
             let encodedMessages = try JSONEncoder().encode(messages)
             var body: [String: Any] = [
                 "model": configuration.model.trimmingCharacters(in: .whitespacesAndNewlines),
-                "stream": false,
+                "stream": true,
                 "messages": try JSONSerialization.jsonObject(with: encodedMessages)
             ]
             if tools != nil { body["tools"] = toolDefinitions }
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            let (data, status) = try await transport.send(request)
+            let (data, status) = try await transport.stream(request, text: text)
             try Task.checkCancellation()
             guard (200..<300).contains(status) else { throw AIAPIError.http(status) }
             guard data.count <= 2_000_000,

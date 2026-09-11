@@ -7,6 +7,31 @@ import Testing
 
 @Suite("Project tools", .serialized)
 struct ProjectToolsTests {
+    @Test("Verification command choices use saved overrides, stay in their repository and preserve literal arguments")
+    func verificationChoices() async throws {
+        let root = try await fixture(); defer { remove(root) }
+        try write("// fixture", "Package.swift", root)
+        let override = ProjectCommand(id: root.path + ":swift:test", title: "Focused tests", executable: "/usr/bin/printf",
+            arguments: ["%s\\n", "$HOME", "a'b", "with spaces"], repositoryPath: root.path)
+        let other = ProjectCommand(id: "other", title: "Other repo", executable: "false", arguments: [], repositoryPath: "/other")
+        let commands = try await ProjectCommandDiscovery().discover(repository: root, saved: [override, other])
+        #expect(commands.first == override)
+        #expect(commands.filter { $0.id == override.id }.count == 1)
+        #expect(!commands.contains { $0.id == other.id })
+        let result = try await ExternalProcessRunner().run(executable: URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", override.displayCommand], currentDirectoryURL: root,
+            environment: [:], acceptedExitCodes: [0], timeout: .seconds(5))
+        #expect(result.outputText == "$HOME\na'b\nwith spaces\n")
+        var query = ProjectCodeQuery()
+        #expect(!query.hasAdvancedFilters)
+        query.scope = .history
+        #expect(query.hasAdvancedFilters)
+        query.scope = .working; query.fileExtension = "swift"
+        #expect(query.hasAdvancedFilters)
+        query.fileExtension = ""; query.filenamesOnly = true
+        #expect(query.hasAdvancedFilters)
+    }
+
     @Test("Searches multiple repositories, literal text, revisions, history and unusual filenames")
     func search() async throws {
         let a = try await fixture(), b = try await fixture()
@@ -115,6 +140,21 @@ struct ProjectToolsTests {
         let tracked = try await service.inspect("base.txt", repository: root); #expect(tracked.tracked)
         try await service.stopTracking("base.txt", repository: root)
         #expect(FileManager.default.fileExists(atPath: root.appendingPathComponent("base.txt").path))
+    }
+
+    @Test("Ignore preview supports repositories without Git templates and does not create local rule files")
+    func ignoreWithoutTemplate() async throws {
+        let root = try await fixture(); defer { remove(root) }
+        let info = root.appendingPathComponent(".git/info")
+        if FileManager.default.fileExists(atPath: info.path) { try FileManager.default.removeItem(at: info) }
+        try write("generated", "build.log", root)
+        let service = IgnoreRulesService()
+        var draft = try await service.load(repository: root, localOnly: true)
+        draft.text = "*.log\n"
+        #expect(try await service.preview(draft, repository: root) == ["+ build.log"])
+        #expect(!FileManager.default.fileExists(atPath: info.path))
+        try await service.save(draft)
+        #expect(try await service.inspect("build.log", repository: root).ignored)
     }
 
     @Test("Identity profiles use native repository includes, preserve unrelated config and reject mismatches")

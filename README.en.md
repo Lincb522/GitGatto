@@ -128,7 +128,7 @@ Project work, translation, search, and installation have separate execution lane
 | Tool | What it does |
 | --- | --- |
 | Code search | Search current files, a revision, or historical changes across managed repositories; filter directory, language, or extension, preview evidence, and send it to an Agent. Literal matching with bounded results. |
-| Run commands | Discover project scripts or add custom commands, pin favorites, inspect live output, duration and exit status, stop, retry, and open local services. Noninteractive execution with JSON-array arguments. |
+| Run commands | Discover project scripts or add custom commands, pin favorites, inspect live output, duration and exit status, stop, retry, and open local services. Noninteractive execution with individually entered arguments. |
 | Ignore rules | Explain rule sources; preview edits to shared `.gitignore` or local `.git/info/exclude`. Stop tracking without deleting disk files. |
 | Commit identities | Bind author and signing settings by repository or directory, inspect effective sources, and check identity before committing. Git authorship is separate from GitHub sign-in. |
 

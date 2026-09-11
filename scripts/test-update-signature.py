@@ -54,3 +54,69 @@ print(String(data: try JSONSerialization.data(withJSONObject: result), encoding:
         result = subprocess.run([str(verifier), str(feed), str(archive), str(app)], capture_output=True, text=True)
         assert (result.returncode == 0) == (case == "valid"), (case, result.stdout, result.stderr)
         print("PASS:", case)
+
+    # The loopback server owns only synthetic bytes and deliberately closes one response early.
+    import http.client
+    import http.server
+    import threading
+    import urllib.request
+
+    class FixtureSource(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *_args):
+            pass
+
+        def do_GET(self):
+            payload = b"synthetic update archive"
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            if self.path == "/interrupted":
+                self.wfile.write(payload[:4])
+            elif self.path == "/tampered":
+                self.wfile.write(b"Synthetic update archive")
+            else:
+                self.wfile.write(payload)
+            self.wfile.flush()
+            self.close_connection = True
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), FixtureSource)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        endpoint = f"http://127.0.0.1:{server.server_port}"
+        try:
+            with urllib.request.urlopen(endpoint + "/interrupted", timeout=3) as response:
+                response.read()
+        except http.client.IncompleteRead:
+            print("PASS: interrupted loopback transfer rejected")
+        else:
+            raise AssertionError("Interrupted download was accepted")
+
+        # Restore valid feed metadata before verifying actual downloaded fixture bytes.
+        enclosure = item.find("enclosure")
+        enclosure.set("url", "https://example.invalid/Fixture.dmg")
+        ET.ElementTree(rss).write(feed, encoding="utf-8")
+        (app / "Contents/Info.plist").write_bytes(plistlib.dumps(info))
+        for route in ["valid", "tampered"]:
+            with urllib.request.urlopen(endpoint + "/" + route, timeout=3) as response:
+                archive.write_bytes(response.read())
+            result = subprocess.run([str(verifier), str(feed), str(archive), str(app)], capture_output=True, text=True, timeout=10)
+            assert (result.returncode == 0) == (route == "valid"), (route, result.returncode)
+            print("PASS: loopback transfer signature", route)
+
+        target = root / "read-only-install-target"
+        target.mkdir()
+        target.chmod(0o500)
+        try:
+            try:
+                (target / "application").write_bytes(b"fixture")
+            except PermissionError:
+                print("PASS: installation permission failure surfaced")
+            else:
+                raise AssertionError("Permission test requires a non-root user")
+        finally:
+            target.chmod(0o700)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)

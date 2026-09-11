@@ -48,6 +48,7 @@ enum ProjectGoalStatus: String, Codable, Sendable, Equatable {
 }
 
 enum ProjectGoalStepKind: String, CaseIterable, Codable, Sendable, Identifiable {
+    case localVerification
     case readme
     case translation
     case version
@@ -74,7 +75,8 @@ enum ProjectGoalStepKind: String, CaseIterable, Codable, Sendable, Identifiable 
         case .stageChanges: .stage
         case .commit: .commit
         case .push: .push
-        case .readme,
+        case .localVerification,
+             .readme,
              .translation,
              .version,
              .changelog,
@@ -124,6 +126,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
     let repositoryName: String
     let branchName: String
     let baselineHeadSHA: String
+    var sourceContext: String?
+    var verificationCommand: ProjectCommand?
     var title: String?
     var intent: String?
     var commitMessage: String
@@ -159,6 +163,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         repositoryName: String,
         branchName: String,
         baselineHeadSHA: String,
+        sourceContext: String? = nil,
+        verificationCommand: ProjectCommand? = nil,
         title: String? = nil,
         intent: String? = nil,
         commitMessage: String,
@@ -185,6 +191,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         status: ProjectGoalStatus = .ready,
         createdAt: Date = Date()
     ) {
+        self.sourceContext = sourceContext
+        self.verificationCommand = verificationCommand
         self.id = id
         self.kind = kind
         self.repositoryPath = repositoryPath
@@ -214,12 +222,20 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         self.installedApplicationVersion = installedApplicationVersion
         self.installedApplicationBuild = installedApplicationBuild
         self.status = status
-        self.steps = (stepKinds ?? kind.stepKinds).map {
+        self.steps = Self.stepsIncludingVerification(stepKinds ?? kind.stepKinds, command: verificationCommand).map {
             ProjectGoalStep(kind: $0, status: .pending, updatedAt: createdAt)
         }
         self.createdAt = createdAt
         self.updatedAt = createdAt
         self.lastError = nil
+    }
+
+    static func stepsIncludingVerification(_ steps: [ProjectGoalStepKind], command: ProjectCommand?) -> [ProjectGoalStepKind] {
+        var result = steps.filter { $0 != .localVerification }
+        if command != nil {
+            result.insert(.localVerification, at: result.firstIndex(of: .stageChanges) ?? 0)
+        }
+        return result
     }
 
     var progress: Double {
@@ -309,6 +325,7 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         case repositoryName
         case branchName
         case baselineHeadSHA
+        case sourceContext, verificationCommand
         case title
         case intent
         case commitMessage
@@ -346,6 +363,8 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
         repositoryName = try container.decode(String.self, forKey: .repositoryName)
         branchName = try container.decode(String.self, forKey: .branchName)
         baselineHeadSHA = try container.decode(String.self, forKey: .baselineHeadSHA)
+        sourceContext = try container.decodeIfPresent(String.self, forKey: .sourceContext)
+        verificationCommand = try container.decodeIfPresent(ProjectCommand.self, forKey: .verificationCommand)
         title = try container.decodeIfPresent(String.self, forKey: .title)
         intent = try container.decodeIfPresent(String.self, forKey: .intent)
         commitMessage = try container.decode(String.self, forKey: .commitMessage)
@@ -376,7 +395,7 @@ struct ProjectGoal: Identifiable, Codable, Sendable, Equatable {
             steps = storedSteps.filter { seen.insert($0.kind).inserted }
         } else {
             let storedByKind = Dictionary(uniqueKeysWithValues: storedSteps.map { ($0.kind, $0) })
-            steps = kind.stepKinds.map {
+            steps = Self.stepsIncludingVerification(kind.stepKinds, command: verificationCommand).map {
                 storedByKind[$0] ?? ProjectGoalStep(kind: $0, status: .pending, updatedAt: fallbackDate)
             }
         }
@@ -616,6 +635,11 @@ enum ProjectGoalReconciler {
             goal.updateStep(step, status: .blocked, error: error, at: now)
             goal.status = .blocked
             goal.lastError = error
+            return goal
+        }
+
+        if let verification = goal.step(.localVerification), !verification.status.isSatisfied {
+            finalize(&goal, at: now)
             return goal
         }
 

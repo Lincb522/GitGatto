@@ -394,7 +394,7 @@
 "help.goals.create.1" = "저장소를 열고 목표에서 작업을 선택한 다음 커밋 메시지나 버전을 입력하고 실행 시작을 누르세요. 저장소마다 한 번에 하나의 목표를 실행합니다.";
 "help.goals.create.2" = "사용자 지정 목표는 원하는 결과를 설명하세요. Agent가 읽기 전용으로 분석하고 단계를 제안합니다. 작업 범위를 확인한 뒤 시작하세요.";
 "help.goals.create.3" = "빠른 목표에는 커밋 및 푸시, GitHub 전달 및 전체 릴리스가 포함됩니다. GitHub 배송에는 기본 지점이 아닌 다른 지점이 필요합니다.";
-"help.goals.create.4" = "목표는 저장소, 분기, 기준 커밋, 단계 및 증거를 기록합니다. 리포지토리를 전환해도 상태가 혼합되지 않습니다.";
+"help.goals.create.4" = "목표는 저장소, 분기, 기준 커밋, 단계 및 증거를 기록합니다. 리포지토리를 전환해도 상태가 혼합되지 않습니다. 변경 사항, Issue, PR 또는 실패한 검사에서도 목표를 만들 수 있습니다. 저장된 프로젝트 명령을 선택해 커밋 전에 검증할 수 있습니다.";
 "help.goals.execute.title" = "실행 및 복구";
 "help.goals.execute.1" = "승인된 단계를 순서대로 실행하며 매 단계 후 Git과 GitHub 상태를 다시 읽습니다. 병합, 게시, 설치는 확인을 기다립니다.";
 "help.goals.execute.2" = "실패한 단계는 원래의 증거를 유지하고 주의 필요에서 중지됩니다. 완료된 단계는 앱을 다시 시작해도 유지됩니다.";
@@ -456,7 +456,7 @@
 "help.translation.channel.title" = "독립 실행 레인";
 "help.translation.channel.1" = "번역 CLI과 프로젝트 Agent에는 별도의 구성과 프로세스가 있으므로 Agent가 작동하는 동안에도 번역이 가능합니다.";
 "help.translation.channel.2" = "자동 번역은 읽을 수 있는 본문을 감지해 설정된 대상 언어를 씁니다. 이미 같은 언어이거나 너무 짧으면 그대로일 수 있습니다. 반응이 없으면 설정에서 번역 엔진과 언어를 확인하세요.";
-"help.translation.channel.3" = "번역이 중지될 수 있으며 시간 초과가 있습니다. 실패해도 이미 저장된 번역은 삭제되지 않습니다.";
+"help.translation.channel.3" = "번역이 중지될 수 있으며 시간 초과가 있습니다. 실패해도 이미 저장된 번역은 삭제되지 않습니다. 재시도는 실패한 요청의 언어를 사용합니다. 번역에 실패해도 원문을 볼 수 있습니다.";
 
 "help.topic.cliSettings.title" = "설정";
 "help.topic.cliSettings.summary" = "하나의 창에서 앱 인터페이스, 시작 작업 공간, 실시간 Git 모니터링, Agent 및 번역을 구성합니다.";
@@ -481,7 +481,7 @@
 "help.shortcuts.actions.title" = "일반적인 작업";
 "help.shortcuts.actions.1" = "⌘O: 로컬 저장소를 엽니다. ⌘R: 현재 저장소를 새로 고칩니다.";
 "help.shortcuts.actions.2" = "⌘↩: 현재 커밋 메시지로 준비된 콘텐츠를 커밋합니다.";
-"help.shortcuts.actions.3" = "⌘K는 명령 팔레트를 엽니다. 변경 파일이나 최근 저장소를 우클릭해 작업을 확인하세요. 도움말 메뉴의 현재 작업 공간 도움말로 해당 안내를 엽니다.";
+"help.shortcuts.actions.3" = "⌘K는 명령 팔레트를 엽니다. 변경 파일이나 최근 저장소를 우클릭해 작업을 확인하세요. 도움말 메뉴의 현재 작업 공간 도움말로 해당 안내를 엽니다. 자주 쓰는 명령을 고정할 수 있고 최근 항목은 위에 표시됩니다. 방향키로 선택하고 Return으로 실행합니다.";
 
 "help.topic.troubleshooting.title" = "문제 해결";
 "help.topic.troubleshooting.summary" = "선택한 프로젝트, 로컬 CLI 로그인 및 보고된 오류를 확인한 후 실패한 작업을 다시 시도하세요.";
@@ -579,7 +579,7 @@
 "error.operation.push" = "푸시";
 "error.operation.agent" = "달려라 Agent";
 "error.section.output" = "완료 오류 출력";
-"error.section.explanation" = "설명";
+"error.section.explanation" = "원인";
 "error.section.details" = "오류 세부정보";
 "error.section.recovery" = "복구";
 "error.detail.code" = "오류 코드";
@@ -708,7 +708,7 @@
 
 "settings.open" = "설정";
 "settings.title" = "설정";
-"settings.save" = "저장 및 확인";
+"settings.save" = "저장";
 "settings.saved" = "설정이 저장되었습니다";
 "settings.appearance.title" = "외관";
 "settings.appearance.mode" = "외모 모드";
@@ -2143,16 +2143,16 @@
 "github.issues.editor.milestone" = "Milestone number";
 "github.issues.agent.prompt" = "Work on GitHub issue %1$@ #%2$d: %3$@\n\n%4$@\n\nInspect the repository first, implement the narrowest complete fix, run relevant validation, and summarize the changed files.";
 "command_palette.title" = "명령 팔레트";
-"command_palette.placeholder" = "Search commands, repositories or branches";
-"command_palette.empty" = "No matching commands";
-"command_palette.group.navigate" = "Navigate";
-"command_palette.group.repositories" = "Repositories";
-"command_palette.group.branches" = "Branches";
-"command_palette.group.git" = "Git actions";
-"command_palette.group.application" = "Application";
-"command_palette.hint.navigate" = "Navigate";
-"command_palette.hint.run" = "Run";
-"command_palette.count" = "%d commands";
+"command_palette.placeholder" = "명령, 저장소 또는 브랜치 검색";
+"command_palette.empty" = "일치하는 명령이 없습니다";
+"command_palette.group.navigate" = "화면 이동";
+"command_palette.group.repositories" = "저장소";
+"command_palette.group.branches" = "브랜치";
+"command_palette.group.git" = "Git 작업";
+"command_palette.group.application" = "앱";
+"command_palette.hint.navigate" = "선택";
+"command_palette.hint.run" = "실행";
+"command_palette.count" = "명령 %d개";
 "commit_search.title" = "커밋 검색";
 "commit_search.action" = "Search";
 "commit_search.hash" = "Commit SHA";
@@ -2183,49 +2183,43 @@
 "intelligence.tab.provenance" = "코드 맥락";
 "intelligence.tab.capsules" = "오류 캡슐";
 "intelligence.tab.activity" = "Agent 활동";
-"intelligence.intent.title" = "Commit Plan";
-"intelligence.intent.summary" = "%d change units · %d commits";
-"intelligence.intent.loading" = "Analyzing working-tree changes…";
-"intelligence.intent.empty.title" = "No changes to organize";
-"intelligence.intent.empty.body" = "Edit files in this repository, then refresh to build an atomic commit plan.";
-"intelligence.intent.select.title" = "Select a change unit";
-"intelligence.intent.select.body" = "Choose a hunk to inspect the exact patch assigned to this commit.";
-"intelligence.intent.add_group" = "Add commit";
-"intelligence.intent.agent" = "Refine with Agent";
-"intelligence.intent.apply" = "Create commits";
-"intelligence.intent.confirm.title" = "Create the planned commits?";
-"intelligence.intent.confirm.body" = "GitGatto will create %d local commits in this order. A recovery point is created first.";
-"intelligence.intent.group_title" = "Commit purpose";
-"intelligence.intent.commit_message" = "Commit message";
-"intelligence.intent.verify_placeholder" = "Optional verification command after each commit";
-"intelligence.intent.group_empty" = "Move at least one change unit into this commit.";
-"intelligence.intent.whole_file" = "Whole file";
-"intelligence.intent.whole_file.title" = "Whole-file change";
-"intelligence.intent.whole_file.body" = "This binary, new, deleted, or metadata-only file is committed as one unit.";
-"intelligence.intent.result.title" = "Commit series created";
-"intelligence.intent.result.body" = "Created %d local commits. They have not been pushed.";
-"intelligence.intent.refresh" = "Analyze remaining changes";
-"intelligence.intent.new_group" = "New commit";
-"intelligence.intent.notice.refined" = "The Agent plan is ready for review.";
-"intelligence.intent.notice.applied" = "Created %d local commits.";
-"intelligence.intent.kind.implementation" = "Implementation";
-"intelligence.intent.kind.fix" = "Fix";
-"intelligence.intent.kind.refactor" = "Refactor";
-"intelligence.intent.kind.tests" = "Tests";
-"intelligence.intent.kind.documentation" = "Documentation";
-"intelligence.intent.kind.configuration" = "Configuration";
-"intelligence.intent.kind.assets" = "Assets";
-"intelligence.intent.kind.other" = "Other";
-"intelligence.intent.error.no_changes" = "There are no working-tree changes to organize.";
-"intelligence.intent.error.conflicts" = "Resolve the current conflicts before building a commit plan.";
-"intelligence.intent.error.changed" = "The repository changed after this plan was created. Refresh the plan before applying it.";
-"intelligence.intent.error.status" = "Git returned an unreadable working-tree status.";
-"intelligence.intent.error.repository" = "This plan belongs to a different repository.";
-"intelligence.intent.error.assignment" = "Every change unit must belong to exactly one non-empty commit.";
-"intelligence.intent.error.empty_group" = "“%@” did not stage any changes.";
-"intelligence.intent.error.unsupported" = "The change in “%@” cannot be staged independently.";
-"intelligence.intent.error.verification" = "Verification command failed: %@\n%@";
-"intelligence.intent.error.agent_plan" = "Agent returned an invalid commit plan.";
+"intelligence.intent.summary" = "파일 %d개 · 커밋 %d개";
+"intelligence.intent.loading" = "변경 사항 읽는 중…";
+"intelligence.intent.empty.title" = "정리할 변경 사항 없음";
+"intelligence.intent.empty.body" = "정리할 변경 사항이 없습니다. 파일을 수정한 뒤 새로고침하세요.";
+"intelligence.intent.add_group" = "커밋 추가";
+"intelligence.intent.agent" = "Agent로 정리";
+"intelligence.intent.apply" = "커밋 생성";
+"intelligence.intent.confirm.title" = "이 커밋들을 생성할까요?";
+"intelligence.intent.confirm.body" = "GitGatto가 복구 지점을 저장한 뒤 이 순서로 로컬 커밋 %d개를 생성합니다.";
+"intelligence.intent.group_title" = "커밋 목적";
+"intelligence.intent.commit_message" = "커밋 메시지";
+"intelligence.intent.verify_placeholder" = "커밋 후 검증 명령 (선택)";
+"intelligence.intent.group_empty" = "파일이나 코드 블록을 하나 이상 옮겨 주세요.";
+"intelligence.intent.whole_file.title" = "전체 파일 변경";
+"intelligence.intent.whole_file.body" = "전체 파일로 커밋되는 변경입니다. 텍스트 미리보기가 없습니다.";
+"intelligence.intent.result.title" = "커밋 생성 완료";
+"intelligence.intent.result.body" = "로컬 커밋 %d개를 생성했습니다. 푸시하지 않았습니다.";
+"intelligence.intent.refresh" = "남은 변경 사항 읽기";
+"intelligence.intent.new_group" = "새 커밋";
+"intelligence.intent.kind.implementation" = "기능";
+"intelligence.intent.kind.fix" = "수정";
+"intelligence.intent.kind.refactor" = "리팩터링";
+"intelligence.intent.kind.tests" = "테스트";
+"intelligence.intent.kind.documentation" = "문서";
+"intelligence.intent.kind.configuration" = "설정";
+"intelligence.intent.kind.assets" = "리소스";
+"intelligence.intent.kind.other" = "기타";
+"intelligence.intent.error.no_changes" = "정리할 변경 사항이 없습니다.";
+"intelligence.intent.error.conflicts" = "충돌을 해결한 뒤 커밋을 정리하세요.";
+"intelligence.intent.error.changed" = "파일이나 스테이징 영역이 변경되었습니다. 커밋 생성 전에 계획을 새로고침하세요.";
+"intelligence.intent.error.status" = "Git이 반환한 작업 트리 상태를 읽을 수 없습니다.";
+"intelligence.intent.error.repository" = "다른 저장소의 계획입니다. 해당 저장소를 열거나 새로고침하세요.";
+"intelligence.intent.error.assignment" = "각 변경 사항은 비어 있지 않은 커밋 하나에만 속해야 합니다.";
+"intelligence.intent.error.empty_group" = "“%@”에 스테이징된 변경 사항이 없습니다.";
+"intelligence.intent.error.unsupported" = "“%@”의 변경 사항을 개별적으로 스테이징할 수 없습니다.";
+"intelligence.intent.error.verification" = "검증 명령 실패: %@\n%@";
+"intelligence.intent.error.agent_plan" = "Agent가 유효하지 않은 계획을 반환했습니다. 다시 정리하세요.";
 "intelligence.provenance.path" = "Repository-relative file path";
 "intelligence.provenance.line" = "Line";
 "intelligence.provenance.trace" = "Trace";
@@ -2305,9 +2299,9 @@
 "help.topic.intelligence.title" = "Change Center";
 "help.topic.intelligence.summary" = "Build atomic commits, trace code context, move failures, and inspect Agent activity.";
 "help.intelligence.intent.title" = "Commit Plan";
-"help.intelligence.intent.1" = "Open Change Center and refresh after editing files. GitGatto splits text patches into independently assignable hunks and keeps binary or new files whole.";
-"help.intelligence.intent.2" = "Review commit order, purpose, message, and hunk assignment. Agent refinement changes only the proposed plan and still requires your confirmation.";
-"help.intelligence.intent.3" = "An optional command can verify every commit. Create commits makes a recovery point first and never pushes the resulting commits automatically.";
+"help.intelligence.intent.1" = "파일 수정 후 커밋 계획을 엽니다. 변경 목적을 입력하고 분할 또는 단일 커밋을 선택한 뒤 Agent로 정리하세요.";
+"help.intelligence.intent.2" = "카드마다 커밋 메시지와 파일이 표시됩니다. 편집 및 분할에서 메시지와 파일·코드 블록 배치를 바꾸고 메뉴에서 순서 변경이나 병합을 할 수 있습니다. 계획 정리는 저장소를 변경하지 않습니다.";
+"help.intelligence.intent.3" = "추가 옵션에서 커밋 후 검증 명령을 설정할 수 있습니다. 생성을 확인하면 복구 지점을 만든 뒤 로컬 커밋을 순서대로 생성합니다. 자동으로 푸시하지 않습니다.";
 "help.intelligence.provenance.title" = "Code Context";
 "help.intelligence.provenance.1" = "Enter a tracked repository-relative path and a positive line number.";
 "help.intelligence.provenance.2" = "Git blame identifies the originating local commit and the files changed by it.";
@@ -2478,8 +2472,7 @@
 "tools.commands.help" = "확인 후에만 실행합니다. 검색 중 프로젝트 파일을 실행하지 않습니다. 패널을 닫아도 실행은 계속되며 앱을 종료하면 중지됩니다.";
 "tools.command.custom" = "명령 추가 또는 편집";
 "tools.command.executable" = "실행 파일 이름 또는 절대 경로";
-"tools.command.arguments" = "인수(JSON 배열)";
-"tools.command.argvHelp" = "예: [\"run\", \"dev\"]. 인수는 개별 전달되며 셸 명령으로 확장되지 않습니다.";
+"tools.command.arguments" = "인수";
 "tools.command.timeout" = "제한 시간: %d초";
 "tools.command.localURL" = "로컬 URL(선택)";
 "tools.command.empty" = "스크립트가 없습니다. 위에서 명령을 추가하세요.";
@@ -2533,7 +2526,7 @@
 "tools.error.binding" = "이미 연결된 경로이거나 규칙에 사용할 수 없습니다. 먼저 이전 연결을 해제하세요.";
 "tools.error.bound" = "사용 중인 프로필입니다. 먼저 연결을 해제하세요.";
 "tools.error.identityMismatch" = "유효한 정보가 프로필과 다릅니다. 커밋 전에 프로젝트 도구 → 커밋 사용자 정보에서 확인하세요.";
-"tools.error.command" = "실행 파일, JSON 인수 배열, 1~86,400초의 제한 시간과 선택적 localhost URL을 입력하세요.";
+"tools.error.command" = "실행 파일, 개별 인수, 1~86,400초 제한 시간과 선택적인 localhost URL을 입력하세요.";
 "tools.error.timeout" = "시간 초과로 명령을 중지했습니다. 출력을 확인하거나 제한 시간을 조정하세요.";
 "tools.error.previewLimit" = "검사할 파일이 100,000개를 넘습니다. 범위를 줄인 후 미리 보세요.";
 "tools.error.previewRequired" = "저장 전에 현재 규칙을 미리 보세요.";
@@ -2558,7 +2551,7 @@
 "help.topic.fileHistory.title" = "파일 기록";
 "help.topic.fileHistory.summary" = "파일과 줄의 변경 출처를 찾습니다.";
 "help.fileHistory.start" = "파일 기록에서 파일과 버전을 선택하세요. 내용, 차이, 줄별 귀속 정보를 통해 커밋과 작성자를 확인합니다.";
-"help.fileHistory.result" = "커밋 기록에서 함께 바뀐 파일을 확인할 수 있습니다. 복원은 확인 후 현재 파일을 해당 버전으로 교체하므로 작업 트리 차이를 검토하세요. 기록은 커밋 기준이며 편집기의 매번 저장을 기록하지 않습니다.";
+"help.fileHistory.result" = "복원 전 현재 내용과의 차이를 확인합니다. 확인 후 작업 파일을 바꿉니다. 미리보기 이후 파일이 변경되었다면 미리보기를 새로 고쳐야 합니다.";
 "help.fileHistory.caution" = "파일이 없으면 저장소, 경로, 필터를 확인하세요. 커밋하지 않은 유실 작업은 복구 지점이나 스태시를 찾아야 하며 Git 기록에 반드시 남는 것은 아닙니다.";
 "help.topic.branches.title" = "브랜치·태그·원격";
 "help.topic.branches.summary" = "참조를 관리하고 기록된 커밋을 복구합니다.";
@@ -2582,7 +2575,7 @@
 "help.recovery.caution" = "저장소당 최대 세 세대를 순환 보관하며 파일 제한으로 누락될 수 있습니다. 위치 변경 시 기존 백업을 이전합니다. 경고는 검토할 변화를 뜻하며 공격 증거는 아닙니다. 복원 전 원인과 지점을 확인하세요.";
 "help.topic.monitoring.title" = "모니터링과 메뉴 막대";
 "help.topic.monitoring.summary" = "변경, 업스트림, 보호, Actions, 목표를 확인합니다.";
-"help.monitoring.start" = "설정의 모니터링에서 엔진, 각 채널, 갱신 주기를 설정하세요. 메뉴 막대 표시도 여기서 바꿉니다. 아이콘을 숨겨도 모니터링이 중지되지는 않습니다.";
+"help.monitoring.start" = "설정의 모니터링에서 엔진, 각 채널, 갱신 주기를 설정하세요. 메뉴 막대 표시도 여기서 바꿉니다. 아이콘을 숨겨도 모니터링이 중지되지는 않습니다. 저장소마다 자동, 활성, 낮은 빈도를 선택할 수 있습니다. 배터리 제한과 위험한 변경 검사는 계속 적용됩니다.";
 "help.monitoring.result" = "주 창과 별개로 모든 저장소 또는 하나를 선택해 실제 변경, 동기화, 복구 지점, 일별 활동을 봅니다. 활동은 커밋과 변경 신호이며 코딩 시간이 아닙니다.";
 "help.monitoring.caution" = "앱이 실행 중이면 창을 최소화해도 계속하지만 종료 후에는 멈춥니다. 외부 Agent/CLI 보호는 관리 저장소를 관찰하고 복구 기준을 보관합니다. 모든 파괴 명령을 막거나 미저장·제외 파일의 복원을 보장하지는 않습니다.";
 "help.topic.applications.title" = "앱 저장소";
@@ -2593,7 +2586,7 @@
 "help.topic.developerTools.title" = "개발 도구";
 "help.topic.developerTools.summary" = "로컬 도구를 감지·설치·설정·업그레이드합니다.";
 "help.developerTools.start" = "개발 도구에서 로컬 감지를 새로 고친 뒤 Agent 설치 또는 업그레이드를 선택하세요. 업그레이드 가능한 여러 도구를 일괄 선택할 수 있습니다. 설치·업그레이드 대기열에 대기 및 실행 상태가 표시됩니다.";
-"help.developerTools.result" = "최대 세 작업이 병렬 실행되지만 패키지 관리자의 쓰기 잠금 때문에 단계별 대기가 생길 수 있습니다. 작업을 열어 단계와 출력을 보세요. PATH, 플러그인 등록 등 필수 사용자 설정 후 실행 파일과 버전을 로컬 검증합니다.";
+"help.developerTools.result" = "최대 세 작업이 병렬 실행되지만 패키지 관리자의 쓰기 잠금 때문에 단계별 대기가 생길 수 있습니다. 작업을 열어 단계와 출력을 보세요. PATH, 플러그인 등록 등 필수 사용자 설정 후 실행 파일과 버전을 로컬 검증합니다. 도구 묶음은 선택한 도구를 대기열에 추가합니다. 설치 전 영향 범위를 확인할 수 있습니다. 결과에는 실행 파일 검증, PATH 변경, Agent 설정 결과가 따로 표시됩니다.";
 "help.developerTools.caution" = "Agent의 완료 문구만으로 성공은 아닙니다. 조치 필요는 설치·설정·버전 검사가 미완료라는 뜻입니다. 권한 문제에는 제공된 승인 후 재시도를 사용하세요. 로그인과 macOS 승인은 직접 해야 하지만 로그아웃만으로 검증된 설치를 실패 처리하지 않습니다. 실행 중인 Homebrew 잠금을 지우지 마세요.";
 "help.topic.collaboration.title" = "동기화와 협업";
 "help.topic.collaboration.summary" = "여러 저장소, 수신함, Issue, PR을 처리합니다.";
@@ -2617,7 +2610,7 @@
 "help.workScenes.caution" = "차단·중단 시 단계와 저장소를 먼저 확인하세요. 처리됨 표시는 확인일 뿐 파일 복원이 아닙니다. 장면 삭제는 기록과 전용 참조만 지우며 원본 스태시는 남습니다.";
 "help.topic.projectCommands.title" = "명령 실행";
 "help.topic.projectCommands.summary" = "프로젝트 명령과 결과를 확인합니다.";
-"help.projectCommands.start" = "프로젝트 도구에서 패키지 메타데이터, Make, Swift의 명령을 감지하세요. 실행 전 실행 파일, 폴더, 인수, 제한 시간을 확인합니다. 사용자 인수는 셸 문자열이 아닌 JSON 배열입니다.";
+"help.projectCommands.start" = "프로젝트 도구 → 명령 실행에서 실행 파일, 경로, 인수, 제한 시간을 확인하세요. 인수는 개별 입력하며 공백은 해당 인수에 유지됩니다.";
 "help.projectCommands.result" = "명령을 고정하고 출력, 경과 시간, 종료 코드를 봅니다. 중지·재시도·localhost 링크 열기·Agent 로그 초안 전송이 가능합니다. 패널을 닫아도 실행되며 앱 종료 시 소유 프로세스를 멈춥니다.";
 "help.projectCommands.caution" = "비대화형이므로 비밀번호 입력은 터미널을 사용하세요. 시간 초과는 성공이 아닙니다. 최근 20개 기록만 현재 세션 메모리에 남으니 필요한 로그는 종료 전에 저장하세요. 신뢰하지 않는 스크립트는 먼저 읽으세요.";
 "help.topic.ignoreRules.title" = "제외 규칙";
@@ -2690,3 +2683,249 @@
 "ai.provider.qwen" = "Qwen Code";
 "ai.provider.openAICompatible" = "OpenAI-compatible API";
 "ai.provider.deepseek" = "DeepSeek API";
+
+"intelligence.intent.advanced" = "추가 옵션";
+"intelligence.intent.refresh_confirm" = "변경 사항을 다시 불러올까요?";
+"intelligence.intent.refresh_confirm.body" = "커밋 그룹과 메시지가 다시 생성됩니다.";
+"intelligence.intent.instruction" = "변경 목적이나 커밋 분할 방법을 입력하세요 (선택)";
+"intelligence.intent.planning" = "변경 내용을 읽고 커밋을 정리하는 중…";
+"intelligence.intent.draft_hint" = "파일 관계에 따라 분류했습니다. Agent가 변경 내용을 보고 다시 정리할 수 있습니다.";
+"intelligence.intent.split_mode" = "커밋 분할 방식";
+"intelligence.intent.split.automatic" = "변경 목적별 분할";
+"intelligence.intent.split.single" = "하나의 커밋";
+"intelligence.intent.replan" = "다시 정리";
+"intelligence.intent.merge_all" = "하나의 커밋으로 합치기";
+"intelligence.intent.applying" = "커밋 생성 중…";
+"intelligence.intent.local_only" = "로컬 커밋만 생성하며 푸시하지 않습니다.";
+"intelligence.intent.incomplete" = "각 커밋에 변경 사항과 메시지가 필요합니다.";
+"intelligence.intent.move_up" = "순서 앞당기기";
+"intelligence.intent.move_down" = "순서 뒤로 이동";
+"intelligence.intent.merge_group" = "나머지 첫 번째 커밋으로 합치기";
+"intelligence.intent.commit_actions" = "커밋 작업";
+"intelligence.intent.files_less" = "파일 접기";
+"intelligence.intent.files_more" = "모든 파일 보기";
+"intelligence.intent.edit" = "편집 및 분할";
+"intelligence.intent.category" = "유형";
+"intelligence.intent.move_changes" = "변경 사항 이동";
+"intelligence.intent.split_file" = "별도 커밋으로 분리";
+
+"settings.pending" = "저장하지 않은 변경 사항";
+
+"settings.discard" = "변경 취소";
+
+"settings.saveFailed" = "설정을 저장하지 못했습니다. 입력값을 확인하고 다시 시도하세요.";
+
+"settings.search" = "설정 검색";
+
+"settings.applyHelp" = "외관, 업데이트 스위치, 백업 위치, API 키는 즉시 저장됩니다. 나머지는 저장을 눌러야 하며 창을 닫으면 미저장 변경이 취소됩니다.";
+
+"search.noResults" = "일치하는 결과가 없습니다";
+
+"help.search" = "사용 설명 검색";
+
+"help.openFeature" = "이 기능 열기";
+
+"error.action.workflowPermission" = "워크플로 권한 부여";
+
+"error.action.agentSettings" = "Agent 설정 열기";
+
+"error.action.refreshRepository" = "저장소 다시 확인";
+
+"error.action.inspectRepository" = "저장소 진단 열기";
+
+"tools.command.argument" = "인수";
+
+"tools.command.addArgument" = "인수 추가";
+
+"tools.command.removeArgument" = "인수 삭제";
+
+"tools.command.argumentsLiteral" = "한 행에 인수 하나를 입력합니다. 공백과 빈 인수를 유지하며 셸 확장을 하지 않습니다.";
+
+"ai.api.loadModels" = "모델 불러오기";
+
+"ai.api.chooseModel" = "모델 선택";
+
+"ai.api.testChat" = "대화 테스트";
+
+"ai.api.testTools" = "도구 호출 테스트";
+
+"ai.api.testHelp" = "테스트는 모델에 짧은 요청을 보내며 사용량이 발생할 수 있습니다. 명령 실행이나 파일 쓰기는 하지 않습니다.";
+
+"ai.api.catalogOnly" = "모델 목록 확인 · 실행 미검증";
+
+"ai.api.notTested" = "설정됨 · 실행 미검증";
+
+"ai.api.modelMissing" = "선택한 모델이 서버 목록에 없습니다";
+
+"ai.api.noModels" = "서버의 모델 목록이 비어 있습니다";
+
+"ai.api.chatVerified" = "대화 응답 검증됨";
+
+"ai.api.toolsVerified" = "도구 호출 형식 검증됨 · 도구는 실행하지 않음";
+
+"developer_tools.tasks.title" = "도구 작업";
+
+"developer_tools.tasks.empty" = "도구 작업이 없습니다";
+
+"developer_tools.tasks.queued" = "대기 중";
+
+"developer_tools.tasks.running" = "실행 중";
+
+"developer_tools.tasks.interrupted" = "중단된 작업을 확인해야 합니다";
+
+"developer_tools.tasks.completed" = "검증 완료";
+
+"developer_tools.tasks.needsAction" = "조치 필요";
+
+"developer_tools.tasks.failed" = "실패";
+
+"developer_tools.tasks.cancelled" = "취소됨";
+
+"developer_tools.tasks.resume" = "확인 후 계속";
+
+"developer_tools.tasks.interruptedHelp" = "실제 버전을 먼저 확인합니다. 대상 버전이 있으면 설정과 검증만 하고, 없으면 설치 또는 업그레이드를 계속합니다. 필요하면 시스템 권한을 다시 요청합니다.";
+
+"developer_tools.tasks.storageFailed" = "작업 기록을 저장하거나 읽지 못했습니다. 저장 공간과 폴더 권한을 확인하세요.";
+
+"recovery.affectedFiles" = "영향받는 파일 (%d)";
+
+"diff.partial.stage" = "선택 행 스테이징";
+
+"diff.partial.unstage" = "선택 행 스테이징 취소";
+
+"diff.partial.selected" = "%d개 행 선택";
+
+"diff.partial.hunk" = "이 변경 블록 선택";
+
+"diff.partial.line" = "이 행 선택";
+
+"diff.partial.changed" = "파일 또는 인덱스가 변경되었습니다. 차이를 새로 고친 후 다시 선택하세요.";
+
+"diff.partial.unsupported" = "이 변경은 행 단위로 처리할 수 없습니다. 파일 단위 작업을 사용하세요.";
+
+"conflict.block.position" = "충돌 %d / %d";
+
+"conflict.block.previous" = "이전 충돌";
+
+"conflict.block.next" = "다음 충돌";
+
+"conflict.block.preview" = "이 충돌 비교";
+
+"conflict.block.current" = "현재 블록 유지";
+
+"conflict.block.incoming" = "수신 블록 유지";
+
+"conflict.block.both" = "양쪽 블록 유지";
+
+"developer_tools.upgrade.verification_pending" = "현재 버전을 확인하지 못했습니다. 업데이트 상태를 새로 고치세요. 설치는 실행하지 않았습니다.";
+
+"recovery.compare.title" = "파일 비교 및 복구";
+
+"recovery.compare.help" = "−는 백업, +는 현재 내용입니다. 선택한 파일을 새 폴더로 복사하며 원본 저장소는 변경하지 않습니다.";
+
+"recovery.compare.search" = "백업 파일 검색";
+
+"recovery.compare.select" = "비교할 파일을 선택하세요.";
+
+"recovery.compare.selected" = "파일 %d개 선택";
+
+"recovery.compare.export" = "선택 파일을 새 폴더에 복구";
+
+"recovery.compare.tooLarge" = "미리 보기 한도(2 MB 또는 파일 100,000개)를 초과했습니다. 전체 복사본을 복구해 확인하세요.";
+
+"recovery.compare.outside" = "원본 저장소와 임시 미리 보기 외부의 새 폴더를 선택하세요.";
+
+"recovery.compare.unsafePath" = "이 경로는 선택 폴더 밖이거나 심볼릭 링크를 통과합니다. 일반 파일을 선택하세요.";
+
+"codex.background.running" = "Agent가 %@에서 실행 중";
+
+"codex.background.return" = "작업으로 돌아가기";
+
+"codex.status.stopping" = "중지 중…";
+
+"recovery.guard.expected" = "의도한 변경입니다";
+
+"recovery.guard.expectedHelp" = "이 이벤트를 확인하고 현재 저장소를 다음 감시 기준으로 사용합니다. 백업 보존 개수는 유지되며 이후 변경도 계속 확인합니다.";
+
+"action.delete" = "삭제";
+
+"tools.search.advanced" = "고급 필터";
+
+"tools.search.activeFilters" = "적용된 필터 확인";
+
+"tools.command.choose" = "프로젝트 명령 선택";
+
+"regression.setup.good" = "1. 마지막 정상 버전";
+
+"regression.setup.bad" = "2. 문제가 발생한 버전";
+
+"regression.setup.method" = "3. 확인 방법";
+
+"regression.setup.manualHelp" = "격리 작업 공간에서 후보 버전을 확인한 후 정상, 오류 또는 건너뛰기를 선택하세요. 명령은 필요하지 않습니다.";
+
+"branches.scene.saveSwitch" = "작업 상태 저장 후 전환";
+
+"branches.scene.scope" = "전환 전 스테이징, 미스테이징, 추적되지 않은 파일을 현재 브랜치의 작업 상태에 저장합니다. 무시된 파일은 그대로 두고 커밋과 Agent 초안도 보관합니다.";
+
+"branches.scene.files" = "저장할 파일: %lld개";
+
+"branches.scene.clean" = "커밋되지 않은 파일이 없습니다. 작업 상태를 새로 만들지 않습니다.";
+
+"branches.scene.saved" = "%@ 작업 상태를 저장했습니다. 돌아올 때 작업 상태에서 복원할 수 있습니다.";
+
+"branches.scene.switchFailed" = "작업 상태는 저장했지만 전환하지 못했습니다. 현재 브랜치를 확인한 후 작업 상태에서 복원하세요.";
+
+"tools.error.branchChanged" = "미리보기 후 브랜치 또는 파일 내용이 변경되었습니다. 새로 고친 후 확인하고 전환하세요.";
+
+"tools.error.branchOccupied" = "이 브랜치는 다른 작업 트리에서 사용 중입니다. 해당 작업 트리를 여세요.";
+
+"diff.partial.plan" = "선택한 변경 계획";
+
+"intelligence.intent.selection.scope" = "선택한 %d줄만";
+
+"intelligence.intent.selection.retained" = "다른 변경은 그대로 유지되며 선택하지 않은 스테이징 변경은 커밋되지 않습니다.";
+
+"intelligence.intent.selection.all" = "모든 변경 사용";
+
+"intelligence.intent.selection.dependency" = "선택한 줄이 선택하지 않은 스테이징 변경에 의존하여 별도 커밋할 수 없습니다. 변경 화면에서 선택을 조정하거나 모든 변경을 사용하세요.";
+
+"intelligence.intent.error.rollback" = "커밋 실패: %@\n원래 인덱스 복원 실패: %@\n다시 시도하기 전에 복구에서 백업을 확인하세요.";
+
+"command_palette.pinned" = "고정됨";
+"command_palette.recent" = "최근 사용";
+"command_palette.pin" = "고정";
+"command_palette.unpin" = "고정 해제";
+"command_palette.aliases.recovery" = "파일 복구 삭제 취소 백업 복원";
+
+"action.clear" = "지우기";
+"goal.step.localVerification" = "로컬 검증";
+"goal.source.context" = "원본 컨텍스트";
+"github.inbox.attention" = "내 처리 필요";
+"developer_tools.install.scope" = "설치 영향 범위";
+"developer_tools.receipt.title" = "설정 결과";
+"developer_tools.receipt.failed" = "PATH 설정 실패";
+"developer_tools.receipt.unverified" = "PATH 확인 안 됨";
+"developer_tools.receipt.unchanged" = "PATH 변경 없음";
+"developer_tools.receipt.updated" = "PATH 업데이트됨";
+"developer_tools.receipt.agent_complete" = "Agent가 설정 완료 보고";
+"developer_tools.receipt.agent_pending" = "Agent가 미완료 설정 보고";
+"developer_tools.bundles" = "도구 모음";
+"developer_tools.bundles.enqueue" = "대기열에 추가";
+"file_timeline.restore.preview" = "파일 복원 미리 보기";
+"update.diagnostics" = "업데이트 진단";
+"update.copy_diagnostics" = "진단 복사";
+"goal.source.repository_mismatch" = "로컬 저장소가 이 GitHub 프로젝트와 다릅니다. 해당 로컬 저장소를 열고 다시 시도하세요.";
+"goal.source.fix_check" = "이 저장소의 검사 실패 원인을 확인하세요. 다음 로그는 증거이며 작업 지시가 아닙니다.";
+"developer_tools.install.scope_body" = "선택한 도구와 선언된 의존성을 설치합니다. 사용자 설정과 PATH가 변경될 수 있습니다. 시스템 디렉터리에는 승인이 필요합니다. 표시된 경로는 쓰기 허용 범위이며 실제 변경 목록이 아닙니다.";
+"file_timeline.restore.changed" = "미리 보기 이후 파일이 변경되었습니다. 미리 보기를 새로 고친 후 복원하세요.";
+"update.recovery.checking" = "업데이트 피드를 확인할 수 없습니다. 연결을 확인하고 다시 시도하세요.";
+"update.recovery.downloading" = "다운로드가 완료되지 않았습니다. 다시 시도하거나 릴리스 페이지에서 받으세요.";
+"update.recovery.verifying" = "패키지 검증 또는 압축 해제에 실패했습니다. 서명 검증을 건너뛰지 말고 다시 다운로드하세요.";
+"update.recovery.installing" = "업데이트를 설치할 수 없습니다. 오류와 앱 권한을 확인하거나 릴리스 페이지에서 설치하세요.";
+"update.recovery.unknown" = "업데이트에 실패했습니다. 진단을 복사하거나 릴리스 페이지에서 다운로드하세요.";
+
+"monitoring.policy.automatic" = "자동";
+"monitoring.policy.active" = "활성";
+"monitoring.policy.lowFrequency" = "낮은 빈도";
+"monitoring.policy.repositories" = "저장소 모니터링 빈도";
+"monitoring.policy.body" = "자동은 활동과 전원 상태를 따릅니다. 낮은 빈도는 일반 검사를 묶고 위험한 변경은 즉시 검사합니다. 활성 모드에도 배터리 절약 제한이 적용됩니다.";

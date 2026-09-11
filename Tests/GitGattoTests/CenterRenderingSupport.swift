@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+@testable import GitGatto
 
 @MainActor
 func verifyCenterRendering<Content: View>(_ content: Content, name: String) async throws {
@@ -14,8 +15,15 @@ func verifyCenterRendering<Content: View>(_ content: Content, name: String) asyn
             let view = content
                 .environment(\.colorScheme, scheme)
                 .frame(width: CGFloat(width), height: CGFloat(height))
+                .background(AppPalette(scheme).background)
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+                styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+            window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
             let hosting = NSHostingView(rootView: view)
-            hosting.frame = NSRect(x: 0, y: 0, width: width, height: height)
+            window.contentView = hosting
+            defer { window.orderOut(nil); window.contentView = nil }
+            window.orderFront(nil)
+            await Task.yield()
             hosting.layoutSubtreeIfNeeded()
             hosting.displayIfNeeded()
             let bitmap = try #require(hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds))

@@ -201,6 +201,7 @@ struct AppPreferences: Codable, Sendable, Equatable {
     var language: AppLanguage = .system
     var defaultWorkspace: WorkspaceSection = .github
     var monitoringEngineEnabled = true
+    var repositoryMonitoringPolicies: [String: RepositoryMonitoringPolicy] = [:]
     var statusBarMonitoringEnabled = true
     var liveRefreshEnabled = true
     var liveRefreshInterval = 1.0
@@ -230,6 +231,7 @@ struct AppPreferences: Codable, Sendable, Equatable {
         case language
         case defaultWorkspace
         case monitoringEngineEnabled
+        case repositoryMonitoringPolicies
         case statusBarMonitoringEnabled
         case liveRefreshEnabled
         case liveRefreshInterval
@@ -260,6 +262,8 @@ struct AppPreferences: Codable, Sendable, Equatable {
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        repositoryMonitoringPolicies = (try container.decodeIfPresent([String: String].self, forKey: .repositoryMonitoringPolicies) ?? [:])
+            .compactMapValues(RepositoryMonitoringPolicy.init(rawValue:))
         language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system
         defaultWorkspace = try container.decodeIfPresent(WorkspaceSection.self, forKey: .defaultWorkspace) ?? .github
         monitoringEngineEnabled = try container.decodeIfPresent(
@@ -339,6 +343,26 @@ struct AppPreferences: Codable, Sendable, Equatable {
         defaultTranslationTarget = try container.decodeIfPresent(CodexTranslationTarget.self, forKey: .defaultTranslationTarget) ?? .simplifiedChinese
     }
 
+    func requiresMonitoringRestart(comparedTo previous: Self) -> Bool {
+        monitoringEngineEnabled != previous.monitoringEngineEnabled
+            || statusBarMonitoringEnabled != previous.statusBarMonitoringEnabled
+            || repositoryMonitoringPolicies != previous.repositoryMonitoringPolicies
+            || liveRefreshEnabled != previous.liveRefreshEnabled
+            || liveRefreshInterval != previous.liveRefreshInterval
+            || remoteRefreshEnabled != previous.remoteRefreshEnabled
+            || remoteRefreshInterval != previous.remoteRefreshInterval
+            || githubActionsMonitoringEnabled != previous.githubActionsMonitoringEnabled
+            || projectGoalMonitoringEnabled != previous.projectGoalMonitoringEnabled
+            || repositoryBackupEnabled != previous.repositoryBackupEnabled
+            || repositoryBackupIntervalMinutes != previous.repositoryBackupIntervalMinutes
+            || majorBackupFileThreshold != previous.majorBackupFileThreshold
+            || majorBackupLineThreshold != previous.majorBackupLineThreshold
+            || repositoryBackupRetentionCount != previous.repositoryBackupRetentionCount
+            || repositoryBackupMaximumFileSizeMB != previous.repositoryBackupMaximumFileSizeMB
+            || repositoryBackupDirectoryPath != previous.repositoryBackupDirectoryPath
+            || externalRepositoryProtectionEnabled != previous.externalRepositoryProtectionEnabled
+    }
+
     var repositoryBackupPolicy: RepositoryBackupPolicy {
         RepositoryBackupPolicy(
             majorFileThreshold: max(1, majorBackupFileThreshold),
@@ -362,8 +386,8 @@ struct AppPreferences: Codable, Sendable, Equatable {
 enum AppPreferencesStore {
     private static let key = "app.preferences"
 
-    static func load() -> AppPreferences {
-        guard let data = UserDefaults.standard.data(forKey: key),
+    static func load(defaults: UserDefaults = .standard) -> AppPreferences {
+        guard let data = defaults.data(forKey: key),
               let preferences = try? JSONDecoder().decode(AppPreferences.self, from: data)
         else {
             return AppPreferences()
@@ -371,9 +395,11 @@ enum AppPreferencesStore {
         return preferences
     }
 
-    static func save(_ preferences: AppPreferences) {
-        guard let data = try? JSONEncoder().encode(preferences) else { return }
-        UserDefaults.standard.set(data, forKey: key)
+    @discardableResult
+    static func save(_ preferences: AppPreferences, defaults: UserDefaults = .standard) -> Bool {
+        guard let data = try? JSONEncoder().encode(preferences) else { return false }
+        defaults.set(data, forKey: key)
+        return true
     }
 
     static func saveLanguage(_ language: AppLanguage) {

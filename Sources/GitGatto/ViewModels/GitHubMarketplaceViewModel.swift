@@ -24,6 +24,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     @Published private(set) var isTranslating = false
     @Published private(set) var translationCompletionID: UUID?
     @Published private(set) var activeTranslationTarget: CodexTranslationTarget?
+    @Published private(set) var lastTranslationTarget: CodexTranslationTarget?
     @Published private(set) var translations: [CodexTranslationTarget: MarketplaceTranslationDocument] = [:]
     @Published private(set) var translationError: String?
     @Published private(set) var error: String?
@@ -44,6 +45,7 @@ final class GitHubMarketplaceViewModel: ObservableObject {
     private var loadMoreTask: Task<Void, Never>?
     private var detailTask: Task<Void, Never>?
     private var detailsTask: Task<Void, Never>?
+    private var translationRequestID: UUID?
     private var translationTask: Task<Void, Never>?
     private var translationCacheTask: Task<Void, Never>?
     private var starTask: Task<Void, Never>?
@@ -382,9 +384,12 @@ final class GitHubMarketplaceViewModel: ObservableObject {
         translationCacheTask = nil
         isTranslating = true
         translationError = nil
+        let requestID = UUID()
+        translationRequestID = requestID
+        lastTranslationTarget = target
         translationTask = Task {
             defer {
-                if selectedApplication?.id == application.id, selectedReleaseID == release.id {
+                if translationRequestID == requestID, selectedApplication?.id == application.id, selectedReleaseID == release.id {
                     isTranslating = false
                     translationTask = nil
                 }
@@ -430,10 +435,17 @@ final class GitHubMarketplaceViewModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                guard selectedApplication?.id == application.id, selectedReleaseID == release.id else { return }
+                guard !Task.isCancelled, translationRequestID == requestID, selectedApplication?.id == application.id, selectedReleaseID == release.id else { return }
                 translationError = L10n.format("marketplace.error.translation", error.localizedDescription)
             }
         }
+    }
+
+    func cancelTranslation() {
+        translationRequestID = nil
+        translationTask?.cancel()
+        translationTask = nil
+        isTranslating = false
     }
 
     func showOriginal() {

@@ -394,7 +394,7 @@
 "help.goals.create.1" = "リポジトリを開き、「目標」で操作を選び、コミットメッセージまたはバージョンを入力して「実行開始」を選びます。同時に実行できる目標はリポジトリごとに1つです。";
 "help.goals.create.2" = "カスタム目標では目的を記述します。Agent が読み取り専用で分析して手順を提案します。操作範囲を確認して実行してください。";
 "help.goals.create.3" = "Quick goals cover commit and push, GitHub delivery, and complete release. GitHub delivery requires a branch other than the default branch.";
-"help.goals.create.4" = "The goal records its repository, branch, baseline commit, steps, and evidence.リポジトリを切り替えても、その状態は混在しません。";
+"help.goals.create.4" = "The goal records its repository, branch, baseline commit, steps, and evidence.リポジトリを切り替えても、その状態は混在しません。 変更、Issue、PR、失敗したチェックからも目標を作成できます。保存済みのプロジェクトコマンドを選び、コミット前に検証できます。";
 "help.goals.execute.title" = "実行して回復する";
 "help.goals.execute.1" = "許可した手順を順に実行し、各手順後に Git と GitHub の状態を読み直します。マージ、公開、インストールは確認を待ちます。";
 "help.goals.execute.2" = "A failed step retains its original evidence and stops at Needs Attention.完了したステップはアプリを再起動しても残ります。";
@@ -456,7 +456,7 @@
 "help.translation.channel.title" = "独立した実行レーン";
 "help.translation.channel.1" = "翻訳 CLI とプロジェクト Agent は別個の構成とプロセスを持っているため、Agent が動作している間も翻訳は利用できます。";
 "help.translation.channel.2" = "自動翻訳は本文を判定し、設定した言語を使います。同じ言語や判定できない短文は変わらない場合があります。反応がなければ設定の翻訳エンジンと言語を確認してください。";
-"help.translation.channel.3" = "変換は停止する可能性があり、タイムアウトが発生します。失敗しても、すでに保存されている翻訳は削除されません。";
+"help.translation.channel.3" = "変換は停止する可能性があり、タイムアウトが発生します。失敗しても、すでに保存されている翻訳は削除されません。 再試行では失敗時に選んだ言語を使います。翻訳に失敗しても原文を表示できます。";
 
 "help.topic.cliSettings.title" = "設定";
 "help.topic.cliSettings.summary" = "アプリのインターフェース、起動ワークスペース、ライブ Git モニタリング、Agent、翻訳を 1 つのウィンドウから設定します。";
@@ -481,7 +481,7 @@
 "help.shortcuts.actions.title" = "一般的なアクション";
 "help.shortcuts.actions.1" = "⌘O: ローカル リポジトリを開きます。 ⌘R: 現在のリポジトリを更新します。";
 "help.shortcuts.actions.2" = "⌘↩: 現在のコミット メッセージを使用してステージングされたコンテンツをコミットします。";
-"help.shortcuts.actions.3" = "⌘K でコマンドパレットを開きます。変更ファイルや最近のリポジトリを右クリックすると操作を表示します。ヘルプメニューから現在の画面のガイドを開けます。";
+"help.shortcuts.actions.3" = "⌘K でコマンドパレットを開きます。変更ファイルや最近のリポジトリを右クリックすると操作を表示します。ヘルプメニューから現在の画面のガイドを開けます。 よく使うコマンドを固定でき、最近使った項目は上部に表示されます。矢印キーで選択し、Return で実行します。";
 
 "help.topic.troubleshooting.title" = "トラブルシューティング";
 "help.topic.troubleshooting.summary" = "失敗した操作を再試行する前に、選択したプロジェクト、ローカル CLI サインイン、および報告されたエラーを確認してください。";
@@ -579,7 +579,7 @@
 "error.operation.push" = "プッシュ";
 "error.operation.agent" = "Agent を実行します";
 "error.section.output" = "完全なエラー出力";
-"error.section.explanation" = "";
+"error.section.explanation" = "原因";
 "error.section.details" = "エラーの詳細";
 "error.section.recovery" = "回復";
 "error.detail.code" = "エラーコード";
@@ -708,7 +708,7 @@
 
 "settings.open" = "設定";
 "settings.title" = "設定";
-"settings.save" = "保存して確認";
+"settings.save" = "保存";
 "settings.saved" = "設定が保存されました";
 "settings.appearance.title" = "外観";
 "settings.appearance.mode" = "外観モード";
@@ -2143,16 +2143,16 @@
 "github.issues.editor.milestone" = "Milestone number";
 "github.issues.agent.prompt" = "Work on GitHub issue %1$@ #%2$d: %3$@\n\n%4$@\n\nInspect the repository first, implement the narrowest complete fix, run relevant validation, and summarize the changed files.";
 "command_palette.title" = "コマンドパレット";
-"command_palette.placeholder" = "Search commands, repositories or branches";
-"command_palette.empty" = "No matching commands";
-"command_palette.group.navigate" = "Navigate";
-"command_palette.group.repositories" = "Repositories";
-"command_palette.group.branches" = "Branches";
-"command_palette.group.git" = "Git actions";
-"command_palette.group.application" = "Application";
-"command_palette.hint.navigate" = "Navigate";
-"command_palette.hint.run" = "Run";
-"command_palette.count" = "%d commands";
+"command_palette.placeholder" = "コマンド、リポジトリ、ブランチを検索";
+"command_palette.empty" = "一致するコマンドがありません";
+"command_palette.group.navigate" = "画面移動";
+"command_palette.group.repositories" = "リポジトリ";
+"command_palette.group.branches" = "ブランチ";
+"command_palette.group.git" = "Git 操作";
+"command_palette.group.application" = "アプリ";
+"command_palette.hint.navigate" = "選択";
+"command_palette.hint.run" = "実行";
+"command_palette.count" = "%d 件のコマンド";
 "commit_search.title" = "コミット検索";
 "commit_search.action" = "Search";
 "commit_search.hash" = "Commit SHA";
@@ -2183,49 +2183,43 @@
 "intelligence.tab.provenance" = "コードの経緯";
 "intelligence.tab.capsules" = "障害カプセル";
 "intelligence.tab.activity" = "Agent 操作履歴";
-"intelligence.intent.title" = "Commit Plan";
-"intelligence.intent.summary" = "%d change units · %d commits";
-"intelligence.intent.loading" = "Analyzing working-tree changes…";
-"intelligence.intent.empty.title" = "No changes to organize";
-"intelligence.intent.empty.body" = "Edit files in this repository, then refresh to build an atomic commit plan.";
-"intelligence.intent.select.title" = "Select a change unit";
-"intelligence.intent.select.body" = "Choose a hunk to inspect the exact patch assigned to this commit.";
-"intelligence.intent.add_group" = "Add commit";
-"intelligence.intent.agent" = "Refine with Agent";
-"intelligence.intent.apply" = "Create commits";
-"intelligence.intent.confirm.title" = "Create the planned commits?";
-"intelligence.intent.confirm.body" = "GitGatto will create %d local commits in this order. A recovery point is created first.";
-"intelligence.intent.group_title" = "Commit purpose";
-"intelligence.intent.commit_message" = "Commit message";
-"intelligence.intent.verify_placeholder" = "Optional verification command after each commit";
-"intelligence.intent.group_empty" = "Move at least one change unit into this commit.";
-"intelligence.intent.whole_file" = "Whole file";
-"intelligence.intent.whole_file.title" = "Whole-file change";
-"intelligence.intent.whole_file.body" = "This binary, new, deleted, or metadata-only file is committed as one unit.";
-"intelligence.intent.result.title" = "Commit series created";
-"intelligence.intent.result.body" = "Created %d local commits. They have not been pushed.";
-"intelligence.intent.refresh" = "Analyze remaining changes";
-"intelligence.intent.new_group" = "New commit";
-"intelligence.intent.notice.refined" = "The Agent plan is ready for review.";
-"intelligence.intent.notice.applied" = "Created %d local commits.";
-"intelligence.intent.kind.implementation" = "Implementation";
-"intelligence.intent.kind.fix" = "Fix";
-"intelligence.intent.kind.refactor" = "Refactor";
-"intelligence.intent.kind.tests" = "Tests";
-"intelligence.intent.kind.documentation" = "Documentation";
-"intelligence.intent.kind.configuration" = "Configuration";
-"intelligence.intent.kind.assets" = "Assets";
-"intelligence.intent.kind.other" = "Other";
-"intelligence.intent.error.no_changes" = "There are no working-tree changes to organize.";
-"intelligence.intent.error.conflicts" = "Resolve the current conflicts before building a commit plan.";
-"intelligence.intent.error.changed" = "The repository changed after this plan was created. Refresh the plan before applying it.";
-"intelligence.intent.error.status" = "Git returned an unreadable working-tree status.";
-"intelligence.intent.error.repository" = "This plan belongs to a different repository.";
-"intelligence.intent.error.assignment" = "Every change unit must belong to exactly one non-empty commit.";
-"intelligence.intent.error.empty_group" = "“%@” did not stage any changes.";
-"intelligence.intent.error.unsupported" = "The change in “%@” cannot be staged independently.";
-"intelligence.intent.error.verification" = "Verification command failed: %@\n%@";
-"intelligence.intent.error.agent_plan" = "Agent returned an invalid commit plan.";
+"intelligence.intent.summary" = "%d ファイル · %d コミット";
+"intelligence.intent.loading" = "変更を読み込み中…";
+"intelligence.intent.empty.title" = "整理する変更はありません";
+"intelligence.intent.empty.body" = "整理する変更がありません。ファイルを編集して再読み込みしてください。";
+"intelligence.intent.add_group" = "コミットを追加";
+"intelligence.intent.agent" = "Agent で整理";
+"intelligence.intent.apply" = "コミットを作成";
+"intelligence.intent.confirm.title" = "このコミットを作成しますか？";
+"intelligence.intent.confirm.body" = "GitGatto は復元ポイントを保存し、この順序で %d 個のローカルコミットを作成します。";
+"intelligence.intent.group_title" = "コミットの目的";
+"intelligence.intent.commit_message" = "コミットメッセージ";
+"intelligence.intent.verify_placeholder" = "各コミット後の検証コマンド（任意）";
+"intelligence.intent.group_empty" = "ファイルまたはコードブロックを 1 つ以上移動してください。";
+"intelligence.intent.whole_file.title" = "ファイル全体の変更";
+"intelligence.intent.whole_file.body" = "この変更はファイル全体としてコミットします。テキストプレビューはありません。";
+"intelligence.intent.result.title" = "コミットを作成しました";
+"intelligence.intent.result.body" = "%d 個のローカルコミットを作成しました。プッシュはしていません。";
+"intelligence.intent.refresh" = "残りの変更を読み込む";
+"intelligence.intent.new_group" = "新しいコミット";
+"intelligence.intent.kind.implementation" = "機能";
+"intelligence.intent.kind.fix" = "修正";
+"intelligence.intent.kind.refactor" = "リファクタリング";
+"intelligence.intent.kind.tests" = "テスト";
+"intelligence.intent.kind.documentation" = "ドキュメント";
+"intelligence.intent.kind.configuration" = "設定";
+"intelligence.intent.kind.assets" = "リソース";
+"intelligence.intent.kind.other" = "その他";
+"intelligence.intent.error.no_changes" = "整理する変更はありません。";
+"intelligence.intent.error.conflicts" = "競合を解決してからコミットを整理してください。";
+"intelligence.intent.error.changed" = "ファイルまたはステージング領域が変更されました。計画を再読み込みしてください。";
+"intelligence.intent.error.status" = "Git が返した作業ツリーの状態を読み取れません。";
+"intelligence.intent.error.repository" = "この計画は別のリポジトリ用です。該当リポジトリを開くか再読み込みしてください。";
+"intelligence.intent.error.assignment" = "各変更は空でない 1 つのコミットにのみ割り当ててください。";
+"intelligence.intent.error.empty_group" = "「%@」にはステージされた変更がありません。";
+"intelligence.intent.error.unsupported" = "「%@」の変更を個別にステージできません。";
+"intelligence.intent.error.verification" = "検証コマンドが失敗しました：%@\n%@";
+"intelligence.intent.error.agent_plan" = "Agent が無効な計画を返しました。もう一度整理してください。";
 "intelligence.provenance.path" = "Repository-relative file path";
 "intelligence.provenance.line" = "Line";
 "intelligence.provenance.trace" = "Trace";
@@ -2305,9 +2299,9 @@
 "help.topic.intelligence.title" = "Change Center";
 "help.topic.intelligence.summary" = "Build atomic commits, trace code context, move failures, and inspect Agent activity.";
 "help.intelligence.intent.title" = "Commit Plan";
-"help.intelligence.intent.1" = "Open Change Center and refresh after editing files. GitGatto splits text patches into independently assignable hunks and keeps binary or new files whole.";
-"help.intelligence.intent.2" = "Review commit order, purpose, message, and hunk assignment. Agent refinement changes only the proposed plan and still requires your confirmation.";
-"help.intelligence.intent.3" = "An optional command can verify every commit. Create commits makes a recovery point first and never pushes the resulting commits automatically.";
+"help.intelligence.intent.1" = "ファイルを編集したらコミット計画を開きます。必要なら目的を入力し、分割か統合を選んで Agent で整理します。";
+"help.intelligence.intent.2" = "各カードにメッセージとファイルを表示します。編集と分割で内容や割り当てを変更でき、メニューで順序変更や統合ができます。計画の整理ではリポジトリに書き込みません。";
+"help.intelligence.intent.3" = "その他のオプションで各コミット後の検証コマンドを設定できます。作成を確定すると復元ポイントを作成し、順番にローカルコミットを作成します。自動プッシュはしません。";
 "help.intelligence.provenance.title" = "Code Context";
 "help.intelligence.provenance.1" = "Enter a tracked repository-relative path and a positive line number.";
 "help.intelligence.provenance.2" = "Git blame identifies the originating local commit and the files changed by it.";
@@ -2478,8 +2472,7 @@
 "tools.commands.help" = "確認後にのみ実行します。検出時にプロジェクトファイルは実行しません。パネルを閉じても実行は続き、アプリ終了時に停止します。";
 "tools.command.custom" = "コマンドを追加・編集";
 "tools.command.executable" = "実行ファイル名または絶対パス";
-"tools.command.arguments" = "引数（JSON 配列）";
-"tools.command.argvHelp" = "例：[\"run\", \"dev\"]。引数は個別に渡し、シェルコマンドとして展開しません。";
+"tools.command.arguments" = "引数";
 "tools.command.timeout" = "タイムアウト：%d 秒";
 "tools.command.localURL" = "ローカル URL（任意）";
 "tools.command.empty" = "スクリプトが見つかりません。上でコマンドを追加してください。";
@@ -2533,7 +2526,7 @@
 "tools.error.binding" = "パスが関連付け済み、またはディレクトリルールに使用できません。古い関連付けを先に解除してください。";
 "tools.error.bound" = "設定が使用中です。先に関連付けを解除してください。";
 "tools.error.identityMismatch" = "有効な情報が設定と一致しません。コミット前に「プロジェクトツール → コミットのユーザー情報」で確認してください。";
-"tools.error.command" = "実行ファイル、JSON 引数配列、1〜86,400秒の制限時間、任意の localhost URL を指定してください。";
+"tools.error.command" = "実行ファイル、個別の引数、1～86,400秒のタイムアウト、任意のローカルURLを入力してください。";
 "tools.error.timeout" = "タイムアウトのため停止しました。出力を確認するか、制限時間を変更して再試行してください。";
 "tools.error.previewLimit" = "対象が100,000ファイルを超えています。範囲を減らしてからプレビューしてください。";
 "tools.error.previewRequired" = "保存前に現在のルールをプレビューしてください。";
@@ -2558,7 +2551,7 @@
 "help.topic.fileHistory.title" = "ファイル履歴";
 "help.topic.fileHistory.summary" = "ファイルや行がいつ変わったかを調べる。";
 "help.fileHistory.start" = "ファイル履歴でファイルとリビジョンを選び、内容と差分を確認します。行の帰属情報から、その行のコミットと作者を特定できます。";
-"help.fileHistory.result" = "コミット履歴に移動すると同時に変更された他のファイルも確認できます。バージョンの復元は確認後に現在のファイルを置き換えるので、作業ツリーの差分を確認してください。履歴はコミットの記録であり、編集時の保存履歴ではありません。";
+"help.fileHistory.result" = "復元前に現在の内容との差分を確認します。確認後に作業ファイルを置き換えます。プレビュー後に変更があれば、プレビューを更新してください。";
 "help.fileHistory.caution" = "見つからない場合はリポジトリ、パス、絞り込み条件を確認してください。失われた未コミットの内容は復元ポイントやスタッシュを調べます。Git 履歴に必ず残っているとは限りません。";
 "help.topic.branches.title" = "ブランチ・タグ・リモート";
 "help.topic.branches.summary" = "参照の管理と記録済みコミットの復元。";
@@ -2582,7 +2575,7 @@
 "help.recovery.caution" = "保持数はリポジトリごとに最大三世代で、ファイル制限による除外があります。設定で保存先を変更すると既存のバックアップを移行します。警告は確認すべき変化の検出で、攻撃の証明ではありません。理由と復元ポイントを確認してから復元してください。";
 "help.topic.monitoring.title" = "監視とメニューバー";
 "help.topic.monitoring.summary" = "変更、上流、保護、Actions、目標を確認する。";
-"help.monitoring.start" = "設定の監視でエンジンを有効にし、各チャンネルと更新間隔を個別に設定します。メニューバーの表示設定もここにあります。アイコンを隠すことと監視の停止は別です。";
+"help.monitoring.start" = "設定の監視でエンジンを有効にし、各チャンネルと更新間隔を個別に設定します。メニューバーの表示設定もここにあります。アイコンを隠すことと監視の停止は別です。 リポジトリごとに自動、アクティブ、低頻度を選択できます。バッテリー制限と危険な変更の確認は引き続き有効です。";
 "help.monitoring.result" = "メニューバーではメイン画面とは独立して全リポジトリまたは一つを選べます。実際の変更、同期状態、復元ポイント、日別活動を表示します。活動はコミットと変更シグナルであり、作業時間ではありません。";
 "help.monitoring.caution" = "ウインドウを最小化してもアプリが動いていれば監視しますが、終了後は監視しません。外部 Agent・CLI 保護は管理対象の変化を観測し復元基準を保持します。すべての破壊的コマンドの阻止や、未保存・除外ファイルの復元は保証できません。";
 "help.topic.applications.title" = "アプリリポジトリ";
@@ -2593,7 +2586,7 @@
 "help.topic.developerTools.title" = "開発ツール";
 "help.topic.developerTools.summary" = "ツールの検出、導入、設定、更新。";
 "help.developerTools.start" = "アプリリポジトリの開発ツールでローカル検出を更新し、ツールを選んで Agent にインストールまたは更新を依頼します。更新可能な複数のツールを選べます。二つのキューに待機中・実行中の仕事を表示します。";
-"help.developerTools.result" = "最大三件が並行実行されますが、パッケージ管理の書き込みロックでは待機する場合があります。仕事を開くと段階と出力を確認できます。PATH やプラグイン登録など必要なユーザー設定を行い、実行ファイルとバージョンをローカルで検証します。";
+"help.developerTools.result" = "最大三件が並行実行されますが、パッケージ管理の書き込みロックでは待機する場合があります。仕事を開くと段階と出力を確認できます。PATH やプラグイン登録など必要なユーザー設定を行い、実行ファイルとバージョンをローカルで検証します。 ツールセットは選択したツールをキューに追加します。開始前に影響範囲を確認できます。結果は実行ファイルの検証、PATH の変更、Agent の設定結果に分かれます。";
 "help.developerTools.caution" = "Agent の完了報告だけでは検証済みではありません。要対応は導入、設定、バージョン確認が未完了の状態です。権限問題では表示された認可・再試行を使います。ログインと macOS 認可は本人が行います。未ログインだけで検証済みの導入を失敗とは判定しません。他の処理中に Homebrew ロックを消さないでください。";
 "help.topic.collaboration.title" = "同期・受信箱・共同作業";
 "help.topic.collaboration.summary" = "複数リポジトリと GitHub の会話を扱う。";
@@ -2617,7 +2610,7 @@
 "help.workScenes.caution" = "中断や拒否時は段階とリポジトリを確認してから再試行します。処理済みにする操作は記録の確認だけで、ファイルを復元しません。シーン削除は記録と専用参照を消しますが、元のスタッシュは残ります。";
 "help.topic.projectCommands.title" = "コマンド実行";
 "help.topic.projectCommands.summary" = "プロジェクトのコマンドと結果を確認する。";
-"help.projectCommands.start" = "プロジェクトツールでパッケージ設定、Make、Swift からコマンドを検出します。実行前に実行ファイル、ディレクトリ、引数、タイムアウトを確認します。独自引数は Shell 文字列ではなく JSON 配列で入力します。";
+"help.projectCommands.start" = "プロジェクトツール → コマンドを実行。実行ファイル、場所、引数、タイムアウトを確認します。引数は個別に入力し、空白もその引数に含まれます。";
 "help.projectCommands.result" = "よく使うコマンドを固定し、出力、経過時間、終了コードを確認できます。停止、再試行、localhost リンクの表示、Agent へのログ下書きが可能です。パネルを閉じても実行は続き、アプリを終了すると所有プロセスを停止します。";
 "help.projectCommands.caution" = "非対話実行なのでパスワード入力などには端末を使います。タイムアウトは成功ではありません。最新 20 件の実行記録は現セッションのメモリにのみ残るため、必要なログは終了前に保存してください。信頼できないスクリプトは先に確認します。";
 "help.topic.ignoreRules.title" = "除外ルール";
@@ -2690,3 +2683,249 @@
 "ai.provider.qwen" = "Qwen Code";
 "ai.provider.openAICompatible" = "OpenAI-compatible API";
 "ai.provider.deepseek" = "DeepSeek API";
+
+"intelligence.intent.advanced" = "その他のオプション";
+"intelligence.intent.refresh_confirm" = "変更を再読み込みしますか？";
+"intelligence.intent.refresh_confirm.body" = "コミットのグループとメッセージを作り直します。";
+"intelligence.intent.instruction" = "変更の目的やコミットの分け方を入力（任意）";
+"intelligence.intent.planning" = "変更を読み取り、コミットを整理中…";
+"intelligence.intent.draft_hint" = "ファイルの関連性で仮に分類しています。Agent が変更内容から整理できます。";
+"intelligence.intent.split_mode" = "コミットの分け方";
+"intelligence.intent.split.automatic" = "目的ごとに分割";
+"intelligence.intent.split.single" = "1 つにまとめる";
+"intelligence.intent.replan" = "整理し直す";
+"intelligence.intent.merge_all" = "1 つのコミットに統合";
+"intelligence.intent.applying" = "コミットを作成中…";
+"intelligence.intent.local_only" = "ローカルコミットを作成します。プッシュはしません。";
+"intelligence.intent.incomplete" = "各コミットに変更とメッセージが必要です。";
+"intelligence.intent.move_up" = "順序を上げる";
+"intelligence.intent.move_down" = "順序を下げる";
+"intelligence.intent.merge_group" = "残りの最初のコミットに統合";
+"intelligence.intent.commit_actions" = "コミット操作";
+"intelligence.intent.files_less" = "ファイルを折りたたむ";
+"intelligence.intent.files_more" = "すべてのファイルを表示";
+"intelligence.intent.edit" = "編集と分割";
+"intelligence.intent.category" = "種類";
+"intelligence.intent.move_changes" = "変更を移動";
+"intelligence.intent.split_file" = "別のコミットにする";
+
+"settings.pending" = "未保存の変更";
+
+"settings.discard" = "変更を破棄";
+
+"settings.saveFailed" = "設定を保存できません。入力内容を確認して再試行してください。";
+
+"settings.search" = "設定を検索";
+
+"settings.applyHelp" = "外観・更新スイッチ・バックアップ場所・APIキーは即時保存。他の変更は保存が必要です。閉じると未保存分を破棄します。";
+
+"search.noResults" = "一致する結果がありません";
+
+"help.search" = "ガイドを検索";
+
+"help.openFeature" = "この機能を開く";
+
+"error.action.workflowPermission" = "ワークフローの権限を付与";
+
+"error.action.agentSettings" = "Agent 設定を開く";
+
+"error.action.refreshRepository" = "リポジトリを再確認";
+
+"error.action.inspectRepository" = "リポジトリ診断を開く";
+
+"tools.command.argument" = "引数";
+
+"tools.command.addArgument" = "引数を追加";
+
+"tools.command.removeArgument" = "引数を削除";
+
+"tools.command.argumentsLiteral" = "1 行につき 1 引数。空白と空の引数は保持され、シェル展開は行いません。";
+
+"ai.api.loadModels" = "モデルを取得";
+
+"ai.api.chooseModel" = "モデルを選択";
+
+"ai.api.testChat" = "会話をテスト";
+
+"ai.api.testTools" = "ツール呼び出しをテスト";
+
+"ai.api.testHelp" = "テストはモデルに短いリクエストを送り、利用枠を消費する場合があります。コマンド実行やファイル書き込みは行いません。";
+
+"ai.api.catalogOnly" = "モデル確認済み・実行未テスト";
+
+"ai.api.notTested" = "設定済み・実行未テスト";
+
+"ai.api.modelMissing" = "選択したモデルがサーバー一覧にありません";
+
+"ai.api.noModels" = "サーバーのモデル一覧が空です";
+
+"ai.api.chatVerified" = "会話応答を検証済み";
+
+"ai.api.toolsVerified" = "ツール呼び出し形式を検証済み。実行はしていません";
+
+"developer_tools.tasks.title" = "ツールのタスク";
+
+"developer_tools.tasks.empty" = "ツールのタスクはありません";
+
+"developer_tools.tasks.queued" = "待機中";
+
+"developer_tools.tasks.running" = "実行中";
+
+"developer_tools.tasks.interrupted" = "中断したタスクの確認が必要です";
+
+"developer_tools.tasks.completed" = "検証完了";
+
+"developer_tools.tasks.needsAction" = "対応が必要";
+
+"developer_tools.tasks.failed" = "失敗";
+
+"developer_tools.tasks.cancelled" = "キャンセル済み";
+
+"developer_tools.tasks.resume" = "確認して続行";
+
+"developer_tools.tasks.interruptedHelp" = "実際のバージョンを確認し、導入済みなら設定と検証のみ行います。未導入ならインストール・更新を続行します。必要な権限は再度確認します。";
+
+"developer_tools.tasks.storageFailed" = "タスク記録を保存・読み込みできません。空き容量とフォルダ権限を確認してください。";
+
+"recovery.affectedFiles" = "影響するファイル（%d）";
+
+"diff.partial.stage" = "選択行をステージ";
+
+"diff.partial.unstage" = "選択行を解除";
+
+"diff.partial.selected" = "%d 行を選択";
+
+"diff.partial.hunk" = "この変更ブロックを選択";
+
+"diff.partial.line" = "この行を選択";
+
+"diff.partial.changed" = "ファイルかインデックスが変わりました。差分を更新して再選択してください。";
+
+"diff.partial.unsupported" = "この変更は行単位で処理できません。ファイル単位の操作を使ってください。";
+
+"conflict.block.position" = "競合 %d / %d";
+
+"conflict.block.previous" = "前の競合";
+
+"conflict.block.next" = "次の競合";
+
+"conflict.block.preview" = "この競合を比較";
+
+"conflict.block.current" = "現在のブロックを保持";
+
+"conflict.block.incoming" = "受信ブロックを保持";
+
+"conflict.block.both" = "両方を保持";
+
+"developer_tools.upgrade.verification_pending" = "現在のバージョンを確認できません。更新状況を再取得してください。インストールは行っていません。";
+
+"recovery.compare.title" = "ファイルの比較と復元";
+
+"recovery.compare.help" = "− はバックアップ、+ は現在の内容です。選択したファイルを新しいフォルダへコピーし、元のリポジトリは変更しません。";
+
+"recovery.compare.search" = "バックアップ内を検索";
+
+"recovery.compare.select" = "比較するファイルを選択。";
+
+"recovery.compare.selected" = "%d ファイルを選択";
+
+"recovery.compare.export" = "選択ファイルを新規フォルダに復元";
+
+"recovery.compare.tooLarge" = "プレビュー上限（2 MB／100,000ファイル）を超えています。完全なコピーを復元して確認してください。";
+
+"recovery.compare.outside" = "元のリポジトリと一時プレビューの外に新規フォルダを選択してください。";
+
+"recovery.compare.unsafePath" = "このパスは選択フォルダの外か、シンボリックリンクを通ります。通常のファイルを選択してください。";
+
+"codex.background.running" = "Agent は %@ で実行中";
+
+"codex.background.return" = "タスクに戻る";
+
+"codex.status.stopping" = "停止中…";
+
+"recovery.guard.expected" = "意図した変更です";
+
+"recovery.guard.expectedHelp" = "今回のイベントを確認し、現在の状態を監視基準にします。バックアップの保持数は変わらず、その後の変更も確認されます。";
+
+"action.delete" = "削除";
+
+"tools.search.advanced" = "詳細条件";
+
+"tools.search.activeFilters" = "適用中の条件を確認";
+
+"tools.command.choose" = "プロジェクトのコマンドを選択";
+
+"regression.setup.good" = "1. 最後に正常だったバージョン";
+
+"regression.setup.bad" = "2. 問題があるバージョン";
+
+"regression.setup.method" = "3. 確認方法";
+
+"regression.setup.manualHelp" = "隔離ワークスペースで候補を確認し、正常・不具合・スキップを選びます。コマンドは不要です。";
+
+"branches.scene.saveSwitch" = "作業状態を保存して切り替え";
+
+"branches.scene.scope" = "切り替える前にステージ済み・未ステージ・未追跡ファイルを現在のブランチの作業状態に保存します。無視されたファイルはそのまま残り、コミットと Agent の下書きも保持されます。";
+
+"branches.scene.files" = "保存するファイル：%lld 件";
+
+"branches.scene.clean" = "未コミットのファイルはありません。作業状態は新規作成されません。";
+
+"branches.scene.saved" = "%@ の作業状態を保存しました。戻る際は「作業状態」から復元できます。";
+
+"branches.scene.switchFailed" = "作業状態は保存済みですが切り替えが完了しませんでした。現在のブランチを確認し、「作業状態」から復元してください。";
+
+"tools.error.branchChanged" = "プレビュー後にブランチまたはファイルが変更されました。更新して確認してから切り替えてください。";
+
+"tools.error.branchOccupied" = "このブランチは別のワークツリーで使用中です。そのワークツリーを開いてください。";
+
+"diff.partial.plan" = "選択した変更を計画";
+
+"intelligence.intent.selection.scope" = "選択した %d 行のみ";
+
+"intelligence.intent.selection.retained" = "他の変更はそのまま残り、未選択のステージ済み変更はコミットされません。";
+
+"intelligence.intent.selection.all" = "すべての変更に切り替え";
+
+"intelligence.intent.selection.dependency" = "選択行は未選択のステージ済み変更に依存しているため、単独でコミットできません。変更画面で選択を調整するか、すべての変更を使用してください。";
+
+"intelligence.intent.error.rollback" = "コミット失敗：%@\n元のインデックスを復元できませんでした：%@\n再試行前に復旧画面でバックアップを確認してください。";
+
+"command_palette.pinned" = "固定済み";
+"command_palette.recent" = "最近使った項目";
+"command_palette.pin" = "固定";
+"command_palette.unpin" = "固定を解除";
+"command_palette.aliases.recovery" = "ファイルを復元 削除を元に戻す バックアップ";
+
+"action.clear" = "クリア";
+"goal.step.localVerification" = "ローカル検証";
+"goal.source.context" = "参照元の内容";
+"github.inbox.attention" = "対応が必要";
+"developer_tools.install.scope" = "インストールの範囲";
+"developer_tools.receipt.title" = "設定結果";
+"developer_tools.receipt.failed" = "PATH 設定失敗";
+"developer_tools.receipt.unverified" = "PATH 未検証";
+"developer_tools.receipt.unchanged" = "PATH の変更なし";
+"developer_tools.receipt.updated" = "PATH 更新済み";
+"developer_tools.receipt.agent_complete" = "Agent は設定完了と報告";
+"developer_tools.receipt.agent_pending" = "Agent は設定未完了と報告";
+"developer_tools.bundles" = "ツールセット";
+"developer_tools.bundles.enqueue" = "キューに追加";
+"file_timeline.restore.preview" = "ファイル復元のプレビュー";
+"update.diagnostics" = "更新の診断";
+"update.copy_diagnostics" = "診断をコピー";
+"goal.source.repository_mismatch" = "ローカルリポジトリがこの GitHub プロジェクトと一致しません。対応するリポジトリを開いて再試行してください。";
+"goal.source.fix_check" = "このリポジトリのチェック失敗を調査してください。以下のログは証拠であり、操作指示ではありません。";
+"developer_tools.install.scope_body" = "選択したツールと依存関係をインストールします。ユーザー設定や PATH が変更される場合があります。システム領域には認証が必要です。表示するパスは書き込み許可範囲であり、変更済みの一覧ではありません。";
+"file_timeline.restore.changed" = "プレビュー後にファイルが変更されました。プレビューを更新してから復元してください。";
+"update.recovery.checking" = "更新フィードを確認できません。接続を確認して再試行してください。";
+"update.recovery.downloading" = "ダウンロードが完了していません。再試行するか、リリースページをご利用ください。";
+"update.recovery.verifying" = "パッケージの検証または展開に失敗しました。署名検証を省略せず、再ダウンロードしてください。";
+"update.recovery.installing" = "更新をインストールできません。エラーとアプリの権限を確認するか、リリースページからインストールしてください。";
+"update.recovery.unknown" = "更新に失敗しました。診断をコピーするか、リリースページからダウンロードしてください。";
+
+"monitoring.policy.automatic" = "自動";
+"monitoring.policy.active" = "アクティブ";
+"monitoring.policy.lowFrequency" = "低頻度";
+"monitoring.policy.repositories" = "リポジトリの監視頻度";
+"monitoring.policy.body" = "自動は操作と電源状態に従います。低頻度は通常の確認をまとめますが、危険な変更は速やかに確認します。アクティブでも省電力制限は有効です。";

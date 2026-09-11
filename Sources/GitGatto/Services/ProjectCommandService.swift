@@ -3,7 +3,7 @@ import AppKit
 import Darwin
 
 actor ProjectCommandDiscovery {
-    func discover(repository: URL) throws -> [ProjectCommand] {
+    func discover(repository: URL, saved: [ProjectCommand] = []) throws -> [ProjectCommand] {
         var commands: [ProjectCommand] = []
         func append(_ id: String, _ title: String, _ executable: String, _ arguments: [String]) {
             commands.append(ProjectCommand(id: repository.path + ":" + id, title: title, executable: executable, arguments: arguments, repositoryPath: repository.path))
@@ -32,8 +32,9 @@ actor ProjectCommandDiscovery {
         if try read("Package.swift") != nil {
             for verb in ["build", "test", "run"] { append("swift:" + verb, "swift " + verb, "swift", [verb]) }
         }
+        let pinned = saved.filter { $0.repositoryPath == repository.path }
         var seen = Set<String>()
-        return commands.filter { seen.insert($0.id).inserted }
+        return (pinned + commands).filter { seen.insert($0.id).inserted }
     }
 }
 

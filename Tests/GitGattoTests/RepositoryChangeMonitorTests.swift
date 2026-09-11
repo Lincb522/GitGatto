@@ -9,7 +9,7 @@ struct RepositoryChangeMonitorTests {
     @Test("Only clone-source events are filtered, never coalesced changes or recovery signals")
     func cloneEventPolicyPreservesChanges() {
         let root = URL(fileURLWithPath: "/GitGatto-event-policy-fixture")
-        let monitor = RepositoryChangeMonitor(repositoryURL: root) {}
+        let monitor = RepositoryChangeMonitor(repositoryURL: root) { _ in}
         let path = root.appendingPathComponent("source.txt").path
         let cloned = FSEventStreamEventFlags(kFSEventStreamEventFlagItemCloned | kFSEventStreamEventFlagItemIsFile)
         #expect(!monitor.shouldRefresh(path: path, flags: cloned))
@@ -40,7 +40,7 @@ struct RepositoryChangeMonitorTests {
         try Data(repeating: 65, count: 65_536).write(to: source)
         _ = try await runner.run(at: root, arguments: ["add", "."])
         let counter = RepositoryMonitorEventCounter()
-        let monitor = RepositoryChangeMonitor(repositoryURL: root, includesGitObjectChanges: true, filtersIgnoredPaths: true) {
+        let monitor = RepositoryChangeMonitor(repositoryURL: root, includesGitObjectChanges: true, filtersIgnoredPaths: true) { _ in
             Task { await counter.increment() }
         }
         monitor.start()
@@ -77,7 +77,7 @@ struct RepositoryChangeMonitorTests {
         defer { try? fm.removeItem(at: root) }
         _ = try await GitCommandRunner().run(at: root, arguments: ["init"])
         let counter = RepositoryMonitorEventCounter()
-        let monitor = RepositoryChangeMonitor(repositoryURL: root, filtersIgnoredPaths: true, eventStreamEnabled: false) {
+        let monitor = RepositoryChangeMonitor(repositoryURL: root, filtersIgnoredPaths: true, eventStreamEnabled: false) { _ in
             Task { await counter.increment() }
         }
         monitor.start()
@@ -106,7 +106,7 @@ struct RepositoryChangeMonitorTests {
         let index = root.appendingPathComponent(".git/index")
         let originalIndex = try Data(contentsOf: index)
         let counter = RepositoryMonitorEventCounter()
-        let monitor = RepositoryChangeMonitor(repositoryURL: root) { Task { await counter.increment() } }
+        let monitor = RepositoryChangeMonitor(repositoryURL: root) { _ in Task { await counter.increment() } }
         monitor.start()
         defer { monitor.stop() }
         try await Task.sleep(for: .seconds(2))
@@ -129,7 +129,7 @@ struct RepositoryChangeMonitorTests {
         _ = try await runner.run(at: root, arguments: ["init"])
         try "new\n".write(to: root.appendingPathComponent("new.txt"), atomically: true, encoding: .utf8)
         let counter = RepositoryMonitorEventCounter()
-        let monitor = RepositoryChangeMonitor(repositoryURL: root) { Task { await counter.increment() } }
+        let monitor = RepositoryChangeMonitor(repositoryURL: root) { _ in Task { await counter.increment() } }
         monitor.start()
         defer { monitor.stop() }
         try await Task.sleep(for: .seconds(2))
@@ -160,7 +160,7 @@ struct RepositoryChangeMonitorTests {
             repositoryURL: root,
             includesGitMetadata: true,
             includesGitObjectChanges: true
-        ) {
+        ) { _ in
             Task { await counter.increment() }
         }
         monitor.start()
@@ -185,7 +185,7 @@ struct RepositoryChangeMonitorTests {
         defer { try? FileManager.default.removeItem(at: root) }
 
         let counter = RepositoryMonitorEventCounter()
-        let monitor = RepositoryChangeMonitor(repositoryURL: root, includesGitMetadata: false) {
+        let monitor = RepositoryChangeMonitor(repositoryURL: root, includesGitMetadata: false) { _ in
             Task { await counter.increment() }
         }
         monitor.start()
@@ -233,7 +233,7 @@ struct GuardEventFilteringTests {
         _ = try await runner.run(at: root, arguments: ["add", "-f", ".gitignore", ".build/keep.txt"])
         let counter = RepositoryMonitorEventCounter()
         let monitor = RepositoryChangeMonitor(repositoryURL: root, includesGitMetadata: true,
-            includesGitObjectChanges: true, filtersIgnoredPaths: true) { Task { await counter.increment() } }
+            includesGitObjectChanges: true, filtersIgnoredPaths: true) { _ in Task { await counter.increment() } }
         monitor.start()
         defer { monitor.stop() }
         try await Task.sleep(for: .seconds(2))

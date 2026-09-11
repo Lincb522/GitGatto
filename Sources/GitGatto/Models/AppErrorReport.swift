@@ -88,6 +88,7 @@ struct AppErrorReport: Identifiable, Sendable, Equatable {
     let domain: String
     let systemCode: Int?
     let occurredAt: Date
+    let context: AppErrorContext?
 
     init(
         id: UUID = UUID(),
@@ -102,7 +103,8 @@ struct AppErrorReport: Identifiable, Sendable, Equatable {
         exitCode: Int32?,
         domain: String,
         systemCode: Int?,
-        occurredAt: Date = Date()
+        occurredAt: Date = Date(),
+        context: AppErrorContext? = nil
     ) {
         self.id = id
         self.code = code
@@ -117,6 +119,17 @@ struct AppErrorReport: Identifiable, Sendable, Equatable {
         self.domain = domain
         self.systemCode = systemCode
         self.occurredAt = occurredAt
+        self.context = context
+    }
+
+    var recoveryAction: AppErrorRecoveryAction? {
+        if domain == "git", GitPushRejection(message: message) == .workflowScope { return .workflowPermission }
+        switch context {
+        case .agent: return .agentSettings
+        case .repositoryOpen, .repositoryRefresh, .diffLoad, .fileHistory: return .refreshRepository
+        case .git, .diagnostics, .worktree: return .inspectRepository
+        default: return nil
+        }
     }
 
     var diagnosticText: String {
@@ -201,7 +214,8 @@ enum GlobalErrorHandler {
             exitCode: nil,
             domain: nsError.domain,
             systemCode: nsError.code,
-            occurredAt: occurredAt
+            occurredAt: occurredAt,
+            context: context
         )
     }
 
@@ -233,7 +247,8 @@ enum GlobalErrorHandler {
             exitCode: details.exitCode,
             domain: "git",
             systemCode: nil,
-            occurredAt: occurredAt
+            occurredAt: occurredAt,
+            context: context
         )
     }
 
@@ -559,4 +574,9 @@ private extension OperationKind {
         case .reorderCommits: "error.operation.reorder_commits"
         }
     }
+}
+
+enum AppErrorRecoveryAction: String, Sendable {
+    case workflowPermission, agentSettings, refreshRepository, inspectRepository
+    var titleKey: String { "error.action." + rawValue }
 }

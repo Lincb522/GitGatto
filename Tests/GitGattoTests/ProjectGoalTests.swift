@@ -1026,3 +1026,46 @@ private actor GoalDeliveryFixture: ProjectGoalDeliveryServing {
         merged = true
     }
 }
+
+extension ProjectGoalTests {
+    @Test("Local verification persists and gates later steps without resetting completed work")
+    func localVerificationGate() throws {
+        let command = ProjectCommand(id: "test", title: "Test", executable: "/bin/echo", arguments: ["verified"], repositoryPath: "/tmp/project")
+        var goal = makeGoal()
+        goal.verificationCommand = command
+        goal.steps.insert(.init(kind: .localVerification, status: .pending, updatedAt: Date()), at: 0)
+        goal.updateStep(.stageChanges, status: .completed)
+        let reopened = try JSONDecoder().decode(ProjectGoal.self, from: JSONEncoder().encode(goal))
+        #expect(reopened.verificationCommand == command)
+        #expect(reopened.nextStep == .localVerification)
+        #expect(reopened.step(.stageChanges)?.status == .completed)
+        var failed = ProjectGoalReconciler.reconcile(reopened, with: observation())
+        failed.updateStep(.localVerification, status: .blocked, error: "exit 1")
+        failed.status = .blocked
+        #expect(failed.nextAction == .continueDelivery)
+        #expect(failed.step(.stageChanges)?.status == .completed)
+        #expect(ProjectGoal.stepsIncludingVerification([.commit, .push], command: nil) == [.commit, .push])
+    }
+
+    @Test("Verification executes literal arguments and propagates nonzero exits")
+    func localVerificationExecution() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("GitGatto-verification-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var goal = ProjectGoal(repositoryPath: root.path, repositoryName: "fixture", branchName: "main", baselineHeadSHA: "head", commitMessage: "test")
+        goal.verificationCommand = .init(id: "verify", title: "Verify", executable: "/bin/echo", arguments: ["$(touch should-not-exist)"], repositoryPath: root.path)
+        let runtime = ProjectGoalRuntime(repositoryService: GitRepositoryService(), actionsService: NoWorkflowGoalActionsService())
+        let result = try await runtime.execute(.localVerification, goal: goal)
+        guard case let .verified(output) = result else { Issue.record("Missing verification result"); return }
+        #expect(output.contains("$(touch should-not-exist)"))
+        #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("should-not-exist").path))
+        goal.verificationCommand?.arguments = ["token=synthetic-private"]
+        let redacted = try await runtime.execute(.localVerification, goal: goal)
+        if case let .verified(detail) = redacted { #expect(!detail.contains("synthetic-private")) }
+        goal.verificationCommand?.executable = "/usr/bin/false"
+        goal.verificationCommand?.arguments = []
+        await #expect(throws: ProjectGoalVerificationError.self) { try await runtime.execute(.localVerification, goal: goal) }
+        goal.verificationCommand?.repositoryPath = "/tmp/another-repository"
+        await #expect(throws: ProjectToolsError.self) { try await runtime.execute(.localVerification, goal: goal) }
+    }
+}

@@ -75,6 +75,7 @@ typealias ProjectToolConfirmation = (String, @escaping @MainActor () async -> Vo
 struct ProjectCodeSearchPanel: View {
     @ObservedObject var workspace: WorkspaceViewModel
     @ObservedObject var tools: ProjectToolsViewModel
+    @State private var showsAdvanced = false
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -88,6 +89,9 @@ struct ProjectCodeSearchPanel: View {
                     Text(L10n.text("tools.allRepositories")).tag("")
                     ForEach(workspace.localRepositories, id: \.path) { Text($0.lastPathComponent).tag($0.path) }
                 }
+            }
+            DisclosureGroup(L10n.text("tools.search.advanced"), isExpanded: $showsAdvanced) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 210))], alignment: .leading) {
                 Picker(L10n.text("tools.scope"), selection: $tools.query.scope) {
                     ForEach(ProjectCodeQuery.Scope.allCases, id: \.self) { Text(L10n.text("tools.scope." + $0.rawValue)).tag($0) }
                 }
@@ -99,6 +103,11 @@ struct ProjectCodeSearchPanel: View {
                 }
                 TextField(L10n.text("tools.extension"), text: $tools.query.fileExtension).textFieldStyle(.roundedBorder)
                 Toggle(L10n.text("tools.filenames"), isOn: $tools.query.filenamesOnly).disabled(tools.query.scope == .history)
+            }
+            }
+            if !showsAdvanced, tools.query.hasAdvancedFilters {
+                Button(L10n.text("tools.search.activeFilters")) { showsAdvanced = true }
+                    .buttonStyle(SecondaryButtonStyle())
             }
             if tools.searching { ProgressView(L10n.text("tools.searching")) }
             if tools.searchResult.limited { Text(L10n.text("tools.search.limit")).font(.caption) }

@@ -20,7 +20,7 @@ struct RepositoryEventSchedulerTests {
         let gate = SchedulerGate()
         let service = GitRepositoryService()
         let probe = SchedulerProbe()
-        let monitor = RepositoryChangeMonitor(repositoryURL: root, filtersIgnoredPaths: true) {
+        let monitor = RepositoryChangeMonitor(repositoryURL: root, filtersIgnoredPaths: true) { _ in
             Task { @MainActor in
                 probe.events += 1
                 scheduler.schedule(key: root.path, delay: .milliseconds(100)) {
@@ -113,6 +113,74 @@ struct RepositoryEventSchedulerTests {
         scheduler.schedule(key: "repo", delay: .milliseconds(10)) { probe.labels.append("new") }
         try await wait { !probe.labels.isEmpty }
         #expect(probe.labels == ["new"])
+    }
+
+    @MainActor
+    @Test("A shared limit serializes repositories and prioritizes an urgent ready audit")
+    func serializesAndPrioritizesRepositories() async throws {
+        let scheduler = RepositoryEventScheduler(maximumConcurrentOperations: 1)
+        defer { scheduler.cancelAll() }
+        let gate = SchedulerGate(), probe = SchedulerProbe()
+        scheduler.schedule(key: "running", delay: .zero) {
+            probe.labels.append("running")
+            await gate.wait()
+            probe.completions += 1
+        }
+        try await wait { probe.labels == ["running"] }
+        scheduler.schedule(key: "ordinary", delay: .zero) { probe.labels.append("ordinary") }
+        scheduler.schedule(key: "urgent", delay: .zero, priority: 1) { probe.labels.append("urgent") }
+        // Expiry tasks must become ready while the permit remains held.
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(probe.labels == ["running"])
+        await gate.release()
+        try await wait { scheduler.isIdle }
+        #expect(probe.labels == ["running", "urgent", "ordinary"])
+        #expect(probe.completions == 1)
+    }
+
+    @MainActor
+    @Test("Cancellation retains the permit until cleanup completes")
+    func cancellationWaitsForCleanup() async throws {
+        let scheduler = RepositoryEventScheduler(maximumConcurrentOperations: 1)
+        let gate = SchedulerGate(), probe = SchedulerProbe()
+        scheduler.schedule(key: "same", delay: .zero) {
+            probe.starts += 1
+            await gate.wait()
+            #expect(Task.isCancelled)
+            probe.completions += 1
+        }
+        try await wait { probe.starts == 1 }
+        scheduler.cancelAll()
+        scheduler.schedule(key: "same", delay: .zero) { probe.starts += 1 }
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(probe.starts == 1)
+        #expect(!scheduler.isIdle)
+        await gate.release()
+        try await wait { scheduler.isIdle }
+        #expect(probe.starts == 2 && probe.completions == 1)
+    }
+
+    @MainActor
+    @Test("Urgent events shorten a waiting window and survive later ordinary saves")
+    func expeditesUrgentFollowup() async throws {
+        let scheduler = RepositoryEventScheduler(maximumConcurrentOperations: 1)
+        defer { scheduler.cancelAll() }
+        let gate = SchedulerGate(), probe = SchedulerProbe()
+        let operation: @MainActor @Sendable () async -> Void = {
+            probe.starts += 1
+            if probe.starts == 1 { await gate.wait() }
+            probe.completions += 1
+        }
+        scheduler.schedule(key: "repo", delay: .seconds(30), operation: operation)
+        scheduler.schedule(key: "repo", delay: .zero, priority: 1, operation: operation)
+        try await wait { probe.starts == 1 }
+        scheduler.schedule(key: "repo", delay: .milliseconds(10), priority: 1, operation: operation)
+        scheduler.schedule(key: "repo", delay: .seconds(30), operation: operation)
+        let start = ContinuousClock.now
+        await gate.release()
+        try await wait { scheduler.isIdle }
+        #expect(probe.completions == 2)
+        #expect(start.duration(to: .now) < .seconds(2))
     }
 
     @MainActor

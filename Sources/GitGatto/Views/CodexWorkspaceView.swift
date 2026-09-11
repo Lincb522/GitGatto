@@ -79,6 +79,7 @@ struct CodexWorkspaceView: View {
                 systemName: "gearshape",
                 helpKey: "settings.agent.title"
             ) {
+                model.settingsDestination = "agent"
                 openSettings()
             }
 
@@ -149,11 +150,18 @@ struct CodexWorkspaceView: View {
                         }
                     }
 
-                    if model.isCodexRunning {
+                    if model.isCodexRunning, !model.isAgentRunningInBackground {
+                        if let partial = model.agentRun?.partialResponse, !partial.isEmpty {
+                            Text(partial)
+                                .font(.system(size: 13))
+                                .foregroundStyle(palette.ink)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         HStack(spacing: 9) {
                             ProgressView()
                                 .controlSize(.small)
-                            Text(model.codexActivity ?? L10n.text("codex.status.running"))
+                            Text(model.agentRun?.activity ?? model.codexActivity ?? L10n.text("codex.status.running"))
                                 .font(.system(size: 12.5, weight: .medium))
                                 .foregroundStyle(palette.mutedInk)
                             Spacer()
@@ -497,7 +505,8 @@ private struct CodexAvailabilityBadge: View {
     }
 
     private var label: String {
-        switch availability.state {
+        if let key = availability.noteKey { return L10n.text(key) }
+        return switch availability.state {
         case .checking:
             L10n.text("codex.status.checking")
         case .available:

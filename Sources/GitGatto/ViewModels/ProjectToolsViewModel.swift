@@ -47,10 +47,9 @@ final class ProjectToolsViewModel: ObservableObject {
         if tool == nil || tool == .commands {
             commands = []
             do {
-                let discovered = try await ProjectCommandDiscovery().discover(repository: repository)
+                let discovered = try await ProjectCommandDiscovery().discover(repository: repository, saved: state.commands)
                 guard loadID == id else { return }
-                let pinned = state.commands.filter { $0.repositoryPath == repository.path }
-                commands = pinned + discovered.filter { item in !pinned.contains { $0.id == item.id } }
+                commands = discovered
             } catch is CancellationError { }
             catch { if loadID == id { commands = []; self.error = ProjectCommandOutput.redact(error.localizedDescription) } }
         }

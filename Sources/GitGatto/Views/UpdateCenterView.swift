@@ -4,6 +4,7 @@ struct UpdateCenterView: View {
     @ObservedObject var manager: AppUpdateManager
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openWindow) private var openWindow
+    var loadsReleaseNotes = true
     @State private var browserPage: InAppBrowserPage?
 
     var body: some View {
@@ -42,6 +43,18 @@ struct UpdateCenterView: View {
                         )
                     }
 
+                    if let diagnostic = manager.diagnostic {
+                        DisclosureGroup(L10n.text("update.diagnostics")) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(diagnostic.detail).font(.system(.caption, design: .monospaced))
+                                    .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                                Button(L10n.text("update.copy_diagnostics")) {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(diagnostic.report(version: manager.currentVersion, build: manager.currentBuild), forType: .string)
+                                }.buttonStyle(SecondaryButtonStyle())
+                            }.padding(.top, 12)
+                        }
+                    }
                     updatePreferences(palette)
                     releaseNotesSection(palette)
                     updateActions(palette)
@@ -57,7 +70,7 @@ struct UpdateCenterView: View {
         .background(Color.clear)
         .ignoresSafeArea(.container, edges: .top)
         .task {
-            await manager.refreshReleaseNotes()
+            if loadsReleaseNotes { await manager.refreshReleaseNotes() }
         }
         .sheet(item: $browserPage) { page in
             InAppBrowserSheet(url: page.url, persistent: page.persistent)
@@ -229,7 +242,7 @@ struct UpdateCenterView: View {
 
     private var statusErrorDetail: String? {
         guard case let .failed(message) = manager.state else { return nil }
-        return message
+        return manager.diagnostic?.recovery ?? AppUpdateDiagnostic.redact(message)
     }
 
     @ViewBuilder

@@ -571,6 +571,50 @@
       "category": "ui",
       "name": "x-circle",
       "weight": "Filled"
+    },
+    "ellipsis": {
+      "category": "ui",
+      "name": "more-h"
+    },
+    "exclamationmark.triangle": {
+      "category": "ui",
+      "name": "triangle-warning"
+    },
+    "line.3.horizontal.decrease.circle": {
+      "category": "ui",
+      "name": "filter"
+    },
+    "text.magnifyingglass": {
+      "category": "ui",
+      "name": "magnifier"
+    },
+    "return": {
+      "category": "arrows-action",
+      "name": "undo"
+    },
+    "number": {
+      "category": "it",
+      "name": "hashtag"
+    },
+    "text.quote": {
+      "category": "newicons",
+      "name": "quote-down"
+    },
+    "person": {
+      "category": "users",
+      "name": "user"
+    },
+    "questionmark.circle": {
+      "category": "ui",
+      "name": "help-circle"
+    },
+    "plus.rectangle.on.folder": {
+      "category": "folders",
+      "name": "folder-plus"
+    },
+    "checklist": {
+      "category": "list",
+      "name": "checklist"
     }
   }
 }

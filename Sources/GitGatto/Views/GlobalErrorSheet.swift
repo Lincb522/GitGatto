@@ -6,6 +6,8 @@ struct GlobalErrorSheet: View {
     let canUseAgent: Bool
     let useAgent: () -> Void
     let dismiss: () -> Void
+    var recover: ((AppErrorRecoveryAction) -> Void)? = nil
+    var inspectFailure: (() -> Void)? = nil
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var copied = false
@@ -39,19 +41,26 @@ struct GlobalErrorSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     detailSection(
-                        title: L10n.text("error.section.output"),
-                        content: report.message,
-                        monospaced: true,
-                        palette: palette
-                    )
-
-                    detailSection(
                         title: L10n.text("error.section.explanation"),
-                        content: report.explanation,
-                        monospaced: false,
-                        palette: palette
+                        content: report.explanation, monospaced: false, palette: palette
                     )
-
+                    detailSection(
+                        title: L10n.text("error.section.recovery"),
+                        content: report.recoverySuggestion, monospaced: false, palette: palette
+                    )
+                    if let action = report.recoveryAction, let recover {
+                        Button(L10n.text(action.titleKey)) { recover(action) }
+                            .buttonStyle(PrimaryButtonStyle())
+                    }
+                    if let inspectFailure {
+                        Button(L10n.text(RepositoryIntelligenceTab.capsules.titleKey), action: inspectFailure)
+                            .buttonStyle(SecondaryButtonStyle())
+                    }
+                    DisclosureGroup(L10n.text("error.section.details")) {
+                        detailSection(
+                            title: L10n.text("error.section.output"),
+                            content: report.message, monospaced: true, palette: palette
+                        )
                     VStack(alignment: .leading, spacing: 9) {
                         Text(L10n.text("error.section.details"))
                             .font(.system(size: 12.5, weight: .semibold))
@@ -78,12 +87,7 @@ struct GlobalErrorSheet: View {
                         )
                     }
 
-                    detailSection(
-                        title: L10n.text("error.section.recovery"),
-                        content: report.recoverySuggestion,
-                        monospaced: false,
-                        palette: palette
-                    )
+                    }
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -12,13 +12,23 @@ final class MonitoringEngine: ObservableObject {
     @Published private(set) var activityError: String?
     @Published private(set) var lastActivityAt: Date?
 
+    private let environment: @MainActor () -> MonitoringEnvironment
+    private let now: @MainActor () -> Date
+    private var repositoryPolicies: [String: RepositoryMonitoringPolicy] = [:]
+    private var workspaceRepository: URL?
+    private var lastChangeByRepository: [URL: Date] = [:]
+    private var pendingReferenceReads: [URL: UUID] = [:]
     private let backgroundService: BackgroundMonitoringService
     private let activityScheduler = RepositoryEventScheduler()
     private var pendingActivityRepositories = Set<URL>()
     private var pendingRecordedRepositories = Set<URL>()
     private var activityByRepository: [URL: [RepositoryDailyActivity]] = [:]
 
-    init(backgroundService: BackgroundMonitoringService = BackgroundMonitoringService()) {
+    init(backgroundService: BackgroundMonitoringService = BackgroundMonitoringService(),
+        environment: @escaping @MainActor () -> MonitoringEnvironment = MonitoringEnvironment.current,
+        now: @escaping @MainActor () -> Date = Date.init) {
+        self.environment = environment
+        self.now = now
         self.backgroundService = backgroundService
         channels = MonitoringCategory.allCases.map {
             MonitoringChannelSnapshot(
@@ -29,6 +39,20 @@ final class MonitoringEngine: ObservableObject {
                 detail: nil
             )
         }
+    }
+
+    var isActivityRefreshPending: Bool { !activityScheduler.isIdle }
+
+    func setWorkspaceRepository(_ repository: URL?) {
+        workspaceRepository = repository?.standardizedFileURL
+    }
+
+    func budget(for repository: URL?) -> RepositoryMonitoringBudget {
+        let repository = repository?.standardizedFileURL
+        let recent = repository.flatMap { lastChangeByRepository[$0] }.map { now().timeIntervalSince($0) < 90 } ?? false
+        return RepositoryMonitoringBudget(environment: environment(),
+            isWorkspaceRepository: repository != nil && repository == workspaceRepository, recentlyChanged: recent,
+            policy: repository.flatMap { repositoryPolicies[$0.path] } ?? .automatic)
     }
 
     var overallState: MonitoringOverallState {
@@ -78,6 +102,7 @@ final class MonitoringEngine: ObservableObject {
         preferences: AppPreferences,
         repositories: [URL]
     ) {
+        repositoryPolicies = preferences.repositoryMonitoringPolicies
         if isEnabled != preferences.monitoringEngineEnabled {
             isEnabled = preferences.monitoringEngineEnabled
         }
@@ -95,6 +120,8 @@ final class MonitoringEngine: ObservableObject {
         var activityScopeChanged = false
         if self.repositories != normalizedRepositories {
             self.repositories = normalizedRepositories
+            lastChangeByRepository = lastChangeByRepository.filter { normalizedRepositories.contains($0.key) }
+            pendingReferenceReads = pendingReferenceReads.filter { normalizedRepositories.contains($0.key) }
             activityScopeChanged = true
         }
         if let selectedRepositoryURL,
@@ -170,10 +197,12 @@ final class MonitoringEngine: ObservableObject {
         }
     }
 
-    func recordRepositoryChange(at repositoryURL: URL) {
+    func recordRepositoryChange(at repositoryURL: URL, event: RepositoryChangeEvent = .unknown) {
         guard isEnabled else { return }
         let repository = repositoryURL.standardizedFileURL
-        lastActivityAt = Date()
+        lastActivityAt = now()
+        lastChangeByRepository[repository] = now()
+        if event.referencesChanged { pendingReferenceReads[repository] = UUID() }
         pendingRecordedRepositories.insert(repository)
         enqueueActivity(for: [repository])
     }
@@ -186,12 +215,14 @@ final class MonitoringEngine: ObservableObject {
             return
         }
         activityByRepository = activityByRepository.filter { repositories.contains($0.key) }
-        enqueueActivity(for: targets)
+        for repository in targets { pendingReferenceReads[repository] = UUID() }
+        enqueueActivity(for: targets, immediate: true)
     }
 
-    private func enqueueActivity(for repositories: [URL]) {
+    private func enqueueActivity(for repositories: [URL], immediate: Bool = false) {
         pendingActivityRepositories.formUnion(repositories)
-        activityScheduler.schedule(key: "activity", delay: .milliseconds(500)) { [weak self] in
+        let delay = immediate ? 0.5 : (repositories.map { budget(for: $0).activityDelay }.min() ?? 2)
+        activityScheduler.schedule(key: "activity", delay: .seconds(delay)) { [weak self] in
             guard let self else { return }
             let targets = self.pendingActivityRepositories.sorted { $0.path < $1.path }
             self.pendingActivityRepositories.removeAll()
@@ -202,7 +233,10 @@ final class MonitoringEngine: ObservableObject {
                     if self.pendingRecordedRepositories.remove(repository) != nil {
                         try await self.backgroundService.recordRepositoryChange(at: repository)
                     }
-                    self.activityByRepository[repository] = try await self.backgroundService.dailyActivity(for: repository)
+                    let referenceRead = self.pendingReferenceReads[repository]
+                    self.activityByRepository[repository] = try await self.backgroundService.dailyActivity(
+                        for: repository, refreshHistory: referenceRead != nil)
+                    if self.pendingReferenceReads[repository] == referenceRead { self.pendingReferenceReads[repository] = nil }
                 }
                 try Task.checkCancellation()
                 let displayed = self.selectedRepositoryURL.map { [$0] } ?? self.repositories

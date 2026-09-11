@@ -24,6 +24,7 @@ struct GitEnvironmentDiagnosticServiceTests {
         try runGit(["commit", "-m", "Create diagnostic fixture"], at: root)
 
         let hooksDirectory = root.appendingPathComponent(".git/hooks", isDirectory: true)
+        try FileManager.default.createDirectory(at: hooksDirectory, withIntermediateDirectories: true)
         let hookURL = hooksDirectory.appendingPathComponent("pre-commit")
         try "#!/bin/sh\nexit 0\n".write(to: hookURL, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: hookURL.path)

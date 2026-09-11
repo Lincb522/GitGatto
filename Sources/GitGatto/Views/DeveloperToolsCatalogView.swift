@@ -18,6 +18,7 @@ struct DeveloperToolsCatalogView: View {
     @State private var pendingToolInstall: DevelopmentTool?
     @State private var pendingToolUpgrade: DevelopmentTool?
     @State private var showsBatchUpgradeConfirmation = false
+    @State private var showsBundles = false
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -36,6 +37,17 @@ struct DeveloperToolsCatalogView: View {
                 .labelsHidden()
                 .frame(width: compact ? 132 : 170)
 
+                Button { showsBundles = true } label: {
+                    if compact {
+                        Image(gattoSymbol: "shippingbox")
+                    } else {
+                        Text(L10n.text("developer_tools.bundles"))
+                    }
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .fixedSize()
+                .help(L10n.text("developer_tools.bundles"))
+                .accessibilityLabel(L10n.text("developer_tools.bundles"))
                 developerToolSearchField(palette)
                     .frame(minWidth: compact ? 110 : 180)
                     .layoutPriority(1)
@@ -60,6 +72,7 @@ struct DeveloperToolsCatalogView: View {
                                     pendingInstall: $pendingToolInstall, pendingUpgrade: $pendingToolUpgrade)
         }
         .onAppear { developerTools.loadIfNeeded() }
+        .sheet(isPresented: $showsBundles) { DevelopmentToolBundleSheet(model: developerTools) }
         .confirmationDialog(
             L10n.text("developer_tools.install.confirm.title"),
             isPresented: Binding(
@@ -77,7 +90,7 @@ struct DeveloperToolsCatalogView: View {
                 pendingToolInstall = nil
             }
         } message: {
-            Text(L10n.text("developer_tools.install.confirm.body"))
+            Text([pendingToolInstall?.name, pendingToolInstall?.homebrewFormula, L10n.text("developer_tools.install.scope_body")].compactMap { $0 }.joined(separator: "\n"))
         }
         .confirmationDialog(
             L10n.text("developer_tools.upgrade.confirm.title"),
@@ -96,7 +109,7 @@ struct DeveloperToolsCatalogView: View {
                 pendingToolUpgrade = nil
             }
         } message: {
-            Text(L10n.text("developer_tools.upgrade.confirm.body"))
+            Text([pendingToolUpgrade?.name, pendingToolUpgrade?.homebrewFormula, L10n.text("developer_tools.install.scope_body")].compactMap { $0 }.joined(separator: "\n"))
         }
         .confirmationDialog(
             L10n.text("developer_tools.batch.confirm.title"),
@@ -166,6 +179,15 @@ struct DeveloperToolsCatalogView: View {
             .frame(height: 43)
             Rectangle().fill(palette.divider).frame(height: 1)
 
+            if developerTools.taskRecords.contains(where: { $0.state == .interrupted }) || developerTools.taskPersistenceError != nil {
+                Button {
+                    downloads.isPresented = true
+                } label: {
+                    Text(developerTools.taskPersistenceError ?? L10n.text("developer_tools.tasks.interrupted"))
+                        .font(.caption).fixedSize(horizontal: false, vertical: true)
+                }
+                .buttonStyle(SecondaryButtonStyle()).padding(10)
+            }
             if developerTools.installQueueCount > 0 || developerTools.upgradeQueueCount > 0 {
                 developerToolQueueBar(palette)
                 Rectangle().fill(palette.divider).frame(height: 1)

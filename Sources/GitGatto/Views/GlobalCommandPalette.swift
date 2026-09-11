@@ -11,6 +11,7 @@ struct GlobalCommandPalette: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var query = ""
     @State private var selectedIndex = 0
+    @ObservedObject var usage = CommandUsageStore.shared
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
@@ -54,8 +55,16 @@ struct GlobalCommandPalette: View {
                             ForEach(Array(filteredCommands.enumerated()), id: \.element.id) { index, command in
                                 CommandPaletteRow(
                                     command: command,
-                                    isSelected: selectedIndex == index
+                                    isSelected: selectedIndex == index,
+                                    isPinned: usage.pinned.contains(command.id),
+                                    togglePin: {
+                                        let selectedID = filteredCommands.indices.contains(selectedIndex)
+                                            ? filteredCommands[selectedIndex].id : nil
+                                        usage.togglePin(command.id)
+                                        selectedIndex = filteredCommands.firstIndex { $0.id == selectedID } ?? 0
+                                    }
                                 ) {
+                                    usage.record(command.id)
                                     command.action()
                                     dismiss()
                                 }
@@ -83,7 +92,7 @@ struct GlobalCommandPalette: View {
             .padding(.horizontal, 14)
             .frame(height: 34)
         }
-        .frame(width: 650, height: 510)
+        .frame(minWidth: 360, idealWidth: 650, maxWidth: 650, minHeight: 420, idealHeight: 510, maxHeight: 650)
         .background(palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: 16).stroke(palette.divider) }
@@ -103,12 +112,10 @@ struct GlobalCommandPalette: View {
 
     private var filteredCommands: [CommandPaletteItem] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else { return commands }
-        let tokens = needle.lowercased().split(whereSeparator: \Character.isWhitespace).map(String.init)
-        return commands.filter { command in
-            let haystack = ([command.title, command.subtitle] + command.keywords)
-                .joined(separator: " ").lowercased()
-            return tokens.allSatisfy(haystack.contains)
+        let available = commands
+        let byID = Dictionary(uniqueKeysWithValues: available.map { ($0.id, $0) })
+        return usage.orderedIDs(available.map(\.id)).compactMap { byID[$0] }.filter {
+            CommandSearchIndex.matches(needle, text: [$0.title, $0.subtitle] + $0.keywords)
         }
     }
 
@@ -117,9 +124,11 @@ struct GlobalCommandPalette: View {
             CommandPaletteItem(
                 id: "section.\(section.rawValue)",
                 title: L10n.text("nav.\(section.rawValue)"),
-                subtitle: L10n.text("command_palette.group.navigate"),
+                subtitle: L10n.text(usage.pinned.contains("section.\(section.rawValue)") ? "command_palette.pinned" : usage.recent.contains("section.\(section.rawValue)") ? "command_palette.recent" : "command_palette.group.navigate"),
                 symbol: section.symbol,
-                keywords: [section.rawValue, "navigate", "workspace"],
+                keywords: [section.rawValue, "navigate", "workspace"]
+                    + HelpTopic.allCases.filter { $0.workspaceSection == section }.flatMap { [L10n.text($0.titleKey), L10n.text($0.summaryKey)] }
+                    + (section == .recovery ? [L10n.text("command_palette.aliases.recovery")] : []),
                 action: { model.selectedSection = section }
             )
         }
@@ -127,7 +136,8 @@ struct GlobalCommandPalette: View {
         values += ProjectTool.allCases.map { tool in
             CommandPaletteItem(id: "project-tool." + tool.rawValue, title: tool.title,
                 subtitle: L10n.text("tools.title"), symbol: tool.symbol,
-                keywords: [tool.rawValue, "code", "project"], action: { openProjectTool(tool) })
+                keywords: [tool.rawValue, "code", "project"]
+                    + HelpTopic.allCases.filter { $0.projectTool == tool }.flatMap { [L10n.text($0.titleKey), L10n.text($0.summaryKey)] }, action: { openProjectTool(tool) })
         }
 
         values += model.localRepositories.map { repositoryURL in
@@ -164,11 +174,8 @@ struct GlobalCommandPalette: View {
                 symbol: "magnifyingglass",
                 keywords: ["commit", "history", "sha", "author", "search"],
                 action: {
-                    Task { @MainActor in
-                        model.selectedSection = .history
-                        try? await Task.sleep(for: .milliseconds(120))
-                        NotificationCenter.default.post(name: .gitGattoShowCommitSearch, object: nil)
-                    }
+                    model.showsCommitSearch = true
+                    model.selectedSection = .history
                 }
             )
         )
@@ -246,7 +253,9 @@ struct GlobalCommandPalette: View {
 
     private func runSelected() {
         guard filteredCommands.indices.contains(selectedIndex) else { return }
-        filteredCommands[selectedIndex].action()
+        let command = filteredCommands[selectedIndex]
+        usage.record(command.id)
+        command.action()
         dismiss()
     }
 }
@@ -263,6 +272,8 @@ private struct CommandPaletteItem {
 private struct CommandPaletteRow: View {
     let command: CommandPaletteItem
     let isSelected: Bool
+    let isPinned: Bool
+    let togglePin: () -> Void
     let action: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -287,19 +298,27 @@ private struct CommandPaletteRow: View {
                         .foregroundStyle(palette.subtleInk)
                 }
                 Spacer()
-                if isSelected {
-                    Image(gattoSymbol: "return")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(palette.subtleInk)
-                }
             }
             .padding(.horizontal, 10)
+            .padding(.trailing, 32)
             .frame(height: 48)
             .background(isSelected || isHovering ? palette.primarySoft.opacity(isSelected ? 1 : 0.55) : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .trailing) {
+            Button(action: togglePin) {
+                Image(gattoSymbol: "star")
+                    .foregroundStyle(isPinned ? palette.accent : palette.subtleInk)
+                    .frame(width: 32, height: 32)
+                    .background(isPinned ? palette.accentSoft : Color.clear, in: RoundedRectangle(cornerRadius: 7))
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text(isPinned ? "command_palette.unpin" : "command_palette.pin"))
+            .accessibilityLabel(L10n.text(isPinned ? "command_palette.unpin" : "command_palette.pin") + " " + command.title)
+            .padding(.trailing, 8)
+        }
         .onHover { isHovering = $0 }
     }
 }
@@ -307,19 +326,19 @@ private struct CommandPaletteRow: View {
 private extension WorkspaceSection {
     var symbol: String {
         switch self {
-        case .changes: "square.3.layers.3d"
+        case .changes: "square.stack.3d.up"
         case .intelligence: "point.3.connected.trianglepath.dotted"
         case .stash: "archivebox"
         case .history: "clock.arrow.circlepath"
-        case .timeMachine: "doc.badge.clock"
+        case .timeMachine: "history.file"
         case .recovery: "lifepreserver"
         case .branches: "arrow.triangle.branch"
         case .worktrees: "rectangle.split.2x1"
         case .diagnostics: "stethoscope"
-        case .regression: "scope"
+        case .regression: "record.circle"
         case .github: "square.grid.2x2"
-        case .marketplace: "bag"
-        case .goals: "target"
+        case .marketplace: "arrow.down.app"
+        case .goals: "checkmark.seal"
         case .codex: "sparkles"
         }
     }

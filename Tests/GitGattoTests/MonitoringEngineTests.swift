@@ -34,6 +34,31 @@ struct MonitoringEngineTests {
         #expect(await service.historyQueryCount == 2)
     }
 
+    @Test("Content activity reuses refs, while explicit refresh and day rollover read Git")
+    func contentEventsReuseHistory() async throws {
+        let root = temporaryDirectory("ContentHistory")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = try makeRepository(named: "repository", in: root)
+        let service = BackgroundMonitoringService(rootURL: root.appendingPathComponent("store"))
+        let day = Date()
+        _ = try await service.dailyActivity(for: repository, endingAt: day)
+        for index in 0..<10 {
+            try "save \(index)\n".write(to: repository.appendingPathComponent("activity.txt"), atomically: true, encoding: .utf8)
+            _ = try await service.dailyActivity(for: repository, endingAt: day, refreshHistory: false)
+        }
+        #expect(await service.referenceQueryCount == 1)
+        #expect(await service.historyQueryCount == 1)
+        try run(["add", "."], at: repository)
+        try run(["commit", "-m", "External change"], at: repository)
+        let refreshed = try await service.dailyActivity(for: repository, endingAt: day)
+        #expect(refreshed.reduce(0) { $0 + $1.commitCount } == 2)
+        #expect(await service.referenceQueryCount == 2)
+        #expect(await service.historyQueryCount == 2)
+        let tomorrow = try #require(Calendar.current.date(byAdding: .day, value: 1, to: day))
+        _ = try await service.dailyActivity(for: repository, endingAt: tomorrow, refreshHistory: false)
+        #expect(await service.referenceQueryCount == 3)
+    }
+
     @Test("History cache survives saves and invalidates on any ref, detached HEAD and day changes")
     func cachesHistoryByAllReferences() async throws {
         let root = temporaryDirectory("HistoryCache")
@@ -195,16 +220,19 @@ struct MonitoringEngineTests {
     @MainActor
     @Test("Status bar repository scope remains independent from workspace configuration")
     func preservesIndependentRepositoryScope() {
-        let engine = MonitoringEngine()
+        let engine = MonitoringEngine(environment: { .init(appIsActive: true, usesBattery: false, lowPowerMode: false) })
         let first = URL(fileURLWithPath: "/tmp/first-repository")
         let second = URL(fileURLWithPath: "/tmp/second-repository")
 
         engine.configure(preferences: AppPreferences(), repositories: [first, second])
         #expect(engine.selectedRepositoryURL == nil)
 
+        engine.setWorkspaceRepository(first)
         engine.selectRepository(second)
         engine.configure(preferences: AppPreferences(), repositories: [first, second])
         #expect(engine.selectedRepositoryURL == second.standardizedFileURL)
+        #expect(engine.budget(for: first).mode == .foreground)
+        #expect(engine.budget(for: second).mode == .background)
 
         engine.configure(preferences: AppPreferences(), repositories: [first])
         #expect(engine.selectedRepositoryURL == nil)

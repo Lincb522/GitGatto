@@ -8,6 +8,11 @@ actor WorkSceneService {
     func save(name: String, repository: URL, draft: String, agentDraft: String, selectedPath: String?, goalID: UUID?, relatedURL: String, section: String) async throws -> WorkScene {
         guard !busy else { throw ProjectToolsError(key: "busy") }
         busy = true; defer { busy = false }
+        return try await saveScene(name: name, repository: repository, draft: draft, agentDraft: agentDraft,
+            selectedPath: selectedPath, goalID: goalID, relatedURL: relatedURL, section: section)
+    }
+
+    private func saveScene(name: String, repository: URL, draft: String, agentDraft: String, selectedPath: String?, goalID: UUID?, relatedURL: String, section: String) async throws -> WorkScene {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ProjectToolsError(key: "name") }
         try await checkOperation(repository)
         let branch = try await ProjectToolsPolicy.text(repository, ["symbolic-ref", "--short", "HEAD"])
@@ -28,6 +33,67 @@ actor WorkSceneService {
         scene.phase = .saved
         let saved = scene
         try await store.update { state in state.scenes = state.scenes.map { $0.id == saved.id ? saved : $0 } }
+        return scene
+    }
+
+    func previewSwitch(to targetBranch: String, repository: URL) async throws -> WorkSceneSwitchPreview {
+        guard !busy else { throw ProjectToolsError(key: "busy") }
+        try await checkOperation(repository)
+        _ = try await ProjectToolsPolicy.git(repository, ["check-ref-format", "--branch", targetBranch])
+        let branch = try await ProjectToolsPolicy.text(repository, ["symbolic-ref", "--short", "HEAD"])
+        guard branch != targetBranch else { throw ProjectToolsError(key: "branchChanged") }
+        let targetHead = try await ProjectToolsPolicy.text(repository, ["rev-parse", "--verify", "refs/heads/" + targetBranch])
+        let status = try await ProjectToolsPolicy.git(repository, ["status", "--porcelain=v1", "-z", "--branch", "--untracked-files=all"])
+        guard let parsed = GitParsers.statusSnapshot(from: status.standardOutput) else { throw ProjectToolsError(key: "branchChanged") }
+        guard !parsed.changes.contains(where: { $0.indexStatus == .conflicted || $0.workTreeStatus == .conflicted }) else {
+            throw ProjectToolsError(key: "operation")
+        }
+        let fingerprint: String
+        do {
+            fingerprint = try await RepositoryChangeFingerprint.capture(in: repository, expectedStatus: status.standardOutput)
+        } catch ChangeIntentError.repositoryChanged {
+            throw ProjectToolsError(key: "branchChanged")
+        }
+        return WorkSceneSwitchPreview(repository: repository, branch: branch, targetBranch: targetBranch,
+            targetHead: targetHead, fingerprint: fingerprint, changes: parsed.changes)
+    }
+
+    func saveAndSwitch(_ preview: WorkSceneSwitchPreview, context: BranchWorkspaceDraft) async throws -> WorkScene? {
+        guard !busy else { throw ProjectToolsError(key: "busy") }
+        busy = true; defer { busy = false }
+        let repository = preview.repository
+        try await checkOperation(repository)
+        guard try await RepositoryChangeFingerprint.capture(in: repository) == preview.fingerprint,
+              try await ProjectToolsPolicy.text(repository, ["symbolic-ref", "--short", "HEAD"]) == preview.branch,
+              try await ProjectToolsPolicy.text(repository, ["rev-parse", "--verify", "refs/heads/" + preview.targetBranch]) == preview.targetHead else {
+            throw ProjectToolsError(key: "branchChanged")
+        }
+        // A local branch already checked out elsewhere must not cause a needless stash.
+        let worktrees = try await ProjectToolsPolicy.git(repository, ["worktree", "list", "--porcelain", "-z"])
+        guard !worktrees.outputText.split(separator: "\0").contains("branch refs/heads/" + preview.targetBranch) else {
+            throw ProjectToolsError(key: "branchOccupied")
+        }
+        try Task.checkCancellation()
+        let scene: WorkScene?
+        if !preview.changes.isEmpty {
+            scene = try await saveScene(name: preview.branch, repository: repository, draft: context.commitMessage,
+                agentDraft: context.agentPrompt, selectedPath: context.selectedPath, goalID: context.goalID,
+                relatedURL: "", section: context.section.rawValue)
+        } else { scene = nil }
+        do {
+            try Task.checkCancellation()
+            guard try await ProjectToolsPolicy.text(repository, ["status", "--porcelain=v1", "--untracked-files=all"]).isEmpty else {
+                throw ProjectToolsError(key: "dirty")
+            }
+            _ = try await ProjectToolsPolicy.git(repository, ["switch", "--no-guess", "--no-overwrite-ignore", "--", preview.targetBranch])
+            guard try await ProjectToolsPolicy.text(repository, ["symbolic-ref", "--short", "HEAD"]) == preview.targetBranch else {
+                throw ProjectToolsError(key: "branchChanged")
+            }
+        } catch {
+            // Never roll back over work another process may have created after the save.
+            if let scene { throw WorkSceneSwitchFailure(scene: scene, reason: error.localizedDescription) }
+            throw error
+        }
         return scene
     }
 
@@ -65,7 +131,7 @@ actor WorkSceneService {
         var pending = scene; pending.phase = .restoring
         let restoring = pending
         try await store.update { $0.scenes = $0.scenes.map { $0.id == restoring.id ? restoring : $0 } }
-        _ = try await ProjectToolsPolicy.git(repository, ["switch", "--", scene.branch])
+        _ = try await ProjectToolsPolicy.git(repository, ["switch", "--no-overwrite-ignore", "--", scene.branch])
         guard try await ProjectToolsPolicy.text(repository, ["rev-parse", "HEAD"]) == scene.head else { throw ProjectToolsError(key: "headChanged") }
         if let stash = scene.stash { _ = try await ProjectToolsPolicy.git(repository, ["stash", "apply", "--index", stash]) }
         var finished = scene; finished.phase = .restored

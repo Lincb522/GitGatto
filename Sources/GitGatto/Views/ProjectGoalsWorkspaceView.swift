@@ -20,10 +20,11 @@ struct ProjectGoalsWorkspaceView: View {
             Divider().overlay(palette.divider)
             if showsHistory {
                 ProjectGoalHistoryView(model: model) { showsHistory = false }
-            } else if showsComposer || model.currentRepositoryGoals.isEmpty {
+            } else if showsComposer || model.projectGoalSourceDraft != nil || model.currentRepositoryGoals.isEmpty {
                 ProjectGoalComposerView(model: model) {
                     showsComposer = false
                 } onCancel: {
+                    model.projectGoalSourceDraft = nil
                     showsComposer = false
                 }
             } else if let goal = model.selectedProjectGoal ?? currentGoal {

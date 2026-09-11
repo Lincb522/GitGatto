@@ -263,6 +263,12 @@ struct ProjectGoalDetailView: View {
                         if let evidence = step.evidence, !evidence.isEmpty {
                             Text(evidence).foregroundStyle(palette.subtleInk).textSelection(.enabled)
                         }
+                        if step.error != nil || step.evidence != nil {
+                            Button(L10n.text(RepositoryIntelligenceTab.capsules.titleKey)) {
+                                model.inspectFailureContext(command: step.kind == .localVerification ? goal.verificationCommand?.displayCommand ?? "" : "",
+                                    output: [step.error, step.evidence].compactMap { $0 }.joined(separator: "\n"), repositoryPath: goal.repositoryPath)
+                            }.buttonStyle(SecondaryButtonStyle())
+                        }
                         if let error = step.error, !error.isEmpty {
                             Text(error).foregroundStyle(palette.danger).textSelection(.enabled)
                         }

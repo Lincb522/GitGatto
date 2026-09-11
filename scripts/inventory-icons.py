@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import hashlib
 import json
 import re
@@ -15,8 +16,8 @@ OUTPUT = ROOT / "docs" / "icon-system" / "reicon-icon-manifest.json"
 DIRECT_ICON_ARGUMENT = re.compile(
     r"(?:gattoSymbol|systemImage|systemName|symbol)\s*:\s*\"([^\"]+)\""
 )
-ICON_PROPERTY = re.compile(r"\bvar\s+(?:systemImage|icon)\s*:\s*String\s*\{")
-ICON_PROPERTY_VALUE = re.compile(r":\s*\"([^\"]+)\"")
+ICON_PROPERTY = re.compile(r"\bvar\s+(?:systemImage|icon|symbol)\s*:\s*String\s*\{")
+ICON_PROPERTY_VALUE = re.compile(r'(?:\A\s*|:\s*(?:return\s+)?|\breturn\s+)"([^"\\]+)"')
 
 
 def matching_brace(text: str, opening_brace: int) -> int:
@@ -42,17 +43,13 @@ def matching_brace(text: str, opening_brace: int) -> int:
             if depth == 0:
                 return index
     raise RuntimeError("Unbalanced icon property")
-def source_references(symbol: str) -> list[str]:
-    token = f'"{symbol}"'
-    references = []
+def source_reference_index() -> dict[str, list[str]]:
+    references = {}
     for path in SOURCE_ROOT.rglob("*.swift"):
         relative = path.relative_to(ROOT).as_posix()
-        for line_number, line in enumerate(
-            path.read_text(encoding="utf-8").splitlines(),
-            start=1,
-        ):
-            if token in line:
-                references.append(f"{relative}:{line_number}")
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            for token in set(re.findall(r'"([^"\\]+)"', line)):
+                references.setdefault(token, []).append(f"{relative}:{number}")
     return references
 
 
@@ -69,9 +66,13 @@ def direct_symbols() -> set[str]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate or validate bundled UI icon provenance.")
+    parser.add_argument("--check", action="store_true", help="Validate without writing the manifest")
+    options = parser.parse_args()
     mapping = json.loads(MAP_PATH.read_text(encoding="utf-8"))
     icon_sources = mapping["icons"]
 
+    references = source_reference_index()
     entries = []
     for symbol in sorted(icon_sources):
         asset_name = f"gatto-{symbol.replace('.', '-')}.svg"
@@ -105,7 +106,7 @@ def main() -> None:
                 "asset": asset_path.relative_to(ROOT).as_posix(),
                 "source": provenance,
                 "sha256": hashlib.sha256(asset_path.read_bytes()).hexdigest(),
-                "sourceRefs": source_references(symbol),
+                "sourceRefs": references.get(symbol, []),
             }
         )
 
@@ -117,7 +118,7 @@ def main() -> None:
     expected_assets = {Path(entry["asset"]).name for entry in entries}
     unexpected = sorted(
         path.name
-        for path in ASSET_ROOT.glob("gatto-*.png")
+        for path in ASSET_ROOT.glob("gatto-*.*")
         if path.name not in expected_assets
     )
     if unexpected:
@@ -134,6 +135,16 @@ def main() -> None:
         "count": len(entries),
         "icons": entries,
     }
+    if options.check:
+        recorded = json.loads(OUTPUT.read_text(encoding="utf-8"))
+        # Reference line numbers change with surrounding code; resource identity must not.
+        for manifest in (recorded, payload):
+            for entry in manifest["icons"]:
+                entry.pop("sourceRefs", None)
+        if recorded != payload:
+            raise SystemExit("Icon manifest is stale; run python3 scripts/inventory-icons.py")
+        print(f"{len(entries)} GitGatto icons: mappings, assets and hashes verified")
+        return
     OUTPUT.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

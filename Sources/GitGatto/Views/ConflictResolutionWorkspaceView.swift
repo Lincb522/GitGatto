@@ -7,6 +7,7 @@ struct ConflictResolutionWorkspaceView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedSource: ConflictSource = .ours
     @State private var isConfirmingAbort = false
+    @State private var selectedBlockIndex = 0
 
     var body: some View {
         let palette = AppPalette(colorScheme)
@@ -296,6 +297,62 @@ struct ConflictResolutionWorkspaceView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    @ViewBuilder
+    private func conflictBlockControls(palette: AppPalette) -> some View {
+        let blocks = ConflictBlock.parse(model.conflictResolutionText)
+        if !blocks.isEmpty {
+            let index = min(selectedBlockIndex, blocks.count - 1)
+            let block = blocks[index]
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(L10n.format("conflict.block.position", index + 1, blocks.count))
+                        .font(.caption.weight(.semibold))
+                    Spacer()
+                    Button { selectedBlockIndex = max(0, index - 1) } label: {
+                        Image(gattoSymbol: "chevron.left")
+                    }.disabled(index == 0).help(L10n.text("conflict.block.previous"))
+                    Button { selectedBlockIndex = min(blocks.count - 1, index + 1) } label: {
+                        Image(gattoSymbol: "chevron.right")
+                    }.disabled(index == blocks.count - 1).help(L10n.text("conflict.block.next"))
+                }
+                DisclosureGroup(L10n.text("conflict.block.preview")) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L10n.text("conflict.side.ours")).font(.caption.bold())
+                            Text(block.current).textSelection(.enabled)
+                            Text(L10n.text("conflict.side.theirs")).font(.caption.bold())
+                            Text(block.incoming).textSelection(.enabled)
+                            if let base = block.base {
+                                Text(L10n.text("conflict.side.base")).font(.caption.bold())
+                                Text(base).textSelection(.enabled)
+                            }
+                        }.font(.system(size: 11, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }.frame(maxHeight: 140)
+                }
+                ViewThatFits(in: .horizontal) {
+                    HStack { blockActions(block, palette: palette) }
+                    VStack(alignment: .leading) { blockActions(block, palette: palette) }
+                }
+            }
+            .padding(12)
+            .background(palette.warning.opacity(0.06))
+            .onChange(of: model.selectedConflictPath) { _, _ in selectedBlockIndex = 0 }
+        }
+    }
+
+    @ViewBuilder
+    private func blockActions(_ block: ConflictBlock, palette: AppPalette) -> some View {
+        ForEach([("conflict.block.current", ConflictBlock.Resolution.current),
+                 ("conflict.block.incoming", .incoming), ("conflict.block.both", .both)], id: \.0) { key, resolution in
+            Button(L10n.text(key)) {
+                if let text = ConflictBlock.resolving(block.id, using: resolution, in: model.conflictResolutionText) {
+                    model.conflictResolutionText = text
+                }
+            }.buttonStyle(SecondaryButtonStyle()).disabled(model.activeOperation != nil)
+        }
+    }
+
     private func resultEditor(palette: AppPalette) -> some View {
         VStack(spacing: 0) {
             HStack {
@@ -326,6 +383,8 @@ struct ConflictResolutionWorkspaceView: View {
             .frame(height: 44)
 
             Rectangle().fill(palette.divider).frame(height: 1)
+
+            conflictBlockControls(palette: palette)
 
             CodeTextEditorView(
                 text: $model.conflictResolutionText,

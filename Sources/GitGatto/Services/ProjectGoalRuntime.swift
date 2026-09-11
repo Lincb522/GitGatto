@@ -20,6 +20,7 @@ protocol ProjectGoalDeliveryServing: Sendable {
 
 enum ProjectGoalExecutionResult: Sendable, Equatable {
     case none
+    case verified(String)
     case committed(String)
     case installed(String)
 }
@@ -71,8 +72,9 @@ actor ProjectGoalRuntime: ProjectGoalRunning {
             targetPublished = false
         }
 
+        let verificationPending = goal.steps.contains { $0.kind == .localVerification && !$0.status.isSatisfied }
         let actions: ProjectGoalActionsState
-        if goal.observesActions,
+        if !verificationPending, goal.observesActions,
            let target = goal.targetHeadSHA,
            let remote,
            remote.isGitHub {
@@ -87,7 +89,7 @@ actor ProjectGoalRuntime: ProjectGoalRunning {
 
         let pullRequest: ProjectGoalPullRequestState
         var observedBaseBranch = goal.baseBranch
-        if goal.usesPullRequestFlow,
+        if !verificationPending, goal.usesPullRequestFlow,
            targetPublished,
            let target = goal.targetHeadSHA,
            let remote,
@@ -104,7 +106,7 @@ actor ProjectGoalRuntime: ProjectGoalRunning {
         }
 
         let release: ProjectGoalReleaseState?
-        if goal.usesReleaseFlow {
+        if !verificationPending, goal.usesReleaseFlow {
             release = try await releaseService.state(goal: goal, remote: remote)
         } else {
             release = nil
@@ -128,6 +130,29 @@ actor ProjectGoalRuntime: ProjectGoalRunning {
     func execute(_ step: ProjectGoalStepKind, goal: ProjectGoal) async throws -> ProjectGoalExecutionResult {
         let repositoryURL = URL(fileURLWithPath: goal.repositoryPath, isDirectory: true)
         switch step {
+        case .localVerification:
+            guard let command = goal.verificationCommand,
+                  URL(fileURLWithPath: command.repositoryPath).standardizedFileURL == repositoryURL.standardizedFileURL else {
+                throw ProjectToolsError(key: "path")
+            }
+            let process = ProjectCommandProcess()
+            return try await withTaskCancellationHandler {
+                var output = ""
+                for await event in process.events(command: command) {
+                    try Task.checkCancellation()
+                    switch event.kind {
+                    case let .output(text): output = String((output + text).suffix(16_000))
+                    case let .finished(code):
+                        guard code == 0 else {
+                            throw ProjectGoalVerificationError(command: command.displayCommand, output: output, code: code)
+                        }
+                        return .verified(ProjectCommandOutput.redact(command.displayCommand + "\n" + output))
+                    case let .failed(message): throw ProjectGoalVerificationError(command: command.displayCommand, output: message, code: nil)
+                    case .stopped: throw CancellationError()
+                    }
+                }
+                throw CancellationError()
+            } onCancel: { process.cancel() }
         case .stageChanges:
             let state = try await repositoryService.loadLiveState(at: repositoryURL)
             let paths = state.changes.filter { !$0.isStaged }.map(\.path)
@@ -383,5 +408,15 @@ private actor GitHubProjectGoalActionsService: ProjectGoalActionsServing {
         guard let conclusion = conclusion?.lowercased() else { return false }
         return ["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"]
             .contains(conclusion)
+    }
+}
+
+struct ProjectGoalVerificationError: LocalizedError, Sendable {
+    let command: String
+    let output: String
+    let code: Int32?
+    var errorDescription: String? {
+        ProjectCommandOutput.redact([L10n.text("goal.step.localVerification"), command, code.map { "exit \($0)" } ?? "", output]
+            .filter { !$0.isEmpty }.joined(separator: "\n"))
     }
 }

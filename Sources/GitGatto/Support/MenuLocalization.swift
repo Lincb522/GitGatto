@@ -63,6 +63,14 @@ final class GitGattoAppDelegate: NSObject, NSApplicationDelegate {
 enum WindowCloseRuntime {
     static var isTerminating = false
 
+    static func showWorkspace() {
+        let windows = NSApp.windows.filter { $0.identifier?.rawValue == "gitgatto.workspace" }
+        guard let window = windows.first(where: { $0.isVisible && !$0.isMiniaturized }) ?? windows.first else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        window.deminiaturize(nil)
+        window.makeKeyAndOrderFront(nil)
+    }
+
     static func quit() {
         isTerminating = true
         NSApp.terminate(nil)

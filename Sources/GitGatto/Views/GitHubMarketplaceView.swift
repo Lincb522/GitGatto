@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 struct GitHubMarketplaceView: View {
+    var requestedSection: Binding<MarketplaceCatalogSection?> = .constant(nil)
     let model: GitHubMarketplaceViewModel
     let developerTools: DeveloperToolsViewModel
     let downloads: AppDownloadManager
@@ -15,8 +16,10 @@ struct GitHubMarketplaceView: View {
         model: GitHubMarketplaceViewModel,
         developerTools: DeveloperToolsViewModel,
         downloads: AppDownloadManager,
-        showsDeveloperToolsInitially: Bool = false
+        showsDeveloperToolsInitially: Bool = false,
+        requestedSection: Binding<MarketplaceCatalogSection?> = .constant(nil)
     ) {
+        self.requestedSection = requestedSection
         self.model = model
         self.developerTools = developerTools
         self.downloads = downloads
@@ -43,7 +46,11 @@ struct GitHubMarketplaceView: View {
                 )
             }
         }
+        .onChange(of: requestedSection.wrappedValue) { _, value in
+            if let value { catalogSection = value; requestedSection.wrappedValue = nil }
+        }
         .onAppear {
+            if let value = requestedSection.wrappedValue { catalogSection = value; requestedSection.wrappedValue = nil }
 #if DEBUG
             if ProcessInfo.processInfo.environment["GITGATTO_DEVELOPER_TOOLS_PREVIEW"] == "1" {
                 catalogSection = .developerTools

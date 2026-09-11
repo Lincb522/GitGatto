@@ -40,6 +40,20 @@ struct RepositoryIntelligenceWorkspaceView: View {
             guard let repositoryURL = workspaceModel.snapshot?.rootURL else { return }
             model.load(repositoryURL: repositoryURL)
         }
+        .onChange(of: workspaceModel.intelligenceNavigation, initial: true) { _, request in
+            guard let request, request.repositoryPath == workspaceModel.snapshot?.rootURL.standardizedFileURL.path else { return }
+            model.load(repositoryURL: URL(fileURLWithPath: request.repositoryPath))
+            model.selectedTab = request.tab
+            if request.tab == .provenance {
+                model.provenanceRevision = request.revision
+                model.provenancePath = request.path
+                model.provenanceLine = String(request.line)
+            } else if request.tab == .capsules {
+                model.capsuleFailingCommand = request.command
+                model.capsuleFailureOutput = request.output
+            }
+            workspaceModel.intelligenceNavigation = nil
+        }
         .task(id: model.selectedTab) {
             guard model.selectedTab == .activity else { return }
             while !Task.isCancelled {
@@ -66,6 +80,7 @@ struct RepositoryIntelligenceWorkspaceView: View {
 
             Spacer(minLength: 12)
 
+            ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 3) {
                 ForEach(RepositoryIntelligenceTab.allCases) { tab in
                     Button {
@@ -95,428 +110,11 @@ struct RepositoryIntelligenceWorkspaceView: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(palette.divider, lineWidth: 1)
             }
+            }
         }
         .padding(.horizontal, 16)
         .frame(height: 52)
         .background(palette.surface.opacity(theme == .softGlass ? 0.32 : 1))
-    }
-}
-
-private struct ChangeIntentWorkspace: View {
-    @ObservedObject var model: RepositoryIntelligenceViewModel
-    @ObservedObject var workspaceModel: WorkspaceViewModel
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var showsApplyConfirmation = false
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        Group {
-            if model.isLoadingIntentPlan, model.intentPlan == nil {
-                GattoLoadingState(text: L10n.text("intelligence.intent.loading"))
-            } else if let error = model.intentError, model.intentPlan == nil {
-                IntelligenceErrorState(message: error) {
-                    Task { await model.refreshIntentPlan() }
-                }
-            } else if let plan = model.intentPlan {
-                HSplitView {
-                    intentNavigator(plan: plan, palette: palette)
-                        .frame(minWidth: 285, idealWidth: 330, maxWidth: 390)
-                    intentInspector(plan: plan, palette: palette)
-                        .frame(minWidth: 430)
-                }
-            } else if let result = model.intentApplyResult {
-                resultView(result, palette: palette)
-            } else {
-                InspectorEmptyState(
-                    image: "checkmark.circle",
-                    titleKey: "intelligence.intent.empty.title",
-                    bodyKey: "intelligence.intent.empty.body"
-                )
-            }
-        }
-        .alert(L10n.text("intelligence.intent.confirm.title"), isPresented: $showsApplyConfirmation) {
-            Button(L10n.text("action.cancel"), role: .cancel) {}
-            Button(L10n.text("intelligence.intent.apply")) {
-                Task {
-                    if await model.applyIntentPlan() {
-                        await workspaceModel.refresh()
-                    }
-                }
-            }
-        } message: {
-            Text(L10n.format("intelligence.intent.confirm.body", model.intentPlan?.groups.count ?? 0))
-        }
-    }
-
-    private func intentNavigator(plan: ChangeIntentPlan, palette: AppPalette) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.text("intelligence.intent.title"))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                    Text(L10n.format("intelligence.intent.summary", plan.units.count, plan.groups.count))
-                        .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(palette.subtleInk)
-                }
-                Spacer()
-                ToolbarIconButton(
-                    systemName: "arrow.clockwise",
-                    helpKey: "action.refresh",
-                    isActive: model.isLoadingIntentPlan,
-                    isDisabled: model.isApplyingIntentPlan
-                ) {
-                    Task { await model.refreshIntentPlan() }
-                }
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 58)
-            Rectangle().fill(palette.divider).frame(height: 1)
-
-            ScrollView {
-                LazyVStack(spacing: 10) {
-                    ForEach(Array(plan.groups.enumerated()), id: \.element.id) { index, group in
-                        IntentGroupCard(
-                            group: group,
-                            index: index,
-                            total: plan.groups.count,
-                            units: group.unitIDs.compactMap { id in plan.units.first { $0.id == id } },
-                            selectedUnitID: model.selectedIntentUnitID,
-                            onSelectGroup: { model.selectedIntentGroupID = group.id },
-                            onSelectUnit: { id in
-                                model.selectedIntentGroupID = group.id
-                                model.selectedIntentUnitID = id
-                            },
-                            onMoveUnit: { unitID, target in model.moveIntentUnit(unitID, to: target) },
-                            groupTargets: plan.groups,
-                            onMoveGroup: { offset in model.moveIntentGroup(group.id, offset: offset) },
-                            onRemove: { model.removeIntentGroup(group.id) }
-                        )
-                    }
-                }
-                .padding(12)
-            }
-
-            Rectangle().fill(palette.divider).frame(height: 1)
-            HStack(spacing: 8) {
-                Button {
-                    model.addIntentGroup()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(gattoSymbol: "plus")
-                        Text(L10n.text("intelligence.intent.add_group"))
-                    }
-                }
-                .buttonStyle(SecondaryButtonStyle())
-
-                Spacer()
-
-                Button {
-                    if model.isRefiningIntentPlan {
-                        model.cancelIntentAgent()
-                    } else {
-                        model.refineIntentPlanWithAgent()
-                    }
-                } label: {
-                    HStack(spacing: 7) {
-                        if model.isRefiningIntentPlan {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Image(gattoSymbol: "sparkles")
-                        }
-                        Text(L10n.text(model.isRefiningIntentPlan ? "action.cancel" : "intelligence.intent.agent"))
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(model.isApplyingIntentPlan)
-            }
-            .padding(12)
-        }
-        .intelligencePanel(elevated: true)
-    }
-
-    private func intentInspector(plan: ChangeIntentPlan, palette: AppPalette) -> some View {
-        VStack(spacing: 0) {
-            if let group = model.selectedIntentGroup {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 10) {
-                        TextField(
-                            L10n.text("intelligence.intent.group_title"),
-                            text: binding(for: group.id, keyPath: \.title)
-                        )
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-
-                        Picker("", selection: kindBinding(for: group)) {
-                            ForEach(ChangeIntentKind.allCases) { kind in
-                                Text(L10n.text(kind.titleKey)).tag(kind)
-                            }
-                        }
-                        .labelsHidden()
-                        .frame(width: 145)
-                    }
-
-                    TextField(
-                        L10n.text("intelligence.intent.commit_message"),
-                        text: binding(for: group.id, keyPath: \.commitMessage)
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 12.5, design: .monospaced))
-
-                    HStack(spacing: 8) {
-                        Image(gattoSymbol: "checkmark.shield")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(palette.primary)
-                        TextField(
-                            L10n.text("intelligence.intent.verify_placeholder"),
-                            text: $model.verificationCommand
-                        )
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 11.5, design: .monospaced))
-                    }
-                    .padding(.horizontal, 10)
-                    .frame(height: 34)
-                    .background(palette.raisedSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay { RoundedRectangle(cornerRadius: 8).stroke(palette.divider) }
-                }
-                .padding(14)
-
-                Rectangle().fill(palette.divider).frame(height: 1)
-
-                if let unit = model.selectedIntentUnit, let patch = unit.patch {
-                    VStack(spacing: 0) {
-                        HStack(spacing: 10) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(unit.path)
-                                    .font(.system(size: 12.5, weight: .semibold))
-                                    .foregroundStyle(palette.ink)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                Text(unit.hunkHeader ?? L10n.text("intelligence.intent.whole_file"))
-                                    .font(.system(size: 9.5, design: .monospaced))
-                                    .foregroundStyle(palette.subtleInk)
-                            }
-                            Spacer()
-                            ChangeCountBadge(added: unit.addedLineCount, deleted: unit.deletedLineCount)
-                        }
-                        .padding(.horizontal, 14)
-                        .frame(height: 52)
-                        Rectangle().fill(palette.divider).frame(height: 1)
-                        DiffCodeView(document: GitParsers.diff(from: patch, path: unit.path))
-                    }
-                } else if let unit = model.selectedIntentUnit {
-                    InspectorEmptyState(
-                        image: "doc",
-                        titleKey: "intelligence.intent.whole_file.title",
-                        bodyKey: "intelligence.intent.whole_file.body"
-                    )
-                    .overlay(alignment: .top) {
-                        Text(unit.path)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundStyle(palette.mutedInk)
-                            .padding(.top, 18)
-                    }
-                } else {
-                    InspectorEmptyState(
-                        image: "doc-text-magnifyingglass",
-                        titleKey: "intelligence.intent.select.title",
-                        bodyKey: "intelligence.intent.select.body"
-                    )
-                }
-
-                Rectangle().fill(palette.divider).frame(height: 1)
-                HStack(spacing: 10) {
-                    if let error = model.intentError {
-                        Image(gattoSymbol: "exclamationmark.triangle.fill")
-                            .foregroundStyle(palette.danger)
-                        Text(error)
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(palette.danger)
-                            .lineLimit(2)
-                    }
-                    Spacer()
-                    Button(L10n.text("intelligence.intent.apply")) {
-                        showsApplyConfirmation = true
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(model.isApplyingIntentPlan || plan.groups.contains(where: { $0.unitIDs.isEmpty }))
-                }
-                .padding(.horizontal, 14)
-                .frame(minHeight: 56)
-            } else {
-                InspectorEmptyState(
-                    image: "doc-text-magnifyingglass",
-                    titleKey: "intelligence.intent.select.title",
-                    bodyKey: "intelligence.intent.select.body"
-                )
-            }
-        }
-        .intelligencePanel(elevated: false)
-    }
-
-    private func resultView(_ result: ChangeIntentApplyResult, palette: AppPalette) -> some View {
-        VStack(spacing: 16) {
-            Image(gattoSymbol: "checkmark.circle.fill")
-                .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(palette.success)
-            Text(L10n.text("intelligence.intent.result.title"))
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(palette.ink)
-            Text(L10n.format("intelligence.intent.result.body", result.commitHashes.count))
-                .font(.system(size: 12.5))
-                .foregroundStyle(palette.mutedInk)
-            HStack(spacing: 8) {
-                ForEach(result.commitHashes, id: \.self) { hash in
-                    Text(String(hash.prefix(8)))
-                        .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
-                        .padding(.horizontal, 8)
-                        .frame(height: 26)
-                        .background(palette.raisedSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                }
-            }
-            Button(L10n.text("intelligence.intent.refresh")) {
-                Task { await model.refreshIntentPlan() }
-            }
-            .buttonStyle(SecondaryButtonStyle())
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func binding(
-        for groupID: UUID,
-        keyPath: WritableKeyPath<ChangeIntentGroup, String>
-    ) -> Binding<String> {
-        Binding(
-            get: { model.intentPlan?.groups.first(where: { $0.id == groupID })?[keyPath: keyPath] ?? "" },
-            set: { value in
-                if keyPath == \.title {
-                    model.updateIntentGroup(groupID, title: value)
-                } else {
-                    model.updateIntentGroup(groupID, message: value)
-                }
-            }
-        )
-    }
-
-    private func kindBinding(for group: ChangeIntentGroup) -> Binding<ChangeIntentKind> {
-        Binding(
-            get: { model.intentPlan?.groups.first(where: { $0.id == group.id })?.kind ?? group.kind },
-            set: { model.updateIntentGroup(group.id, kind: $0) }
-        )
-    }
-}
-
-private struct IntentGroupCard: View {
-    let group: ChangeIntentGroup
-    let index: Int
-    let total: Int
-    let units: [ChangeIntentUnit]
-    let selectedUnitID: String?
-    let onSelectGroup: () -> Void
-    let onSelectUnit: (String) -> Void
-    let onMoveUnit: (String, UUID) -> Void
-    let groupTargets: [ChangeIntentGroup]
-    let onMoveGroup: (Int) -> Void
-    let onRemove: () -> Void
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            HStack(spacing: 9) {
-                Text(String(index + 1))
-                    .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                    .foregroundStyle(palette.primary)
-                    .frame(width: 24, height: 24)
-                    .background(palette.primarySoft)
-                    .clipShape(Circle())
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(group.title)
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                    Text(group.commitMessage)
-                        .font(.system(size: 9.5, design: .monospaced))
-                        .foregroundStyle(palette.subtleInk)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Button { onMoveGroup(-1) } label: {
-                    Image(gattoSymbol: "chevron.compact.up").frame(width: 22, height: 22)
-                }
-                .buttonStyle(.plain)
-                .disabled(index == 0)
-                Button { onMoveGroup(1) } label: {
-                    Image(gattoSymbol: "chevron.compact.down").frame(width: 22, height: 22)
-                }
-                .buttonStyle(.plain)
-                .disabled(index == total - 1)
-                Button(role: .destructive, action: onRemove) {
-                    Image(gattoSymbol: "trash").frame(width: 22, height: 22)
-                }
-                .buttonStyle(.plain)
-                .disabled(total == 1)
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 48)
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onSelectGroup)
-
-            if units.isEmpty {
-                Text(L10n.text("intelligence.intent.group_empty"))
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(palette.subtleInk)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-            } else {
-                ForEach(units) { unit in
-                    Button { onSelectUnit(unit.id) } label: {
-                        HStack(spacing: 8) {
-                            Image(gattoSymbol: unit.kind == .hunk ? "curlybraces.square" : "doc")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(selectedUnitID == unit.id ? palette.primary : palette.subtleInk)
-                                .frame(width: 20)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(URL(fileURLWithPath: unit.path).lastPathComponent)
-                                    .font(.system(size: 11.5, weight: .medium))
-                                    .foregroundStyle(palette.ink)
-                                    .lineLimit(1)
-                                Text(unit.hunkHeader ?? unit.path)
-                                    .font(.system(size: 9, design: .monospaced))
-                                    .foregroundStyle(palette.subtleInk)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                            }
-                            Spacer()
-                            ChangeCountBadge(added: unit.addedLineCount, deleted: unit.deletedLineCount)
-                            Menu {
-                                ForEach(groupTargets.filter { $0.id != group.id }) { target in
-                                    Button(target.title) { onMoveUnit(unit.id, target.id) }
-                                }
-                            } label: {
-                                Image(gattoSymbol: "arrow.right")
-                                    .frame(width: 24, height: 24)
-                                    .contentShape(Rectangle())
-                            }
-                            .menuStyle(.borderlessButton)
-                            .menuIndicator(.hidden)
-                            .fixedSize()
-                        }
-                        .padding(.horizontal, 10)
-                        .frame(height: 44)
-                        .background(selectedUnitID == unit.id ? palette.primarySoft : Color.clear)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .background(palette.surface.opacity(0.66))
-        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .overlay { RoundedRectangle(cornerRadius: 11).stroke(palette.divider) }
     }
 }
 
@@ -530,9 +128,9 @@ private struct CodeProvenanceWorkspace: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 HStack(spacing: 7) {
-                    Image(gattoSymbol: "doc-text-magnifyingglass")
+                    Image(gattoSymbol: "doc.text.magnifyingglass")
                         .foregroundStyle(palette.primary)
-                    TextField(L10n.text("intelligence.provenance.path"), text: $model.provenancePath)
+                    TextField(L10n.text("intelligence.provenance.path"), text: Binding(get: { model.provenancePath }, set: { model.provenancePath = $0; model.provenanceRevision = nil }))
                         .textFieldStyle(.plain)
                         .font(.system(size: 12.5, design: .monospaced))
                 }
@@ -543,7 +141,7 @@ private struct CodeProvenanceWorkspace: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay { RoundedRectangle(cornerRadius: 8).stroke(palette.divider) }
 
-                TextField(L10n.text("intelligence.provenance.line"), text: $model.provenanceLine)
+                TextField(L10n.text("intelligence.provenance.line"), text: Binding(get: { model.provenanceLine }, set: { model.provenanceLine = $0; model.provenanceRevision = nil }))
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 90)
                 Button {
@@ -558,6 +156,13 @@ private struct CodeProvenanceWorkspace: View {
                 .disabled(model.isTracingProvenance || model.provenancePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(14)
+            if let revision = model.provenanceRevision {
+                HStack {
+                    Text(String(revision.prefix(12))).font(.system(.caption, design: .monospaced))
+                    Button(L10n.text("action.clear")) { model.provenanceRevision = nil }
+                    Spacer()
+                }.padding(.horizontal, 14).padding(.bottom, 10)
+            }
             Rectangle().fill(palette.divider).frame(height: 1)
 
             if let error = model.provenanceError {
@@ -570,7 +175,7 @@ private struct CodeProvenanceWorkspace: View {
                 provenanceReport(report, palette: palette)
             } else {
                 InspectorEmptyState(
-                    image: "doc-text-magnifyingglass",
+                    image: "doc.text.magnifyingglass",
                     titleKey: "intelligence.provenance.empty.title",
                     bodyKey: "intelligence.provenance.empty.body"
                 )
@@ -1328,7 +933,7 @@ private struct ProvenanceItemsList: View {
     }
 }
 
-private struct ChangeCountBadge: View {
+struct ChangeCountBadge: View {
     let added: Int
     let deleted: Int
     @Environment(\.colorScheme) private var colorScheme
@@ -1343,7 +948,7 @@ private struct ChangeCountBadge: View {
     }
 }
 
-private struct IntelligenceInlineError: View {
+struct IntelligenceInlineError: View {
     let message: String
     @Environment(\.colorScheme) private var colorScheme
 
@@ -1364,7 +969,7 @@ private struct IntelligenceInlineError: View {
     }
 }
 
-private struct IntelligenceErrorState: View {
+struct IntelligenceErrorState: View {
     let message: String
     let retry: () -> Void
     @Environment(\.colorScheme) private var colorScheme
@@ -1384,6 +989,7 @@ private struct IntelligenceErrorState: View {
             Button(L10n.text("action.retry"), action: retry)
                 .buttonStyle(SecondaryButtonStyle())
         }
+        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -1416,22 +1022,6 @@ private struct IntelligenceNotice: View {
     }
 }
 
-private extension RepositoryIntelligenceTab {
-    var titleKey: String { "intelligence.tab.\(rawValue)" }
-
-    var symbol: String {
-        switch self {
-        case .intent: "point.3.connected.trianglepath.dotted"
-        case .provenance: "doc.text.magnifyingglass"
-        case .capsules: "shippingbox"
-        case .activity: "history.file"
-        }
-    }
-}
-
-private extension ChangeIntentKind {
-    var titleKey: String { "intelligence.intent.kind.\(rawValue)" }
-}
 
 private extension RepositoryActivityConfidence {
     var titleKey: String { "intelligence.activity.confidence.\(rawValue)" }
@@ -1459,7 +1049,7 @@ private struct IntelligencePanelModifier: ViewModifier {
     }
 }
 
-private extension View {
+extension View {
     func intelligencePanel(elevated: Bool) -> some View {
         modifier(IntelligencePanelModifier(elevated: elevated))
     }

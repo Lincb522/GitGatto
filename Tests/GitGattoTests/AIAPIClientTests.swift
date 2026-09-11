@@ -167,6 +167,28 @@ struct AIAPIClientTests {
         #expect(tool["exit_code"] as? Int == 0, Comment(rawValue: toolOutput))
     }
 
+    @Test("Catalog discovery is not reported as a tested chat or tested tool protocol")
+    func capabilityChecks() async throws {
+        let catalog = Data(#"{"data":[{"id":"fixture"},{"id":"other"}]}"#.utf8)
+        let client = AIAPIClient(transport: RecordingAPITransport(responses: [catalog, catalog]), credential: { _ in nil })
+        #expect(await client.probe(Self.config).noteKey == "ai.api.catalogOnly")
+        var missing = Self.config
+        missing.model = "absent"
+        #expect(await client.probe(missing).noteKey == "ai.api.modelMissing")
+        let noModels = AIAPIClient(transport: RecordingAPITransport(responses: [Data()], status: 404), credential: { _ in nil })
+        #expect(await noModels.probe(Self.config).noteKey == "ai.api.notTested")
+        let failed = AIAPIClient(transport: RecordingAPITransport(responses: [Data()], status: 401), credential: { _ in nil })
+        #expect(await failed.probe(Self.config).state == .unavailable)
+        let chatOnly = AIAPIClient(transport: RecordingAPITransport(responses: [Self.reply("OK"), Self.reply("OK")]), credential: { _ in nil })
+        try await chatOnly.testConnection(Self.config, tools: false)
+        await #expect(throws: AIAPIError.invalidTool) { try await chatOnly.testConnection(Self.config, tools: true) }
+        let tool = Data(#"{"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","tool_calls":[{"id":"test","type":"function","function":{"name":"connection_test","arguments":"{}"}}]}}]}"#.utf8)
+        let transport = RecordingAPITransport(responses: [tool])
+        let tools = AIAPIClient(transport: transport, credential: { _ in nil })
+        try await tools.testConnection(Self.config, tools: true)
+        #expect(await transport.requests.count == 1)
+    }
+
     private static var config: AIAPIConfiguration { AIAPIConfiguration(baseURL: "https://fixture.test/v1", model: "fixture") }
     private static func reply(_ content: String, reason: String = "stop") -> Data {
         let body: [String: Any] = ["choices": [["finish_reason": reason, "message": ["role": "assistant", "content": content]]]]

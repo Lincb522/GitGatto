@@ -394,7 +394,7 @@
 "help.goals.create.1" = "Öffne ein Repository, wähle unter Ziele eine Aktion, gib Commit-Nachricht oder Version ein und starte. Pro Repository ist ein Ziel gleichzeitig aktiv.";
 "help.goals.create.2" = "Beschreibe das gewünschte Ergebnis. Agent schlägt nach einer schreibgeschützten Analyse Schritte vor. Prüfe den Umfang und starte.";
 "help.goals.create.3" = "Schnelle Ziele umfassen Commit und Push, GitHub Lieferung und vollständige Veröffentlichung. Für die GitHub-Auslieferung ist ein anderer Zweig als der Standardzweig erforderlich.";
-"help.goals.create.4" = "Das Ziel zeichnet sein Repository, seinen Zweig, seinen Baseline-Commit, seine Schritte und Beweise auf. Durch das Wechseln von Repositorys wird deren Status nicht verwechselt.";
+"help.goals.create.4" = "Das Ziel zeichnet sein Repository, seinen Zweig, seinen Baseline-Commit, seine Schritte und Beweise auf. Durch das Wechseln von Repositorys wird deren Status nicht verwechselt. Ziele lassen sich auch aus Änderungen, Issues, PRs oder fehlgeschlagenen Prüfungen erstellen. Ein gespeicherter Projektbefehl kann vor dem Commit prüfen.";
 "help.goals.execute.title" = "Ausführen und wiederherstellen";
 "help.goals.execute.1" = "Autorisierte Schritte laufen nacheinander; nach jedem Schritt wird der Git- und GitHub-Status neu gelesen. Merge, Veröffentlichung und Installation warten auf Bestätigung.";
 "help.goals.execute.2" = "Ein fehlgeschlagener Schritt behält seinen ursprünglichen Beweis und stoppt bei „Benötigt Aufmerksamkeit“. Abgeschlossene Schritte überleben einen App-Neustart.";
@@ -456,7 +456,7 @@
 "help.translation.channel.title" = "Unabhängige Ausführungsspur";
 "help.translation.channel.1" = "Übersetzung CLI und Projekt Agent verfügen über separate Konfigurationen und Prozesse, sodass die Übersetzung verfügbar bleibt, während Agent funktioniert.";
 "help.translation.channel.2" = "Automatische Übersetzung erkennt lesbaren Text und nutzt die eingestellte Zielsprache. Bereits passende oder zu kurze Texte können unverändert bleiben. Ohne Reaktion Anbieter und Zielsprache in den Einstellungen prüfen.";
-"help.translation.channel.3" = "Die Übersetzung kann gestoppt werden und hat eine Zeitüberschreitung; Bei Fehlern werden bereits gespeicherte Übersetzungen nicht gelöscht.";
+"help.translation.channel.3" = "Die Übersetzung kann gestoppt werden und hat eine Zeitüberschreitung; Bei Fehlern werden bereits gespeicherte Übersetzungen nicht gelöscht. Erneut versuchen verwendet die Sprache der fehlgeschlagenen Anfrage. Der Originaltext bleibt bei Fehlern verfügbar.";
 
 "help.topic.cliSettings.title" = "Einstellungen";
 "help.topic.cliSettings.summary" = "Konfigurieren Sie die App-Schnittstelle, den Startarbeitsbereich, die Live-Git-Überwachung, Agent und die Übersetzung in einem Fenster.";
@@ -481,7 +481,7 @@
 "help.shortcuts.actions.title" = "Gemeinsame Aktionen";
 "help.shortcuts.actions.1" = "⌘O: Öffnen Sie ein lokales Repository; ⌘R: Aktualisieren Sie das aktuelle Repository.";
 "help.shortcuts.actions.2" = "⌘↩: Übertragen Sie bereitgestellte Inhalte mit der aktuellen Commit-Nachricht.";
-"help.shortcuts.actions.3" = "⌘K öffnet die Befehlspalette. Rechtsklick auf geänderte Dateien oder letzte Repositorys zeigt Aktionen. Das Hilfemenü öffnet die Anleitung zur aktuellen Seite.";
+"help.shortcuts.actions.3" = "⌘K öffnet die Befehlspalette. Rechtsklick auf geänderte Dateien oder letzte Repositorys zeigt Aktionen. Das Hilfemenü öffnet die Anleitung zur aktuellen Seite. Häufige Befehle lassen sich anheften; zuletzt verwendete Einträge stehen oben. Mit Pfeiltasten auswählen, mit Eingabe ausführen.";
 
 "help.topic.troubleshooting.title" = "Fehlerbehebung";
 "help.topic.troubleshooting.summary" = "Bestätigen Sie das ausgewählte Projekt, die lokale CLI-Anmeldung und den gemeldeten Fehler, bevor Sie den fehlgeschlagenen Vorgang erneut versuchen.";
@@ -579,7 +579,7 @@
 "error.operation.push" = "Drücken";
 "error.operation.agent" = "Führen Sie Agent aus";
 "error.section.output" = "Vollständige Fehlerausgabe";
-"error.section.explanation" = "Erläuterung";
+"error.section.explanation" = "Ursache";
 "error.section.details" = "Fehlerdetails";
 "error.section.recovery" = "Wiederherstellung";
 "error.detail.code" = "Fehlercode";
@@ -708,7 +708,7 @@
 
 "settings.open" = "Einstellungen";
 "settings.title" = "Einstellungen";
-"settings.save" = "Speichern und prüfen";
+"settings.save" = "Speichern";
 "settings.saved" = "Einstellungen gespeichert";
 "settings.appearance.title" = "Aussehen";
 "settings.appearance.mode" = "Darstellungsmodus";
@@ -1076,7 +1076,7 @@
 "file_timeline.current_state" = "Aktuelle Datei auf der Festplatte";
 "file_timeline.mode.content" = "Inhalt";
 "file_timeline.mode.changes" = "Änderungen";
-"file_timeline.mode.blame" = "Schuld";
+"file_timeline.mode.blame" = "Zeilenhistorie";
 "file_timeline.content.empty" = "Kein Inhalt zum Anzeigen";
 "file_timeline.changes.empty" = "Kein Dateiunterschied für diese Version";
 "file_timeline.blame.empty" = "Keine Schuldangabe";
@@ -2143,16 +2143,16 @@
 "github.issues.editor.milestone" = "Milestone number";
 "github.issues.agent.prompt" = "Work on GitHub issue %1$@ #%2$d: %3$@\n\n%4$@\n\nInspect the repository first, implement the narrowest complete fix, run relevant validation, and summarize the changed files.";
 "command_palette.title" = "Befehlspalette";
-"command_palette.placeholder" = "Search commands, repositories or branches";
-"command_palette.empty" = "No matching commands";
-"command_palette.group.navigate" = "Navigate";
-"command_palette.group.repositories" = "Repositories";
+"command_palette.placeholder" = "Befehle, Repositorys oder Branches suchen";
+"command_palette.empty" = "Keine passenden Befehle";
+"command_palette.group.navigate" = "Navigation";
+"command_palette.group.repositories" = "Repositorys";
 "command_palette.group.branches" = "Branches";
-"command_palette.group.git" = "Git actions";
-"command_palette.group.application" = "Application";
-"command_palette.hint.navigate" = "Navigate";
-"command_palette.hint.run" = "Run";
-"command_palette.count" = "%d commands";
+"command_palette.group.git" = "Git-Aktionen";
+"command_palette.group.application" = "Anwendung";
+"command_palette.hint.navigate" = "Auswählen";
+"command_palette.hint.run" = "Ausführen";
+"command_palette.count" = "%d Befehle";
 "commit_search.title" = "Commits suchen";
 "commit_search.action" = "Search";
 "commit_search.hash" = "Commit SHA";
@@ -2183,49 +2183,43 @@
 "intelligence.tab.provenance" = "Code-Kontext";
 "intelligence.tab.capsules" = "Fehlerkapseln";
 "intelligence.tab.activity" = "Agent-Aktivität";
-"intelligence.intent.title" = "Commit Plan";
-"intelligence.intent.summary" = "%d change units · %d commits";
-"intelligence.intent.loading" = "Analyzing working-tree changes…";
-"intelligence.intent.empty.title" = "No changes to organize";
-"intelligence.intent.empty.body" = "Edit files in this repository, then refresh to build an atomic commit plan.";
-"intelligence.intent.select.title" = "Select a change unit";
-"intelligence.intent.select.body" = "Choose a hunk to inspect the exact patch assigned to this commit.";
-"intelligence.intent.add_group" = "Add commit";
-"intelligence.intent.agent" = "Refine with Agent";
-"intelligence.intent.apply" = "Create commits";
-"intelligence.intent.confirm.title" = "Create the planned commits?";
-"intelligence.intent.confirm.body" = "GitGatto will create %d local commits in this order. A recovery point is created first.";
-"intelligence.intent.group_title" = "Commit purpose";
-"intelligence.intent.commit_message" = "Commit message";
-"intelligence.intent.verify_placeholder" = "Optional verification command after each commit";
-"intelligence.intent.group_empty" = "Move at least one change unit into this commit.";
-"intelligence.intent.whole_file" = "Whole file";
-"intelligence.intent.whole_file.title" = "Whole-file change";
-"intelligence.intent.whole_file.body" = "This binary, new, deleted, or metadata-only file is committed as one unit.";
-"intelligence.intent.result.title" = "Commit series created";
-"intelligence.intent.result.body" = "Created %d local commits. They have not been pushed.";
-"intelligence.intent.refresh" = "Analyze remaining changes";
-"intelligence.intent.new_group" = "New commit";
-"intelligence.intent.notice.refined" = "The Agent plan is ready for review.";
-"intelligence.intent.notice.applied" = "Created %d local commits.";
-"intelligence.intent.kind.implementation" = "Implementation";
-"intelligence.intent.kind.fix" = "Fix";
-"intelligence.intent.kind.refactor" = "Refactor";
+"intelligence.intent.summary" = "%d Dateien · %d Commits";
+"intelligence.intent.loading" = "Änderungen werden gelesen…";
+"intelligence.intent.empty.title" = "Keine Änderungen vorhanden";
+"intelligence.intent.empty.body" = "Keine Änderungen vorhanden. Dateien bearbeiten und dann aktualisieren.";
+"intelligence.intent.add_group" = "Commit hinzufügen";
+"intelligence.intent.agent" = "Mit Agent ordnen";
+"intelligence.intent.apply" = "Commits erstellen";
+"intelligence.intent.confirm.title" = "Diese Commits erstellen?";
+"intelligence.intent.confirm.body" = "GitGatto speichert einen Wiederherstellungspunkt und erstellt dann %d lokale Commits in dieser Reihenfolge.";
+"intelligence.intent.group_title" = "Zweck des Commits";
+"intelligence.intent.commit_message" = "Commit-Nachricht";
+"intelligence.intent.verify_placeholder" = "Prüfbefehl nach jedem Commit (optional)";
+"intelligence.intent.group_empty" = "Mindestens eine Datei oder einen Codeblock hierher verschieben.";
+"intelligence.intent.whole_file.title" = "Änderung der ganzen Datei";
+"intelligence.intent.whole_file.body" = "Diese Änderung wird als ganze Datei übernommen. Keine Textvorschau verfügbar.";
+"intelligence.intent.result.title" = "Commits erstellt";
+"intelligence.intent.result.body" = "%d lokale Commits erstellt. Sie wurden nicht gepusht.";
+"intelligence.intent.refresh" = "Verbleibende Änderungen lesen";
+"intelligence.intent.new_group" = "Neuer Commit";
+"intelligence.intent.kind.implementation" = "Funktion";
+"intelligence.intent.kind.fix" = "Fehlerbehebung";
+"intelligence.intent.kind.refactor" = "Refactoring";
 "intelligence.intent.kind.tests" = "Tests";
-"intelligence.intent.kind.documentation" = "Documentation";
-"intelligence.intent.kind.configuration" = "Configuration";
-"intelligence.intent.kind.assets" = "Assets";
-"intelligence.intent.kind.other" = "Other";
-"intelligence.intent.error.no_changes" = "There are no working-tree changes to organize.";
-"intelligence.intent.error.conflicts" = "Resolve the current conflicts before building a commit plan.";
-"intelligence.intent.error.changed" = "The repository changed after this plan was created. Refresh the plan before applying it.";
-"intelligence.intent.error.status" = "Git returned an unreadable working-tree status.";
-"intelligence.intent.error.repository" = "This plan belongs to a different repository.";
-"intelligence.intent.error.assignment" = "Every change unit must belong to exactly one non-empty commit.";
-"intelligence.intent.error.empty_group" = "“%@” did not stage any changes.";
-"intelligence.intent.error.unsupported" = "The change in “%@” cannot be staged independently.";
-"intelligence.intent.error.verification" = "Verification command failed: %@\n%@";
-"intelligence.intent.error.agent_plan" = "Agent returned an invalid commit plan.";
+"intelligence.intent.kind.documentation" = "Dokumentation";
+"intelligence.intent.kind.configuration" = "Konfiguration";
+"intelligence.intent.kind.assets" = "Ressourcen";
+"intelligence.intent.kind.other" = "Sonstiges";
+"intelligence.intent.error.no_changes" = "Keine Änderungen zum Ordnen vorhanden.";
+"intelligence.intent.error.conflicts" = "Vor der Commit-Planung die Konflikte lösen.";
+"intelligence.intent.error.changed" = "Dateien oder Index wurden geändert. Vor dem Erstellen den Plan aktualisieren.";
+"intelligence.intent.error.status" = "Git hat einen unlesbaren Arbeitsverzeichnisstatus geliefert.";
+"intelligence.intent.error.repository" = "Dieser Plan gehört zu einem anderen Repository. Das passende Repository öffnen oder aktualisieren.";
+"intelligence.intent.error.assignment" = "Jede Änderung muss genau einem nicht leeren Commit zugeordnet sein.";
+"intelligence.intent.error.empty_group" = "„%@“ hat keine Änderungen vorgemerkt.";
+"intelligence.intent.error.unsupported" = "Die Änderung in „%@“ lässt sich nicht einzeln vormerken.";
+"intelligence.intent.error.verification" = "Prüfbefehl fehlgeschlagen: %@\n%@";
+"intelligence.intent.error.agent_plan" = "Agent hat einen ungültigen Commit-Plan geliefert. Erneut ordnen.";
 "intelligence.provenance.path" = "Repository-relative file path";
 "intelligence.provenance.line" = "Line";
 "intelligence.provenance.trace" = "Trace";
@@ -2305,9 +2299,9 @@
 "help.topic.intelligence.title" = "Change Center";
 "help.topic.intelligence.summary" = "Build atomic commits, trace code context, move failures, and inspect Agent activity.";
 "help.intelligence.intent.title" = "Commit Plan";
-"help.intelligence.intent.1" = "Open Change Center and refresh after editing files. GitGatto splits text patches into independently assignable hunks and keeps binary or new files whole.";
-"help.intelligence.intent.2" = "Review commit order, purpose, message, and hunk assignment. Agent refinement changes only the proposed plan and still requires your confirmation.";
-"help.intelligence.intent.3" = "An optional command can verify every commit. Create commits makes a recovery point first and never pushes the resulting commits automatically.";
+"help.intelligence.intent.1" = "Nach dem Bearbeiten den Commit-Plan öffnen. Optional den Zweck beschreiben, Aufteilung oder einen Commit wählen und Mit Agent ordnen anklicken.";
+"help.intelligence.intent.2" = "Jede Karte zeigt Nachricht und Dateien. Unter Bearbeiten und aufteilen lassen sich Nachrichten ändern sowie Dateien und Codeblöcke verschieben. Das Menü ordnet oder vereint Commits. Die Planung schreibt nicht ins Repository.";
+"help.intelligence.intent.3" = "Weitere Optionen enthält den Prüfbefehl nach jedem Commit. Nach der Bestätigung wird ein Wiederherstellungspunkt angelegt; danach entstehen lokale Commits in Reihenfolge, ohne Push.";
 "help.intelligence.provenance.title" = "Code Context";
 "help.intelligence.provenance.1" = "Enter a tracked repository-relative path and a positive line number.";
 "help.intelligence.provenance.2" = "Git blame identifies the originating local commit and the files changed by it.";
@@ -2478,8 +2472,7 @@
 "tools.commands.help" = "Befehle starten erst nach Bestätigung. Die Erkennung führt keine Projektdateien aus. Beim Schließen des Fensters laufen Befehle weiter; beim Beenden der App werden sie gestoppt.";
 "tools.command.custom" = "Befehl hinzufügen oder bearbeiten";
 "tools.command.executable" = "Programmname oder absoluter Pfad";
-"tools.command.arguments" = "Argumente als JSON-Array";
-"tools.command.argvHelp" = "Beispiel: [\"run\", \"dev\"]. Argumente werden einzeln übergeben, nicht als Shell-Befehl ausgewertet.";
+"tools.command.arguments" = "Argumente";
 "tools.command.timeout" = "Zeitlimit: %d Sekunden";
 "tools.command.localURL" = "Lokale URL (optional)";
 "tools.command.empty" = "Keine Skripte gefunden. Oben einen Befehl hinzufügen.";
@@ -2533,7 +2526,7 @@
 "tools.error.binding" = "Pfad bereits gebunden oder für Verzeichnisregeln ungeeignet. Alte Bindung zuerst entfernen.";
 "tools.error.bound" = "Profil noch gebunden. Zuerst Bindungen entfernen.";
 "tools.error.identityMismatch" = "Wirksame Identität weicht vom Profil ab. Vor dem Commit unter Projektwerkzeuge → Commit-Identitäten prüfen.";
-"tools.error.command" = "Programm, JSON-Argumente, Zeitlimit 1–86.400 Sekunden und optional localhost-URL angeben.";
+"tools.error.command" = "Programm, einzelne Argumente, Zeitlimit von 1–86.400 Sekunden und optional eine localhost-URL eingeben.";
 "tools.error.timeout" = "Zeitlimit erreicht; Befehl gestoppt. Ausgabe prüfen oder Zeitlimit vor erneutem Start anpassen.";
 "tools.error.previewLimit" = "Mehr als 100.000 Dateien. Repository-Inhalt vor der Regelvorschau eingrenzen.";
 "tools.error.previewRequired" = "Aktuelle Regeln vor dem Speichern prüfen.";
@@ -2558,7 +2551,7 @@
 "help.topic.fileHistory.title" = "Dateiverlauf";
 "help.topic.fileHistory.summary" = "Änderungen an Dateien und Zeilen zurückverfolgen.";
 "help.fileHistory.start" = "Im Dateiverlauf erst die Datei, dann eine Revision auswählen. Inhalt, Diff und Zeilenzuordnung zeigen den zugehörigen Commit und Autor.";
-"help.fileHistory.result" = "Im Commit-Verlauf weitere Änderungen desselben Commits prüfen. Wiederherstellen ersetzt nach Bestätigung die aktuelle Datei; anschließend den Arbeits-Diff prüfen. Erfasst werden Commits, nicht jedes Speichern im Editor.";
+"help.fileHistory.result" = "Vor der Wiederherstellung wird der Unterschied zur Arbeitsdatei angezeigt. Erst die Bestätigung ersetzt sie. Bei späteren Änderungen muss die Vorschau aktualisiert werden.";
 "help.fileHistory.caution" = "Fehlende Dateien: Repository, Pfad und Filter prüfen. Nicht committete verlorene Arbeit in Wiederherstellungspunkten oder Stashes suchen; sie muss nicht im Git-Verlauf enthalten sein.";
 "help.topic.branches.title" = "Branches, Tags und Remotes";
 "help.topic.branches.summary" = "Referenzen verwalten und Commits wiederfinden.";
@@ -2582,7 +2575,7 @@
 "help.recovery.caution" = "Pro Repository höchstens drei rotierende Backups; Dateigrenzen können Inhalte auslassen. Ein neuer Speicherort migriert vorhandene Backups. Eine Wächterwarnung ist ein Prüfhinweis, kein Angriffsbeweis: Grund und Sicherung vor der Wiederherstellung kontrollieren.";
 "help.topic.monitoring.title" = "Überwachung und Menüleiste";
 "help.topic.monitoring.summary" = "Änderungen, Upstream, Schutz, Actions und Ziele prüfen.";
-"help.monitoring.start" = "Unter Einstellungen → Überwachung Engine, einzelne Kanäle und Intervalle festlegen. Dort auch das Menüleistensymbol einblenden; Ausblenden stoppt nicht die Überwachung.";
+"help.monitoring.start" = "Unter Einstellungen → Überwachung Engine, einzelne Kanäle und Intervalle festlegen. Dort auch das Menüleistensymbol einblenden; Ausblenden stoppt nicht die Überwachung. Pro Repository sind Automatisch, Aktiv und Selten wählbar. Batteriegrenzen und dringende Schutzprüfungen bleiben wirksam.";
 "help.monitoring.result" = "In der Menüleiste unabhängig vom Hauptfenster alle oder ein Repository auswählen. Änderungen, Synchronisierung, Wiederherstellungspunkte und Tagesaktivität ansehen. Aktivität zählt Commits und Änderungssignale, keine Arbeitsstunden.";
 "help.monitoring.caution" = "Läuft bei minimiertem Fenster weiter, aber nicht nach Beenden der App. Schutz externer Agents/CLIs beobachtet verwaltete Repositorys und hält Baselines vor; er blockiert nicht jeden zerstörerischen Befehl und garantiert keine Rettung ungespeicherter oder ausgeschlossener Dateien.";
 "help.topic.applications.title" = "Anwendungsrepository";
@@ -2593,7 +2586,7 @@
 "help.topic.developerTools.title" = "Entwicklerwerkzeuge";
 "help.topic.developerTools.summary" = "Lokale Werkzeuge erkennen, konfigurieren und aktualisieren.";
 "help.developerTools.start" = "Im Anwendungsrepository Entwicklerwerkzeuge öffnen, Erkennung aktualisieren und Agent-Installation oder Upgrade wählen. Mehrere aktualisierbare Werkzeuge auswählen; Installations- und Upgrade-Warteschlangen zeigen wartende und laufende Aufträge.";
-"help.developerTools.result" = "Bis zu drei Aufgaben parallel; Schreibsperren des Paketmanagers können Schritte verzögern. Auftrag für Phase und Ausgabe öffnen. Erforderliche Benutzerkonfiguration wie PATH und Plugin-Registrierung wird durchgeführt, danach Programm und Version lokal geprüft.";
+"help.developerTools.result" = "Bis zu drei Aufgaben parallel; Schreibsperren des Paketmanagers können Schritte verzögern. Auftrag für Phase und Ausgabe öffnen. Erforderliche Benutzerkonfiguration wie PATH und Plugin-Registrierung wird durchgeführt, danach Programm und Version lokal geprüft. Werkzeuggruppen stellen die Auswahl in die Warteschlange. Vorab lässt sich der Änderungsumfang ansehen; der Beleg trennt Programmprüfung, PATH-Änderungen und Agent-Konfiguration.";
 "help.developerTools.caution" = "Agent-Abschluss ist kein Prüfnachweis. Handlungsbedarf bedeutet offene Installation, Konfiguration oder Versionsprüfung. Bei Berechtigungsproblemen angebotene Autorisierung und Wiederholung nutzen. Login und macOS-Freigabe bleiben manuell; ausgeloggter Zustand allein macht eine geprüfte Installation nicht ungültig. Aktive Homebrew-Sperren nicht löschen.";
 "help.topic.collaboration.title" = "Synchronisierung und Zusammenarbeit";
 "help.topic.collaboration.summary" = "Mehrere Repositorys, Inbox, Issues und PRs bearbeiten.";
@@ -2617,7 +2610,7 @@
 "help.workScenes.caution" = "Bei Blockade oder Unterbrechung Phase und Repository prüfen. Als erledigt markieren bestätigt nur die Bearbeitung, stellt keine Dateien her. Szene löschen entfernt Datensatz und eigene Referenz; der ursprüngliche Stash bleibt unter Stashes.";
 "help.topic.projectCommands.title" = "Befehle ausführen";
 "help.topic.projectCommands.summary" = "Projektbefehle ausführen und Ergebnisse prüfen.";
-"help.projectCommands.start" = "Unter Projektwerkzeuge Befehle aus Paketmetadaten, Make oder Swift erkennen. Programm, Arbeitsordner, Argumente und Timeout vor Bestätigung prüfen. Eigene Argumente als JSON-Array, nicht als Shell-Zeile eingeben.";
+"help.projectCommands.start" = "Projektwerkzeuge → Befehle ausführen. Programm, Ordner, Argumente und Zeitlimit prüfen. Argumente einzeln eingeben; Leerzeichen bleiben Teil des Arguments.";
 "help.projectCommands.result" = "Befehle anheften, Ausgabe, Laufzeit und Exit-Status ansehen; stoppen, wiederholen, localhost-Links öffnen oder Logs als Agent-Entwurf übergeben. Panel schließen lässt Aufgaben laufen; App beenden stoppt eigene Prozesse.";
 "help.projectCommands.caution" = "Nicht interaktiv: Passwortabfragen im Terminal erledigen. Timeout ist kein Erfolg. Nur die letzten 20 Laufprotokolle bleiben für diese Sitzung im Speicher; benötigte Ausgabe vor Beenden sichern. Unbekannte Projektskripte zuerst prüfen.";
 "help.topic.ignoreRules.title" = "Ignorierregeln";
@@ -2690,3 +2683,249 @@
 "ai.provider.qwen" = "Qwen Code";
 "ai.provider.openAICompatible" = "OpenAI-compatible API";
 "ai.provider.deepseek" = "DeepSeek API";
+
+"intelligence.intent.advanced" = "Weitere Optionen";
+"intelligence.intent.refresh_confirm" = "Änderungen neu laden?";
+"intelligence.intent.refresh_confirm.body" = "Commit-Gruppen und Nachrichten werden neu erstellt.";
+"intelligence.intent.instruction" = "Was wurde geändert oder wie sollen die Commits aufgeteilt werden? (optional)";
+"intelligence.intent.planning" = "Änderungen werden gelesen und Commits geplant…";
+"intelligence.intent.draft_hint" = "Nach Dateibeziehungen gruppiert. Agent kann den Plan anhand der Inhalte verfeinern.";
+"intelligence.intent.split_mode" = "Commit-Aufteilung";
+"intelligence.intent.split.automatic" = "Nach Zweck aufteilen";
+"intelligence.intent.split.single" = "Ein Commit";
+"intelligence.intent.replan" = "Neu ordnen";
+"intelligence.intent.merge_all" = "Zu einem Commit zusammenführen";
+"intelligence.intent.applying" = "Commits werden erstellt…";
+"intelligence.intent.local_only" = "Erstellt lokale Commits ohne Push.";
+"intelligence.intent.incomplete" = "Jeder Commit benötigt Änderungen und eine Nachricht.";
+"intelligence.intent.move_up" = "Früher einordnen";
+"intelligence.intent.move_down" = "Später einordnen";
+"intelligence.intent.merge_group" = "Mit erstem verbleibenden Commit vereinen";
+"intelligence.intent.commit_actions" = "Commit-Aktionen";
+"intelligence.intent.files_less" = "Weniger Dateien anzeigen";
+"intelligence.intent.files_more" = "Alle Dateien anzeigen";
+"intelligence.intent.edit" = "Bearbeiten und aufteilen";
+"intelligence.intent.category" = "Typ";
+"intelligence.intent.move_changes" = "Änderungen verschieben";
+"intelligence.intent.split_file" = "Separater Commit";
+
+"settings.pending" = "Ungespeicherte Änderungen";
+
+"settings.discard" = "Änderungen verwerfen";
+
+"settings.saveFailed" = "Einstellungen konnten nicht gespeichert werden. Werte prüfen und erneut versuchen.";
+
+"settings.search" = "Einstellungen suchen";
+
+"settings.applyHelp" = "Darstellung, Updateschalter, Backup-Pfad und API-Schlüssel werden sofort gespeichert. Andere Änderungen müssen gespeichert werden; Schließen verwirft sie.";
+
+"search.noResults" = "Keine passenden Ergebnisse";
+
+"help.search" = "Anleitungen suchen";
+
+"help.openFeature" = "Funktion öffnen";
+
+"error.action.workflowPermission" = "Workflow-Zugriff erlauben";
+
+"error.action.agentSettings" = "Agent-Einstellungen öffnen";
+
+"error.action.refreshRepository" = "Repository erneut prüfen";
+
+"error.action.inspectRepository" = "Repository-Diagnose öffnen";
+
+"tools.command.argument" = "Argument";
+
+"tools.command.addArgument" = "Argument hinzufügen";
+
+"tools.command.removeArgument" = "Argument entfernen";
+
+"tools.command.argumentsLiteral" = "Ein Argument pro Zeile. Leerzeichen und leere Argumente bleiben erhalten; keine Shell-Erweiterung.";
+
+"ai.api.loadModels" = "Modelle laden";
+
+"ai.api.chooseModel" = "Modell auswählen";
+
+"ai.api.testChat" = "Chat testen";
+
+"ai.api.testTools" = "Werkzeugaufrufe testen";
+
+"ai.api.testHelp" = "Tests senden kurze Anfragen und können Kontingent verbrauchen. Der Werkzeugtest führt keine Befehle aus und schreibt keine Dateien.";
+
+"ai.api.catalogOnly" = "Modell gelistet · Ausführung ungetestet";
+
+"ai.api.notTested" = "Konfiguriert · Ausführung ungetestet";
+
+"ai.api.modelMissing" = "Gewähltes Modell fehlt in der Serverliste";
+
+"ai.api.noModels" = "Der Server lieferte eine leere Modellliste";
+
+"ai.api.chatVerified" = "Chat-Antwort geprüft";
+
+"ai.api.toolsVerified" = "Aufrufformat geprüft; kein Werkzeug ausgeführt";
+
+"developer_tools.tasks.title" = "Werkzeugaufgaben";
+
+"developer_tools.tasks.empty" = "Noch keine Werkzeugaufgaben";
+
+"developer_tools.tasks.queued" = "In Warteschlange";
+
+"developer_tools.tasks.running" = "Läuft";
+
+"developer_tools.tasks.interrupted" = "Unterbrochene Aufgaben prüfen";
+
+"developer_tools.tasks.completed" = "Geprüft";
+
+"developer_tools.tasks.needsAction" = "Handlung nötig";
+
+"developer_tools.tasks.failed" = "Fehlgeschlagen";
+
+"developer_tools.tasks.cancelled" = "Abgebrochen";
+
+"developer_tools.tasks.resume" = "Prüfen und fortsetzen";
+
+"developer_tools.tasks.interruptedHelp" = "Prüft zuerst die Version. Ist sie vorhanden, folgen nur Konfiguration und Prüfung; sonst Installation oder Upgrade. Systemrechte werden bei Bedarf neu angefragt.";
+
+"developer_tools.tasks.storageFailed" = "Aufgaben konnten nicht gespeichert oder gelesen werden. Speicherplatz und Ordnerrechte prüfen.";
+
+"recovery.affectedFiles" = "Betroffene Dateien (%d)";
+
+"diff.partial.stage" = "Auswahl vormerken";
+
+"diff.partial.unstage" = "Auswahl zurücknehmen";
+
+"diff.partial.selected" = "%d Zeilen ausgewählt";
+
+"diff.partial.hunk" = "Änderungsblock auswählen";
+
+"diff.partial.line" = "Zeile auswählen";
+
+"diff.partial.changed" = "Datei oder Index geändert. Diff aktualisieren und erneut auswählen.";
+
+"diff.partial.unsupported" = "Diese Änderung lässt sich nur als ganze Datei vormerken.";
+
+"conflict.block.position" = "Konflikt %d von %d";
+
+"conflict.block.previous" = "Vorheriger Konflikt";
+
+"conflict.block.next" = "Nächster Konflikt";
+
+"conflict.block.preview" = "Diesen Block vergleichen";
+
+"conflict.block.current" = "Aktuellen Block behalten";
+
+"conflict.block.incoming" = "Eingehenden Block behalten";
+
+"conflict.block.both" = "Beide Blöcke behalten";
+
+"developer_tools.upgrade.verification_pending" = "Aktuelle Version nicht bestätigt. Updatestatus neu laden. Es wurde nichts installiert.";
+
+"recovery.compare.title" = "Dateien vergleichen und wiederherstellen";
+
+"recovery.compare.help" = "− zeigt das Backup, + den aktuellen Inhalt. Die Auswahl wird in einen neuen Ordner kopiert. Das Repository bleibt unverändert.";
+
+"recovery.compare.search" = "Backup-Dateien suchen";
+
+"recovery.compare.select" = "Datei zum Vergleichen auswählen.";
+
+"recovery.compare.selected" = "%d Dateien ausgewählt";
+
+"recovery.compare.export" = "Auswahl in neuen Ordner wiederherstellen";
+
+"recovery.compare.tooLarge" = "Vorschaugrenze überschritten (2 MB oder 100.000 Dateien). Eine vollständige Kopie wiederherstellen und dort prüfen.";
+
+"recovery.compare.outside" = "Neuen Ordner außerhalb des Repositorys und der temporären Vorschau wählen.";
+
+"recovery.compare.unsafePath" = "Der Pfad verlässt den Ordner oder folgt einem symbolischen Link. Eine reguläre Datei wählen.";
+
+"codex.background.running" = "Agent arbeitet in %@";
+
+"codex.background.return" = "Zur Aufgabe";
+
+"codex.status.stopping" = "Wird gestoppt…";
+
+"recovery.guard.expected" = "Änderung war beabsichtigt";
+
+"recovery.guard.expectedHelp" = "Dieses Ereignis bestätigen und den aktuellen Stand als Überwachungsbasis verwenden. Das Backup-Limit bleibt bestehen. Spätere Änderungen werden weiter geprüft.";
+
+"action.delete" = "Löschen";
+
+"tools.search.advanced" = "Erweiterte Filter";
+
+"tools.search.activeFilters" = "Aktive Filter anzeigen";
+
+"tools.command.choose" = "Projektbefehl auswählen";
+
+"regression.setup.good" = "1. Letzte funktionierende Version";
+
+"regression.setup.bad" = "2. Version mit dem Fehler";
+
+"regression.setup.method" = "3. Prüfmethode";
+
+"regression.setup.manualHelp" = "Jede Kandidatenversion im isolierten Arbeitsbereich prüfen und als funktionierend, fehlerhaft oder übersprungen markieren. Kein Befehl erforderlich.";
+
+"branches.scene.saveSwitch" = "Arbeitsstand sichern und wechseln";
+
+"branches.scene.scope" = "Vor dem Wechsel werden vorgemerkte, nicht vorgemerkte und unversionierte Dateien im Arbeitsstand des aktuellen Branches gesichert. Ignorierte Dateien bleiben liegen. Commit- und Agent-Entwürfe bleiben erhalten.";
+
+"branches.scene.files" = "Zu sichernde Dateien: %lld";
+
+"branches.scene.clean" = "Keine uncommitteten Dateien. Beim Wechsel wird kein Arbeitsstand erstellt.";
+
+"branches.scene.saved" = "Arbeitsstand für %@ gesichert. Bei der Rückkehr unter Arbeitsstände wiederherstellen.";
+
+"branches.scene.switchFailed" = "Der Arbeitsstand wurde gesichert, der Wechsel aber nicht abgeschlossen. Aktuellen Branch prüfen und die Änderungen unter Arbeitsstände wiederherstellen.";
+
+"tools.error.branchChanged" = "Branch oder Dateiinhalte wurden nach der Vorschau geändert. Vor dem Wechsel aktualisieren und erneut prüfen.";
+
+"tools.error.branchOccupied" = "Dieser Branch ist bereits in einem anderen Worktree ausgecheckt. Diesen Worktree öffnen.";
+
+"diff.partial.plan" = "Auswahl planen";
+
+"intelligence.intent.selection.scope" = "Nur die %d ausgewählten Zeilen";
+
+"intelligence.intent.selection.retained" = "Andere Änderungen bleiben erhalten. Nicht ausgewählte vorgemerkte Änderungen werden nicht mitcommittet.";
+
+"intelligence.intent.selection.all" = "Alle Änderungen verwenden";
+
+"intelligence.intent.selection.dependency" = "Diese Zeilen hängen von nicht ausgewählten vorgemerkten Änderungen ab. Auswahl unter Änderungen anpassen oder alle Änderungen verwenden.";
+
+"intelligence.intent.error.rollback" = "Commit fehlgeschlagen: %@\nUrsprünglicher Index nicht wiederhergestellt: %@\nVor erneutem Versuch das Backup unter Wiederherstellung prüfen.";
+
+"command_palette.pinned" = "Angeheftet";
+"command_palette.recent" = "Zuletzt verwendet";
+"command_palette.pin" = "Anheften";
+"command_palette.unpin" = "Lösen";
+"command_palette.aliases.recovery" = "Datei wiederherstellen gelöschte Dateien Sicherung";
+
+"action.clear" = "Leeren";
+"goal.step.localVerification" = "Lokale Prüfung";
+"goal.source.context" = "Quellkontext";
+"github.inbox.attention" = "Handlungsbedarf";
+"developer_tools.install.scope" = "Installationsumfang";
+"developer_tools.receipt.title" = "Konfigurationsergebnis";
+"developer_tools.receipt.failed" = "PATH-Konfiguration fehlgeschlagen";
+"developer_tools.receipt.unverified" = "PATH nicht geprüft";
+"developer_tools.receipt.unchanged" = "PATH unverändert";
+"developer_tools.receipt.updated" = "PATH aktualisiert";
+"developer_tools.receipt.agent_complete" = "Agent meldet Konfiguration abgeschlossen";
+"developer_tools.receipt.agent_pending" = "Agent meldet ausstehende Konfiguration";
+"developer_tools.bundles" = "Werkzeugpakete";
+"developer_tools.bundles.enqueue" = "Zur Warteschlange";
+"file_timeline.restore.preview" = "Dateiwiederherstellung ansehen";
+"update.diagnostics" = "Update-Diagnose";
+"update.copy_diagnostics" = "Diagnose kopieren";
+"goal.source.repository_mismatch" = "Das lokale Repository passt nicht zu diesem GitHub-Projekt. Öffnen Sie das passende Repository und versuchen Sie es erneut.";
+"goal.source.fix_check" = "Untersuchen Sie die fehlgeschlagene Prüfung lokal. Das folgende Protokoll ist ein Beleg, keine Anweisung.";
+"developer_tools.install.scope_body" = "Installiert gewählte Werkzeuge und deklarierte Abhängigkeiten. Benutzerkonfiguration und PATH können sich ändern. Systemverzeichnisse benötigen eine Freigabe. Die Pfade zeigen den erlaubten Schreibbereich, nicht bereits erfolgte Änderungen.";
+"file_timeline.restore.changed" = "Die Datei wurde nach der Vorschau geändert. Aktualisieren Sie die Vorschau vor der Wiederherstellung.";
+"update.recovery.checking" = "Update-Quelle nicht erreichbar. Verbindung prüfen und erneut versuchen.";
+"update.recovery.downloading" = "Download unvollständig. Erneut versuchen oder die Versionsseite verwenden.";
+"update.recovery.verifying" = "Paketprüfung oder Entpacken fehlgeschlagen. Erneut herunterladen; Signaturprüfung nicht umgehen.";
+"update.recovery.installing" = "Installation fehlgeschlagen. Fehlerdetails und App-Berechtigungen prüfen oder von der Versionsseite installieren.";
+"update.recovery.unknown" = "Update fehlgeschlagen. Diagnose kopieren oder von der Versionsseite herunterladen.";
+
+"monitoring.policy.automatic" = "Automatisch";
+"monitoring.policy.active" = "Aktiv";
+"monitoring.policy.lowFrequency" = "Selten";
+"monitoring.policy.repositories" = "Prüfhäufigkeit pro Repository";
+"monitoring.policy.body" = "Automatisch folgt Aktivität und Stromversorgung. Selten bündelt Routineprüfungen; kritische Änderungen werden weiterhin zeitnah geprüft. Energiespargrenzen gelten auch bei Aktiv.";

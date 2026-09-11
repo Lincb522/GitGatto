@@ -7,25 +7,31 @@ struct FlatAgentResolveButton: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.layoutDirection) private var layoutDirection
     @State private var isHovering = false
     @State private var startedAt = Date.now
 
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            TimelineView(.animation(minimumInterval: 1.0 / 24.0, paused: reduceMotion)) { context in
-                let elapsed = reduceMotion ? 0 : context.date.timeIntervalSince(startedAt)
+            TimelineView(.animation(minimumInterval: 1.0 / 24.0, paused: reduceMotion || isDisabled)) { context in
+                let elapsed = reduceMotion || isDisabled ? 0 : context.date.timeIntervalSince(startedAt)
                 HStack(spacing: 8) {
                     Image(gattoSymbol: "sparkles")
                         .font(.system(size: 12.5, weight: .semibold))
                         .opacity(reduceMotion ? 1 : 0.64 + 0.36 * wave(elapsed * 1.7))
 
+                    if layoutDirection == .rightToLeft {
+                        Text(title)
+                            .opacity(letterOpacity(index: 0, elapsed: elapsed))
+                    } else {
                     HStack(spacing: 0) {
                         ForEach(Array(title.enumerated()), id: \.offset) { index, character in
                             Text(String(character))
                                 .opacity(letterOpacity(index: index, elapsed: elapsed))
                                 .offset(y: letterOffset(index: index, elapsed: elapsed))
                         }
+                    }
                     }
                 }
                 .font(.system(size: 12, weight: .semibold))
@@ -56,12 +62,12 @@ struct FlatAgentResolveButton: View {
     }
 
     private func letterOpacity(index: Int, elapsed: TimeInterval) -> Double {
-        guard !reduceMotion else { return 1 }
+        guard !reduceMotion, !isDisabled else { return 1 }
         return 0.56 + 0.44 * wave(elapsed / 2 - Double(index) * 0.08)
     }
 
     private func letterOffset(index: Int, elapsed: TimeInterval) -> CGFloat {
-        guard !reduceMotion else { return 0 }
+        guard !reduceMotion, !isDisabled else { return 0 }
         return -0.8 * wave(elapsed / 2 - Double(index) * 0.08)
     }
 }

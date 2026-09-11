@@ -213,6 +213,17 @@ struct GitHubActionsCenterView: View {
                         model.rerunSelectedGitHubAction(failedOnly: false)
                     }
                     if run.conclusion == "failure" {
+                        Button(L10n.text("goal.new")) {
+                            Task { await model.prepareGoalFromContext(title: run.displayTitle,
+                                context: "\(run.webURL.absoluteString)\nHEAD: \(run.headSHA)\n" + (model.githubActionRunDetail?.log ?? run.displayTitle),
+                                remoteName: model.selectedGitHubRepository?.fullName) }
+                        }
+                        .disabled(model.snapshot == nil)
+                        Button(L10n.text("github.issues.send_agent")) {
+                            Task { await model.prepareAgentForFailedCheck(run) }
+                        }
+                        .disabled(model.snapshot == nil || model.isCodexRunning)
+
                         Button(L10n.text("github.actions.action.rerun_failed")) {
                             model.rerunSelectedGitHubAction(failedOnly: true)
                         }

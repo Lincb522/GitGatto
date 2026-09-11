@@ -128,11 +128,18 @@ struct CachedRemoteImage<Content: View, Placeholder: View>: View {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
-    @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
+        content(configuration: configuration)
+            .opacity(isEnabled ? 1 : 0.45)
+    }
+
+    @ViewBuilder
+    private func content(configuration: Configuration) -> some View {
         let palette = AppPalette(colorScheme)
         switch AppVisualTheme.resolved(themeRaw) {
         case .standard, .emerald, .folio:
@@ -144,7 +151,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                 .background(palette.primary.opacity(configuration.isPressed ? 0.78 : 1))
                 .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
-                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
         case .lumen:
             configuration.label
                 .font(.system(size: 12.5, weight: .semibold))
@@ -158,7 +165,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                         .stroke(palette.onPrimary.opacity(0.16), lineWidth: 1)
                 }
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
-                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
         case .softGlass:
             configuration.label
                 .font(.system(size: 12.5, weight: .semibold))
@@ -176,7 +183,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                 }
                 .shadow(color: palette.primary.opacity(configuration.isPressed ? 0.08 : 0.20), radius: 6, y: 3)
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
-                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
         case .console:
             configuration.label
                 .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
@@ -190,17 +197,24 @@ struct PrimaryButtonStyle: ButtonStyle {
                         .stroke(palette.accent, lineWidth: 1)
                 }
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
-                .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.10), value: configuration.isPressed)
         }
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
-    @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
+        content(configuration: configuration)
+            .opacity(isEnabled ? 1 : 0.45)
+    }
+
+    @ViewBuilder
+    private func content(configuration: Configuration) -> some View {
         let palette = AppPalette(colorScheme)
         switch AppVisualTheme.resolved(themeRaw) {
         case .standard, .emerald, .folio:

@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 
 /// Compares recoverable working content, rather than subtracting two diffs against different HEADs.
@@ -72,7 +73,14 @@ struct RepositoryBackupComparison {
             }
             if try itemExists(currentURL),
                try fileManager.attributesOfItem(atPath: currentURL.path)[.type] as? FileAttributeType != .typeDirectory {
-                try fileManager.copyItem(at: currentURL, to: newURL)
+                // APFS cloning emits source events that may include earlier edits, making a
+                // read-only guard comparison trigger another audit. Only scratch copies use
+                // a non-cloning copy; preserve symlinks and metadata without following targets.
+                guard copyfile(currentURL.path, newURL.path, nil,
+                    copyfile_flags_t(COPYFILE_ALL | COPYFILE_EXCL | COPYFILE_NOFOLLOW_SRC)) == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno),
+                        userInfo: [NSFilePathErrorKey: currentURL.path])
+                }
                 afterHashes[path] = try signature(newURL)
             }
         }

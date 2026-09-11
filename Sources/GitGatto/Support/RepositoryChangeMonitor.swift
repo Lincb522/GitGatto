@@ -8,13 +8,13 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         label: "dev.gitgatto.repository-change-monitor",
         qos: .utility
     )
-    private let onChange: @Sendable () -> Void
+    private let onChange: @Sendable (RepositoryChangeEvent) -> Void
     private let includesGitMetadata: Bool
     private let includesGitObjectChanges: Bool
     private let filtersIgnoredPaths: Bool
     private let eventStreamEnabled: Bool
     private let queueKey = DispatchSpecificKey<UInt8>()
-    private var pendingPaths = Set<String>()
+    private var pendingPaths: [String: RepositoryChangeEvent] = [:]
     private var filterScheduled = false
     private var filterTask: Task<Void, Never>?
     private var filterGeneration = UUID()
@@ -30,7 +30,7 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         includesGitObjectChanges: Bool = false,
         filtersIgnoredPaths: Bool = false,
         eventStreamEnabled: Bool = true,
-        onChange: @escaping @Sendable () -> Void
+        onChange: @escaping @Sendable (RepositoryChangeEvent) -> Void
     ) {
         rootPath = Self.fileSystemPath(repositoryURL)
         self.includesGitMetadata = includesGitMetadata
@@ -134,7 +134,7 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
         eventFlags: UnsafePointer<FSEventStreamEventFlags>
     ) {
         let paths = unsafeBitCast(eventPaths, to: NSArray.self) as? [String] ?? []
-        var requiresImmediateRefresh = false
+        var immediate: RepositoryChangeEvent?
         for index in 0 ..< min(eventCount, paths.count) {
             let path = paths[index]
             let flags = eventFlags[index]
@@ -143,13 +143,34 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
             if !filtersIgnoredPaths || relative == nil || relative == ".git"
                 || relative?.hasPrefix(".git/") == true
                 || flags & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs | kFSEventStreamEventFlagRootChanged) != 0 {
-                requiresImmediateRefresh = true
+                var event = immediate ?? .none
+                event.merge(classify(path: path, flags: flags))
+                immediate = event
             } else if let relative {
-                pendingPaths.insert(relative)
+                var event = pendingPaths[relative] ?? .none
+                event.merge(classify(path: path, flags: flags))
+                pendingPaths[relative] = event
             }
         }
-        if requiresImmediateRefresh { onChange() }
+        if let immediate { onChange(immediate) }
         filterPendingPaths()
+    }
+
+    func classify(path: String, flags: FSEventStreamEventFlags) -> RepositoryChangeEvent {
+        guard let relative = relativePath(path),
+              flags & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs | kFSEventStreamEventFlagRootChanged) == 0 else { return .unknown }
+        let references = relative == ".git" || relative == ".git/HEAD" || relative == ".git/packed-refs"
+            || relative == ".git/refs" || relative.hasPrefix(".git/refs/")
+        let removed = flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemRemoved | kFSEventStreamEventFlagItemRenamed) != 0
+        // Atomic saves rename newly created staging files away. Keep their audit, but do not
+        // promote the entire save to urgent; explicit removal and reference changes still do.
+        let transientRenameFlags = FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated | kFSEventStreamEventFlagItemRenamed)
+        let transientRename = flags & transientRenameFlags == transientRenameFlags
+            && flags & FSEventStreamEventFlags(kFSEventStreamEventFlagItemRemoved) == 0
+        var value = stat()
+        let missing = removed && !transientRename && lstat(path, &value) != 0
+        return RepositoryChangeEvent(requiresLiveRefresh: !relative.hasPrefix(".git/objects/"),
+            referencesChanged: references, requiresPromptAudit: missing || references)
     }
 
     private func relativePath(_ path: String) -> String? {
@@ -198,12 +219,13 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
 
     private func runPendingPathFilter() {
         guard filterTask == nil, !pendingPaths.isEmpty else { return }
-        let paths = pendingPaths.sorted()
+        let events = pendingPaths
+        let paths = events.keys.sorted()
         pendingPaths.removeAll()
         let generation = filterGeneration
         let root = rootPath
         filterTask = Task { [weak self] in
-            let shouldNotify: Bool
+            var notification: RepositoryChangeEvent?
             do {
                 let output = try await ExternalProcessRunner().run(
                     executable: URL(fileURLWithPath: "/usr/bin/git"),
@@ -213,14 +235,19 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
                     acceptedExitCodes: [0, 1], timeout: .seconds(5)
                 )
                 let ignored = Set(output.standardOutput.split(separator: 0).map { String(decoding: $0, as: UTF8.self) })
-                shouldNotify = paths.contains { !ignored.contains($0) }
+                for path in paths where !ignored.contains(path) {
+                    var combined = notification ?? .none
+                    combined.merge(events[path] ?? .unknown)
+                    notification = combined
+                }
             } catch is CancellationError { return }
-            catch { shouldNotify = true }
+            catch { notification = .unknown }
             guard !Task.isCancelled, let self else { return }
+            let event = notification
             self.callbackQueue.async { [weak self] in
                 guard let self, self.filterGeneration == generation else { return }
                 self.filterTask = nil
-                if shouldNotify { self.onChange() }
+                if let event { self.onChange(event) }
                 self.filterPendingPaths()
             }
         }
@@ -246,7 +273,7 @@ final class RepositoryChangeMonitor: @unchecked Sendable {
             let current = self.currentWatchdogFingerprint()
             defer { self.watchdogFingerprint = current }
             guard current != self.watchdogFingerprint else { return }
-            self.onChange()
+            self.onChange(.unknown)
         }
         self.watchdog = watchdog
         watchdog.resume()

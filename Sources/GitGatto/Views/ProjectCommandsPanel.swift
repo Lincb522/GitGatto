@@ -7,7 +7,7 @@ struct ProjectCommandsPanel: View {
     let confirm: ProjectToolConfirmation
     @State private var title = ""
     @State private var executable = ""
-    @State private var arguments = "[]"
+    @State private var arguments: [CommandArgumentDraft] = []
     @State private var timeout = 3600
     @State private var localURL = ""
     @State private var editingID: String?
@@ -36,13 +36,28 @@ struct ProjectCommandsPanel: View {
                 VStack(alignment: .leading, spacing: 10) {
                     TextField(L10n.text("tools.name"), text: $title)
                     TextField(L10n.text("tools.command.executable"), text: $executable)
-                    TextField(L10n.text("tools.command.arguments"), text: $arguments)
-                    Text(L10n.text("tools.command.argvHelp")).font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.text("tools.command.arguments")).font(.caption)
+                    ForEach($arguments) { $argument in
+                        HStack {
+                            TextField(L10n.text("tools.command.argument"), text: $argument.value)
+                                .environment(\.layoutDirection, .leftToRight)
+                            Button {
+                                arguments.removeAll { $0.id == argument.id }
+                            } label: { GattoIcon(symbol: "minus.circle", size: 16) }
+                            .buttonStyle(SecondaryButtonStyle())
+                            .accessibilityLabel(L10n.text("tools.command.removeArgument"))
+                        }
+                    }
+                    Button(L10n.text("tools.command.addArgument")) {
+                        arguments.append(CommandArgumentDraft())
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    Text(L10n.text("tools.command.argumentsLiteral")).font(.caption).foregroundStyle(.secondary)
                     Stepper(L10n.format("tools.command.timeout", timeout), value: $timeout, in: 1...86400, step: 60)
                     TextField(L10n.text("tools.command.localURL"), text: $localURL)
                     HStack {
                         Button(L10n.text("tools.save")) { Task { await save() } }.disabled(workspace.snapshot == nil)
-                        Button(L10n.text("tools.clear")) { editingID = nil; title = ""; executable = ""; arguments = "[]"; localURL = "" }
+                        Button(L10n.text("tools.clear")) { editingID = nil; title = ""; executable = ""; arguments = []; localURL = "" }
                     }
                 }.textFieldStyle(.roundedBorder).padding(.top, 10)
             }
@@ -75,18 +90,22 @@ struct ProjectCommandsPanel: View {
     private func edit(_ command: ProjectCommand) {
         editorExpanded = true
         editingID = command.id; title = command.title; executable = command.executable; timeout = command.timeoutSeconds; localURL = command.localURL
-        arguments = (try? JSONEncoder().encode(command.arguments)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        arguments = command.arguments.map { CommandArgumentDraft(value: $0) }
     }
     private func save() async {
         guard let root = workspace.snapshot?.rootURL else { return }
         await tools.action {
-            guard let data = arguments.data(using: .utf8), let args = try? JSONDecoder().decode([String].self, from: data),
-                  localURL.isEmpty || ProjectCommandOutput.localURL(localURL) != nil else { throw ProjectToolsError(key: "command") }
-            let command = ProjectCommand(id: editingID ?? UUID().uuidString, title: title, executable: executable, arguments: args, repositoryPath: root.path, timeoutSeconds: timeout, localURL: localURL)
+            guard localURL.isEmpty || ProjectCommandOutput.localURL(localURL) != nil else { throw ProjectToolsError(key: "command") }
+            let command = ProjectCommand(id: editingID ?? UUID().uuidString, title: title, executable: executable, arguments: arguments.map(\.value), repositoryPath: root.path, timeoutSeconds: timeout, localURL: localURL)
             try await tools.pin(command); editingID = command.id; tools.notice = L10n.text("tools.saved")
         }
     }
     private func localLink(_ run: ProjectCommandRun) -> URL? {
         run.localURL ?? ProjectCommandOutput.localURL(run.command.localURL)
     }
+}
+
+private struct CommandArgumentDraft: Identifiable {
+    let id = UUID()
+    var value = ""
 }

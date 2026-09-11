@@ -2,6 +2,7 @@ import Foundation
 
 protocol CodeProvenanceServing: Sendable {
     func trace(filePath: String, line: Int, in repositoryURL: URL) async throws -> CodeProvenanceReport
+    func trace(commitHash: String, filePath: String, line: Int, in repositoryURL: URL) async throws -> CodeProvenanceReport
 }
 
 actor CodeProvenanceService: CodeProvenanceServing {
@@ -42,6 +43,18 @@ actor CodeProvenanceService: CodeProvenanceServing {
         let sourceText = blame.split(separator: "\n", omittingEmptySubsequences: false)
             .first(where: { $0.hasPrefix("\t") })
             .map { String($0.dropFirst()) }
+        return try await report(hash: hash, path: path, line: line, sourceText: sourceText, repository: repository)
+    }
+
+    func trace(commitHash: String, filePath: String, line: Int, in repositoryURL: URL) async throws -> CodeProvenanceReport {
+        guard (40...64).contains(commitHash.count), commitHash.allSatisfy(\.isHexDigit), line > 0 else {
+            throw CodeProvenanceError.malformedGitOutput
+        }
+        return try await report(hash: commitHash, path: Self.safeRelativePath(filePath), line: line,
+            sourceText: nil, repository: repositoryURL.standardizedFileURL)
+    }
+
+    private func report(hash: String, path: String, line: Int, sourceText: String?, repository: URL) async throws -> CodeProvenanceReport {
         let commit = try await commit(hash: hash, in: repository)
 
         guard let remote = try await remoteIdentity(in: repository) else {

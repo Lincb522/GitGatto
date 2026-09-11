@@ -37,6 +37,9 @@ struct ProjectCodeQuery: Sendable {
         "JSON": ["json", "jsonc"], "YAML": ["yml", "yaml"], "SQL": ["sql"], "Markdown": ["md", "markdown"]
     ]
     var filenamesOnly = false
+    var hasAdvancedFilters: Bool {
+        scope != .working || !directory.isEmpty || !fileExtension.isEmpty || !language.isEmpty || filenamesOnly
+    }
 }
 
 struct ProjectCodeMatch: Identifiable, Sendable {

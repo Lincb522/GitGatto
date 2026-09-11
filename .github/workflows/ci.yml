@@ -47,6 +47,9 @@ jobs:
           git config --global user.email "ci@gitgatto.dev"
           git config --global init.defaultBranch main
 
+      - name: Validate UI icon resources
+        run: python3 scripts/inventory-icons.py --check
+
       - name: Resolve dependencies
         run: swift package resolve
 
@@ -57,7 +60,7 @@ jobs:
         run: swift build --build-tests
 
       - name: Test
-        timeout-minutes: 10
+        timeout-minutes: 30
         run: |
           mkdir -p "$RUNNER_TEMP/test-diagnostics"
           (
@@ -70,7 +73,8 @@ jobs:
           sampler=$!
           trap 'kill "$sampler" 2>/dev/null || true' EXIT
           set -o pipefail
-          swift test --skip-build 2>&1 | tee "$RUNNER_TEMP/test-diagnostics/tests.log"
+          # UI tests temporarily change process-wide language and preference state.
+          swift test --skip-build --no-parallel 2>&1 | tee "$RUNNER_TEMP/test-diagnostics/tests.log"
 
       - name: Test Agent lanes with a constrained executor
         timeout-minutes: 2

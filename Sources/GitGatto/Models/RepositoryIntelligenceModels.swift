@@ -27,6 +27,12 @@ enum ChangeIntentUnitKind: String, Codable, Sendable {
     case wholeFile
 }
 
+enum ChangeIntentSplitMode: String, CaseIterable, Identifiable, Sendable {
+    case automatic
+    case single
+    var id: String { rawValue }
+}
+
 struct ChangeIntentUnit: Identifiable, Codable, Sendable, Equatable {
     let id: String
     let path: String
@@ -37,6 +43,8 @@ struct ChangeIntentUnit: Identifiable, Codable, Sendable, Equatable {
     let patch: String?
     let addedLineCount: Int
     let deletedLineCount: Int
+    var contextPreview: String? = nil
+    var contextIsTruncated: Bool? = nil
 
     var displayName: String {
         let name = URL(fileURLWithPath: path).lastPathComponent
@@ -67,6 +75,23 @@ struct ChangeIntentGroup: Identifiable, Codable, Sendable, Equatable {
     }
 }
 
+struct ChangeIntentSelection: Codable, Sendable, Equatable {
+    let path: String
+    let sourceText: String
+    let patch: String
+    let isStaged: Bool
+    let lineCount: Int
+
+    init(document: DiffDocument, change: WorkingTreeChange, selectedIDs: Set<UUID>) throws {
+        guard document.path == change.path, let source = document.sourceText else { throw PartialDiffError.unsupported }
+        patch = try PartialDiffPatch.make(from: document, selectedIDs: selectedIDs, reversing: false)
+        path = change.path
+        sourceText = source
+        isStaged = change.isStaged
+        lineCount = document.lines.filter { selectedIDs.contains($0.id) && ($0.kind == .addition || $0.kind == .deletion) }.count
+    }
+}
+
 struct ChangeIntentPlan: Identifiable, Codable, Sendable, Equatable {
     let id: UUID
     let repositoryPath: String
@@ -74,6 +99,9 @@ struct ChangeIntentPlan: Identifiable, Codable, Sendable, Equatable {
     let createdAt: Date
     var units: [ChangeIntentUnit]
     var groups: [ChangeIntentGroup]
+    var selection: ChangeIntentSelection? = nil
+    var selectionCommitTree: String? = nil
+    var selectionIndexTree: String? = nil
 
     init(
         id: UUID = UUID(),
@@ -95,6 +123,30 @@ struct ChangeIntentPlan: Identifiable, Codable, Sendable, Equatable {
         let assigned = Set(groups.flatMap(\.unitIDs))
         return units.map(\.id).filter { !assigned.contains($0) }
     }
+
+    var fileCount: Int { Set(units.map(\.path)).count }
+
+    var canApply: Bool {
+        let assigned = groups.flatMap(\.unitIDs)
+        return !units.isEmpty && !groups.isEmpty
+            && Set(assigned) == Set(units.map(\.id)) && assigned.count == units.count
+            && groups.allSatisfy { !$0.unitIDs.isEmpty && !$0.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    func files(in group: ChangeIntentGroup) -> [ChangeIntentFile] {
+        let ids = Set(group.unitIDs)
+        return Dictionary(grouping: units.filter { ids.contains($0.id) }, by: \.path)
+            .sorted { $0.key < $1.key }
+            .map { ChangeIntentFile(path: $0.key, units: $0.value) }
+    }
+}
+
+struct ChangeIntentFile: Identifiable {
+    let path: String
+    let units: [ChangeIntentUnit]
+    var id: String { path }
+    var added: Int { units.reduce(0) { $0 + $1.addedLineCount } }
+    var deleted: Int { units.reduce(0) { $0 + $1.deletedLineCount } }
 }
 
 struct ChangeIntentApplyResult: Sendable, Equatable {
@@ -104,6 +156,8 @@ struct ChangeIntentApplyResult: Sendable, Equatable {
 
 enum ChangeIntentError: LocalizedError, Sendable, Equatable {
     case noChanges
+    case selectionDependency
+    case rollbackFailed(String, String)
     case unresolvedConflicts
     case repositoryChanged
     case invalidPlan(String)
@@ -112,6 +166,10 @@ enum ChangeIntentError: LocalizedError, Sendable, Equatable {
 
     var errorDescription: String? {
         switch self {
+        case .selectionDependency:
+            L10n.text("intelligence.intent.selection.dependency")
+        case let .rollbackFailed(original, recovery):
+            L10n.format("intelligence.intent.error.rollback", original, recovery)
         case .noChanges:
             L10n.text("intelligence.intent.error.no_changes")
         case .unresolvedConflicts:
@@ -313,5 +371,29 @@ struct RepositoryActivityEvent: Identifiable, Codable, Sendable, Equatable {
         self.refChanged = refChanged
         self.candidates = candidates
         self.confidence = confidence
+    }
+}
+
+struct RepositoryIntelligenceNavigation: Identifiable, Equatable {
+    let id = UUID()
+    let repositoryPath: String
+    let tab: RepositoryIntelligenceTab
+    var path: String = ""
+    var line: Int = 1
+    var revision: String?
+    var command: String = ""
+    var output: String = ""
+}
+
+extension RepositoryIntelligenceTab {
+    var titleKey: String { "intelligence.tab.\(rawValue)" }
+
+    var symbol: String {
+        switch self {
+        case .intent: "point.3.connected.trianglepath.dotted"
+        case .provenance: "doc.text.magnifyingglass"
+        case .capsules: "shippingbox"
+        case .activity: "history.file"
+        }
     }
 }

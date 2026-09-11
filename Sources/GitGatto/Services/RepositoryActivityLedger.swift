@@ -13,7 +13,6 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
 
     private let rootURL: URL
     private let gitRunner: GitCommandRunner
-    private let processRunner: ExternalProcessRunner
     private let fileManager: FileManager
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -29,13 +28,11 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
     init(
         rootURL: URL? = nil,
         gitRunner: GitCommandRunner = GitCommandRunner(),
-        processRunner: ExternalProcessRunner = ExternalProcessRunner(),
         fileManager: FileManager = .default
     ) {
         self.rootURL = rootURL ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("GitGatto/Activity Ledger", isDirectory: true)
         self.gitRunner = gitRunner
-        self.processRunner = processRunner
         self.fileManager = fileManager
         encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -104,7 +101,7 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
             changed.formUnion(committedPaths)
         }
         guard !changed.isEmpty || refChanged else { return }
-        let candidates = await matchingAgents(for: repository)
+        let candidates = RepositoryAgentProcessProbe.matchingAgents(for: repository)
         let confidence: RepositoryActivityConfidence
         switch candidates.count {
         case 0: confidence = .unknown
@@ -183,45 +180,6 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
                 : nil,
             status: states
         )
-    }
-
-    private func matchingAgents(for repositoryURL: URL) async -> [RepositoryActivityAgent] {
-        guard let ps = CommandExecutableLocator.find("ps"),
-              let lsof = CommandExecutableLocator.find("lsof"),
-              let result = try? await processRunner.run(
-                  executable: ps,
-                  arguments: ["-axo", "pid=,comm="],
-                  timeout: .seconds(4)
-              )
-        else { return [] }
-        let known = [
-            "codex", "claude", "gemini", "cursor", "copilot", "aider",
-            "opencode", "amp", "goose", "continue", "zed-agent",
-        ]
-        let processes: [(Int32, String)] = result.outputText.split(separator: "\n").compactMap { line in
-            let parts = line.trimmingCharacters(in: .whitespaces)
-                .split(maxSplits: 1, whereSeparator: \.isWhitespace)
-            guard parts.count == 2,
-                  let pid = Int32(parts[0]) else { return nil }
-            let executable = URL(fileURLWithPath: String(parts[1])).lastPathComponent.lowercased()
-            guard let name = known.first(where: { executable.contains($0) }) else { return nil }
-            return (pid, name)
-        }
-        var matches: [RepositoryActivityAgent] = []
-        for (pid, name) in processes.prefix(24) {
-            guard let cwd = try? await processRunner.run(
-                executable: lsof,
-                arguments: ["-a", "-p", "\(pid)", "-d", "cwd", "-Fn"],
-                acceptedExitCodes: [0, 1],
-                timeout: .seconds(2)
-            ).outputText.split(separator: "\n").first(where: { $0.hasPrefix("n/") })
-            else { continue }
-            let path = String(cwd.dropFirst())
-            if path == repositoryURL.path || path.hasPrefix(repositoryURL.path + "/") {
-                matches.append(RepositoryActivityAgent(processID: pid, name: name))
-            }
-        }
-        return matches
     }
 
     private func persist(_ event: RepositoryActivityEvent) throws {

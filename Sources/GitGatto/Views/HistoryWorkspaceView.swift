@@ -74,7 +74,6 @@ private struct CommitNavigator: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var showingComparison = false
     @State private var showingReorder = false
-    @State private var showingCommitSearch = false
     @StateObject private var commitSearchModel = GitCommitSearchViewModel()
 
     private var reorderableCommits: [CommitRecord] {
@@ -103,7 +102,7 @@ private struct CommitNavigator: View {
                     }
                     Spacer()
                     Button {
-                        showingCommitSearch = true
+                        model.showsCommitSearch = true
                     } label: {
                         Label {
                             Text(L10n.text("commit_search.title"))
@@ -143,6 +142,11 @@ private struct CommitNavigator: View {
             .padding(.top, 13)
             .padding(.bottom, 11)
 
+            if let path = model.historySourcePath {
+                Button { model.returnToHistorySource() } label: {
+                    Label(path, systemImage: "chevron.left").lineLimit(1)
+                }.buttonStyle(.borderless).padding(.horizontal, 16).padding(.vertical, 8)
+            }
             Rectangle()
                 .fill(palette.divider)
                 .frame(height: 1)
@@ -175,16 +179,13 @@ private struct CommitNavigator: View {
                 isPresented: $showingReorder
             )
         }
-        .sheet(isPresented: $showingCommitSearch) {
+        .sheet(isPresented: $model.showsCommitSearch) {
             GitCommitSearchSheet(
                 searchModel: commitSearchModel,
                 repositoryURL: model.snapshot?.rootURL,
                 selectCommit: { model.selectCommit($0) }
             )
             .frame(minWidth: 880, minHeight: 660)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .gitGattoShowCommitSearch)) { _ in
-            showingCommitSearch = true
         }
     }
 }

@@ -28,13 +28,13 @@ struct LocalizationRuntimeTests {
         defer { L10n.activate(original) }
 
         L10n.activate(.english)
-        #expect(L10n.text("settings.save") == "Save & Check")
+        #expect(L10n.text("settings.save") == "Save")
 
         L10n.activate(.simplifiedChinese)
-        #expect(L10n.text("settings.save") == "保存并检测")
+        #expect(L10n.text("settings.save") == "保存")
 
         L10n.activate(.english)
-        #expect(L10n.text("settings.save") == "Save & Check")
+        #expect(L10n.text("settings.save") == "Save")
     }
 
     @Test("Maps the interface language to automatic document translation")
@@ -63,10 +63,47 @@ struct LocalizationRuntimeTests {
         }
     }
 
+    @Test("Translated format strings preserve every argument type")
+    func preservesFormatArguments() throws {
+        let english = L10n.bundle(preferredLanguages: ["en"])
+        let url = try #require(english.url(forResource: "Localizable", withExtension: "strings"))
+        let reference = try #require(NSDictionary(contentsOf: url) as? [String: String])
+        let regex = try NSRegularExpression(pattern: #"%(?!%)(?:\d+\$)?(?:\d+)?(?:\.\d+)?(?:ll|l)?[@diufsg]"#)
+        let position = try NSRegularExpression(pattern: #"^%\d+\$"#)
+        func arguments(_ value: String) -> [String] {
+            let value = value.replacingOccurrences(of: "%%", with: "")
+            return regex.matches(in: value, range: NSRange(value.startIndex..., in: value)).compactMap { match in
+                guard let range = Range(match.range, in: value) else { return nil }
+                let token = String(value[range])
+                return position.stringByReplacingMatches(in: token, range: NSRange(token.startIndex..., in: token), withTemplate: "%")
+            }.sorted()
+        }
+        for language in AppLanguage.allCases where language != .system {
+            let bundle = L10n.bundle(preferredLanguages: language.preferredLanguages)
+            for (key, value) in reference {
+                let translated = bundle.localizedString(forKey: key, value: nil, table: nil)
+                #expect(arguments(translated) == arguments(value), "\(language.rawValue): \(key)")
+            }
+        }
+    }
+
     @Test("Uses right-to-left layout for Arabic")
     func usesArabicLayoutDirection() {
         #expect(AppLanguage.arabic.usesRightToLeftLayout)
         #expect(!AppLanguage.english.usesRightToLeftLayout)
+    }
+
+    @Test("Command search prompts and keyboard actions use the selected language")
+    func commandPromptsAreLocalized() {
+        let english = L10n.bundle(preferredLanguages: ["en"])
+        for language in AppLanguage.allCases where language != .system && language != .english {
+            let bundle = L10n.bundle(preferredLanguages: language.preferredLanguages)
+            for key in ["command_palette.placeholder", "command_palette.empty", "command_palette.hint.run"] {
+                let value = bundle.localizedString(forKey: key, value: nil, table: nil)
+                #expect(value != key)
+                #expect(value != english.localizedString(forKey: key, value: nil, table: nil), "\(language.rawValue): \(key)")
+            }
+        }
     }
 
     private func localizationKeys(in bundle: Bundle) -> Set<String> {

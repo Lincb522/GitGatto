@@ -18,7 +18,7 @@ struct BrandAssetTests {
             $0.pathExtension == "svg" && $0.deletingPathExtension().lastPathComponent.hasPrefix("gatto-")
         }
 
-        #expect(iconURLs.count == 135)
+        #expect(iconURLs.count == 146)
         #expect(GattoIconAssets.assetName(for: "arrow.clockwise") == "gatto-arrow-clockwise")
         #expect(GattoIconAssets.assetName(for: "sun.max") == "gatto-sun-max")
         #expect(GattoIconAssets.assetName(for: "moon") == "gatto-moon")

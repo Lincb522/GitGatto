@@ -6,16 +6,20 @@ import UniformTypeIdentifiers
 final class RepositoryIntelligenceViewModel: ObservableObject {
     @Published var selectedTab: RepositoryIntelligenceTab = .intent
 
+    @Published private(set) var intentSelection: ChangeIntentSelection?
     @Published private(set) var intentPlan: ChangeIntentPlan?
     @Published var selectedIntentGroupID: UUID?
-    @Published var selectedIntentUnitID: String?
     @Published var verificationCommand = ""
+    @Published var intentInstruction = ""
+    @Published var intentSplitMode: ChangeIntentSplitMode = .automatic
+    @Published private(set) var intentPlanReady = false
     @Published private(set) var isLoadingIntentPlan = false
     @Published private(set) var isRefiningIntentPlan = false
     @Published private(set) var isApplyingIntentPlan = false
     @Published private(set) var intentError: String?
     @Published private(set) var intentApplyResult: ChangeIntentApplyResult?
 
+    @Published var provenanceRevision: String?
     @Published var provenancePath = ""
     @Published var provenanceLine = "1"
     @Published private(set) var provenanceReport: CodeProvenanceReport?
@@ -45,6 +49,11 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
     private var repositoryURL: URL?
     private var loadTask: Task<Void, Never>?
     private var agentTask: Task<Void, Never>?
+    private var intentLoadID = UUID()
+    private var intentAgentID = UUID()
+
+    var isIntentBusy: Bool { isLoadingIntentPlan || isRefiningIntentPlan || isApplyingIntentPlan }
+    var canApplyIntentPlan: Bool { !isIntentBusy && intentPlan?.canApply == true }
 
     init(
         intentService: any ChangeIntentServing,
@@ -63,16 +72,6 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
     deinit {
         loadTask?.cancel()
         agentTask?.cancel()
-    }
-
-    var selectedIntentGroup: ChangeIntentGroup? {
-        guard let selectedIntentGroupID else { return intentPlan?.groups.first }
-        return intentPlan?.groups.first(where: { $0.id == selectedIntentGroupID })
-    }
-
-    var selectedIntentUnit: ChangeIntentUnit? {
-        guard let selectedIntentUnitID else { return nil }
-        return intentPlan?.units.first(where: { $0.id == selectedIntentUnitID })
     }
 
     var selectedCapsule: ReproductionCapsule? {
@@ -100,74 +99,116 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         }
     }
 
+    func openIntentSelection(document: DiffDocument, change: WorkingTreeChange, selectedIDs: Set<UUID>, in repository: URL) {
+        guard !isApplyingIntentPlan else { return }
+        if repositoryURL != repository.standardizedFileURL {
+            resetForRepositoryChange()
+            repositoryURL = repository.standardizedFileURL
+        }
+        loadTask?.cancel()
+        cancelIntentAgent()
+        intentPlan = nil
+        intentError = nil
+        intentApplyResult = nil
+        selectedTab = .intent
+        do {
+            intentSelection = try ChangeIntentSelection(document: document, change: change, selectedIDs: selectedIDs)
+        } catch {
+            intentSelection = nil
+            intentError = error.localizedDescription
+            return
+        }
+        loadTask = Task { [weak self] in
+            guard let self else { return }
+            async let intent: Void = self.refreshIntentPlan()
+            async let capsules: Void = self.refreshCapsules()
+            async let activity: Void = self.refreshActivity()
+            _ = await (intent, capsules, activity)
+        }
+    }
+
+    func useAllIntentChanges() async {
+        guard !isIntentBusy else { return }
+        intentSelection = nil
+        await refreshIntentPlan()
+    }
+
     func refreshIntentPlan() async {
-        guard let repositoryURL, !isApplyingIntentPlan else { return }
+        guard !Task.isCancelled, let repositoryURL, !isApplyingIntentPlan else { return }
+        cancelIntentAgent()
+        let operationID = UUID()
+        intentLoadID = operationID
         isLoadingIntentPlan = true
         intentError = nil
         intentApplyResult = nil
-        defer { isLoadingIntentPlan = false }
+        defer { if intentLoadID == operationID { isLoadingIntentPlan = false } }
         do {
-            let plan = try await intentService.makePlan(in: repositoryURL)
-            guard self.repositoryURL == repositoryURL else { return }
+            let plan = try await intentService.makePlan(in: repositoryURL, selection: intentSelection)
+            try Task.checkCancellation()
+            guard self.repositoryURL == repositoryURL, intentLoadID == operationID else { return }
             intentPlan = plan
+            intentPlanReady = false
             selectedIntentGroupID = plan.groups.first?.id
-            selectedIntentUnitID = plan.groups.first?.unitIDs.first
-        } catch is CancellationError {
-            return
-        } catch ChangeIntentError.noChanges {
+        } catch {
+            guard !(error is CancellationError), self.repositoryURL == repositoryURL,
+                  intentLoadID == operationID else { return }
             intentPlan = nil
             selectedIntentGroupID = nil
-            selectedIntentUnitID = nil
-        } catch {
-            guard self.repositoryURL == repositoryURL else { return }
-            intentPlan = nil
-            intentError = error.localizedDescription
+            intentError = (error as? ChangeIntentError) == .noChanges ? nil : error.localizedDescription
         }
     }
 
     func refineIntentPlanWithAgent() {
-        guard let repositoryURL, let plan = intentPlan, !isRefiningIntentPlan else { return }
-        agentTask?.cancel()
+        guard let repositoryURL, intentPlan != nil, !isIntentBusy else { return }
+        let operationID = UUID()
+        intentAgentID = operationID
+        let selection = intentSelection
+        let instruction = intentInstruction
+        let splitMode = intentSplitMode
+        let language = L10n.locale.identifier
         isRefiningIntentPlan = true
         intentError = nil
+        notice = nil
         agentTask = Task { [weak self] in
             guard let self else { return }
-            defer { self.isRefiningIntentPlan = false }
+            defer {
+                if self.intentAgentID == operationID {
+                    self.isRefiningIntentPlan = false
+                    self.agentTask = nil
+                }
+            }
             do {
-                let result = try await agentService.run(
-                    prompt: ChangeIntentAgentPlanner.prompt(for: plan),
-                    context: [],
-                    in: repositoryURL,
-                    mode: .analyze
+                let plan = try await intentService.makePlan(in: repositoryURL, selection: selection)
+                try Task.checkCancellation()
+                let result = try await agentService.runWithProvidedContext(
+                    prompt: ChangeIntentAgentPlanner.prompt(for: plan, instruction: instruction,
+                        splitMode: splitMode, language: language), context: []
                 )
+                try Task.checkCancellation()
                 let refined = try ChangeIntentAgentPlanner.refinedPlan(
-                    from: result.response,
-                    original: plan
+                    from: result.response, original: plan, splitMode: splitMode
                 )
-                guard self.repositoryURL == repositoryURL,
-                      self.intentPlan?.id == plan.id else { return }
+                guard self.repositoryURL == repositoryURL, self.intentAgentID == operationID else { return }
                 self.intentPlan = refined
+                self.intentPlanReady = true
                 self.selectedIntentGroupID = refined.groups.first?.id
-                self.selectedIntentUnitID = refined.groups.first?.unitIDs.first
-                self.notice = L10n.text("intelligence.intent.notice.refined")
-            } catch is CancellationError {
-                return
             } catch {
-                guard self.repositoryURL == repositoryURL else { return }
+                guard !(error is CancellationError), self.repositoryURL == repositoryURL,
+                      self.intentAgentID == operationID else { return }
                 self.intentError = error.localizedDescription
             }
         }
     }
 
     func cancelIntentAgent() {
+        intentAgentID = UUID()
         agentTask?.cancel()
         agentTask = nil
         isRefiningIntentPlan = false
-        Task { await agentService.cancel() }
     }
 
     func addIntentGroup() {
-        guard var plan = intentPlan else { return }
+        guard !isIntentBusy, var plan = intentPlan else { return }
         let group = ChangeIntentGroup(
             title: L10n.text("intelligence.intent.new_group"),
             commitMessage: "chore: organize changes",
@@ -175,29 +216,32 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
             unitIDs: []
         )
         plan.groups.append(group)
+        intentPlanReady = true
         intentPlan = plan
         selectedIntentGroupID = group.id
     }
 
     func removeIntentGroup(_ id: UUID) {
-        guard var plan = intentPlan,
+        guard !isIntentBusy, var plan = intentPlan,
               plan.groups.count > 1,
               let index = plan.groups.firstIndex(where: { $0.id == id })
         else { return }
         let units = plan.groups[index].unitIDs
         plan.groups.remove(at: index)
         plan.groups[0].unitIDs.append(contentsOf: units)
+        intentPlanReady = true
         intentPlan = plan
         selectedIntentGroupID = plan.groups.first?.id
     }
 
     func moveIntentGroup(_ id: UUID, offset: Int) {
-        guard var plan = intentPlan,
+        guard !isIntentBusy, var plan = intentPlan,
               let source = plan.groups.firstIndex(where: { $0.id == id })
         else { return }
         let destination = source + offset
         guard plan.groups.indices.contains(destination) else { return }
         plan.groups.swapAt(source, destination)
+        intentPlanReady = true
         intentPlan = plan
         selectedIntentGroupID = id
     }
@@ -208,16 +252,18 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         message: String? = nil,
         kind: ChangeIntentKind? = nil
     ) {
-        guard var plan = intentPlan,
+        guard !isIntentBusy, var plan = intentPlan,
               let index = plan.groups.firstIndex(where: { $0.id == id }) else { return }
         if let title { plan.groups[index].title = title }
         if let message { plan.groups[index].commitMessage = message }
         if let kind { plan.groups[index].kind = kind }
+        intentPlanReady = true
         intentPlan = plan
     }
 
     func moveIntentUnit(_ unitID: String, to groupID: UUID) {
-        guard var plan = intentPlan,
+        guard !isIntentBusy, var plan = intentPlan,
+              plan.units.contains(where: { $0.id == unitID }),
               plan.groups.contains(where: { $0.id == groupID }) else { return }
         for index in plan.groups.indices {
             plan.groups[index].unitIDs.removeAll { $0 == unitID }
@@ -227,13 +273,38 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         if plan.groups.count > 1 {
             plan.groups.removeAll { $0.unitIDs.isEmpty }
         }
+        intentPlanReady = true
         intentPlan = plan
         selectedIntentGroupID = groupID
-        selectedIntentUnitID = unitID
+    }
+
+    func mergeIntentGroups() {
+        guard !isIntentBusy, var plan = intentPlan, var first = plan.groups.first else { return }
+        first.unitIDs = plan.groups.flatMap(\.unitIDs)
+        plan.groups = [first]
+        intentPlan = plan
+        intentPlanReady = true
+        selectedIntentGroupID = first.id
+    }
+
+    func splitIntentUnits(_ unitIDs: [String]) {
+        guard !isIntentBusy, var plan = intentPlan, !unitIDs.isEmpty,
+              Set(unitIDs).count == unitIDs.count,
+              unitIDs.allSatisfy({ id in plan.units.contains { $0.id == id } }),
+              let first = plan.units.first(where: { unitIDs.contains($0.id) }) else { return }
+        for index in plan.groups.indices { plan.groups[index].unitIDs.removeAll { unitIDs.contains($0) } }
+        plan.groups.removeAll { $0.unitIDs.isEmpty }
+        let name = URL(fileURLWithPath: first.path).deletingPathExtension().lastPathComponent
+        let group = ChangeIntentGroup(title: name, commitMessage: "chore: update " + name,
+            kind: ChangeIntentService.kind(for: first.path), unitIDs: unitIDs)
+        plan.groups.append(group)
+        intentPlan = plan
+        intentPlanReady = true
+        selectedIntentGroupID = group.id
     }
 
     func applyIntentPlan() async -> Bool {
-        guard let repositoryURL, let plan = intentPlan, !isApplyingIntentPlan else { return false }
+        guard let repositoryURL, let plan = intentPlan, canApplyIntentPlan else { return false }
         isApplyingIntentPlan = true
         intentError = nil
         intentApplyResult = nil
@@ -244,16 +315,21 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
                 verificationCommand: verificationCommand,
                 in: repositoryURL
             )
-            guard self.repositoryURL == repositoryURL else { return false }
+            guard self.repositoryURL == repositoryURL else {
+                isApplyingIntentPlan = false
+                await refreshIntentPlan()
+                return false
+            }
             intentApplyResult = result
             intentPlan = nil
-            notice = L10n.format("intelligence.intent.notice.applied", result.commitHashes.count)
             return true
-        } catch is CancellationError {
-            return false
         } catch {
-            guard self.repositoryURL == repositoryURL else { return false }
-            intentError = error.localizedDescription
+            guard self.repositoryURL == repositoryURL else {
+                isApplyingIntentPlan = false
+                await refreshIntentPlan()
+                return false
+            }
+            if !(error is CancellationError) { intentError = error.localizedDescription }
             return false
         }
     }
@@ -270,11 +346,14 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         provenanceReport = nil
         defer { isTracingProvenance = false }
         do {
-            let report = try await provenanceService.trace(
-                filePath: path,
-                line: line,
-                in: repositoryURL
-            )
+            let revision = provenanceRevision
+            let report: CodeProvenanceReport
+            if let revision {
+                report = try await provenanceService.trace(commitHash: revision, filePath: path, line: line, in: repositoryURL)
+            } else {
+                report = try await provenanceService.trace(filePath: path, line: line, in: repositoryURL)
+            }
+            guard provenancePath == path, provenanceLine == String(line), provenanceRevision == revision else { return }
             guard self.repositoryURL == repositoryURL else { return }
             provenanceReport = report
         } catch is CancellationError {
@@ -434,12 +513,19 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
 
     private func resetForRepositoryChange() {
         loadTask?.cancel()
-        agentTask?.cancel()
+        cancelIntentAgent()
+        intentLoadID = UUID()
+        isLoadingIntentPlan = false
+        intentPlanReady = false
+        intentInstruction = ""
+        intentSelection = nil
+        intentSplitMode = .automatic
+        verificationCommand = ""
         intentPlan = nil
         selectedIntentGroupID = nil
-        selectedIntentUnitID = nil
         intentApplyResult = nil
         intentError = nil
+        provenanceRevision = nil
         provenancePath = ""
         provenanceLine = "1"
         provenanceReport = nil

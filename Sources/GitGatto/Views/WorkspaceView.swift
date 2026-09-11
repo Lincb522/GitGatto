@@ -5,7 +5,7 @@ struct WorkspaceView: View {
     let onInitialContentReady: () -> Void
     let canCaptureSnapshot: Bool
     @StateObject private var marketplaceModel = GitHubMarketplaceViewModel()
-    @StateObject private var developerToolsModel = DeveloperToolsViewModel()
+    @StateObject private var developerToolsModel = DeveloperToolsViewModel(taskStore: DevelopmentToolTaskStore())
     @StateObject private var downloads = AppDownloadManager()
     @StateObject private var intelligenceModel: RepositoryIntelligenceViewModel
     @StateObject private var readmeRendererCache = GitHubReadmeRendererCache()
@@ -62,6 +62,24 @@ struct WorkspaceView: View {
                 }
             }
         )
+    }
+
+    private func recover(from report: AppErrorReport, action: AppErrorRecoveryAction) {
+        model.dismissActiveError()
+        switch action {
+        case .agentSettings:
+            model.settingsDestination = "agent"
+            openSettings()
+        case .workflowPermission:
+            model.beginGitHubLogin(.workflowPermission)
+        case .refreshRepository, .inspectRepository:
+            Task {
+                if let path = report.repositoryPath, model.snapshot?.rootURL.standardizedFileURL.path != path {
+                    await model.openRepository(URL(fileURLWithPath: path))
+                } else { await model.refresh() }
+                if action == .inspectRepository { model.selectedSection = .diagnostics }
+            }
+        }
     }
 
     private var isSnapshotReady: Bool {
@@ -250,16 +268,46 @@ struct WorkspaceView: View {
             didReportInitialContentReady = true
             onInitialContentReady()
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if model.isAgentRunningInBackground, let run = model.agentRun {
+                HStack(spacing: 12) {
+                    ProgressView().controlSize(.small)
+                    Text(L10n.format("codex.background.running", run.repositoryURL.lastPathComponent))
+                        .font(.caption).lineLimit(2)
+                    Spacer()
+                    Button(L10n.text("codex.background.return")) {
+                        Task { await model.openRepository(run.repositoryURL); model.selectedSection = .codex }
+                    }.buttonStyle(SecondaryButtonStyle())
+                    Button(L10n.text("action.cancel")) { model.cancelCodex() }.buttonStyle(SecondaryButtonStyle())
+                }.padding(10).background(palette.surface)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            model.stopAgentTasks()
+        }
         .sheet(item: activeErrorBinding) { report in
             GlobalErrorSheet(
                 report: report,
                 canUseAgent: model.canResolveErrorWithAgent(report),
                 useAgent: { model.resolveErrorWithAgent(report) },
-                dismiss: { model.dismissActiveError() }
+                dismiss: { model.dismissActiveError() },
+                recover: { action in recover(from: report, action: action) },
+                inspectFailure: report.repositoryPath == model.snapshot?.rootURL.standardizedFileURL.path && report.repositoryPath != nil ? {
+                    model.dismissActiveError()
+                    model.inspectFailureContext(command: report.command ?? "", output: report.message, repositoryPath: report.repositoryPath)
+                } : nil
             )
         }
+        .sheet(item: $model.branchSwitchRequest, onDismiss: {
+            if let tool = pendingProjectTool { pendingProjectTool = nil; model.projectTool = tool }
+        }) { request in
+            BranchSwitchSheet(workspace: model, tools: projectTools, request: request, openScenes: {
+                pendingProjectTool = .scenes
+                model.branchSwitchRequest = nil
+            })
+        }
         .sheet(isPresented: $downloads.isPresented) {
-            DownloadCenterView(manager: downloads)
+            DownloadCenterView(manager: downloads, tools: developerToolsModel)
             .frame(minWidth: 620, minHeight: 520)
         }
         .onReceive(projectTools.$runs.map { $0.filter(\.running).count }.removeDuplicates()) { activeProjectCommands = $0 }
@@ -310,7 +358,8 @@ struct WorkspaceView: View {
             GitHubMarketplaceView(
                 model: marketplaceModel,
                 developerTools: developerToolsModel,
-                downloads: downloads
+                downloads: downloads,
+                requestedSection: $model.marketplaceRequestedSection
             )
         } else if model.selectedSection == .recovery {
             RepositoryRecoveryView(model: model)
@@ -321,7 +370,11 @@ struct WorkspaceView: View {
         } else {
             switch model.selectedSection {
             case .changes:
-                ChangesWorkspaceView(model: model)
+                ChangesWorkspaceView(model: model, onPlanSelection: { ids, document, change in
+                    guard let repository = model.snapshot?.rootURL else { return }
+                    intelligenceModel.openIntentSelection(document: document, change: change, selectedIDs: ids, in: repository)
+                    model.selectedSection = .intelligence
+                }, isPlanningBusy: intelligenceModel.isIntentBusy)
             case .intelligence:
                 RepositoryIntelligenceWorkspaceView(
                     model: intelligenceModel,

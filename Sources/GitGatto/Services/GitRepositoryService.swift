@@ -51,6 +51,7 @@ protocol GitRepositoryServing: Sendable {
     func applyStash(reference: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
     func popStash(reference: String, in repositoryURL: URL) async throws -> RepositoryOperationTransition
     func dropStash(reference: String, in repositoryURL: URL) async throws
+    func stageSelection(_ ids: Set<UUID>, document: DiffDocument, change: WorkingTreeChange, in repositoryURL: URL) async throws
     func stage(paths: [String], in repositoryURL: URL) async throws
     func unstage(paths: [String], in repositoryURL: URL) async throws
     func switchBranch(to branchName: String, in repositoryURL: URL) async throws
@@ -129,6 +130,8 @@ protocol GitRepositoryServing: Sendable {
 }
 
 extension GitRepositoryServing {
+    func stageSelection(_ ids: Set<UUID>, document: DiffDocument, change: WorkingTreeChange, in repositoryURL: URL) async throws { throw PartialDiffError.unsupported }
+
     func referenceSnapshot(in repositoryURL: URL) async throws -> GitReferenceSnapshot {
         .empty
     }
@@ -616,6 +619,17 @@ actor GitRepositoryService: GitRepositoryServing {
         )
     }
 
+    func stageSelection(_ ids: Set<UUID>, document: DiffDocument, change: WorkingTreeChange, in repositoryURL: URL) async throws {
+        guard document.path == change.path, let expected = document.sourceText else { throw PartialDiffError.unsupported }
+        let current = try await diff(for: change, in: repositoryURL)
+        guard current.sourceText == expected else { throw PartialDiffError.changed }
+        let patch = try PartialDiffPatch.make(from: document, selectedIDs: ids, reversing: change.isStaged)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("gitgatto-index-\(UUID()).patch")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(patch.utf8).write(to: url, options: .atomic)
+        _ = try await runner.run(at: repositoryURL, arguments: ["apply", "--cached", "--recount", "--unidiff-zero", "--whitespace=nowarn", "--", url.path])
+    }
+
     func stage(paths: [String], in repositoryURL: URL) async throws {
         try await stage(
             paths: paths,
@@ -680,7 +694,7 @@ actor GitRepositoryService: GitRepositoryServing {
     func switchBranch(to branchName: String, in repositoryURL: URL) async throws {
         _ = try await runner.run(
             at: repositoryURL,
-            arguments: ["switch", "--no-guess", branchName]
+            arguments: ["switch", "--no-guess", "--no-overwrite-ignore", "--", branchName]
         )
     }
 

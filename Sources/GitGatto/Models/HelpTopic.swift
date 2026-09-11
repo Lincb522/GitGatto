@@ -30,6 +30,46 @@ enum HelpTopic: String, CaseIterable, Identifiable {
     case shortcuts
     case troubleshooting
 
+    var workspaceSection: WorkspaceSection? {
+        switch self {
+        case .changes: .changes
+        case .sync: .github
+        case .history: .history
+        case .fileHistory: .timeMachine
+        case .branches: .branches
+        case .stash: .stash
+        case .worktrees: .worktrees
+        case .intelligence: .intelligence
+        case .goals: .goals
+        case .regression: .regression
+        case .gettingStarted, .github, .collaboration: .github
+        case .applications, .developerTools: .marketplace
+        case .recovery: .recovery
+        case .diagnostics, .troubleshooting: .diagnostics
+        case .agent: .codex
+        default: nil
+        }
+    }
+
+    var projectTool: ProjectTool? {
+        switch self {
+        case .codeSearch: .search
+        case .workScenes: .scenes
+        case .projectCommands: .commands
+        case .ignoreRules: .ignore
+        case .identities: .identities
+        default: nil
+        }
+    }
+
+    func matches(_ query: String) -> Bool {
+        let tokens = query.localizedLowercase.split(whereSeparator: \.isWhitespace)
+        guard !tokens.isEmpty else { return true }
+        let keys = [titleKey, summaryKey] + sections.flatMap { [$0.titleKey] + $0.bulletKeys }
+        let text = keys.map { L10n.text($0) }.joined(separator: " ").localizedLowercase
+        return tokens.allSatisfy { text.contains($0) }
+    }
+
     var id: String { rawValue }
     var titleKey: String { "help.topic.\(rawValue).title" }
     var summaryKey: String { "help.topic.\(rawValue).summary" }

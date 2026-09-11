@@ -226,3 +226,9 @@ struct CommitSearchQuery: Sendable, Equatable {
             && revision.trimmingCharacters(in: .whitespacesAndNewlines) == "--all"
     }
 }
+
+extension GitHubInboxItem {
+    var needsAttention: Bool {
+        !categories.isDisjoint(with: [.reviewRequested, .mentioned, .changesRequested, .actionsFailed, .conflicted])
+    }
+}

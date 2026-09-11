@@ -991,7 +991,7 @@ enum DevelopmentToolInstallState: String, Sendable, Equatable {
     case failed
 }
 
-enum DevelopmentToolOperation: String, Sendable, Equatable {
+enum DevelopmentToolOperation: String, Sendable, Equatable, Codable {
     case install
     case upgrade
 }
@@ -1001,6 +1001,7 @@ struct DevelopmentToolQueueItem: Identifiable, Sendable, Equatable {
     let toolID: String
     let operation: DevelopmentToolOperation
     let enqueuedAt: Date
+    let requiresRevalidation: Bool
     let authorizationRequest: DevelopmentToolSystemAuthorizationRequest?
 
     init(
@@ -1008,12 +1009,14 @@ struct DevelopmentToolQueueItem: Identifiable, Sendable, Equatable {
         toolID: String,
         operation: DevelopmentToolOperation,
         enqueuedAt: Date = Date(),
+        requiresRevalidation: Bool = false,
         authorizationRequest: DevelopmentToolSystemAuthorizationRequest? = nil
     ) {
         self.id = id
         self.toolID = toolID
         self.operation = operation
         self.enqueuedAt = enqueuedAt
+        self.requiresRevalidation = requiresRevalidation
         self.authorizationRequest = authorizationRequest
     }
 }

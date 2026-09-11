@@ -99,7 +99,16 @@ struct GitGattoApp: App {
         .windowStyle(.hiddenTitleBar)
 
         Window(L10n.text("help.title"), id: "help") {
-            AppThemeRoot { HelpCenterView() }
+            AppThemeRoot {
+                HelpCenterView { topic in
+                    if topic == .developerTools { model.marketplaceRequestedSection = .developerTools }
+                    else if topic == .applications { model.marketplaceRequestedSection = .applications }
+                    if topic == .sync { model.githubWorkspaceMode = .synchronization }
+                    if let section = topic.workspaceSection { model.selectedSection = section }
+                    if let tool = topic.projectTool { model.projectTool = tool }
+                    WindowCloseRuntime.showWorkspace()
+                }
+            }
                 .appLocalization(model.appPreferences.language)
         }
         .defaultSize(width: 900, height: 650)
@@ -230,6 +239,7 @@ private struct MainWindowCloseBehaviorBridge: NSViewRepresentable {
                 remember: { [weak self] behavior in self?.remember(behavior) }
             )
             self.window = window
+            window.identifier = NSUserInterfaceItemIdentifier("gitgatto.workspace")
             delegateProxy = proxy
             window.delegate = proxy
         }

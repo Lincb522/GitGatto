@@ -45,7 +45,7 @@ actor IgnoreRulesService {
         let temporary = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temporary) }
-        _ = try await ProjectToolsPolicy.git(temporary, ["init", "-q"])
+        _ = try await ProjectToolsPolicy.git(temporary, ["init", "-q", "--template="])
         let files = try await ProjectToolsPolicy.git(repository, ["ls-files", "-z", "--cached", "--others", "--exclude-standard"])
         let ignored = try await ProjectToolsPolicy.git(repository, ["ls-files", "-z", "--others", "--ignored", "--exclude-standard"])
         let paths = Array(Set((files.outputText + ignored.outputText).split(separator: "\0").map(String.init))).sorted()
@@ -67,7 +67,9 @@ actor IgnoreRulesService {
             try Data(contentsOf: source).write(to: target)
         }
         let local = try await load(repository: repository, localOnly: true)
-        try local.original.write(to: temporary.appendingPathComponent(".git/info/exclude"))
+        let exclude = temporary.appendingPathComponent(".git/info/exclude")
+        try FileManager.default.createDirectory(at: exclude.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try local.original.write(to: exclude)
         let target = draft.file.lastPathComponent == ".gitignore" ? temporary.appendingPathComponent(".gitignore") : temporary.appendingPathComponent(".git/info/exclude")
         try Data(draft.text.utf8).write(to: target)
         guard !paths.isEmpty else { return [] }

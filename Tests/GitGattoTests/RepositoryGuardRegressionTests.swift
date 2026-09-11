@@ -1,9 +1,55 @@
 import Foundation
+import CoreServices
 import Testing
 @testable import GitGatto
 
 @Suite("Repository guard regressions", .serialized)
 struct RepositoryGuardRegressionTests {
+    @Test("Read-only backup comparison does not retrigger monitoring or follow symlinks", .timeLimit(.minutes(1)))
+    func comparisonDoesNotRetriggerMonitoring() async throws {
+        let fixture = try await GuardFixture.make()
+        defer { fixture.remove() }
+        let fm = FileManager.default
+        let link = fixture.repository.appendingPathComponent("alias")
+        try fm.createSymbolicLink(atPath: link.path, withDestinationPath: "tracked.txt")
+        try await fixture.git(["add", "."])
+        try await fixture.git(["commit", "-m", "Add fixture symlink"])
+        let baseline = try #require(await fixture.service.createBackup(for: fixture.repository, reason: .manual, policy: .standard))
+        try fixture.write("tracked.txt", "changed\n")
+        let tracked = fixture.repository.appendingPathComponent("tracked.txt")
+        try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tracked.path)
+        try fm.removeItem(at: link)
+        try fm.createSymbolicLink(atPath: link.path, withDestinationPath: "missing-target")
+        let index = fixture.repository.appendingPathComponent(".git/index")
+        let originalIndex = try Data(contentsOf: index)
+        let events = GuardComparisonEvents()
+        let monitor = RepositoryChangeMonitor(repositoryURL: fixture.repository,
+            includesGitObjectChanges: true, filtersIgnoredPaths: true) { _ in
+            Task { await events.increment() }
+        }
+        monitor.start()
+        defer { monitor.stop() }
+        let rawEvents = try GuardRawEvents(repository: fixture.repository)
+        defer { rawEvents.stop() }
+        // FSEvents can still deliver the fixture edits queued before the stream started.
+        // Establish a quiet boundary before measuring the read-only comparisons.
+        try await events.waitForQuiet()
+        let initialCount = await events.count
+        let initialRawCount = rawEvents.snapshot.count
+        for _ in 0..<3 {
+            let assessment = try await fixture.service.assessChanges(after: baseline, in: fixture.repository)
+            #expect(Set(assessment.changedPathsSinceBaseline) == ["tracked.txt", "alias"])
+            #expect(assessment.deletedPaths.isEmpty)
+        }
+        try await Task.sleep(for: .seconds(3))
+        let callbackCount = await events.count - initialCount
+        #expect(callbackCount == 0, "Raw comparison events: \(Array(rawEvents.snapshot.dropFirst(initialRawCount)))")
+        #expect(try Data(contentsOf: index) == originalIndex)
+        #expect(try String(contentsOf: tracked, encoding: .utf8) == "changed\n")
+        #expect(try fm.destinationOfSymbolicLink(atPath: link.path) == "missing-target")
+        #expect(try fm.attributesOfItem(atPath: tracked.path)[.posixPermissions] as? Int == 0o755)
+    }
+
     @Test("Unchanged guard checkpoints reuse the newest backup and preserve retention slots")
     func reusesUnchangedCheckpoint() async throws {
         let fixture = try await GuardFixture.make()
@@ -208,4 +254,55 @@ private struct GuardFixture {
         return model
     }
     func remove() { try? FileManager.default.removeItem(at: root) }
+}
+
+private actor GuardComparisonEvents {
+    private(set) var count = 0
+    private var lastEventAt = ContinuousClock.now
+    func increment() { count += 1; lastEventAt = .now }
+
+    func waitForQuiet() async throws {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(10))
+        while lastEventAt.duration(to: .now) < .seconds(2), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        try #require(lastEventAt.duration(to: .now) >= .seconds(2))
+    }
+}
+
+private final class GuardRawEvents: @unchecked Sendable {
+    private let queue = DispatchQueue(label: "GitGatto.guard-fixture-events")
+    private var stream: FSEventStreamRef?
+    private var records: [String] = []
+
+    init(repository: URL) throws {
+        var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
+            retain: nil, release: nil, copyDescription: nil)
+        let stream = try #require(FSEventStreamCreate(nil, { _, info, count, paths, flags, _ in
+            guard let info else { return }
+            let owner = Unmanaged<GuardRawEvents>.fromOpaque(info).takeUnretainedValue()
+            let paths = unsafeBitCast(paths, to: NSArray.self) as? [String] ?? []
+            for index in 0..<min(count, paths.count) where owner.records.count < 100 {
+                owner.records.append(String(format: "%08x %@", flags[index], URL(fileURLWithPath: paths[index]).lastPathComponent))
+            }
+        }, &context, [repository.path] as CFArray, FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0.2,
+            FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer)))
+        self.stream = stream
+        FSEventStreamSetDispatchQueue(stream, queue)
+        try #require(FSEventStreamStart(stream))
+    }
+
+    var snapshot: [String] { queue.sync { records } }
+
+    func stop() {
+        if let stream {
+            FSEventStreamStop(stream)
+            FSEventStreamInvalidate(stream)
+            FSEventStreamRelease(stream)
+            self.stream = nil
+        }
+        queue.sync {}
+    }
+
+    deinit { stop() }
 }

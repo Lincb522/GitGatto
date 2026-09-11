@@ -394,7 +394,7 @@
 "help.goals.create.1" = "開啟儲存庫後進入「目標」，選擇快捷操作，填寫提交訊息或版本號，點擊「開始執行」。同一儲存庫一次進行一個目標。";
 "help.goals.create.2" = "自訂目標先描述結果，由 Agent 唯讀分析並擬定步驟；核對操作範圍後，點擊「開始執行」。";
 "help.goals.create.3" = "快速目標涵蓋提交和推送、GitHub 交付和完整發布。 GitHub 傳遞需要預設分支以外的分支。";
-"help.goals.create.4" = "目標記錄其儲存庫、分支、基線提交、步驟和證據。切換存儲庫不會混合它們的狀態。";
+"help.goals.create.4" = "目標記錄其儲存庫、分支、基線提交、步驟和證據。切換存儲庫不會混合它們的狀態。 也可從目前變更、Issue、PR 或失敗檢查建立目標，並選擇已儲存的專案命令，在提交前執行驗證。";
 "help.goals.execute.title" = "運行並恢復";
 "help.goals.execute.1" = "開始後會連續執行已授權的步驟，每一步都重新讀取 Git 與 GitHub 狀態。合併、發佈和安裝會停下等待確認。";
 "help.goals.execute.2" = "失敗的步驟保留其原始證據並停止在「需要注意」處。完成的步驟在應用程式重新啟動後仍然有效。";
@@ -456,7 +456,7 @@
 "help.translation.channel.title" = "獨立執行通道";
 "help.translation.channel.1" = "翻譯 CLI 和專案 Agent 具有單獨的配置和流程，因此在 Agent 工作時翻譯仍然可用。";
 "help.translation.channel.2" = "自動翻譯會檢測可讀文本並使用設定的目標語言。已經是該語言、或短到不足以判斷的內容可能保持原樣。沒有反應時，先檢查設置中的翻譯引擎與目標語言。";
-"help.translation.channel.3" = "翻譯可以停止，有超時；失敗不會刪除已儲存的翻譯。";
+"help.translation.channel.3" = "翻譯可以停止，有超時；失敗不會刪除已儲存的翻譯。 重試沿用上次失敗時選擇的語言。翻譯失敗時仍可查看原文。";
 
 "help.topic.cliSettings.title" = "設置";
 "help.topic.cliSettings.summary" = "從一個視窗配置應用程式介面、啟動工作區、即時Git監控、Agent和翻譯。";
@@ -481,7 +481,7 @@
 "help.shortcuts.actions.title" = "常用操作";
 "help.shortcuts.actions.1" = "⌘O：開啟本地倉庫； ⌘R：重新整理目前儲存庫。";
 "help.shortcuts.actions.2" = "⌘↩：使用目前提交訊息提交暫存內容。";
-"help.shortcuts.actions.3" = "⌘K 打開命令面板；右鍵改動文件或最近倉庫可查看對應操作。“幫助 → 當前工作區說明”會打開當前功能的指南。";
+"help.shortcuts.actions.3" = "⌘K 打開命令面板；右鍵改動文件或最近倉庫可查看對應操作。“幫助 → 當前工作區說明”會打開當前功能的指南。 常用命令可以固定，最近使用的入口會排在前面。方向鍵選取，Return 執行。";
 
 "help.topic.troubleshooting.title" = "故障排除";
 "help.topic.troubleshooting.summary" = "確認所選項目、本地CLI登入並報告錯誤，然後重試失敗的操作。";
@@ -579,7 +579,7 @@
 "error.operation.push" = "推送";
 "error.operation.agent" = "运行Agent";
 "error.section.output" = "完整錯誤輸出";
-"error.section.explanation" = "說明";
+"error.section.explanation" = "原因";
 "error.section.details" = "錯誤詳細訊息";
 "error.section.recovery" = "恢復";
 "error.detail.code" = "錯誤代碼";
@@ -708,7 +708,7 @@
 
 "settings.open" = "設置";
 "settings.title" = "設置";
-"settings.save" = "保存並檢查";
+"settings.save" = "儲存";
 "settings.saved" = "設定已儲存";
 "settings.appearance.title" = "外觀";
 "settings.appearance.mode" = "外觀模式";
@@ -2183,49 +2183,43 @@
 "intelligence.tab.provenance" = "程式碼緣由";
 "intelligence.tab.capsules" = "故障膠囊";
 "intelligence.tab.activity" = "Agent 責任鏈";
-"intelligence.intent.title" = "提交编排";
-"intelligence.intent.summary" = "%d 个改动单元 · %d 次提交";
-"intelligence.intent.loading" = "正在分析工作区改动…";
-"intelligence.intent.empty.title" = "沒有可編排的變更";
-"intelligence.intent.empty.body" = "修改当前仓库中的文件后刷新，即可生成原子提交计划。";
-"intelligence.intent.select.title" = "选择改动单元";
-"intelligence.intent.select.body" = "选择一个代码块，查看它将被分配到本次提交的精确补丁。";
+"intelligence.intent.summary" = "%d 個檔案 · %d 次提交";
+"intelligence.intent.loading" = "正在讀取變更…";
+"intelligence.intent.empty.title" = "暫無需要整理的變更";
+"intelligence.intent.empty.body" = "目前沒有需要整理的變更。修改檔案後重新整理即可。";
 "intelligence.intent.add_group" = "新增提交";
-"intelligence.intent.agent" = "Agent 优化";
+"intelligence.intent.agent" = "智慧整理";
 "intelligence.intent.apply" = "建立提交";
-"intelligence.intent.confirm.title" = "按当前计划创建提交？";
-"intelligence.intent.confirm.body" = "GitGatto 将按顺序创建 %d 个本地提交，并在执行前建立恢复点。";
+"intelligence.intent.confirm.title" = "依目前計畫建立提交？";
+"intelligence.intent.confirm.body" = "GitGatto 會先儲存還原點，再依序建立 %d 個本機提交。";
 "intelligence.intent.group_title" = "提交目的";
-"intelligence.intent.commit_message" = "提交信息";
-"intelligence.intent.verify_placeholder" = "每次提交后的验证命令（可选）";
-"intelligence.intent.group_empty" = "至少移动一个改动单元到本次提交。";
-"intelligence.intent.whole_file" = "整个文件";
-"intelligence.intent.whole_file.title" = "整文件改动";
-"intelligence.intent.whole_file.body" = "二进制、新增、删除或仅元数据改动会作为一个完整单元提交。";
-"intelligence.intent.result.title" = "提交序列已创建";
-"intelligence.intent.result.body" = "已创建 %d 个本地提交，尚未推送。";
-"intelligence.intent.refresh" = "分析剩余改动";
+"intelligence.intent.commit_message" = "提交訊息";
+"intelligence.intent.verify_placeholder" = "每次提交後的驗證指令（選填）";
+"intelligence.intent.group_empty" = "請移入至少一個檔案或程式碼區塊。";
+"intelligence.intent.whole_file.title" = "整份檔案變更";
+"intelligence.intent.whole_file.body" = "這項變更會以完整檔案提交，暫無文字預覽。";
+"intelligence.intent.result.title" = "提交已建立";
+"intelligence.intent.result.body" = "已建立 %d 個本機提交，尚未推送。";
+"intelligence.intent.refresh" = "讀取剩餘變更";
 "intelligence.intent.new_group" = "新提交";
-"intelligence.intent.notice.refined" = "Agent 编排结果已生成，请确认后应用。";
-"intelligence.intent.notice.applied" = "已创建 %d 个本地提交。";
-"intelligence.intent.kind.implementation" = "功能实现";
-"intelligence.intent.kind.fix" = "问题修复";
-"intelligence.intent.kind.refactor" = "代码重构";
-"intelligence.intent.kind.tests" = "测试";
-"intelligence.intent.kind.documentation" = "文档";
-"intelligence.intent.kind.configuration" = "配置";
-"intelligence.intent.kind.assets" = "资源";
+"intelligence.intent.kind.implementation" = "功能";
+"intelligence.intent.kind.fix" = "修復";
+"intelligence.intent.kind.refactor" = "重構";
+"intelligence.intent.kind.tests" = "測試";
+"intelligence.intent.kind.documentation" = "文件";
+"intelligence.intent.kind.configuration" = "設定";
+"intelligence.intent.kind.assets" = "資源";
 "intelligence.intent.kind.other" = "其他";
-"intelligence.intent.error.no_changes" = "当前工作区没有可编排的改动。";
-"intelligence.intent.error.conflicts" = "请先解决当前冲突，再生成提交计划。";
-"intelligence.intent.error.changed" = "计划生成后仓库已发生变化，请刷新计划后再应用。";
-"intelligence.intent.error.status" = "Git 返回了无法解析的工作区状态。";
-"intelligence.intent.error.repository" = "这份计划属于另一个仓库。";
-"intelligence.intent.error.assignment" = "每个改动单元必须且只能属于一个非空提交。";
-"intelligence.intent.error.empty_group" = "“%@”没有暂存任何改动。";
-"intelligence.intent.error.unsupported" = "无法单独暂存“%@”中的改动。";
-"intelligence.intent.error.verification" = "验证命令失败：%@\n%@";
-"intelligence.intent.error.agent_plan" = "Agent 返回的提交计划无效。";
+"intelligence.intent.error.no_changes" = "目前沒有需要整理的變更。";
+"intelligence.intent.error.conflicts" = "請先解決衝突，再整理提交。";
+"intelligence.intent.error.changed" = "檔案或暫存區已變更，請重新整理計畫後再建立提交。";
+"intelligence.intent.error.status" = "無法讀取 Git 回傳的工作區狀態。";
+"intelligence.intent.error.repository" = "這份計畫屬於其他倉庫，請開啟對應倉庫或重新整理。";
+"intelligence.intent.error.assignment" = "每項變更只能屬於一次提交，且提交不能為空。";
+"intelligence.intent.error.empty_group" = "「%@」沒有暫存任何變更。";
+"intelligence.intent.error.unsupported" = "無法單獨暫存「%@」中的變更。";
+"intelligence.intent.error.verification" = "驗證指令失敗：%@\n%@";
+"intelligence.intent.error.agent_plan" = "Agent 回傳的提交計畫無效，請重新整理。";
 "intelligence.provenance.path" = "仓库内文件路径";
 "intelligence.provenance.line" = "行号";
 "intelligence.provenance.trace" = "追溯";
@@ -2305,9 +2299,9 @@
 "help.topic.intelligence.title" = "变更中心";
 "help.topic.intelligence.summary" = "编排原子提交、追溯代码缘由、迁移故障现场并查看 Agent 责任链。";
 "help.intelligence.intent.title" = "提交编排";
-"help.intelligence.intent.1" = "修改文件后打开变更中心并刷新。GitGatto 会把文本补丁拆成可单独分配的代码块，二进制文件和新增文件保持为完整单元。";
-"help.intelligence.intent.2" = "确认提交顺序、目的、信息与代码块归属。Agent 优化只会修改待确认的计划，不会直接写入仓库。";
-"help.intelligence.intent.3" = "可以配置每次提交后的验证命令。创建提交会先建立恢复点，且不会自动推送。";
+"help.intelligence.intent.1" = "修改檔案後開啟提交編排。可補充變更目的，選擇依變更拆分或合為一次提交，再點選智慧整理。";
+"help.intelligence.intent.2" = "每張卡片顯示提交訊息與包含的檔案。展開編輯與拆分可修改訊息、移動檔案或程式碼區塊；提交選單可調整順序或合併。整理計畫不會寫入倉庫。";
+"help.intelligence.intent.3" = "更多選項中可填寫每次提交後的驗證指令。確認建立後會先建立還原點，再依序建立本機提交，不會自動推送。";
 "help.intelligence.provenance.title" = "代码缘由";
 "help.intelligence.provenance.1" = "输入仓库内已跟踪文件的相对路径和大于零的行号。";
 "help.intelligence.provenance.2" = "Git blame 会定位来源提交，并显示该提交改动过的文件。";
@@ -2418,8 +2412,7 @@
 "tools.clear" = "清空";
 "tools.close" = "關閉";
 "tools.command.active" = "%d 條命令正在運行";
-"tools.command.arguments" = "參數（JSON 數組）";
-"tools.command.argvHelp" = "例如：[\"run\", \"dev\"]。參數獨立傳入，不作為 shell 命令展開。";
+"tools.command.arguments" = "參數";
 "tools.command.custom" = "添加或編輯命令";
 "tools.command.elapsed" = "耗時：%d 秒";
 "tools.command.empty" = "未找到腳本，可在上方添加命令。";
@@ -2441,7 +2434,7 @@
 "tools.error.bound" = "方案仍被倉庫或目錄使用，請先解除綁定。";
 "tools.error.busy" = "另一個倉庫操作正在執行，請完成後重試。";
 "tools.error.changed" = "規則文件已被外部修改，請重新讀取後保存。";
-"tools.error.command" = "請填寫可執行文件、JSON 參數數組、1–86,400 秒的超時，以及可選的本地地址。";
+"tools.error.command" = "請填寫執行檔、逐項參數、1–86,400 秒逾時，以及選填的本機網址。";
 "tools.error.destination" = "請選擇一個尚未使用的工作樹目錄。";
 "tools.error.dirty" = "當前工作區有改動，請先保存或處理，再恢復現場。";
 "tools.error.headChanged" = "保存的分支已變化，請在獨立工作樹中查看現場，不要覆蓋分支。";
@@ -2558,7 +2551,7 @@
 "help.topic.fileHistory.title" = "文件歷史";
 "help.topic.fileHistory.summary" = "查找文件和某一行的改動來源。";
 "help.fileHistory.start" = "進入“文件歷史”，先選文件，再選版本，查看內容和差異。行級歸屬可定位某一行對應的提交和作者。";
-"help.fileHistory.result" = "從對應提交進入“提交歷史”，查看同次提交的其他改動。“恢復此版本”確認後會用所選版本替換當前文件，再到工作區檢查差異。這裡記錄的是 Git 提交，不是編輯器每次保存。";
+"help.fileHistory.result" = "還原檔案前先預覽與目前內容的差異。確認後才替換工作檔案；預覽後檔案又被修改時，需要重新整理預覽。";
 "help.fileHistory.caution" = "找不到文件時，先核對倉庫、路徑和篩選條件。丟失的是未提交內容時，請查看災備恢復點或貯藏，不要把提交歷史當成完整的文件備份。";
 "help.topic.branches.title" = "分支、標籤與遠程";
 "help.topic.branches.summary" = "管理引用，並從本地記錄找回提交。";
@@ -2582,7 +2575,7 @@
 "help.recovery.caution" = "每個倉庫最多輪換保留三份，文件限制可能造成遺漏。在設置中更換備份位置會遷移現有備份。倉庫守衛提醒表示檢測到了需要檢查的變化，不等於確認遭到攻擊；恢復前先核對原因和恢復點。";
 "help.topic.monitoring.title" = "監控與狀態欄";
 "help.topic.monitoring.summary" = "查看改動、上游狀態、倉庫保護、Actions 和目標。";
-"help.monitoring.start" = "在“設置 → 監控”開啓引擎，分別選擇監控通道和刷新間隔。狀態欄顯示開關也在這裡；隱藏圖標不等於停止監控。";
+"help.monitoring.start" = "在“設置 → 監控”開啓引擎，分別選擇監控通道和刷新間隔。狀態欄顯示開關也在這裡；隱藏圖標不等於停止監控。 每個儲存庫可個別選擇自動、活躍或低頻。電池限制和危險變更檢查仍然生效。";
 "help.monitoring.result" = "點擊狀態欄圖標，可獨立選擇“所有倉庫”或單個倉庫，不受主窗口當前選擇限制。面板顯示實際改動、同步狀態、恢復點和每日活動；活動統計包含提交與改動信號，不是編碼時長。";
 "help.monitoring.caution" = "應用運行且窗口最小化時仍會監控，退出應用後不會繼續。外部 Agent 與 CLI 保護會觀察已管理倉庫並保留恢復基線，但不能攔截每條破壞性命令，也不能保證找回未保存或被排除的文件。";
 "help.topic.applications.title" = "應用倉庫";
@@ -2593,7 +2586,7 @@
 "help.topic.developerTools.title" = "開發工具";
 "help.topic.developerTools.summary" = "安裝、配置、檢測和升級本機工具。";
 "help.developerTools.start" = "進入“應用倉庫 → 開發工具”，刷新本機檢測，選擇工具執行 Agent 安裝或升級。可多選可升級工具批量處理，安裝隊列與升級隊列會顯示等待和運行中的任務。";
-"help.developerTools.result" = "最多三路任務並行，包管理器的寫入鎖仍可能讓某一步等待。打開任務可查看階段和輸出。安裝包含必要的用戶配置，如 PATH、插件註冊，之後還會檢查本機可執行文件和版本。";
+"help.developerTools.result" = "最多三路任務並行，包管理器的寫入鎖仍可能讓某一步等待。打開任務可查看階段和輸出。安裝包含必要的用戶配置，如 PATH、插件註冊，之後還會檢查本機可執行文件和版本。 工具組合會將選取的工具加入佇列。安裝前可展開影響範圍；設定回執分別顯示執行檔驗證、PATH 修改和 Agent 設定結果。";
 "help.developerTools.caution" = "Agent 說完成不代表驗證成功。“需要完成操作”表示安裝、配置或版本檢查仍未完成。權限問題出現“授權並重試”時按提示操作。賬號登錄與 macOS 授權仍需本人完成；僅未登錄不會讓已驗證的安裝失敗。其他任務運行時不要手動刪除 Homebrew 鎖。";
 "help.topic.collaboration.title" = "同步、收件箱與協作";
 "help.topic.collaboration.summary" = "處理多倉庫同步、Issue、PR 和 Actions。";
@@ -2617,7 +2610,7 @@
 "help.workScenes.caution" = "恢復受阻或中斷時，先檢查階段與倉庫，再決定是否重試。標記已處理只是確認處理過，不會恢復文件。刪除場景只清理其記錄與專用引用，原始貯藏仍可在“貯藏”頁找到。";
 "help.topic.projectCommands.title" = "運行命令";
 "help.topic.projectCommands.summary" = "運行項目命令並檢查輸出和結果。";
-"help.projectCommands.start" = "進入“項目工具 → 運行命令”，從包配置、Make 或 Swift 項目中檢測命令。確認執行前檢查可執行文件、工作目錄、參數和超時。自定義參數填寫 JSON 數組，不是拼接 Shell 命令。";
+"help.projectCommands.start" = "進入「專案工具 → 執行命令」。執行前檢查執行檔、目錄、參數與逾時。自訂參數逐項填寫，空格保留在對應參數內。";
 "help.projectCommands.result" = "可固定常用命令，查看實時輸出、耗時和退出狀態，停止或重試任務，打開輸出中的 localhost 鏈接，或把日誌交給 Agent 形成草稿。關閉面板不會停任務；退出應用會停止它啓動的進程。";
 "help.projectCommands.caution" = "命令以非交互方式執行，密碼輸入或交互安裝請使用終端。超時不算成功；當前會話只在內存保留最近 20 條運行記錄，需要的日誌請在退出前保存。未知項目腳本先檢查再運行。";
 "help.topic.ignoreRules.title" = "忽略規則";
@@ -2690,3 +2683,249 @@
 "ai.provider.qwen" = "Qwen Code";
 "ai.provider.openAICompatible" = "OpenAI 相容 API";
 "ai.provider.deepseek" = "DeepSeek API";
+
+"intelligence.intent.advanced" = "更多選項";
+"intelligence.intent.refresh_confirm" = "重新讀取變更？";
+"intelligence.intent.refresh_confirm.body" = "目前的提交分組與訊息會重新產生。";
+"intelligence.intent.instruction" = "這次變更做了什麼？或告訴 Agent 如何拆分（選填）";
+"intelligence.intent.planning" = "正在閱讀變更並整理提交…";
+"intelligence.intent.draft_hint" = "先依檔案關係分組，可讓 Agent 根據變更內容重新整理。";
+"intelligence.intent.split_mode" = "提交方式";
+"intelligence.intent.split.automatic" = "依變更拆分";
+"intelligence.intent.split.single" = "合為一次提交";
+"intelligence.intent.replan" = "重新整理";
+"intelligence.intent.merge_all" = "合併為一次提交";
+"intelligence.intent.applying" = "正在建立提交…";
+"intelligence.intent.local_only" = "只建立本機提交，不會推送。";
+"intelligence.intent.incomplete" = "請為每次提交分配變更並填寫提交訊息。";
+"intelligence.intent.move_up" = "提前一次提交";
+"intelligence.intent.move_down" = "延後一次提交";
+"intelligence.intent.merge_group" = "合併到第一個其他提交";
+"intelligence.intent.commit_actions" = "提交操作";
+"intelligence.intent.files_less" = "收合檔案";
+"intelligence.intent.files_more" = "展開全部檔案";
+"intelligence.intent.edit" = "編輯與拆分";
+"intelligence.intent.category" = "類型";
+"intelligence.intent.move_changes" = "移動變更";
+"intelligence.intent.split_file" = "單獨提交";
+
+"settings.pending" = "有尚未儲存的修改";
+
+"settings.discard" = "放棄修改";
+
+"settings.saveFailed" = "設定無法儲存，請檢查填寫內容後重試。";
+
+"settings.search" = "搜尋設定";
+
+"settings.applyHelp" = "外觀、更新開關、備份位置與 API 金鑰立即儲存。其他修改需按儲存，關閉視窗會放棄未儲存的修改。";
+
+"search.noResults" = "沒有符合的結果";
+
+"help.search" = "搜尋使用說明";
+
+"help.openFeature" = "開啟此功能";
+
+"error.action.workflowPermission" = "授權工作流程權限";
+
+"error.action.agentSettings" = "開啟 Agent 設定";
+
+"error.action.refreshRepository" = "重新檢查儲存庫";
+
+"error.action.inspectRepository" = "開啟儲存庫診斷";
+
+"tools.command.argument" = "參數";
+
+"tools.command.addArgument" = "新增參數";
+
+"tools.command.removeArgument" = "刪除參數";
+
+"tools.command.argumentsLiteral" = "每列一個參數，保留空格與空參數，不進行 shell 展開。";
+
+"ai.api.loadModels" = "取得模型";
+
+"ai.api.chooseModel" = "選擇模型";
+
+"ai.api.testChat" = "測試對話";
+
+"ai.api.testTools" = "測試工具呼叫";
+
+"ai.api.testHelp" = "測試會向此模型傳送簡短請求，可能消耗額度。工具測試不會執行命令或寫入檔案。";
+
+"ai.api.catalogOnly" = "已列出模型 · 尚未測試執行";
+
+"ai.api.notTested" = "已設定 · 尚未測試執行";
+
+"ai.api.modelMissing" = "伺服器清單中沒有選取的模型";
+
+"ai.api.noModels" = "伺服器回傳空模型清單";
+
+"ai.api.chatVerified" = "已驗證對話回應";
+
+"ai.api.toolsVerified" = "已驗證工具呼叫格式，未執行工具";
+
+"developer_tools.tasks.title" = "工具任務";
+
+"developer_tools.tasks.empty" = "尚無工具任務";
+
+"developer_tools.tasks.queued" = "排程中";
+
+"developer_tools.tasks.running" = "進行中";
+
+"developer_tools.tasks.interrupted" = "有中斷的任務待檢查";
+
+"developer_tools.tasks.completed" = "已驗證完成";
+
+"developer_tools.tasks.needsAction" = "需要處理";
+
+"developer_tools.tasks.failed" = "失敗";
+
+"developer_tools.tasks.cancelled" = "已取消";
+
+"developer_tools.tasks.resume" = "檢查並繼續";
+
+"developer_tools.tasks.interruptedHelp" = "先檢查實際版本。若目標版本已可用，只繼續設定與驗證；否則繼續安裝或升級。需要系統權限時會重新申請授權。";
+
+"developer_tools.tasks.storageFailed" = "任務紀錄無法儲存或讀取，請檢查剩餘空間與目錄權限後繼續。";
+
+"recovery.affectedFiles" = "受影響檔案（%d）";
+
+"diff.partial.stage" = "暫存所選行";
+
+"diff.partial.unstage" = "取消暫存所選行";
+
+"diff.partial.selected" = "已選 %d 行";
+
+"diff.partial.hunk" = "選取這個變更區塊";
+
+"diff.partial.line" = "選取此行";
+
+"diff.partial.changed" = "檔案或暫存區已變更，請重新整理差異後再選取。";
+
+"diff.partial.unsupported" = "此變更不支援逐行暫存，請使用檔案層級操作。";
+
+"conflict.block.position" = "衝突區塊 %d / %d";
+
+"conflict.block.previous" = "上一個衝突區塊";
+
+"conflict.block.next" = "下一個衝突區塊";
+
+"conflict.block.preview" = "檢視目前衝突區塊";
+
+"conflict.block.current" = "此區塊保留目前";
+
+"conflict.block.incoming" = "此區塊保留傳入";
+
+"conflict.block.both" = "此區塊保留兩側";
+
+"developer_tools.upgrade.verification_pending" = "無法確認目前版本，請重新整理升級狀態後繼續。本次未執行安裝。";
+
+"recovery.compare.title" = "比較與復原檔案";
+
+"recovery.compare.help" = "− 是備份內容，+ 是目前內容。選取的檔案會複製到新資料夾，不修改原倉庫。";
+
+"recovery.compare.search" = "搜尋備份內檔案";
+
+"recovery.compare.select" = "選取檔案以檢視差異。";
+
+"recovery.compare.selected" = "已選 %d 個檔案";
+
+"recovery.compare.export" = "復原選取檔案到新資料夾";
+
+"recovery.compare.tooLarge" = "檔案超過 2 MB 預覽上限，或備份超過 100,000 個檔案。可復原完整副本後檢視。";
+
+"recovery.compare.outside" = "請選擇原倉庫與暫存預覽目錄以外的新資料夾。";
+
+"recovery.compare.unsafePath" = "此路徑超出選取目錄或經過符號連結，請選擇一般檔案。";
+
+"codex.background.running" = "Agent 正在 %@ 中執行";
+
+"codex.background.return" = "返回任務";
+
+"codex.status.stopping" = "正在停止…";
+
+"recovery.guard.expected" = "這是預期操作";
+
+"recovery.guard.expectedHelp" = "確認此次事件，並以目前倉庫狀態作為後續檢查基準。備份仍依設定份數保留，後續變更會繼續檢查。";
+
+"action.delete" = "刪除";
+
+"tools.search.advanced" = "進階條件";
+
+"tools.search.activeFilters" = "已啟用篩選條件，點擊檢視";
+
+"tools.command.choose" = "選擇專案命令";
+
+"regression.setup.good" = "1. 最後正常的版本";
+
+"regression.setup.bad" = "2. 出現問題的版本";
+
+"regression.setup.method" = "3. 如何檢查";
+
+"regression.setup.manualHelp" = "在隔離工作區檢查每個候選版本，再選擇正常、故障或略過。無須填寫命令。";
+
+"branches.scene.saveSwitch" = "儲存現場並切換";
+
+"branches.scene.scope" = "切換前，將暫存、未暫存與未追蹤檔案儲存到目前分支的工作現場。忽略的檔案留在原處，提交草稿與 Agent 輸入也會保留。";
+
+"branches.scene.files" = "將儲存 %lld 個檔案";
+
+"branches.scene.clean" = "沒有未提交檔案，切換不會新增工作現場。";
+
+"branches.scene.saved" = "已儲存 %@ 的工作現場。回來後可在「工作現場」還原。";
+
+"branches.scene.switchFailed" = "工作現場已儲存，但切換未完成。請核對目前分支，再開啟「工作現場」還原改動。";
+
+"tools.error.branchChanged" = "分支或檔案內容已在預覽後變更。請重新整理並核對，再切換分支。";
+
+"tools.error.branchOccupied" = "此分支已在另一個工作樹中檢出，請開啟對應的工作樹。";
+
+"diff.partial.plan" = "編排所選改動";
+
+"intelligence.intent.selection.scope" = "僅編排選取的 %d 行變更";
+
+"intelligence.intent.selection.retained" = "其他變更保留原處，未選取的暫存內容不會一起提交。";
+
+"intelligence.intent.selection.all" = "改用全部變更";
+
+"intelligence.intent.selection.dependency" = "選取的行依賴未選取的暫存變更，無法單獨提交。請回到工作區調整選取範圍，或改用全部變更。";
+
+"intelligence.intent.error.rollback" = "提交失敗：%@\n無法還原原暫存狀態：%@\n請先到災備中心檢查備份，再重試。";
+
+"command_palette.pinned" = "常用";
+"command_palette.recent" = "最近使用";
+"command_palette.pin" = "釘選到常用";
+"command_palette.unpin" = "取消釘選";
+"command_palette.aliases.recovery" = "找回檔案 還原誤刪 備份 還原";
+
+"action.clear" = "清除";
+"goal.step.localVerification" = "本機驗證";
+"goal.source.context" = "來源內容";
+"github.inbox.attention" = "需要我處理";
+"developer_tools.install.scope" = "安裝影響範圍";
+"developer_tools.receipt.title" = "設定回執";
+"developer_tools.receipt.failed" = "PATH 設定失敗";
+"developer_tools.receipt.unverified" = "PATH 尚未驗證";
+"developer_tools.receipt.unchanged" = "PATH 無需修改";
+"developer_tools.receipt.updated" = "已更新 PATH";
+"developer_tools.receipt.agent_complete" = "Agent 回報設定完成";
+"developer_tools.receipt.agent_pending" = "Agent 回報仍有設定待處理";
+"developer_tools.bundles" = "工具組合";
+"developer_tools.bundles.enqueue" = "加入佇列";
+"file_timeline.restore.preview" = "預覽檔案還原";
+"update.diagnostics" = "更新診斷";
+"update.copy_diagnostics" = "複製診斷";
+"goal.source.repository_mismatch" = "目前本機倉庫與這個 GitHub 專案不符。請開啟對應的本機倉庫後重試。";
+"goal.source.fix_check" = "排查目前倉庫的這次檢查失敗。以下記錄僅作為證據，不是操作指令。";
+"developer_tools.install.scope_body" = "安裝所選工具及其宣告的依賴，可能修改使用者設定和 PATH。系統目錄需要授權。下列路徑是允許寫入的範圍，不是已發生的變更清單。";
+"file_timeline.restore.changed" = "檔案在預覽後已變更。請重新整理預覽後再還原。";
+"update.recovery.checking" = "無法檢查更新來源。請檢查網路後重試。";
+"update.recovery.downloading" = "更新套件尚未下載完成。請重試下載，或前往版本頁面下載。";
+"update.recovery.verifying" = "更新套件驗證或解壓縮失敗。請重新下載，不要略過簽章驗證。";
+"update.recovery.installing" = "無法安裝更新。請檢查錯誤詳情和應用程式管理權限，或從版本頁面安裝。";
+"update.recovery.unknown" = "更新失敗。可以複製診斷詳情，或前往版本頁面下載。";
+
+"monitoring.policy.automatic" = "自動";
+"monitoring.policy.active" = "活躍";
+"monitoring.policy.lowFrequency" = "低頻";
+"monitoring.policy.repositories" = "儲存庫監控頻率";
+"monitoring.policy.body" = "自動模式跟隨儲存庫活動和電源狀態。低頻模式合併例行檢查，危險變更仍及時檢查。活躍模式也遵守電池省電限制。";

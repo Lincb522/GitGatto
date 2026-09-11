@@ -151,11 +151,13 @@ enum GitParsers {
     }
 
     static func diff(from text: String, path: String) -> DiffDocument {
+        var inHunk = false
         var oldLine: Int?
         var newLine: Int?
         var lines: [DiffLine] = []
-        var rawLines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        if text.hasSuffix("\n"), rawLines.last?.isEmpty == true {
+        // Git separates records with LF; a CR before it belongs to the file content.
+        var rawLines = text.utf8.split(separator: 10, omittingEmptySubsequences: false).map { String(decoding: $0, as: UTF8.self) }
+        if text.utf8.last == 10, rawLines.last?.isEmpty == true {
             rawLines.removeLast()
         }
 
@@ -165,13 +167,15 @@ enum GitParsers {
             let lineNew: Int?
 
             if rawLine.hasPrefix("@@") {
+                inHunk = true
                 kind = .hunk
                 let ranges = parseHunkRanges(rawLine)
                 oldLine = ranges.old
                 newLine = ranges.new
                 lineOld = nil
                 lineNew = nil
-            } else if rawLine.hasPrefix("diff ") || rawLine.hasPrefix("index ") || rawLine.hasPrefix("---") || rawLine.hasPrefix("+++") || rawLine.hasPrefix("new file") || rawLine.hasPrefix("deleted file") {
+            } else if rawLine.hasPrefix("diff ") || (!inHunk && !rawLine.hasPrefix("\\")) {
+                inHunk = false
                 kind = .header
                 lineOld = nil
                 lineNew = nil
@@ -185,6 +189,10 @@ enum GitParsers {
                 lineOld = oldLine
                 lineNew = nil
                 oldLine = oldLine.map { $0 + 1 }
+            } else if rawLine.hasPrefix("\\ No newline") {
+                kind = .context
+                lineOld = nil
+                lineNew = nil
             } else {
                 kind = .context
                 lineOld = oldLine
@@ -196,7 +204,7 @@ enum GitParsers {
             lines.append(DiffLine(oldLineNumber: lineOld, newLineNumber: lineNew, text: rawLine, kind: kind))
         }
 
-        return DiffDocument(path: path, lines: lines)
+        return DiffDocument(path: path, lines: lines, sourceText: text)
     }
 
     private static func parseHunkRanges(_ line: String) -> (old: Int?, new: Int?) {

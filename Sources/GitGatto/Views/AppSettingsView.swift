@@ -9,13 +9,26 @@ struct AppSettingsView: View {
     @AppStorage(AppStyleDefaults.accentKey) private var accentRaw = AppAccentChoice.coral.rawValue
     @AppStorage(AppStyleDefaults.customAccentKey) private var customAccentHex = "#4F7DFF"
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedPage: SettingsPage = .appearance
     @State private var showsSavedState = false
+    @State private var saveFailed = false
+    @State private var savedPreferences: AppPreferences
+    @State private var savedProject: AIProviderConfiguration
+    @State private var savedTranslation: AIProviderConfiguration
+    @State private var draftPreferences: AppPreferences
+    @State private var draftProject: AIProviderConfiguration
+    @State private var draftTranslation: AIProviderConfiguration
+    @State private var query = ""
 
     init(model: WorkspaceViewModel, updateManager: AppUpdateManager) {
         self.model = model
         self.updateManager = updateManager
+        _draftPreferences = State(initialValue: model.appPreferences)
+        _draftProject = State(initialValue: model.projectAIConfiguration)
+        _draftTranslation = State(initialValue: model.translationAIConfiguration)
+        _savedPreferences = State(initialValue: model.appPreferences)
+        _savedProject = State(initialValue: model.projectAIConfiguration)
+        _savedTranslation = State(initialValue: model.translationAIConfiguration)
         #if DEBUG
             let previewPage = ProcessInfo.processInfo.environment["GITGATTO_SETTINGS_PAGE"]
                 .flatMap(SettingsPage.init(rawValue:)) ?? .appearance
@@ -43,6 +56,35 @@ struct AppSettingsView: View {
         }
         .frame(minWidth: 820, minHeight: 650)
         .background(Color.clear)
+        .onAppear {
+            draftPreferences = model.appPreferences
+            draftProject = model.projectAIConfiguration
+            draftTranslation = model.translationAIConfiguration
+            savedPreferences = draftPreferences
+            savedProject = draftProject
+            savedTranslation = draftTranslation
+            if let destination = model.settingsDestination, let page = SettingsPage(rawValue: destination) {
+                selectedPage = page
+                model.settingsDestination = nil
+            }
+        }
+        .onChange(of: draftPreferences) { _, _ in showsSavedState = false; saveFailed = false }
+        .onChange(of: draftProject) { _, _ in showsSavedState = false; saveFailed = false }
+        .onChange(of: draftTranslation) { _, _ in showsSavedState = false; saveFailed = false }
+        .onDisappear {
+            draftPreferences = model.appPreferences
+            draftProject = model.projectAIConfiguration
+            draftTranslation = model.translationAIConfiguration
+            L10n.activate(model.appPreferences.language)
+            MenuTitleLocalizer.localizeMainMenu()
+        }
+        .onChange(of: model.appPreferences.repositoryBackupDirectoryPath) { _, path in
+            draftPreferences.repositoryBackupDirectoryPath = path
+            savedPreferences.repositoryBackupDirectoryPath = path
+        }
+        .onChange(of: query) { _, _ in
+            if !filteredPages.contains(selectedPage), let first = filteredPages.first { select(first) }
+        }
         #if DEBUG
             .background(
                 DebugSnapshotCapture(
@@ -112,7 +154,7 @@ struct AppSettingsView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(palette.mutedInk)
             Spacer(minLength: 12)
-            savedState(palette)
+            SettingsSaveFeedback(failed: saveFailed, pending: hasPendingChanges, saved: showsSavedState, palette: palette)
             saveButton
         }
         .padding(.horizontal, 24)
@@ -128,7 +170,7 @@ struct AppSettingsView: View {
                               design: AppStyleDefaults.theme == .console ? .monospaced : .default))
                 .foregroundStyle(palette.ink)
             Spacer(minLength: 12)
-            savedState(palette)
+            SettingsSaveFeedback(failed: saveFailed, pending: hasPendingChanges, saved: showsSavedState, palette: palette)
             saveButton
         }
         .padding(.horizontal, 26)
@@ -145,7 +187,7 @@ struct AppSettingsView: View {
                 .frame(height: 82)
             ScrollView(.vertical) {
                 VStack(spacing: theme == .console ? 2 : 6) {
-                    ForEach(SettingsPage.allCases) { page in
+                    ForEach(filteredPages) { page in
                         Button { select(page) } label: {
                             HStack(spacing: 10) {
                                 Image(gattoSymbol: page.icon)
@@ -178,7 +220,7 @@ struct AppSettingsView: View {
     private func settingsCategoryBar(_ palette: AppPalette, iconLabels: Bool) -> some View {
         ScrollView(.horizontal, showsIndicators: true) {
             HStack(spacing: iconLabels ? 8 : 6) {
-                ForEach(SettingsPage.allCases) { page in
+                ForEach(filteredPages) { page in
                     Button { select(page) } label: {
                         Group {
                             if iconLabels {
@@ -222,7 +264,7 @@ struct AppSettingsView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(palette.ink)
                 Spacer(minLength: 12)
-                savedState(palette)
+                SettingsSaveFeedback(failed: saveFailed, pending: hasPendingChanges, saved: showsSavedState, palette: palette)
                 saveButton
             }
             .padding(.horizontal, 26)
@@ -243,7 +285,7 @@ struct AppSettingsView: View {
     private func lumenSettingsNavigation(_ palette: AppPalette) -> some View {
         ScrollView(.horizontal) {
             HStack(spacing: 6) {
-                ForEach(SettingsPage.allCases) { page in
+                ForEach(filteredPages) { page in
                     Button {
                         select(page)
                     } label: {
@@ -313,7 +355,22 @@ struct AppSettingsView: View {
                     .padding(.bottom, 2)
                 }
 
-                pageContent
+                HStack {
+                    GattoIcon(symbol: "magnifyingglass", size: 16)
+                    TextField(L10n.text("settings.search"), text: $query)
+                        .textFieldStyle(.plain)
+                    if !query.isEmpty {
+                        Button { query = "" } label: { GattoIcon(symbol: "xmark", size: 14) }
+                            .buttonStyle(.plain).accessibilityLabel(L10n.text("tools.clear"))
+                    }
+                }
+                .padding(10).background(palette.raisedSurface, in: RoundedRectangle(cornerRadius: 8))
+                if filteredPages.isEmpty {
+                    Text(L10n.text("search.noResults")).foregroundStyle(palette.mutedInk)
+                } else {
+                    Text(L10n.text("settings.applyHelp")).font(.caption).foregroundStyle(palette.subtleInk)
+                    pageContent
+                }
             }
             .padding(.horizontal, includesPageTitle ? 28 : 26)
             .padding(.vertical, includesPageTitle ? 24 : 8)
@@ -322,26 +379,47 @@ struct AppSettingsView: View {
         }
     }
 
-    @ViewBuilder
-    private func savedState(_ palette: AppPalette) -> some View {
-        if showsSavedState {
-            GattoLabel(L10n.text("settings.saved"), systemImage: "checkmark.circle.fill")
-                .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(palette.success)
-                .transition(.opacity)
-        }
+    private var hasPendingChanges: Bool {
+        draftPreferences != savedPreferences || draftProject != savedProject
+            || draftTranslation != savedTranslation
+    }
+
+    private var filteredPages: [SettingsPage] {
+        SettingsPage.allCases.filter { $0.matches(query) }
     }
 
     private var saveButton: some View {
-        Button(L10n.text("settings.save")) {
-            model.saveSettings()
-            if reduceMotion {
-                showsSavedState = true
-            } else {
-                withAnimation(.easeOut(duration: 0.18)) { showsSavedState = true }
+        HStack(spacing: 8) {
+            if hasPendingChanges {
+                Button(L10n.text("settings.discard")) {
+                    draftPreferences = savedPreferences
+                    draftProject = savedProject
+                    draftTranslation = savedTranslation
+                    L10n.activate(savedPreferences.language)
+                    MenuTitleLocalizer.localizeMainMenu()
+                }
+                .buttonStyle(SecondaryButtonStyle())
             }
+            Button(L10n.text("settings.save")) {
+                model.appPreferences = draftPreferences
+                model.projectAIConfiguration = draftProject
+                model.translationAIConfiguration = draftTranslation
+                if model.saveSettings() {
+                    savedPreferences = model.appPreferences
+                    savedProject = model.projectAIConfiguration
+                    savedTranslation = model.translationAIConfiguration
+                    showsSavedState = true
+                    saveFailed = false
+                } else {
+                    model.appPreferences = savedPreferences
+                    model.projectAIConfiguration = savedProject
+                    model.translationAIConfiguration = savedTranslation
+                    saveFailed = true
+                }
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(!hasPendingChanges)
         }
-        .buttonStyle(PrimaryButtonStyle())
     }
 
     private func select(_ page: SettingsPage) {
@@ -360,20 +438,20 @@ struct AppSettingsView: View {
                 customAccentHex: $customAccentHex
             )
         case .general:
-            GeneralSettingsPage(preferences: $model.appPreferences)
+            GeneralSettingsPage(preferences: $draftPreferences)
         case .git:
-            GitSettingsPage(model: model, preferences: $model.appPreferences)
+            GitSettingsPage(model: model, preferences: $draftPreferences)
         case .monitoring:
             MonitoringSettingsPage(
                 engine: model.monitoringEngine,
-                preferences: $model.appPreferences
+                preferences: $draftPreferences
             )
         case .recovery:
-            RecoverySettingsPage(model: model, preferences: $model.appPreferences)
+            RecoverySettingsPage(model: model, preferences: $draftPreferences)
         case .agent:
-            AgentSettingsPage(model: model)
+            AgentSettingsPage(model: model, preferences: $draftPreferences, configuration: $draftProject)
         case .translation:
-            TranslationSettingsPage(model: model)
+            TranslationSettingsPage(model: model, preferences: $draftPreferences, configuration: $draftTranslation)
         case .updates:
             UpdateSettingsPage(manager: updateManager)
         }
@@ -409,6 +487,24 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .translation: "ai.translation"
         case .updates: "arrow.triangle.2.circlepath"
         }
+    }
+
+    func matches(_ query: String) -> Bool {
+        let tokens = query.localizedLowercase.split(whereSeparator: \.isWhitespace)
+        if tokens.isEmpty { return true }
+        let keys: [String]
+        switch self {
+        case .appearance: keys = ["settings.appearance.accent_section", "settings.appearance.custom_accent", "settings.appearance.custom_accent.body", "settings.appearance.mode", "settings.appearance.mode_control", "settings.appearance.mode_control.body", "settings.appearance.theme_section"]
+        case .general: keys = ["settings.general.close_behavior", "settings.general.close_behavior.body", "settings.general.default_workspace", "settings.general.default_workspace.body", "settings.general.language", "settings.general.language.body", "settings.general.language_section", "settings.general.launch_animation", "settings.general.launch_animation.body", "settings.general.reopen_repository", "settings.general.reopen_repository.body", "settings.general.startup", "settings.general.window"]
+        case .git: keys = ["settings.git.confirm_discard", "settings.git.confirm_discard.body", "settings.git.discovery", "settings.git.safety", "settings.github.account"]
+        case .monitoring: keys = ["settings.git.refresh_interval", "settings.git.refresh_interval.body", "settings.git.remote_interval", "settings.git.remote_interval.body", "settings.monitoring.cadence", "settings.monitoring.channels", "settings.monitoring.engine", "settings.monitoring.engine_enabled", "settings.monitoring.engine_enabled.body", "settings.monitoring.status_bar", "settings.monitoring.status_bar.body", "settings.seconds"]
+        case .recovery: keys = ["settings.backups", "settings.files", "settings.git.backup_file_limit", "settings.git.backup_file_limit.body", "settings.git.backup_interval", "settings.git.backup_interval.body", "settings.git.backup_major_files", "settings.git.backup_major_files.body", "settings.git.backup_major_lines", "settings.git.backup_major_lines.body", "settings.git.backup_retention", "settings.git.backup_retention.body", "settings.lines", "settings.megabytes", "settings.minutes", "settings.recovery.agent_protection", "settings.recovery.agent_protection.body", "settings.recovery.external_protection", "settings.recovery.external_protection.body", "settings.recovery.protected_repositories", "settings.recovery.protected_repositories.value", "settings.recovery.protection", "settings.recovery.retention", "settings.recovery.schedule", "settings.recovery.storage", "settings.recovery.storage.choose", "settings.recovery.storage.location", "settings.recovery.storage.migrating", "settings.recovery.storage.reset", "settings.recovery.storage.reveal", "settings.recovery.storage_used"]
+        case .agent: keys = ["ai.settings.project", "ai.settings.project.body", "settings.agent.conversation_context", "settings.agent.conversation_context.body", "settings.agent.default_mode", "settings.agent.default_mode.body", "settings.agent.draft_detail", "settings.agent.draft_detail.body", "settings.agent.engine", "settings.agent.messages", "settings.agent.profile"]
+        case .translation: keys = ["settings.translation.default_target", "settings.translation.default_target.body", "settings.translation.defaults", "settings.translation.engine", "settings.translation.engine.body"]
+        case .updates: keys = ["settings.updates.automatic", "settings.updates.check_now", "settings.updates.check_now.body", "settings.updates.checks", "settings.updates.checks.body", "settings.updates.downloads", "settings.updates.downloads.body", "settings.updates.manual", "update.check"]
+        }
+        let text = ([titleKey] + keys).map { L10n.text($0) }.joined(separator: " ").localizedLowercase
+        return tokens.allSatisfy { text.contains($0) }
     }
 }
 
@@ -852,7 +948,6 @@ private struct GeneralSettingsPage: View {
                 .frame(width: 190)
                 .onChange(of: preferences.language) { _, language in
                     L10n.activate(language)
-                    AppPreferencesStore.saveLanguage(language)
                     MenuTitleLocalizer.localizeMainMenu()
                 }
             }
@@ -1197,6 +1292,27 @@ private struct MonitoringSettingsPage: View {
             }
         }
 
+        if !engine.repositories.isEmpty {
+            SettingsSection(titleKey: "monitoring.policy.repositories") {
+                Text(L10n.text("monitoring.policy.body"))
+                    .font(.caption).foregroundStyle(palette.mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(engine.repositories, id: \.standardizedFileURL.path) { repository in
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .top) {
+                            repositoryPolicyName(repository).layoutPriority(1)
+                            Spacer(minLength: 12)
+                            repositoryPolicyPicker(repository).fixedSize()
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            repositoryPolicyName(repository)
+                            repositoryPolicyPicker(repository).fixedSize()
+                        }
+                    }
+                }
+            }
+        }
+
         SettingsSection(titleKey: "monitoring.activity.title") {
             RepositoryActivityHeatmap(
                 activity: engine.dailyActivity,
@@ -1208,6 +1324,24 @@ private struct MonitoringSettingsPage: View {
             .frame(height: 82)
             .accessibilityLabel(L10n.text("monitoring.activity.accessibility"))
         }
+    }
+
+    private func repositoryPolicyName(_ repository: URL) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(repository.lastPathComponent).font(.subheadline)
+            Text(repository.standardizedFileURL.path).font(.caption2).foregroundStyle(.secondary)
+                .lineLimit(2).help(repository.path)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func repositoryPolicyPicker(_ repository: URL) -> some View {
+        Picker(L10n.text("monitoring.policy.repositories"), selection: Binding(
+            get: { preferences.repositoryMonitoringPolicies[repository.standardizedFileURL.path] ?? .automatic },
+            set: { preferences.repositoryMonitoringPolicies[repository.standardizedFileURL.path] = $0 == .automatic ? nil : $0 }
+        )) {
+            ForEach(RepositoryMonitoringPolicy.allCases, id: \.self) { Text(L10n.text($0.titleKey)).tag($0) }
+        }.labelsHidden().frame(maxWidth: 180).disabled(!preferences.monitoringEngineEnabled)
     }
 
     private func monitoringToggle(
@@ -1432,6 +1566,8 @@ private struct RecoverySettingsPage: View {
 
 private struct TranslationSettingsPage: View {
     @ObservedObject var model: WorkspaceViewModel
+    @Binding var preferences: AppPreferences
+    @Binding var configuration: AIProviderConfiguration
 
     var body: some View {
         SettingsSection(titleKey: "settings.translation.defaults") {
@@ -1439,7 +1575,7 @@ private struct TranslationSettingsPage: View {
                 titleKey: "settings.translation.default_target",
                 descriptionKey: "settings.translation.default_target.body"
             ) {
-                Picker("", selection: $model.appPreferences.defaultTranslationTarget) {
+                Picker("", selection: $preferences.defaultTranslationTarget) {
                     ForEach(CodexTranslationTarget.allCases) { target in
                         Text(L10n.text("codex.translate.\(target.rawValue)"))
                             .tag(target)
@@ -1454,7 +1590,7 @@ private struct TranslationSettingsPage: View {
             titleKey: "settings.translation.engine",
             descriptionKey: "settings.translation.engine.body",
             lane: .translation,
-            configuration: $model.translationAIConfiguration,
+            configuration: $configuration,
             availability: model.translationAIAvailability
         )
     }
@@ -1462,6 +1598,8 @@ private struct TranslationSettingsPage: View {
 
 private struct AgentSettingsPage: View {
     @ObservedObject var model: WorkspaceViewModel
+    @Binding var preferences: AppPreferences
+    @Binding var configuration: AIProviderConfiguration
 
     var body: some View {
         SettingsSection(titleKey: "settings.agent.profile") {
@@ -1471,7 +1609,7 @@ private struct AgentSettingsPage: View {
                 titleKey: "settings.agent.draft_detail",
                 descriptionKey: "settings.agent.draft_detail.body"
             ) {
-                Picker("", selection: $model.appPreferences.commitDraftDetail) {
+                Picker("", selection: $preferences.commitDraftDetail) {
                     ForEach(CommitDraftDetail.allCases) { detail in
                         Text(L10n.text("commit.draft_detail.\(detail.rawValue)"))
                             .tag(detail)
@@ -1486,7 +1624,7 @@ private struct AgentSettingsPage: View {
                 titleKey: "settings.agent.conversation_context",
                 descriptionKey: "settings.agent.conversation_context.body"
             ) {
-                Picker("", selection: $model.appPreferences.agentConversationHistoryLimit) {
+                Picker("", selection: $preferences.agentConversationHistoryLimit) {
                     ForEach([8, 16, 24, 40], id: \.self) { value in
                         Text(L10n.format("settings.agent.messages", value)).tag(value)
                     }
@@ -1499,7 +1637,7 @@ private struct AgentSettingsPage: View {
                 titleKey: "settings.agent.default_mode",
                 descriptionKey: "settings.agent.default_mode.body"
             ) {
-                Picker("", selection: $model.appPreferences.defaultAgentRunMode) {
+                Picker("", selection: $preferences.defaultAgentRunMode) {
                     ForEach(CodexRunMode.allCases) { mode in
                         Text(L10n.text("codex.mode.\(mode.rawValue)")).tag(mode)
                     }
@@ -1515,7 +1653,7 @@ private struct AgentSettingsPage: View {
                 titleKey: "ai.settings.project",
                 descriptionKey: "ai.settings.project.body",
                 lane: .project,
-                configuration: $model.projectAIConfiguration,
+                configuration: $configuration,
                 availability: model.codexAvailability
             )
         }
@@ -1851,7 +1989,8 @@ private struct AISettingsAvailability: View {
     }
 
     private var label: String {
-        switch availability.state {
+        if let key = availability.noteKey { return L10n.text(key) }
+        return switch availability.state {
         case .checking: L10n.text("codex.status.checking")
         case .available: L10n.text("codex.status.available")
         case .unavailable: L10n.text("codex.status.unavailable")
@@ -1863,6 +2002,23 @@ private struct AISettingsAvailability: View {
         case .checking: .checking
         case .available: .available
         case .unavailable: .unavailable
+        }
+    }
+}
+
+struct SettingsSaveFeedback: View {
+    let failed: Bool
+    let pending: Bool
+    let saved: Bool
+    let palette: AppPalette
+    var body: some View {
+        if failed {
+            Text(L10n.text("settings.saveFailed")).foregroundStyle(palette.danger)
+        } else if pending {
+            Text(L10n.text("settings.pending")).foregroundStyle(palette.warning)
+        } else if saved {
+            GattoLabel(L10n.text("settings.saved"), systemImage: "checkmark.circle.fill")
+                .foregroundStyle(palette.success)
         }
     }
 }

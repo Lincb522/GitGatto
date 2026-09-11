@@ -10,8 +10,19 @@ struct FileTimelineWorkspaceView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        Group {
-            if theme == .emerald {
+        GeometryReader { container in
+            if container.size.width < 960 {
+                VStack(spacing: 0) {
+                    commandBar(palette)
+                    HStack(spacing: 0) {
+                        fileNavigator(palette).frame(maxWidth: .infinity)
+                        Divider()
+                        revisionTimeline(palette).frame(maxWidth: .infinity)
+                    }.frame(height: max(180, container.size.height * 0.32))
+                    Divider()
+                    fileInspector(palette).frame(maxWidth: .infinity, maxHeight: .infinity)
+                }.appGlassPanel()
+            } else if theme == .emerald {
                 VStack(spacing: 10) {
                     commandBar(palette)
                         .emeraldSurface(.elevated, cornerRadius: 16)
@@ -77,22 +88,13 @@ struct FileTimelineWorkspaceView: View {
                 model.refreshRepositoryFiles()
             }
         }
-        .confirmationDialog(
-            L10n.text("file_timeline.restore.confirm.title"),
-            isPresented: $confirmsRestore,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.text("file_timeline.restore.action"), role: .destructive) {
-                Task { await model.restoreSelectedFileRevision() }
+        .sheet(isPresented: $confirmsRestore) {
+            if let repository = model.snapshot?.rootURL, let file = model.selectedRepositoryFile, let revision = model.selectedFileRevision {
+                FileRestorePreviewSheet(repository: repository, path: file.path, revision: revision) {
+                    model.selectFileRevision(nil)
+                    Task { await model.refresh() }
+                }
             }
-            Button(L10n.text("action.cancel"), role: .cancel) {}
-        } message: {
-            Text(
-                L10n.format(
-                    "file_timeline.restore.confirm.message",
-                    model.selectedFileRevision?.shortHash ?? ""
-                )
-            )
         }
     }
 
@@ -238,48 +240,71 @@ struct FileTimelineWorkspaceView: View {
         }
     }
 
+    private func fileIdentity(_ file: RepositoryFileRecord, palette: AppPalette) -> some View {
+        HStack(spacing: 11) {
+            ZStack {
+                RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
+                    .fill(palette.primarySoft)
+                Image(gattoSymbol: FileTimelineFileRow.icon(for: file.fileExtension))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(palette.primary)
+            }
+            .frame(width: 34, height: 34)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(file.name)
+                    .font(font(size: 13.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                    .lineLimit(1)
+                Text(model.fileVersionDocument?.path ?? file.path)
+                    .font(.system(size: 9.5, design: .monospaced))
+                    .foregroundStyle(palette.subtleInk)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
+    }
+
+    private func revisionActions(_ palette: AppPalette) -> some View {
+        HStack(spacing: 8) {
+            if let revision = model.selectedFileRevision {
+                Button {
+                    model.copySelectedFileRevisionHash()
+                } label: {
+                    Text(revision.shortHash)
+                        .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(palette.primary)
+                        .padding(.horizontal, 8)
+                        .frame(height: 24)
+                        .background(palette.primarySoft)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(L10n.text("file_timeline.copy_hash"))
+                Button(L10n.text("history.detail.title")) { model.openHistoryFromFile(revision) }
+                    .buttonStyle(SecondaryButtonStyle())
+                Button(L10n.text("file_timeline.restore.preview")) {
+                    confirmsRestore = true
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
+        }
+    }
+
     private func fileHeader(_ file: RepositoryFileRecord, palette: AppPalette) -> some View {
         VStack(spacing: 10) {
-            HStack(spacing: 11) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
-                        .fill(palette.primarySoft)
-                    Image(gattoSymbol: FileTimelineFileRow.icon(for: file.fileExtension))
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(palette.primary)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 11) {
+                    fileIdentity(file, palette: palette)
+                    Spacer(minLength: 8)
+                    revisionActions(palette).fixedSize()
                 }
-                .frame(width: 34, height: 34)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(file.name)
-                        .font(font(size: 13.5, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                        .lineLimit(1)
-                    Text(model.fileVersionDocument?.path ?? file.path)
-                        .font(.system(size: 9.5, design: .monospaced))
-                        .foregroundStyle(palette.subtleInk)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                Spacer(minLength: 8)
-                if let revision = model.selectedFileRevision {
-                    Button {
-                        model.copySelectedFileRevisionHash()
-                    } label: {
-                        Text(revision.shortHash)
-                            .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(palette.primary)
-                            .padding(.horizontal, 8)
-                            .frame(height: 24)
-                            .background(palette.primarySoft)
-                            .clipShape(Capsule())
+                VStack(alignment: .leading, spacing: 10) {
+                    fileIdentity(file, palette: palette)
+                    HStack {
+                        Spacer(minLength: 0)
+                        revisionActions(palette).fixedSize()
                     }
-                    .buttonStyle(.plain)
-                    .help(L10n.text("file_timeline.copy_hash"))
-                    Button(L10n.text("file_timeline.restore.action")) {
-                        confirmsRestore = true
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
                 }
             }
 
@@ -311,7 +336,9 @@ struct FileTimelineWorkspaceView: View {
             .foregroundStyle(palette.subtleInk)
         }
         .padding(.horizontal, 14)
-        .frame(height: 88)
+        .padding(.vertical, 12)
+        .frame(minHeight: 88)
+        .fixedSize(horizontal: false, vertical: true)
         .background(theme == .softGlass ? palette.surface.opacity(0.14) : palette.surface)
     }
 
@@ -350,9 +377,10 @@ struct FileTimelineWorkspaceView: View {
             } else {
                 FileBlameView(
                     lines: model.fileBlameLines,
-                    revisions: model.fileRevisions,
                     theme: theme,
-                    selectRevision: model.selectFileRevision
+                    selectRevision: model.selectFileRevision,
+                    openCommit: model.openHistoryFromBlame,
+                    trace: { model.inspectFileContext($0.sourcePath, line: $0.originalLineNumber, revision: $0.commitHash) }
                 )
             }
         }
@@ -514,9 +542,10 @@ private struct FileTimelineRevisionRow: View {
 
 private struct FileBlameView: View {
     let lines: [FileBlameLine]
-    let revisions: [FileRevisionRecord]
     let theme: AppVisualTheme
     let selectRevision: (FileRevisionRecord?) -> Void
+    let openCommit: (FileBlameLine) -> Void
+    let trace: (FileBlameLine) -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -529,26 +558,7 @@ private struct FileBlameView: View {
                         HStack(alignment: .top, spacing: 0) {
                             Group {
                                 if startsGroup {
-                                    Button {
-                                        selectRevision(revisions.first { $0.hash == line.commitHash })
-                                    } label: {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            HStack(spacing: 5) {
-                                                Circle()
-                                                    .fill(color(for: line.commitHash, palette: palette))
-                                                    .frame(width: 6, height: 6)
-                                                Text(line.isUncommitted ? L10n.text("file_timeline.uncommitted") : line.shortHash)
-                                                    .fontWeight(.semibold)
-                                            }
-                                            Text(line.author).lineLimit(1)
-                                            Text(line.summary).lineLimit(1)
-                                        }
-                                        .foregroundStyle(line.isUncommitted ? palette.warning : palette.mutedInk)
-                                        .frame(width: 158, alignment: .leading)
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help(line.authorEmail)
+                                    commitButton(line, palette: palette)
                                 } else {
                                     Color.clear.frame(width: 158, height: 20)
                                 }
@@ -586,6 +596,34 @@ private struct FileBlameView: View {
             .defaultScrollAnchor(.topLeading)
         }
         .background(theme == .softGlass ? palette.background.opacity(0.18) : palette.background)
+    }
+
+    private func commitButton(_ line: FileBlameLine, palette: AppPalette) -> some View {
+                                    Button {
+                                        if line.isUncommitted { selectRevision(nil) }
+                                        else { openCommit(line) }
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            HStack(spacing: 5) {
+                                                Circle()
+                                                    .fill(color(for: line.commitHash, palette: palette))
+                                                    .frame(width: 6, height: 6)
+                                                Text(line.isUncommitted ? L10n.text("file_timeline.uncommitted") : line.shortHash)
+                                                    .fontWeight(.semibold)
+                                            }
+                                            Text(line.author).lineLimit(1)
+                                            Text(line.summary).lineLimit(1)
+                                        }
+                                        .foregroundStyle(line.isUncommitted ? palette.warning : palette.mutedInk)
+                                        .frame(width: 158, alignment: .leading)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help(line.authorEmail)
+                                    .contextMenu {
+                                        Button(L10n.text(RepositoryIntelligenceTab.provenance.titleKey)) { trace(line) }
+                                            .disabled(line.isUncommitted)
+                                    }
     }
 
     private func color(for hash: String, palette: AppPalette) -> Color {

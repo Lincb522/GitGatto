@@ -67,6 +67,16 @@ struct GitHubPullRequestReviewView: View {
 
             Spacer(minLength: 12)
 
+            Button(L10n.text("goal.new")) {
+                Task {
+                    await model.prepareGoalFromContext(title: pullRequest.title,
+                        context: "#\(pullRequest.number) \(pullRequest.title)\n\(pullRequest.webURL.absoluteString)\n\(pullRequest.body ?? "")",
+                        remoteName: model.selectedGitHubRepository?.fullName)
+                    if model.projectGoalSourceDraft != nil { model.closePullRequestReview(); dismiss() }
+                }
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(model.snapshot == nil)
             if model.isLoadingPullRequestReview {
                 ProgressView().controlSize(.small)
             }

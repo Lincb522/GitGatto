@@ -332,13 +332,15 @@ struct DiffLine: Identifiable, Sendable {
 }
 
 struct DiffDocument: Sendable {
+    let sourceText: String?
     let path: String
     let lines: [DiffLine]
     let fileCount: Int
     let additionCount: Int
     let deletionCount: Int
 
-    init(path: String, lines: [DiffLine]) {
+    init(path: String, lines: [DiffLine], sourceText: String? = nil) {
+        self.sourceText = sourceText
         self.path = path
         self.lines = lines
         var files = 0
@@ -530,6 +532,8 @@ enum CodexAvailabilityState: Sendable, Equatable {
 struct CodexAvailability: Sendable, Equatable {
     let state: CodexAvailabilityState
     let version: String?
+
+    var noteKey: String? = nil
 
     static let checking = CodexAvailability(state: .checking, version: nil)
     static let unavailable = CodexAvailability(state: .unavailable, version: nil)

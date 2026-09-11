@@ -13,6 +13,8 @@ struct ProjectGoalComposerView: View {
     @State private var isCreating = false
     @State private var showsPlan = false
     @State private var showsBuild = false
+    @State private var verificationDisplay = ""
+    @State private var verification: ProjectCommand?
     @State private var planningTask: Task<Void, Never>?
     @FocusState private var focusedField: Field?
     private enum Field: Hashable { case message, intent, version }
@@ -27,6 +29,8 @@ struct ProjectGoalComposerView: View {
         self.onCreated = onCreated
         self.onCancel = onCancel
         _kind = State(initialValue: initialKind)
+        _message = State(initialValue: model.projectGoalSourceDraft?.repositoryPath == model.snapshot?.rootURL.standardizedFileURL.path ? model.projectGoalSourceDraft?.title ?? "" : "")
+        _intent = State(initialValue: model.projectGoalSourceDraft?.repositoryPath == model.snapshot?.rootURL.standardizedFileURL.path ? model.projectGoalSourceDraft?.title ?? "" : "")
     }
 
     private var activeGoal: ProjectGoal? { model.currentRepositoryGoals.first { !$0.status.isTerminal } }
@@ -34,7 +38,7 @@ struct ProjectGoalComposerView: View {
         isCreating || model.activeProjectGoalID != nil || model.activeOperation != nil || model.isCodexRunning
     }
     private var steps: [ProjectGoalStepKind] {
-        kind == .custom ? model.projectGoalCandidate?.stepKinds ?? [] : kind.stepKinds
+        ProjectGoal.stepsIncludingVerification(kind == .custom ? model.projectGoalCandidate?.stepKinds ?? [] : kind.stepKinds, command: verification)
     }
     private var valid: Bool {
         guard model.snapshot != nil, activeGoal == nil, !busy else { return false }
@@ -90,6 +94,22 @@ struct ProjectGoalComposerView: View {
                     .disabled(busy)
                     .accessibilityIdentifier("goals.template")
                     fields(palette)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(L10n.text("goal.step.localVerification")).fontWeight(.medium)
+                        ProjectCommandPicker(repository: model.snapshot?.rootURL, command: $verificationDisplay,
+                            onSelect: { verification = $0 })
+                        if let verification {
+                            Text(verification.displayCommand).font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                            Button(L10n.text("action.clear")) { self.verification = nil; verificationDisplay = "" }
+                        }
+                    }
+                    if let source = model.projectGoalSourceDraft {
+                        DisclosureGroup(L10n.text("goal.source.context")) {
+                            Text(source.context).font(.caption).textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                     if !steps.isEmpty {
                         DisclosureGroup(L10n.text("goal.workspace.plan"), isExpanded: $showsPlan) {
                             VStack(alignment: .leading, spacing: 12) {
@@ -125,6 +145,7 @@ struct ProjectGoalComposerView: View {
                         Button {
                             isCreating = true
                             Task {
+                                model.projectGoalVerificationDraft = verification
                                 model.projectGoalCommitMessage = message
                                 model.projectGoalReleaseVersion = version
                                 model.projectGoalReleaseBuildNumber = build

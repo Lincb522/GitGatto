@@ -202,6 +202,37 @@ struct GitHubMarketplaceViewModelTests {
         #expect(model.displayedReleaseNotes(for: release) == "已翻译：Release notes")
     }
 
+    @Test("Translation failure keeps the original application and requested retry language")
+    @MainActor
+    func translationFailureKeepsOriginal() async throws {
+        let fixture = try MarketplaceGitHubFixture()
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("GitGatto-translation-failure-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let model = GitHubMarketplaceViewModel(github: fixture,
+            translationAI: MarketplaceTranslationAIFixture(fails: true),
+            translationStore: MarketplaceTranslationStore(directoryURL: root), automaticallyTranslates: false)
+        model.query = "GitGatto"
+        model.search()
+        await fixture.finishDelayedRelease()
+        let deadline = ContinuousClock.now + .seconds(15)
+        while (model.isLoading || model.isLoadingDetails || model.selectedRelease == nil), ContinuousClock.now < deadline { await Task.yield() }
+        let application = try #require(model.selectedApplication)
+        let release = try #require(model.selectedRelease)
+        let description = model.displayedDescription(for: application)
+        model.translateSelected(to: .german)
+        while model.isTranslating, ContinuousClock.now < deadline { await Task.yield() }
+        #expect(model.translationError != nil)
+        #expect(model.lastTranslationTarget == .german)
+        #expect(model.activeTranslationTarget == nil)
+        #expect(model.displayedDescription(for: application) == description)
+        #expect(model.displayedReleaseNotes(for: release) == release.body)
+        model.translateSelected(to: .german)
+        model.cancelTranslation()
+        await Task.yield()
+        #expect(!model.isTranslating)
+        #expect(model.activeTranslationTarget == nil)
+    }
+
     @Test("Loads each discovery feed with its own GitHub ordering")
     @MainActor
     func loadsDiscoveryFeedsWithExpectedOrdering() async throws {
@@ -278,6 +309,8 @@ struct GitHubMarketplaceViewModelTests {
 }
 
 private actor MarketplaceTranslationAIFixture: CodexServing {
+    let fails: Bool
+    init(fails: Bool = false) { self.fails = fails }
     func probe() async -> CodexAvailability {
         .unavailable
     }
@@ -311,6 +344,7 @@ private actor MarketplaceTranslationAIFixture: CodexServing {
         target: CodexTranslationTarget,
         progress: @escaping @Sendable (_ currentBatch: Int, _ totalBatches: Int) async -> Void
     ) async throws -> String {
+        if fails { throw CodexServiceError.timedOut }
         await progress(1, 1)
         return html
             .replacingOccurrences(of: "Native Git client", with: "原生 Git 客户端")

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import GitGatto
 
@@ -61,4 +62,26 @@ struct AutomaticTranslationPolicyTests {
 
         #expect(target == nil)
     }
+}
+
+extension AutomaticTranslationPolicyTests {
+    @Test func shortAndMixedProse() {
+        #expect(AutomaticTranslationPolicy.target(for: "Try again", preferredTarget: .simplifiedChinese) == .simplifiedChinese)
+        #expect(AutomaticTranslationPolicy.target(for: "保存失败", preferredTarget: .english) == .english)
+        #expect(AutomaticTranslationPolicy.target(for: "这里是项目的中文介绍和详细说明。\nPlease restart the application.", preferredTarget: .simplifiedChinese) == .simplifiedChinese)
+        #expect(AutomaticTranslationPolicy.target(for: "Git", preferredTarget: .simplifiedChinese) == nil)
+        #expect(AutomaticTranslationPolicy.target(for: "`npm install package` https://example.com/readme", preferredTarget: .simplifiedChinese) == nil)
+    }
+    @Test func translationPreservesCodeTermsLinksAndNumbers() {
+        let source = "Install Node.js 22 from [GitHub](https://example.invalid/repo). Use `npm install` and src/main.swift.\n```swift\nlet value = 42\n```\n"
+        let translated = "从 [GitHub](https://example.invalid/repo) 安装 Node.js 22。使用 `npm install` 和 src/main.swift。\n```swift\nlet value = 42\n```\n"
+        #expect(TranslationContentGuard.preservesProtectedContent(source: source, translation: translated))
+        for (before, after) in [("npm install", "npm update"), ("22", "23"), ("GitHub", "代码站"), ("example.invalid", "changed.invalid"), ("value = 42", "value = 43")] {
+            #expect(!TranslationContentGuard.preservesProtectedContent(source: source, translation: translated.replacingOccurrences(of: before, with: after)))
+        }
+        #expect(!TranslationContentGuard.preservesProtectedContent(source: "Try again", translation: "<script>alert(1)</script>再试"))
+        #expect(TranslationContentGuard.preservesProtectedContent(source: "Install Git", translation: "安装Git"))
+        #expect(TranslationContentGuard.preservesProtectedContent(source: "Réessayez", translation: "重试"))
+    }
+
 }
