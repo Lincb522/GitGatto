@@ -94,7 +94,7 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var codexTranslationTarget: CodexTranslationTarget = .simplifiedChinese
     @Published var showsCommitSearch = false
     var settingsDestination: String?
-    @Published var appPreferences: AppPreferences
+    @Published var appPreferences = AppPreferencesStore.load()
     @Published var projectAIConfiguration = AIProviderConfiguration.preset(.codex)
     @Published var translationAIConfiguration = AIProviderConfiguration.preset(.codex)
     @Published private(set) var codexAvailability: CodexAvailability = .checking
@@ -410,7 +410,7 @@ final class WorkspaceViewModel: ObservableObject {
         monitoringEngine: MonitoringEngine = MonitoringEngine(),
         isBackgroundMonitor: Bool = false,
         monitoredRepositories: [URL]? = nil,
-        loadPreferences: @MainActor () -> AppPreferences = { AppPreferencesStore.load() },
+        initialPreferences: AppPreferences? = nil,
         activityLedger: RepositoryActivityLedger = .shared,
         repositoryBackupService: any RepositoryBackupServing = RepositoryBackupService(
             rootURL: AppPreferencesStore.load().repositoryBackupDirectoryURL
@@ -418,7 +418,7 @@ final class WorkspaceViewModel: ObservableObject {
     ) {
         self.isBackgroundMonitor = isBackgroundMonitor
         self.activityLedger = activityLedger
-        self.appPreferences = loadPreferences()
+        if let initialPreferences { self.appPreferences = initialPreferences }
         self.replyDraftStore = replyDraftStore
         self.service = service
         self.codexService = codexService

@@ -28,6 +28,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 120
     env:
+      DEVELOPER_DIR: /Applications/Xcode_26.0.app/Contents/Developer
       CODESIGN_IDENTITY: "Developer ID Application: chengbo lin (7VJKFX4HF8)"
       MACOS_DEVELOPER_ID_P12_BASE64: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
       MACOS_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.MACOS_DEVELOPER_ID_P12_PASSWORD }}

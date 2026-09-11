@@ -6,6 +6,8 @@ GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.6 
 
 `.github/workflows/ci.yml` 在推送到 `main` 与 Pull Request 时执行 `swift build --build-tests`、`swift test` 和一次临时签名打包。发布工作流不重复运行测试，请确保发布标签指向的提交已通过 CI。
 
+CI 与正式发布固定使用 Xcode 26.0，与 `project.yml` 保持一致，不使用运行器默认的 Xcode 16.4。最低系统版本仍为 macOS 14；Swift 6.1.2 在当前模型默认参数的 SIL 生成阶段会崩溃。
+
 ## GitHub Actions 凭据
 
 正式发布由 `.github/workflows/release-macos.yml` 完成。

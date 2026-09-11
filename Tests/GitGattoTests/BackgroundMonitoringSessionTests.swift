@@ -54,7 +54,7 @@ struct BackgroundMonitoringSessionTests {
         preferences.projectGoalMonitoringEnabled = false
         let engine = MonitoringEngine(backgroundService: BackgroundMonitoringService(rootURL: root.appendingPathComponent("activity")))
         let model = WorkspaceViewModel(projectGoalStore: ProjectGoalStore(fileURL: root.appendingPathComponent("goals.json")),
-            monitoringEngine: engine, isBackgroundMonitor: true, monitoredRepositories: [a, b], loadPreferences: { preferences },
+            monitoringEngine: engine, isBackgroundMonitor: true, monitoredRepositories: [a, b], initialPreferences: preferences,
             activityLedger: RepositoryActivityLedger(rootURL: root.appendingPathComponent("ledger")),
             repositoryBackupService: RepositoryBackupService(rootURL: root.appendingPathComponent("backups")))
         await model.startBackgroundMonitoring()
@@ -111,7 +111,7 @@ struct BackgroundMonitoringSessionTests {
             creations += 1
             return WorkspaceViewModel(projectGoalStore: ProjectGoalStore(fileURL: root.appendingPathComponent("goals.json")),
                 monitoringEngine: MonitoringEngine(backgroundService: BackgroundMonitoringService(rootURL: root.appendingPathComponent("activity"))),
-                isBackgroundMonitor: true, monitoredRepositories: [repository], loadPreferences: { preferences },
+                isBackgroundMonitor: true, monitoredRepositories: [repository], initialPreferences: preferences,
                 activityLedger: RepositoryActivityLedger(rootURL: root.appendingPathComponent("ledger")),
                 repositoryBackupService: RepositoryBackupService(rootURL: root.appendingPathComponent("backups")))
         }, didFail: { _ in failures += 1 })
