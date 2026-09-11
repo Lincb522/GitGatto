@@ -3,11 +3,16 @@ import SwiftUI
 
 struct GitGattoApp: App {
     @NSApplicationDelegateAdaptor(GitGattoAppDelegate.self) private var appDelegate
-    @StateObject private var model = WorkspaceViewModel()
+    @StateObject private var model = Self.makeWorkspaceModel()
     @StateObject private var appNavigation = AppNavigationModel()
     @StateObject private var updateManager = AppUpdateManager()
     @State private var showsLaunchAnimation: Bool
     @State private var isWorkspaceReady = false
+
+    // Keep default argument lowering out of StateObject's autoclosure for Swift 6.1.
+    private static func makeWorkspaceModel() -> WorkspaceViewModel {
+        WorkspaceViewModel()
+    }
 
     init() {
         let preferences = AppPreferencesStore.load()
