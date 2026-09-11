@@ -1,5 +1,11 @@
 ## Fixed
 
-- Fixed undersized and off-center icons on high-resolution displays. Corrected icon sizes in lists, tool cards, the menu bar and buttons to fit their available space without clipping.
-- Fixed incomplete background coverage while translating and extra scaling that made default development-tool icons too small.
-- When automatic update checks are enabled, the app now checks on launch without waiting for repositories to load. Refreshing release notes no longer changes the last update-check time.
+- Fixed page reinitialization that caused stuttering when switching themes and reloaded content when switching between light and dark appearances.
+- Fixed missing dark-mode images in READMEs. Color changes now preserve the reading position and expanded sections.
+- Fixed raw image tags appearing in issue descriptions and replies. Images fit the available width and can be clicked to open the original.
+- Fixed author avatars appearing as application icons in the catalog and details. Applications now use their own icons, with a default icon when none is available.
+- Fixed some README and application-description translations being incorrectly rejected as incomplete. Headings, code formatting, links and numbers are preserved; content that fails validation is retried once.
+
+## Improved
+
+- Application icons load on demand, and the list and details reuse the same result to avoid duplicate requests.
