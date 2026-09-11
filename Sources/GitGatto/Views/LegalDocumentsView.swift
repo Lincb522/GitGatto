@@ -24,8 +24,7 @@ struct LegalDocumentsView: View {
                             navigation.selectedLegalDocument = document
                         } label: {
                             HStack(spacing: 10) {
-                                Image(gattoSymbol: document.icon)
-                                    .font(.system(size: 12.5, weight: .semibold))
+                                Image(gattoSymbol: document.icon, pointSize: 12.5)
                                     .frame(width: 18)
                                 Text(L10n.text(document.titleKey))
                                     .font(.system(size: 12, weight: navigation.selectedLegalDocument == document ? .semibold : .medium))

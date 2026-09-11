@@ -19,8 +19,7 @@ struct RepositoryDiagnosticsView: View {
                 GattoLoadingState(text: L10n.text("loading.generic"))
             } else {
                 VStack(spacing: 9) {
-                    Image(gattoSymbol: "stethoscope")
-                        .font(.system(size: 22, weight: .medium))
+                    Image(gattoSymbol: "stethoscope", pointSize: 22)
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("diagnostics.empty"))
                         .font(font(size: 12, weight: .medium))
@@ -333,8 +332,7 @@ private struct DiagnosticPanel<Content: View>: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Image(gattoSymbol: icon)
-                    .font(.system(size: 11.5, weight: .semibold))
+                Image(gattoSymbol: icon, pointSize: 11.5)
                     .foregroundStyle(status.color(palette))
                 Text(L10n.text(titleKey))
                     .font(.system(size: 12, weight: .semibold, design: theme == .console ? .monospaced : .default))

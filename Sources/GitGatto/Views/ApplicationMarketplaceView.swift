@@ -41,7 +41,7 @@ struct ApplicationMarketplaceView: View {
 
                 Button { model.search() } label: {
                     if compact {
-                        Image(gattoSymbol: "magnifyingglass")
+                        Image(gattoSymbol: "magnifyingglass", pointSize: 16)
                             .frame(width: 16, height: 16)
                     } else {
                         Text(L10n.text("github.action.search"))
@@ -148,8 +148,7 @@ struct ApplicationMarketplaceView: View {
                 GattoLoadingState(text: L10n.text("marketplace.loading"))
             } else if model.applications.isEmpty {
                 VStack(spacing: 9) {
-                    Image(gattoSymbol: applicationEmptyIcon)
-                        .font(.system(size: 22))
+                    Image(gattoSymbol: applicationEmptyIcon, pointSize: 22)
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text(applicationEmptyKey))
                         .font(.system(size: 12.5, weight: .medium))
@@ -204,8 +203,7 @@ struct ApplicationMarketplaceView: View {
                         )
                     } label: {
                         HStack(spacing: 4) {
-                            Image(gattoSymbol: collection.symbolName)
-                                .font(.system(size: 11, weight: .semibold))
+                            Image(gattoSymbol: collection.symbolName, pointSize: 11)
                             Text(L10n.text("marketplace.collection.\(collection.rawValue)"))
                                 .font(.system(size: 10, weight: .semibold))
                                 .lineLimit(1)
@@ -527,9 +525,8 @@ struct ApplicationMarketplaceView: View {
                             ) {
                                 ForEach(details.features, id: \.self) { feature in
                                     HStack(alignment: .top, spacing: 9) {
-                                        Image(gattoSymbol: "checkmark.circle.fill")
+                                        Image(gattoSymbol: "checkmark.circle.fill", pointSize: 13)
                                             .foregroundStyle(palette.primary)
-                                            .font(.system(size: 13, weight: .semibold))
                                         Text(feature)
                                             .font(.system(size: 12.5))
                                             .foregroundStyle(palette.ink)

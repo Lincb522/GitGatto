@@ -7,6 +7,165 @@ import Sparkle
 @Suite("Workflow completion rendering", .serialized)
 @MainActor
 struct WorkflowCompletionRenderingTests {
+    @Test("Animated action and status icons retain their content area across themes")
+    func motionIconContainers() async throws {
+        let previousTheme = UserDefaults.standard.object(forKey: AppStyleDefaults.themeKey)
+        let previousLanguage = AppPreferencesStore.load().language
+        defer {
+            UserDefaults.standard.set(previousTheme, forKey: AppStyleDefaults.themeKey)
+            L10n.activate(previousLanguage)
+        }
+        for theme in AppVisualTheme.allCases {
+            UserDefaults.standard.set(theme.rawValue, forKey: AppStyleDefaults.themeKey)
+            for (width, language, scheme) in [(420, AppLanguage.simplifiedChinese, ColorScheme.light), (900, .english, .dark)] {
+                let content = VStack(alignment: .leading, spacing: 24) {
+                    HStack(spacing: 20) {
+                        CloneActionButton(title: "Clone", activeTitle: "Cloning", systemImage: "arrow.down",
+                            isActive: true, isDisabled: false, action: {})
+                        Button(action: {}) {
+                            SubmitMotionLabel(title: "Commit", activeTitle: "Committing", systemImage: "checkmark", isActive: true)
+                        }.buttonStyle(PrimaryButtonStyle())
+                    }
+                    ReadmeRewriteMotionLabel(title: "Writing README", isActive: true)
+                    FlatAgentResolveButton(title: "Agent", isDisabled: false, action: {})
+                    HStack(spacing: 24) {
+                        ForEach([AppDownloadState.queued, .downloading, .paused, .completed], id: \.rawValue) { state in
+                            CircularDownloadIndicator(state: state, progress: state == .queued ? 0 : state == .completed || state == .installed ? 1 : 0.62)
+                        }
+                    }
+                    HStack(spacing: 24) {
+                        ForEach([AppDownloadState.installed, .failed, .cancelled, .installing], id: \.rawValue) { state in
+                            CircularDownloadIndicator(state: state, progress: state == .queued ? 0 : state == .completed || state == .installed ? 1 : 0.62)
+                        }
+                    }
+                    HStack(spacing: 24) {
+                        ConnectivityMotionGlyph(state: .checking)
+                        ConnectivityMotionGlyph(state: .available)
+                        ConnectivityMotionGlyph(state: .unavailable)
+                    }
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                try renderSwiftUI(content, name: "motion-icons-\(theme.rawValue)-\(width)",
+                    width: width, height: 420, language: language, scheme: scheme)
+            }
+        }
+    }
+
+    @Test("Translation state styling covers the complete button in every theme")
+    func translationButtonCoverage() async throws {
+        let previousTheme = UserDefaults.standard.object(forKey: AppStyleDefaults.themeKey)
+        let previousLanguage = AppPreferencesStore.load().language
+        defer {
+            UserDefaults.standard.set(previousTheme, forKey: AppStyleDefaults.themeKey)
+            L10n.activate(previousLanguage)
+        }
+        let cases: [(Int, AppLanguage, ColorScheme, Bool)] = [
+            (420, .simplifiedChinese, .light, false),
+            (900, .german, .dark, false),
+            (420, .arabic, .dark, true),
+            (900, .english, .light, true)
+        ]
+        let fallback = try #require(DevelopmentTool.catalog.first { $0.id == "lazygit" })
+        let branded = try #require(DevelopmentTool.catalog.first { $0.id == "git" })
+        for theme in AppVisualTheme.allCases {
+            UserDefaults.standard.set(theme.rawValue, forKey: AppStyleDefaults.themeKey)
+            for (width, language, scheme, largeText) in cases {
+                L10n.activate(language)
+                let active = translationControls(state: "loading")
+                    .environment(\.colorScheme, scheme)
+                let host = NSHostingView(rootView: active.fixedSize())
+                let size = host.fittingSize
+                #expect(abs(size.height - 34) < 0.5)
+                #expect(size.width <= CGFloat(width - 48))
+
+                let content = VStack(alignment: .leading, spacing: 18) {
+                    DocumentTranslationActionLabel(title: "", activeTitle: L10n.text("codex.status.translating"),
+                        isActive: true, showsCancelIndicator: true)
+                        .fixedSize()
+                    ForEach(["original", "translated", "loading", "failed", "disabled"], id: \.self) { state in
+                        translationControls(state: state)
+                    }
+                    HStack(spacing: 24) {
+                        ForEach([CGFloat(31), 46], id: \.self) { logoSize in
+                            DevelopmentToolLogoView(tool: fallback, size: logoSize, fallbackColor: AppPalette(scheme).ink)
+                            DevelopmentToolLogoView(tool: branded, size: logoSize, fallbackColor: AppPalette(scheme).ink)
+                        }
+                        ToolbarIconButton(systemName: "arrow.clockwise", helpKey: "action.refresh", action: {})
+                        GattoIcon(symbol: "arrow.down", size: 19)
+                        GattoIcon(symbol: "arrow.up", size: 19)
+                    }
+                }
+                .dynamicTypeSize(largeText ? .accessibility1 : .large)
+                .padding(24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                try await render(content, name: "icon-translation-\(theme.rawValue)-\(width)-\(language.rawValue)",
+                    width: width, height: 380, language: language, scheme: scheme)
+                // NSView.cacheDisplay omits transforms from nested animation layers.
+                // Render the SwiftUI label directly to verify its actual glyph placement.
+                let label = DocumentTranslationActionLabel(title: "", activeTitle: L10n.text("codex.status.translating"),
+                    isActive: true, showsCancelIndicator: true)
+                    .fixedSize()
+                    .padding(24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                let bitmap = try renderSwiftUI(label, name: "translation-glyph-\(theme.rawValue)-\(width)-\(language.rawValue)",
+                    width: width, height: 82, language: language, scheme: scheme)
+                let scale = CGFloat(bitmap.pixelsWide) / CGFloat(width)
+                let originX = language == .arabic ? CGFloat(width - 24 - 34) : 24
+                let ink = try #require(NSColor(AppPalette(scheme).onPrimary).usingColorSpace(.deviceRGB))
+                var points: [CGPoint] = []
+                for y in Int(30 * scale)..<Int(52 * scale) {
+                    for x in Int((originX + 6) * scale)..<Int((originX + 28) * scale) {
+                        guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
+                        if abs(color.redComponent - ink.redComponent) < 0.15,
+                           abs(color.greenComponent - ink.greenComponent) < 0.15,
+                           abs(color.blueComponent - ink.blueComponent) < 0.15 {
+                            points.append(CGPoint(x: (CGFloat(x) + 0.5) / scale, y: (CGFloat(y) + 0.5) / scale))
+                        }
+                    }
+                }
+                let minX = try #require(points.map(\.x).min()), maxX = try #require(points.map(\.x).max())
+                let minY = try #require(points.map(\.y).min()), maxY = try #require(points.map(\.y).max())
+                #expect(abs((minX + maxX) / 2 - (originX + 17)) < 2)
+                #expect(abs((minY + maxY) / 2 - 41) < 2)
+            }
+        }
+    }
+
+    @discardableResult
+    private func renderSwiftUI<Content: View>(_ content: Content, name: String, width: Int, height: Int,
+        language: AppLanguage, scheme: ColorScheme) throws -> NSBitmapImageRep {
+        let view = content
+            .environment(\.colorScheme, scheme)
+            .environment(\.locale, Locale(identifier: language.rawValue))
+            .environment(\.layoutDirection, language == .arabic ? .rightToLeft : .leftToRight)
+            .frame(width: CGFloat(width), height: CGFloat(height))
+            .background(AppPalette(scheme).background)
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 2
+        let bitmap = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        #expect(bitmap.pixelsWide == width * 2)
+        #expect(bitmap.pixelsHigh == height * 2)
+        if let directory = ProcessInfo.processInfo.environment["GITGATTO_COMPLETION_SNAPSHOTS"] {
+            let root = URL(fileURLWithPath: directory)
+            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+            try #require(bitmap.representation(using: .png, properties: [:]))
+                .write(to: root.appendingPathComponent(name + ".png"))
+        }
+        return bitmap
+    }
+
+    private func translationControls(state: String) -> DocumentTranslationControls {
+        DocumentTranslationControls(
+            activeTarget: state == "translated" ? .english : nil,
+            availableTargets: [.english, .simplifiedChinese], preferredTarget: .english,
+            isTranslating: state == "loading", isDisabled: state == "disabled",
+            error: state == "failed" ? "Fixture translation failed" : nil, completionID: nil,
+            showOriginal: {}, showTranslation: { _ in }, translate: { _ in }, cancel: {},
+            progressTitle: L10n.text("codex.status.translating") + " · 12 / 120"
+        )
+    }
+
     @Test func translationReceiptAndUpdateStates() async throws {
         let prior = AppPreferencesStore.load().language
         defer { L10n.activate(prior) }
@@ -184,8 +343,9 @@ struct WorkflowCompletionRenderingTests {
         #expect(usage.recent.first == "section." + WorkspaceSection.allCases[1].rawValue)
     }
 
+    @discardableResult
     private func render<Content: View>(_ content: Content, name: String, width: Int, height: Int,
-                                      language: AppLanguage, scheme: ColorScheme, scrollToBottom: Bool = false, waitForScrollContent: Bool = false) async throws {
+                                      language: AppLanguage, scheme: ColorScheme, scrollToBottom: Bool = false, waitForScrollContent: Bool = false) async throws -> NSBitmapImageRep {
         L10n.activate(language)
         let directory = ProcessInfo.processInfo.environment["GITGATTO_COMPLETION_SNAPSHOTS"]
         let view = content.environment(\.colorScheme, scheme).environment(\.locale, Locale(identifier: language.rawValue))
@@ -243,5 +403,6 @@ struct WorkflowCompletionRenderingTests {
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
             try png.write(to: root.appendingPathComponent(name + ".png"))
         }
+        return image
     }
 }

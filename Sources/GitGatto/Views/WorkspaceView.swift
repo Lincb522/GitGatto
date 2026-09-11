@@ -769,7 +769,7 @@ private struct RepositoryTopBar: View {
                     Button(tool.title) { model.projectTool = tool }
                         .disabled(tool != .search && model.snapshot == nil)
                 }
-            } label: { Image(gattoSymbol: "command").font(.system(size: 17)) }
+            } label: { Image(gattoSymbol: "command", pointSize: 17) }
             .menuStyle(.borderlessButton).fixedSize().help(L10n.text("tools.title"))
             .accessibilityLabel(L10n.text("tools.title"))
             if activeCommands > 0 {
@@ -849,13 +849,11 @@ private struct BranchQuickSwitcher: View {
             showsBranches.toggle()
         } label: {
             HStack(spacing: 6) {
-                Image(gattoSymbol: "arrow.triangle.branch")
-                    .font(.system(size: 10.5, weight: .semibold))
+                Image(gattoSymbol: "arrow.triangle.branch", pointSize: 10.5)
                 Text(snapshot.branchName)
                     .font(.system(size: 11.5, weight: .medium, design: .monospaced))
                     .lineLimit(1)
-                Image(gattoSymbol: "chevron.down")
-                    .font(.system(size: 8.5, weight: .bold))
+                Image(gattoSymbol: "chevron.down", pointSize: 8.5)
                     .foregroundStyle(palette.subtleInk)
             }
             .foregroundStyle(palette.accent)
@@ -878,8 +876,7 @@ private struct BranchQuickSwitcher: View {
                             Task { await model.switchBranch(to: branch.name) }
                         } label: {
                             HStack(spacing: 9) {
-                                Image(gattoSymbol: "arrow.triangle.branch")
-                                    .font(.system(size: 10.5, weight: .semibold))
+                                Image(gattoSymbol: "arrow.triangle.branch", pointSize: 10.5)
                                     .foregroundStyle(branch.name == snapshot.branchName ? palette.primary : palette.subtleInk)
                                     .frame(width: 18)
                                 Text(branch.name)
@@ -888,8 +885,7 @@ private struct BranchQuickSwitcher: View {
                                     .lineLimit(1)
                                 Spacer(minLength: 8)
                                 if branch.name == snapshot.branchName {
-                                    Image(gattoSymbol: "checkmark")
-                                        .font(.system(size: 10, weight: .bold))
+                                    Image(gattoSymbol: "checkmark", pointSize: 10)
                                         .foregroundStyle(palette.primary)
                                 }
                             }
@@ -1179,8 +1175,7 @@ private struct WelcomeView: View {
                                         .truncationMode(.middle)
                                 }
                                 Spacer()
-                                Image(gattoSymbol: "chevron.right")
-                                    .font(.system(size: 10, weight: .semibold))
+                                Image(gattoSymbol: "chevron.right", pointSize: 10)
                                     .foregroundStyle(palette.subtleInk)
                             }
                             .font(.system(size: 12.5, weight: .medium))

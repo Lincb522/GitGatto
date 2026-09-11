@@ -152,8 +152,7 @@ struct GitHubActionsCenterView: View {
             }
         } else {
             VStack(spacing: 9) {
-                Image(gattoSymbol: "play.circle")
-                    .font(.system(size: 22))
+                Image(gattoSymbol: "play.circle", pointSize: 22)
                     .foregroundStyle(palette.subtleInk)
                 Text(L10n.text("github.actions.selection.empty"))
                     .font(font(size: 12, weight: .medium))
@@ -334,8 +333,7 @@ struct GitHubActionsCenterView: View {
 
     private func emptyState(_ palette: AppPalette) -> some View {
         VStack(spacing: 11) {
-            Image(gattoSymbol: "play.circle")
-                .font(.system(size: 24, weight: .medium))
+            Image(gattoSymbol: "play.circle", pointSize: 24)
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text("github.actions.empty"))
                 .font(font(size: 12.5, weight: .medium))
@@ -352,8 +350,7 @@ struct GitHubActionsCenterView: View {
 
     private func errorState(_ error: String, palette: AppPalette) -> some View {
         VStack(spacing: 11) {
-            Image(gattoSymbol: "exclamationmark.triangle.fill")
-                .font(.system(size: 21))
+            Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 21)
                 .foregroundStyle(palette.danger)
             Text(error)
                 .font(font(size: 11.5, weight: .medium))

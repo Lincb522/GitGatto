@@ -17,8 +17,7 @@ struct FlatAgentResolveButton: View {
             TimelineView(.animation(minimumInterval: 1.0 / 24.0, paused: reduceMotion || isDisabled)) { context in
                 let elapsed = reduceMotion || isDisabled ? 0 : context.date.timeIntervalSince(startedAt)
                 HStack(spacing: 8) {
-                    Image(gattoSymbol: "sparkles")
-                        .font(.system(size: 12.5, weight: .semibold))
+                    Image(gattoSymbol: "sparkles", pointSize: 12.5)
                         .opacity(reduceMotion ? 1 : 0.64 + 0.36 * wave(elapsed * 1.7))
 
                     if layoutDirection == .rightToLeft {
@@ -396,8 +395,7 @@ struct CloneActionButton: View {
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, 10)
                     } else {
-                        Image(gattoSymbol: systemImage)
-                            .font(.system(size: compact ? 11.5 : 13, weight: .bold))
+                        Image(gattoSymbol: systemImage, pointSize: compact ? 11.5 : 13)
                             .foregroundStyle(isExpanded ? palette.onPrimary : palette.primary)
                     }
                 }
@@ -460,8 +458,7 @@ struct CloneActivityGlyph: View {
     }
 
     private func glyph(offset: CGFloat, opacity: Double) -> some View {
-        Image(gattoSymbol: systemImage)
-            .font(.system(size: 10.5, weight: .bold))
+        Image(gattoSymbol: systemImage, pointSize: 10.5)
             .foregroundStyle(tint)
             .offset(y: offset)
             .opacity(opacity)
@@ -612,8 +609,7 @@ struct CircularDownloadIndicator: View {
     private func centerContent(_ palette: AppPalette) -> some View {
         switch state {
         case .queued:
-            Image(gattoSymbol: "arrow.down")
-                .font(.system(size: size * 0.28, weight: .bold))
+            Image(gattoSymbol: "arrow.down", pointSize: size * 0.28)
                 .foregroundStyle(palette.primary)
         case .downloading:
             Text("\(Int(displayedProgress * 100))")
@@ -622,30 +618,24 @@ struct CircularDownloadIndicator: View {
                 .foregroundStyle(displayedProgress > 0.48 ? Color.white : palette.ink)
                 .contentTransition(.numericText())
         case .paused:
-            Image(gattoSymbol: "pause")
-                .font(.system(size: size * 0.24, weight: .bold))
+            Image(gattoSymbol: "pause", pointSize: size * 0.24)
                 .foregroundStyle(palette.warning)
         case .completed:
-            Image(gattoSymbol: "checkmark")
-                .font(.system(size: size * 0.27, weight: .bold))
+            Image(gattoSymbol: "checkmark", pointSize: size * 0.27)
                 .foregroundStyle(Color.white)
                 .transition(.scale.combined(with: .opacity))
         case .installed:
-            Image(gattoSymbol: "checkmark.seal.fill")
-                .font(.system(size: size * 0.27, weight: .bold))
+            Image(gattoSymbol: "checkmark.seal.fill", pointSize: size * 0.27)
                 .foregroundStyle(palette.success)
                 .transition(.scale.combined(with: .opacity))
         case .failed:
-            Image(gattoSymbol: "exclamationmark")
-                .font(.system(size: size * 0.28, weight: .bold))
+            Image(gattoSymbol: "exclamationmark", pointSize: size * 0.28)
                 .foregroundStyle(palette.danger)
         case .cancelled:
-            Image(gattoSymbol: "xmark")
-                .font(.system(size: size * 0.24, weight: .bold))
+            Image(gattoSymbol: "xmark", pointSize: size * 0.24)
                 .foregroundStyle(palette.danger)
         case .installing:
-            Image(gattoSymbol: "arrow.down.app")
-                .font(.system(size: size * 0.25, weight: .bold))
+            Image(gattoSymbol: "arrow.down.app", pointSize: size * 0.25)
                 .foregroundStyle(palette.primary)
                 .symbolEffect(.pulse, options: reduceMotion ? .nonRepeating : .repeating)
         }
@@ -702,7 +692,7 @@ struct SubmitMotionLabel: View {
                     .transition(.scale(scale: 0.72).combined(with: .opacity))
             } else {
                 HStack(spacing: 8) {
-                    Image(gattoSymbol: systemImage)
+                    Image(gattoSymbol: systemImage, pointSize: 16)
                         .frame(width: 16, height: 16)
                     Text(title)
                         .lineLimit(1)
@@ -1059,8 +1049,7 @@ struct AddSelectionMotionLabel: View {
                             .opacity(lastSelectedCount > 0 ? 0.9 : 0)
                     }
 
-                    Image(gattoSymbol: "plus")
-                        .font(.system(size: 12, weight: .bold))
+                    Image(gattoSymbol: "plus", pointSize: 12)
                         .rotationEffect(.degrees(isGathering ? 45 : 0))
                         .scaleEffect(isGathering ? 1.16 : 1)
                 }
@@ -1203,8 +1192,7 @@ struct ComposerToolsButton: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            Image(gattoSymbol: "plus")
-                .font(.system(size: 12.5, weight: .bold))
+            Image(gattoSymbol: "plus", pointSize: 12.5)
                 .foregroundStyle(isExpanded ? palette.primary : palette.mutedInk)
                 .rotationEffect(.degrees(isExpanded ? 45 : 0))
                 .scaleEffect(isExpanded ? 1.08 : 1)

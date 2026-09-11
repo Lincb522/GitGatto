@@ -77,11 +77,13 @@ render_icon 512 icon_512x512.png
 render_icon 1024 icon_512x512@2x.png
 iconutil -c icns "$ICON_WORK" -o "$APP/Contents/Resources/AppIcon.icns"
 
-/usr/bin/python3 - "$APP/Contents/Info.plist" "$VERSION" "$BUILD" "$FEED_URL" "$SPARKLE_PUBLIC_KEY" <<'PY'
+/usr/bin/python3 - "$APP/Contents/Info.plist" "$VERSION" "$BUILD" "$FEED_URL" "$SPARKLE_PUBLIC_KEY" "$ROOT/Config/GitGatto-Info.plist" <<'PY'
 import plistlib
 import sys
 
-path, version, build, feed_url, sparkle_public_key = sys.argv[1:]
+path, version, build, feed_url, sparkle_public_key, defaults_path = sys.argv[1:]
+with open(defaults_path, "rb") as handle:
+    defaults = plistlib.load(handle)
 info = {
     "CFBundleExecutable": "GitGatto",
     "CFBundleIdentifier": "dev.gitgatto.client",
@@ -103,8 +105,8 @@ info = {
     ),
     "NSHighResolutionCapable": True,
     "SUFeedURL": feed_url,
-    "SUEnableAutomaticChecks": False,
-    "SUAutomaticallyUpdate": False,
+    "SUEnableAutomaticChecks": defaults["SUEnableAutomaticChecks"],
+    "SUAutomaticallyUpdate": defaults["SUAutomaticallyUpdate"],
 }
 if sparkle_public_key:
     info["SUPublicEDKey"] = sparkle_public_key

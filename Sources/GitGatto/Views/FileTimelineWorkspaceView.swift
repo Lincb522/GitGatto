@@ -108,8 +108,7 @@ struct FileTimelineWorkspaceView: View {
             }
             Spacer(minLength: 12)
             HStack(spacing: 8) {
-                Image(gattoSymbol: "magnifyingglass")
-                    .font(.system(size: 11, weight: .medium))
+                Image(gattoSymbol: "magnifyingglass", pointSize: 11)
                     .foregroundStyle(palette.subtleInk)
                 TextField(L10n.text("file_timeline.search"), text: $model.fileTimelineQuery)
                     .textFieldStyle(.plain)
@@ -245,8 +244,7 @@ struct FileTimelineWorkspaceView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                     .fill(palette.primarySoft)
-                Image(gattoSymbol: FileTimelineFileRow.icon(for: file.fileExtension))
-                    .font(.system(size: 13, weight: .semibold))
+                Image(gattoSymbol: FileTimelineFileRow.icon(for: file.fileExtension), pointSize: 13)
                     .foregroundStyle(palette.primary)
             }
             .frame(width: 34, height: 34)
@@ -388,8 +386,7 @@ struct FileTimelineWorkspaceView: View {
 
     private func timelineEmpty(_ image: String, key: String, palette: AppPalette) -> some View {
         VStack(spacing: 8) {
-            Image(gattoSymbol: image)
-                .font(.system(size: 20, weight: .medium))
+            Image(gattoSymbol: image, pointSize: 20)
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text(key))
                 .font(font(size: 11.5, weight: .medium))
@@ -417,8 +414,7 @@ private struct FileTimelineFileRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 9) {
-                Image(gattoSymbol: Self.icon(for: file.fileExtension))
-                    .font(.system(size: 11.5, weight: .medium))
+                Image(gattoSymbol: Self.icon(for: file.fileExtension), pointSize: 11.5)
                     .foregroundStyle(selected ? palette.primary : palette.mutedInk)
                     .frame(width: 18)
                 VStack(alignment: .leading, spacing: 3) {

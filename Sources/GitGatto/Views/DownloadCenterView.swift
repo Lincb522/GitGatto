@@ -44,8 +44,7 @@ struct DownloadCenterView: View {
                 ScrollView { DeveloperToolTaskList(model: tools).padding(14) }
             } else if manager.records.isEmpty {
                 VStack(spacing: 10) {
-                    Image(gattoSymbol: "tray.and.arrow.down")
-                        .font(.system(size: 24, weight: .medium))
+                    Image(gattoSymbol: "tray.and.arrow.down", pointSize: 24)
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("downloads.empty"))
                         .font(.system(size: 12.5, weight: .medium))
@@ -218,8 +217,7 @@ struct DownloadCenterView: View {
 
     private func miniButton(_ key: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(gattoSymbol: icon)
-                .font(.system(size: 10.5, weight: .semibold))
+            Image(gattoSymbol: icon, pointSize: 10.5)
                 .frame(width: 25, height: 25)
         }
         .buttonStyle(.plain)

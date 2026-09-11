@@ -190,8 +190,7 @@ struct AppSettingsView: View {
                     ForEach(filteredPages) { page in
                         Button { select(page) } label: {
                             HStack(spacing: 10) {
-                                Image(gattoSymbol: page.icon)
-                                    .font(.system(size: 14, weight: .medium))
+                                Image(gattoSymbol: page.icon, pointSize: 14)
                                     .frame(width: 22)
                                 Text(L10n.text(page.titleKey))
                                     .font(.system(size: 12.5, weight: selectedPage == page ? .semibold : .medium,
@@ -225,8 +224,7 @@ struct AppSettingsView: View {
                         Group {
                             if iconLabels {
                                 VStack(spacing: 7) {
-                                    Image(gattoSymbol: page.icon)
-                                        .font(.system(size: 20, weight: .regular))
+                                    Image(gattoSymbol: page.icon, pointSize: 20)
                                     Text(L10n.text(page.titleKey))
                                         .font(.system(size: 11.5, weight: selectedPage == page ? .semibold : .medium))
                                 }
@@ -234,7 +232,7 @@ struct AppSettingsView: View {
                                 .frame(minWidth: 78, minHeight: 64)
                             } else {
                                 HStack(spacing: 7) {
-                                    Image(gattoSymbol: page.icon).font(.system(size: 12))
+                                    Image(gattoSymbol: page.icon, pointSize: 12)
                                     Text(L10n.text(page.titleKey)).font(.system(size: 12, weight: .medium))
                                 }
                                 .padding(.horizontal, 14)
@@ -290,8 +288,7 @@ struct AppSettingsView: View {
                         select(page)
                     } label: {
                         HStack(spacing: 8) {
-                            Image(gattoSymbol: page.icon)
-                                .font(.system(size: 14, weight: .medium))
+                            Image(gattoSymbol: page.icon, pointSize: 14)
                                 .frame(width: 20, height: 20)
                             Text(L10n.text(page.titleKey))
                                 .font(.system(size: 12.5, weight: selectedPage == page ? .semibold : .medium))
@@ -342,8 +339,7 @@ struct AppSettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 if includesPageTitle {
                     HStack(spacing: 10) {
-                        Image(gattoSymbol: selectedPage.icon)
-                            .font(.system(size: 13, weight: .semibold))
+                        Image(gattoSymbol: selectedPage.icon, pointSize: 13)
                             .foregroundStyle(palette.primary)
                             .frame(width: 30, height: 30)
                             .background(palette.primarySoft)
@@ -909,8 +905,7 @@ private struct AccentChoiceButton: View {
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 if isSelected {
-                    Image(gattoSymbol: "checkmark")
-                        .font(.system(size: 9.5, weight: .bold))
+                    Image(gattoSymbol: "checkmark", pointSize: 9.5)
                         .foregroundStyle(palette.primary)
                 }
             }
@@ -1147,8 +1142,7 @@ struct GitHubAccountSettings: View {
     private var accountIdentity: some View {
         let palette = AppPalette(colorScheme)
         return HStack(alignment: .center, spacing: 16) {
-            Image(gattoSymbol: model.githubAccount == nil ? "person.crop.circle" : "checkmark.circle.fill")
-                .font(.system(size: 15, weight: .semibold))
+            Image(gattoSymbol: model.githubAccount == nil ? "person.crop.circle" : "checkmark.circle.fill", pointSize: 15)
                 .foregroundStyle(model.githubAccount == nil ? palette.subtleInk : palette.success)
                 .frame(width: 32, height: 32)
                 .background(palette.raisedSurface)
@@ -1443,8 +1437,7 @@ private struct RecoverySettingsPage: View {
             }
 
             HStack(spacing: 10) {
-                Image(gattoSymbol: "externaldrive")
-                    .font(.system(size: 15, weight: .semibold))
+                Image(gattoSymbol: "externaldrive", pointSize: 15)
                     .foregroundStyle(palette.accent)
                     .frame(width: 34, height: 34)
                     .background(palette.accentSoft)

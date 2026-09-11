@@ -5,6 +5,34 @@ import Testing
 
 @Suite("App update configuration")
 struct AppUpdateManagerTests {
+    @Test("New installations enable checking without opting into automatic installation")
+    func automaticCheckDefaults() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let data = try Data(contentsOf: root.appendingPathComponent("Config/GitGatto-Info.plist"))
+        let info = try #require(PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+        #expect(info["SUEnableAutomaticChecks"] as? Bool == true)
+        #expect(info["SUAutomaticallyUpdate"] as? Bool == false)
+    }
+
+    @MainActor
+    @Test("Automatic and manual Sparkle checks update the same visible state and timestamp")
+    func checkLifecycle() throws {
+        let controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
+        for kind in [SPUUpdateCheck.updatesInBackground, .updates] {
+            let manager = AppUpdateManager()
+            manager.recordUpdateFailure(NSError(domain: SUSparkleErrorDomain, code: 2001))
+            let before = Date()
+            try manager.updater(controller.updater, mayPerform: kind)
+            #expect(manager.state == .checking)
+            #expect(manager.stage == .checking)
+            #expect(manager.diagnostic == nil)
+            #expect(try #require(manager.lastCheckedAt) >= before)
+            manager.updaterDidNotFindUpdate(controller.updater, error: NSError(domain: SUSparkleErrorDomain,
+                code: Int(SUError.noUpdateError.rawValue)))
+            #expect(manager.state == .current)
+        }
+    }
+
     @Test("Uses the HTTPS GitHub release feed")
     @MainActor
     func validatesFeedConfiguration() {

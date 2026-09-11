@@ -194,8 +194,7 @@ struct RepositorySidebar: View {
                     localRepositoriesExpanded.toggle()
                 } label: {
                     HStack(spacing: 7) {
-                        Image(gattoSymbol: localRepositoriesExpanded ? "chevron.down" : "chevron.right")
-                            .font(.system(size: 9, weight: .bold))
+                        Image(gattoSymbol: localRepositoriesExpanded ? "chevron.down" : "chevron.right", pointSize: 9)
                             .frame(width: 12)
                         Text(L10n.text("sidebar.repositories"))
                             .font(.system(size: 10.5, weight: .semibold))
@@ -245,8 +244,7 @@ struct RepositorySidebar: View {
                                     .foregroundStyle(palette.subtleInk)
                             }
                             Spacer(minLength: 4)
-                            Image(gattoSymbol: "chevron.right")
-                                .font(.system(size: 9.5, weight: .semibold))
+                            Image(gattoSymbol: "chevron.right", pointSize: 9.5)
                                 .foregroundStyle(palette.subtleInk)
                         }
                         .padding(.horizontal, 8)
@@ -367,8 +365,7 @@ struct RepositorySidebar: View {
                 setRepositorySection(section.kind, expanded: !isExpanded)
             } label: {
                 HStack(spacing: 6) {
-                    Image(gattoSymbol: isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 8.5, weight: .bold))
+                    Image(gattoSymbol: isExpanded ? "chevron.down" : "chevron.right", pointSize: 8.5)
                         .frame(width: 11)
                     Text(L10n.text(section.kind.titleKey))
                         .font(.system(size: 9.5, weight: .semibold))
@@ -397,8 +394,7 @@ struct RepositorySidebar: View {
                         }
                     } label: {
                         HStack(spacing: 5) {
-                            Image(gattoSymbol: isFullyExpanded ? "chevron.compact.up" : "chevron.down")
-                                .font(.system(size: 9, weight: .semibold))
+                            Image(gattoSymbol: isFullyExpanded ? "chevron.compact.up" : "chevron.down", pointSize: 9)
                             Text(
                                 isFullyExpanded
                                     ? L10n.text("sidebar.repositories.show_less")
@@ -579,8 +575,7 @@ struct RepositorySidebar: View {
             isExpanded.wrappedValue.toggle()
         } label: {
             HStack(spacing: 7) {
-                Image(gattoSymbol: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 9, weight: .bold))
+                Image(gattoSymbol: isExpanded.wrappedValue ? "chevron.down" : "chevron.right", pointSize: 9)
                     .frame(width: 12)
                 Text(L10n.text(titleKey))
                     .font(.system(size: 10.5, weight: .semibold))
@@ -735,8 +730,7 @@ struct RepositorySidebar: View {
         Button {
             isCollapsed.toggle()
         } label: {
-            Image(gattoSymbol: collapsed ? "chevron.right" : "chevron.left")
-                .font(.system(size: 11.5, weight: .semibold))
+            Image(gattoSymbol: collapsed ? "chevron.right" : "chevron.left", pointSize: 11.5)
                 .foregroundStyle(palette.mutedInk)
                 .frame(width: 28, height: 28)
                 .background(palette.raisedSurface)
@@ -753,8 +747,7 @@ struct RepositorySidebar: View {
     private func sidebarUtilityIcon(_ systemName: String, palette: AppPalette) -> some View {
         let theme = AppVisualTheme.resolved(themeRaw)
         let isStandard = theme == .standard
-        return Image(gattoSymbol: systemName)
-            .font(.system(size: 12, weight: .semibold))
+        return Image(gattoSymbol: systemName, pointSize: 12)
             .foregroundStyle(palette.mutedInk)
             .frame(width: isStandard ? 32 : 34, height: isStandard ? 32 : 34)
             .background(theme == .folio ? Color.clear : palette.raisedSurface)
@@ -782,8 +775,7 @@ private struct CollapsedSidebarNavigationButton: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             ZStack(alignment: .topTrailing) {
-                Image(gattoSymbol: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                Image(gattoSymbol: icon, pointSize: 14)
                     .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                     .frame(width: 38, height: 36)
                     .background(isSelected ? palette.primarySoft : Color.clear)
@@ -846,8 +838,7 @@ private struct SidebarNavigationButton: View {
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .fill(isSelected ? palette.primary.opacity(0.12) : palette.raisedSurface.opacity(0.72))
                     }
-                    Image(gattoSymbol: systemImage)
-                        .font(.system(size: 14.5, weight: .medium))
+                    Image(gattoSymbol: systemImage, pointSize: 14.5)
                         .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                 }
                 .frame(width: 28, height: 28)
@@ -948,8 +939,7 @@ private struct SidebarRepositorySearchField: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 7) {
-            Image(gattoSymbol: "magnifyingglass")
-                .font(.system(size: 11, weight: .medium))
+            Image(gattoSymbol: "magnifyingglass", pointSize: 11)
                 .foregroundStyle(palette.subtleInk)
 
             TextField(L10n.text("sidebar.repositories.search"), text: $text)
@@ -960,8 +950,7 @@ private struct SidebarRepositorySearchField: View {
                 Button {
                     text = ""
                 } label: {
-                    Image(gattoSymbol: "xmark.circle.fill")
-                        .font(.system(size: 11, weight: .medium))
+                    Image(gattoSymbol: "xmark.circle.fill", pointSize: 11)
                         .foregroundStyle(palette.subtleInk)
                 }
                 .buttonStyle(.plain)
@@ -1007,8 +996,7 @@ private struct AppearanceControl: View {
         return Button {
             selection = appearance.rawValue
         } label: {
-            Image(gattoSymbol: systemImage)
-                .font(.system(size: 11.5, weight: .semibold))
+            Image(gattoSymbol: systemImage, pointSize: 11.5)
                 .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
                 .frame(maxWidth: .infinity)
                 .frame(height: 25)

@@ -87,8 +87,7 @@ struct RepositoryIntelligenceWorkspaceView: View {
                         model.selectedTab = tab
                     } label: {
                         HStack(spacing: 6) {
-                            Image(gattoSymbol: tab.symbol)
-                                .font(.system(size: 12.5, weight: .semibold))
+                            Image(gattoSymbol: tab.symbol, pointSize: 12.5)
                             Text(L10n.text(tab.titleKey))
                                 .font(.system(size: 11.5, weight: .semibold))
                         }
@@ -345,8 +344,7 @@ private struct ProvenanceChainView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 5) {
-                Image(gattoSymbol: symbol)
-                    .font(.system(size: 11, weight: .semibold))
+                Image(gattoSymbol: symbol, pointSize: 11)
                 Text(eyebrow)
                     .font(.system(size: 9.5, weight: .medium))
             }
@@ -363,8 +361,7 @@ private struct ProvenanceChainView: View {
     private func connector(_ palette: AppPalette) -> some View {
         HStack(spacing: 0) {
             Rectangle().fill(palette.divider).frame(width: 15, height: 1)
-            Image(gattoSymbol: "chevron.right")
-                .font(.system(size: 8, weight: .bold))
+            Image(gattoSymbol: "chevron.right", pointSize: 8)
                 .foregroundStyle(palette.subtleInk)
         }
         .fixedSize()
@@ -666,8 +663,7 @@ private struct RepositoryActivityWorkspace: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 12) {
-                        Image(gattoSymbol: confidenceSymbol(event.confidence))
-                            .font(.system(size: 20, weight: .semibold))
+                        Image(gattoSymbol: confidenceSymbol(event.confidence), pointSize: 20)
                             .foregroundStyle(confidenceColor(event.confidence, palette: palette))
                             .frame(width: 44, height: 44)
                             .background(confidenceColor(event.confidence, palette: palette).opacity(0.12))
@@ -823,8 +819,7 @@ private struct CapsuleRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 9) {
-                Image(gattoSymbol: "shippingbox")
-                    .font(.system(size: 13, weight: .semibold))
+                Image(gattoSymbol: "shippingbox", pointSize: 13)
                     .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                     .frame(width: 30, height: 30)
                     .background(isSelected ? palette.primarySoft : palette.raisedSurface)
@@ -891,8 +886,7 @@ private struct IntelligenceCard<Content: View>: View {
         let palette = AppPalette(colorScheme)
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 7) {
-                Image(gattoSymbol: symbol)
-                    .font(.system(size: 12, weight: .semibold))
+                Image(gattoSymbol: symbol, pointSize: 12)
                     .foregroundStyle(palette.primary)
                 Text(L10n.text(titleKey))
                     .font(.system(size: 12, weight: .semibold))
@@ -977,8 +971,7 @@ struct IntelligenceErrorState: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 12) {
-            Image(gattoSymbol: "exclamationmark.triangle.fill")
-                .font(.system(size: 28, weight: .semibold))
+            Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 28)
                 .foregroundStyle(palette.danger)
             Text(message)
                 .font(.system(size: 11.5))
@@ -1008,8 +1001,7 @@ private struct IntelligenceNotice: View {
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(palette.ink)
             Button(action: dismiss) {
-                Image(gattoSymbol: "xmark")
-                    .font(.system(size: 9, weight: .semibold))
+                Image(gattoSymbol: "xmark", pointSize: 9)
             }
             .buttonStyle(.plain)
         }

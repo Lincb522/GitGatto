@@ -38,8 +38,7 @@ struct GitHubPullRequestReviewView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: theme == .console ? 4 : 9, style: .continuous)
                     .fill(pullRequest.isDraft ? palette.warningSoft : palette.successSoft)
-                Image(gattoSymbol: "git.pull.request")
-                    .font(.system(size: 14, weight: .semibold))
+                Image(gattoSymbol: "git.pull.request", pointSize: 14)
                     .foregroundStyle(pullRequest.isDraft ? palette.warning : palette.success)
             }
             .frame(width: 38, height: 38)
@@ -98,8 +97,7 @@ struct GitHubPullRequestReviewView: View {
                 model.closePullRequestReview()
                 dismiss()
             } label: {
-                Image(gattoSymbol: "xmark")
-                    .font(.system(size: 11, weight: .semibold))
+                Image(gattoSymbol: "xmark", pointSize: 11)
                     .foregroundStyle(palette.mutedInk)
                     .frame(width: 30, height: 30)
             }
@@ -285,8 +283,7 @@ struct GitHubPullRequestReviewView: View {
             LazyVStack(spacing: 0) {
                 ForEach(commits) { commit in
                     HStack(spacing: 12) {
-                        Image(gattoSymbol: "point.topleft.down.to.point.bottomright.curvepath")
-                            .font(.system(size: 11, weight: .semibold))
+                        Image(gattoSymbol: "point.topleft.down.to.point.bottomright.curvepath", pointSize: 11)
                             .foregroundStyle(palette.accent)
                             .frame(width: 24)
                         VStack(alignment: .leading, spacing: 4) {
@@ -411,8 +408,7 @@ struct GitHubPullRequestReviewView: View {
 
     private func errorView(_ message: String, palette: AppPalette) -> some View {
         VStack(spacing: 12) {
-            Image(gattoSymbol: "exclamationmark.triangle.fill")
-                .font(.system(size: 22))
+            Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 22)
                 .foregroundStyle(palette.danger)
             Text(message)
                 .font(font(size: 12, weight: .medium))
@@ -428,8 +424,7 @@ struct GitHubPullRequestReviewView: View {
 
     private func empty(_ text: String, icon: String, palette: AppPalette) -> some View {
         VStack(spacing: 9) {
-            Image(gattoSymbol: icon)
-                .font(.system(size: 21, weight: .medium))
+            Image(gattoSymbol: icon, pointSize: 21)
                 .foregroundStyle(palette.subtleInk)
             Text(text)
                 .font(font(size: 12, weight: .medium))
@@ -469,8 +464,7 @@ private struct ConversationEntry: View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {
                 Circle().fill(tint.opacity(0.14))
-                Image(gattoSymbol: systemImage)
-                    .font(.system(size: 10.5, weight: .semibold))
+                Image(gattoSymbol: systemImage, pointSize: 10.5)
                     .foregroundStyle(tint)
             }
             .frame(width: 30, height: 30)
@@ -573,8 +567,7 @@ private struct PullRequestFileInspector: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                         .fill(palette.primarySoft)
-                    Image(gattoSymbol: "arrow.left.arrow.right")
-                        .font(.system(size: 12, weight: .semibold))
+                    Image(gattoSymbol: "arrow.left.arrow.right", pointSize: 12)
                         .foregroundStyle(palette.primary)
                 }
                 .frame(width: 34, height: 34)
@@ -609,8 +602,7 @@ private struct PullRequestFileInspector: View {
 
             if file.patch == nil {
                 VStack(spacing: 9) {
-                    Image(gattoSymbol: "doc.badge.ellipsis")
-                        .font(.system(size: 21))
+                    Image(gattoSymbol: "doc.badge.ellipsis", pointSize: 21)
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("github.review.patch.unavailable"))
                         .font(.system(size: 12, weight: .medium))
@@ -680,8 +672,7 @@ struct CheckStateGlyph: View {
         if ["queued", "in_progress", "waiting", "requested", "pending"].contains(status.lowercased()) {
             ProgressView().controlSize(.small).tint(palette.accent).frame(width: 24)
         } else {
-            Image(gattoSymbol: icon)
-                .font(.system(size: 15, weight: .semibold))
+            Image(gattoSymbol: icon, pointSize: 15)
                 .foregroundStyle(color(palette))
                 .frame(width: 24)
         }

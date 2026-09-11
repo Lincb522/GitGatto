@@ -1,10 +1,86 @@
 import AppKit
 import Foundation
+import SwiftUI
 import Testing
 @testable import GitGatto
 
 @Suite("Brand assets")
 struct BrandAssetTests {
+    @Test("UI icons preserve their logical ink size at every backing scale")
+    func iconRepresentationScale() throws {
+        let resourceURL = try #require(AppResourceBundle.current.resourceURL)
+        let enumerator = try #require(FileManager.default.enumerator(at: resourceURL, includingPropertiesForKeys: nil))
+        let symbols = enumerator.compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "svg" && $0.lastPathComponent.hasPrefix("gatto-") }
+            .map { $0.deletingPathExtension().lastPathComponent.dropFirst(6).replacingOccurrences(of: "-", with: ".") }
+        #expect(symbols.count == 146)
+        for symbol in symbols {
+            for size: CGFloat in [17, 20, 31, 46] {
+                let image = GattoIconAssets.image(for: symbol, pointSize: size)
+                let representations = image.representations.compactMap { $0 as? NSBitmapImageRep }
+                #expect(representations.count == 3)
+                let reference = try inkBounds(#require(representations.first))
+                for bitmap in representations {
+                    let scale = CGFloat(bitmap.pixelsWide) / size
+                    let bounds = try inkBounds(bitmap)
+                    // Antialiasing can quantize each edge by one pixel in the 1x reference.
+                    #expect(abs(bounds.minX / scale - reference.minX) <= 1)
+                    #expect(abs(bounds.maxX / scale - reference.maxX) <= 1)
+                    #expect(abs(bounds.minY / scale - reference.minY) <= 1)
+                    #expect(abs(bounds.maxY / scale - reference.maxY) <= 1)
+                }
+            }
+        }
+    }
+
+    @MainActor
+    @Test("Native icon images use explicit point sizes in compact and large controls")
+    func explicitImageSize() throws {
+        for size: CGFloat in [9, 12.5, 16, 31, 46] {
+            let renderer = ImageRenderer(content: Image(gattoSymbol: "arrow.down", pointSize: size)
+                .foregroundStyle(.black))
+            renderer.scale = 2
+            let image = try #require(renderer.cgImage)
+            #expect(image.width == Int((size * 2).rounded()))
+            #expect(image.height == Int((size * 2).rounded()))
+        }
+    }
+
+    @MainActor
+    @Test("Default development tool icons use the requested logo area")
+    func defaultToolLogoSize() throws {
+        let tool = try #require(DevelopmentTool.catalog.first { $0.id == "lazygit" })
+        #expect(tool.brandLogoName == nil)
+        for size: CGFloat in [31, 46] {
+            let expectedImage = GattoIconAssets.image(for: tool.icon, pointSize: size)
+            let reference = try inkBounds(#require(expectedImage.representations.first as? NSBitmapImageRep))
+            for scheme in [ColorScheme.light, .dark] {
+                let renderer = ImageRenderer(content: DevelopmentToolLogoView(
+                    tool: tool, size: size, fallbackColor: .black
+                ).environment(\.colorScheme, scheme))
+                renderer.scale = 2
+                let bitmap = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+                let bounds = try inkBounds(bitmap)
+                #expect(abs(bounds.width / 2 - reference.width) <= 1)
+                #expect(abs(bounds.height / 2 - reference.height) <= 1)
+                #expect(abs(bounds.midX / 2 - reference.midX) <= 1)
+                #expect(abs(bounds.midY / 2 - reference.midY) <= 1)
+            }
+        }
+    }
+
+    private func inkBounds(_ bitmap: NSBitmapImageRep) throws -> CGRect {
+        var minX = bitmap.pixelsWide, minY = bitmap.pixelsHigh, maxX = -1, maxY = -1
+        for y in 0..<bitmap.pixelsHigh {
+            for x in 0..<bitmap.pixelsWide where (bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.1 {
+                minX = min(minX, x); minY = min(minY, y)
+                maxX = max(maxX, x); maxY = max(maxY, y)
+            }
+        }
+        try #require(maxX >= minX && maxY >= minY)
+        return CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)
+    }
+
     @Test("Loads the complete GitGatto UI icon set")
     func gitGattoUIIconsLoad() throws {
         let resourceURL = try #require(AppResourceBundle.current.resourceURL)

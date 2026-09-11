@@ -18,8 +18,7 @@ struct GlobalCommandPalette: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(spacing: 11) {
-                Image(gattoSymbol: "command")
-                    .font(.system(size: 15, weight: .semibold))
+                Image(gattoSymbol: "command", pointSize: 15)
                     .foregroundStyle(palette.primary)
                 TextField(L10n.text("command_palette.placeholder"), text: $query)
                     .textFieldStyle(.plain)
@@ -40,8 +39,7 @@ struct GlobalCommandPalette: View {
 
             if filteredCommands.isEmpty {
                 VStack(spacing: 8) {
-                    Image(gattoSymbol: "magnifyingglass")
-                        .font(.system(size: 20))
+                    Image(gattoSymbol: "magnifyingglass", pointSize: 20)
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("command_palette.empty"))
                         .font(.system(size: 12, weight: .medium))
@@ -283,8 +281,7 @@ private struct CommandPaletteRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(gattoSymbol: command.symbol)
-                    .font(.system(size: 14, weight: .semibold))
+                Image(gattoSymbol: command.symbol, pointSize: 14)
                     .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                     .frame(width: 32, height: 32)
                     .background(isSelected ? palette.primarySoft : palette.raisedSurface)

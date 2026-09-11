@@ -387,8 +387,7 @@ private struct ChangeRow: View {
                             if isUpdatingStage {
                                 GattoLoadingGlyph(size: 14)
                             } else {
-                                Image(gattoSymbol: change.isStaged ? "minus" : "plus")
-                                    .font(.system(size: 10.5, weight: .bold))
+                                Image(gattoSymbol: change.isStaged ? "minus" : "plus", pointSize: 10.5)
                                     .foregroundStyle(palette.primary)
                             }
                         }
@@ -640,7 +639,7 @@ private struct CommitComposer: View {
                 if model.isDraftingCommitMessage {
                     GattoLoadingGlyph(size: 16)
                 } else {
-                    Image(gattoSymbol: "sparkles")
+                    Image(gattoSymbol: "sparkles", pointSize: 16)
                         .frame(width: 16, height: 16)
                 }
                 Text(L10n.text(model.isDraftingCommitMessage
@@ -670,8 +669,7 @@ private struct ChangesEmptyState: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 10) {
             Spacer()
-            Image(gattoSymbol: "checkmark.circle")
-                .font(.system(size: 28, weight: .medium))
+            Image(gattoSymbol: "checkmark.circle", pointSize: 28)
                 .foregroundStyle(palette.success)
             Text(L10n.text("changes.empty.title"))
                 .font(.system(size: 13.5, weight: .semibold))

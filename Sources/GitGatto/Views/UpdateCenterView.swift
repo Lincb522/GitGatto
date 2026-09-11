@@ -91,7 +91,6 @@ struct UpdateCenterView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(statusColor(palette).opacity(0.12))
                 statusIcon
-                    .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(statusColor(palette))
             }
             .frame(width: 60, height: 60)
@@ -250,7 +249,7 @@ struct UpdateCenterView: View {
         if manager.state == .checking {
             ProgressView().controlSize(.small)
         } else {
-            Image(gattoSymbol: statusSymbol)
+            Image(gattoSymbol: statusSymbol, pointSize: 24)
         }
     }
 
@@ -321,8 +320,7 @@ private struct ReleaseNoteCard: View {
                     }
 
                     Spacer()
-                    Image(gattoSymbol: "chevron.down")
-                        .font(.system(size: 10, weight: .semibold))
+                    Image(gattoSymbol: "chevron.down", pointSize: 10)
                         .foregroundStyle(palette.subtleInk)
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }

@@ -211,8 +211,7 @@ private struct RepositorySyncRow: View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 12) {
             Button(action: toggleSelection) {
-                Image(gattoSymbol: isSelected ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 16, weight: .semibold))
+                Image(gattoSymbol: isSelected ? "checkmark.square.fill" : "square", pointSize: 16)
                     .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
             }
             .buttonStyle(.plain)

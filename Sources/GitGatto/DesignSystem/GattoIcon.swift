@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 
 extension Image {
-    init(gattoSymbol: String) {
-        self.init(nsImage: GattoIconAssets.image(for: gattoSymbol, pointSize: GattoIconAssets.defaultPointSize))
+    init(gattoSymbol: String, pointSize: CGFloat = GattoIconAssets.defaultPointSize) {
+        self.init(nsImage: GattoIconAssets.image(for: gattoSymbol, pointSize: pointSize))
     }
 }
 
@@ -126,6 +126,11 @@ enum PixelAlignedImageRenderer {
             NSGraphicsContext.current = context
             context.imageInterpolation = .high
             context.shouldAntialias = true
+            // Bitmap contexts use pixels; drawing coordinates below are logical points.
+            context.cgContext.scaleBy(
+                x: CGFloat(representation.pixelsWide) / logicalSize.width,
+                y: CGFloat(representation.pixelsHigh) / logicalSize.height
+            )
 
             let base = NSRect(origin: .zero, size: logicalSize)
             let pixelScale = CGFloat(scale)

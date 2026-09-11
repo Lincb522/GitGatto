@@ -16,8 +16,7 @@ struct GitCommitSearchSheet: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(gattoSymbol: "magnifyingglass")
-                    .font(.system(size: 17, weight: .semibold))
+                Image(gattoSymbol: "magnifyingglass", pointSize: 17)
                     .foregroundStyle(palette.primary)
                     .frame(width: 38, height: 38)
                     .background(palette.primarySoft)
@@ -130,8 +129,7 @@ struct GitCommitSearchSheet: View {
             GattoLoadingState(text: L10n.text("commit_search.loading"))
         } else if let error = searchModel.errorMessage {
             VStack(spacing: 12) {
-                Image(gattoSymbol: "exclamationmark.triangle")
-                    .font(.system(size: 22))
+                Image(gattoSymbol: "exclamationmark.triangle", pointSize: 22)
                     .foregroundStyle(palette.danger)
                 Text(error)
                     .font(.system(size: 11.5))

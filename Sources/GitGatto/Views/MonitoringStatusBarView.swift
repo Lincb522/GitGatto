@@ -432,8 +432,7 @@ private struct MonitoringChannelRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(gattoSymbol: channel.category.iconName)
-                .font(.system(size: 12.5, weight: .semibold))
+            Image(gattoSymbol: channel.category.iconName, pointSize: 12.5)
                 .foregroundStyle(channel.isEnabled ? stateColor : palette.subtleInk)
                 .frame(width: 30, height: 30)
                 .background((channel.isEnabled ? stateColor : palette.subtleInk).opacity(0.10))
@@ -455,8 +454,7 @@ private struct MonitoringChannelRow: View {
                 ProgressView()
                     .controlSize(.mini)
             } else if channel.state == .attention {
-                Image(gattoSymbol: "exclamationmark.triangle.fill")
-                    .font(.system(size: 10, weight: .semibold))
+                Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 10)
                     .foregroundStyle(palette.warning)
             }
             if let lastUpdatedAt = channel.lastUpdatedAt, channel.isEnabled {

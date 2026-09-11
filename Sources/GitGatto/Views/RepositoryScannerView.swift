@@ -271,8 +271,7 @@ private struct ScannerRepositoryRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(gattoSymbol: isSelected ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 16, weight: .semibold))
+                Image(gattoSymbol: isSelected ? "checkmark.square.fill" : "square", pointSize: 16)
                     .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
                     .frame(width: 20)
 
@@ -323,8 +322,7 @@ private struct ScannerEmptyState: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 10) {
-            Image(gattoSymbol: systemImage)
-                .font(.system(size: 26, weight: .medium))
+            Image(gattoSymbol: systemImage, pointSize: 26)
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text(titleKey))
                 .font(.system(size: 14, weight: .semibold))

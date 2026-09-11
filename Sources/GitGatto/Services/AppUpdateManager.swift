@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import OSLog
 import Sparkle
 
 enum AppUpdateState: Equatable {
@@ -28,6 +29,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
     let currentBuild: String
 
     private var didStart = false
+    private let logger = Logger(subsystem: "dev.gitgatto.client", category: "updates")
     private var didLoadGitHubReleaseNotes = false
     private let releaseService = GitHubReleaseService()
     private lazy var updaterController = SPUStandardUpdaterController(
@@ -54,12 +56,16 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         isConfigured && state != .checking
     }
 
-    func startIfConfigured() {
+    func startIfConfigured(checkOnLaunch: Bool = false) {
         guard isConfigured, !didStart else { return }
         didStart = true
         updaterController.startUpdater()
         automaticallyChecksForUpdates = updaterController.updater.automaticallyChecksForUpdates
         automaticallyDownloadsUpdates = updaterController.updater.automaticallyDownloadsUpdates
+        lastCheckedAt = updaterController.updater.lastUpdateCheckDate
+        if checkOnLaunch && automaticallyChecksForUpdates {
+            updaterController.updater.checkForUpdatesInBackground()
+        }
     }
 
     func checkForUpdates() {
@@ -68,7 +74,6 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         state = .checking
         stage = .checking
         diagnostic = nil
-        lastCheckedAt = Date()
         Task { await refreshReleaseNotes(force: true) }
         updaterController.checkForUpdates(nil)
     }
@@ -93,7 +98,6 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
 
         isLoadingReleaseNotes = true
         releaseNotesError = nil
-        lastCheckedAt = Date()
         defer { isLoadingReleaseNotes = false }
 
         do {
@@ -114,7 +118,16 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
         }
     }
 
+    func updater(_ updater: SPUUpdater, mayPerform updateCheck: SPUUpdateCheck) throws {
+        state = .checking
+        stage = .checking
+        diagnostic = nil
+        lastCheckedAt = Date()
+        logger.info("Update check started; kind=\(updateCheck.rawValue)")
+    }
+
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        logger.info("Update available; build=\(item.versionString, privacy: .public)")
         state = .updateAvailable(
             version: item.displayVersionString,
             build: item.versionString
@@ -123,6 +136,7 @@ final class AppUpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: any Error) {
         state = .current
+        logger.info("Update check finished; no newer version")
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {

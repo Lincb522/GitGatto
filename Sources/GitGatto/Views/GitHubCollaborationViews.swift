@@ -119,8 +119,7 @@ struct GitHubInboxView: View {
                         L10n.text("github.inbox.category.\($0.rawValue)")
                     } ?? L10n.text("github.inbox.category.all"))
                 )
-                Image(gattoSymbol: "chevron.down")
-                    .font(.system(size: 8, weight: .bold))
+                Image(gattoSymbol: "chevron.down", pointSize: 8)
             }
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(palette.mutedInk)
@@ -159,8 +158,7 @@ struct GitHubInboxView: View {
                     Button { selectedItemID = item.id } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 7) {
-                                Image(gattoSymbol: item.subjectKind.symbol)
-                                    .font(.system(size: 13, weight: .semibold))
+                                Image(gattoSymbol: item.subjectKind.symbol, pointSize: 13)
                                     .foregroundStyle(palette.primary)
                                     .frame(width: 22)
                                 Text(item.repositoryName)
@@ -215,8 +213,7 @@ struct GitHubInboxView: View {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .top, spacing: 12) {
-                        Image(gattoSymbol: item.subjectKind.symbol)
-                            .font(.system(size: 19, weight: .semibold))
+                        Image(gattoSymbol: item.subjectKind.symbol, pointSize: 19)
                             .foregroundStyle(palette.primary)
                             .frame(width: 42, height: 42)
                             .background(palette.primarySoft)
@@ -275,8 +272,7 @@ struct GitHubInboxView: View {
 
     private func collaborationError(_ message: String, retry: @escaping () -> Void) -> some View {
         VStack(spacing: 12) {
-            Image(gattoSymbol: "exclamationmark.triangle")
-                .font(.system(size: 22))
+            Image(gattoSymbol: "exclamationmark.triangle", pointSize: 22)
             Text(message).textSelection(.enabled).multilineTextAlignment(.center)
             Button(L10n.text("action.retry"), action: retry).buttonStyle(.borderedProminent)
         }
@@ -523,8 +519,7 @@ struct GitHubIssuesView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(alignment: .top, spacing: 12) {
-                            Image(gattoSymbol: issue.state == .open ? "circle.dashed" : "checkmark.circle")
-                                .font(.system(size: 18, weight: .semibold))
+                            Image(gattoSymbol: issue.state == .open ? "circle.dashed" : "checkmark.circle", pointSize: 18)
                                 .foregroundStyle(issue.state == .open ? palette.success : palette.subtleInk)
                                 .frame(width: 40, height: 40)
                                 .background((issue.state == .open ? palette.success : palette.subtleInk).opacity(0.09))
@@ -703,7 +698,7 @@ struct GitHubIssuesView: View {
 
     private func collaborationError(_ message: String) -> some View {
         VStack(spacing: 12) {
-            Image(gattoSymbol: "exclamationmark.triangle").font(.system(size: 22))
+            Image(gattoSymbol: "exclamationmark.triangle", pointSize: 22)
             Text(message).textSelection(.enabled).multilineTextAlignment(.center)
             Button(L10n.text("action.retry")) { collaborationModel.loadIssues(force: true) }
                 .buttonStyle(.borderedProminent)

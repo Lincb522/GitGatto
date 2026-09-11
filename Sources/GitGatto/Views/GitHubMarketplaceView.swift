@@ -74,8 +74,7 @@ struct MarketplaceInformationCell: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         HStack(spacing: 10) {
-            Image(gattoSymbol: systemImage)
-                .font(.system(size: 14, weight: .semibold))
+            Image(gattoSymbol: systemImage, pointSize: 14)
                 .foregroundStyle(palette.primary)
                 .frame(width: 28, height: 28)
                 .background(palette.primarySoft)
@@ -258,8 +257,7 @@ struct MarketplaceScreenshotCarousel: View {
     ) -> some View {
         let palette = AppPalette(colorScheme)
         return Button(action: action) {
-            Image(gattoSymbol: systemName)
-                .font(.system(size: 11.5, weight: .bold))
+            Image(gattoSymbol: systemName, pointSize: 11.5)
                 .foregroundStyle(palette.ink)
                 .frame(width: 30, height: 30)
                 .background(.regularMaterial)
@@ -316,7 +314,7 @@ struct DevelopmentToolLogoView: View {
                     .background(colorScheme == .dark ? Color.white.opacity(0.94) : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous))
             } else {
-                GattoIcon(symbol: tool.icon, size: size * 0.68)
+                GattoIcon(symbol: tool.icon, size: size)
                     .foregroundStyle(fallbackColor)
             }
         }

@@ -220,8 +220,7 @@ private struct AboutLegalButton: View {
         let radius: CGFloat = AppStyleDefaults.theme == .lumen ? 12 : AppThemeLayout.controlCornerRadius
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(gattoSymbol: document.icon)
-                    .font(.system(size: 14, weight: .semibold))
+                Image(gattoSymbol: document.icon, pointSize: 14)
                     .foregroundStyle(palette.primary)
                     .frame(width: 30, height: 30)
                     .background(palette.primarySoft)
@@ -238,8 +237,7 @@ private struct AboutLegalButton: View {
                 }
 
                 Spacer()
-                Image(gattoSymbol: "chevron.right")
-                    .font(.system(size: 10, weight: .bold))
+                Image(gattoSymbol: "chevron.right", pointSize: 10)
                     .foregroundStyle(palette.subtleInk)
             }
             .padding(.horizontal, 12)

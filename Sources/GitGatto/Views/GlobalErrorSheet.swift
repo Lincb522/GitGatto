@@ -16,8 +16,7 @@ struct GlobalErrorSheet: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 14) {
-                Image(gattoSymbol: "exclamationmark.triangle.fill")
-                    .font(.system(size: 22, weight: .semibold))
+                Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 22)
                     .foregroundStyle(palette.danger)
                     .frame(width: 30, height: 30)
 

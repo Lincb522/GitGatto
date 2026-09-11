@@ -153,8 +153,7 @@ struct WorktreeWorkspaceView: View {
 
             if model.worktrees.isEmpty {
                 VStack(spacing: 9) {
-                    Image(gattoSymbol: "arrow.triangle.branch")
-                        .font(.system(size: 22, weight: .medium))
+                    Image(gattoSymbol: "arrow.triangle.branch", pointSize: 22)
                         .foregroundStyle(palette.subtleInk)
                     Text(L10n.text("worktree.empty"))
                         .font(font(size: 12, weight: .medium))
@@ -220,8 +219,7 @@ struct WorktreeWorkspaceView: View {
             }
         } else {
             VStack(spacing: 9) {
-                Image(gattoSymbol: "rectangle.split.2x1")
-                    .font(.system(size: 22, weight: .medium))
+                Image(gattoSymbol: "rectangle.split.2x1", pointSize: 22)
                     .foregroundStyle(palette.subtleInk)
                 Text(L10n.text("worktree.selection.empty"))
                     .font(font(size: 12.5, weight: .medium))
@@ -237,8 +235,7 @@ struct WorktreeWorkspaceView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: theme == .console ? 4 : 9, style: .continuous)
                         .fill(worktree.isMain ? palette.primarySoft : palette.accentSoft)
-                    Image(gattoSymbol: worktree.isMain ? "house.fill" : "arrow.triangle.branch")
-                        .font(.system(size: 14, weight: .semibold))
+                    Image(gattoSymbol: worktree.isMain ? "house.fill" : "arrow.triangle.branch", pointSize: 14)
                         .foregroundStyle(worktree.isMain ? palette.primary : palette.accent)
                 }
                 .frame(width: 36, height: 36)
@@ -397,8 +394,7 @@ private struct WorktreeRow: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 7) {
                 HStack(spacing: 8) {
-                    Image(gattoSymbol: worktree.isMain ? "house.fill" : "arrow.triangle.branch")
-                        .font(.system(size: 11, weight: .semibold))
+                    Image(gattoSymbol: worktree.isMain ? "house.fill" : "arrow.triangle.branch", pointSize: 11)
                         .foregroundStyle(selected ? palette.primary : palette.mutedInk)
                         .frame(width: 17)
                     Text(worktree.branch ?? L10n.text("worktree.detached"))

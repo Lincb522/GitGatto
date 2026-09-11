@@ -32,7 +32,7 @@ struct DocumentTranslationControls: View {
                         activeTitle: progressTitle ?? L10n.text("codex.status.translating"), isActive: true,
                         completionID: completionID, showsCancelIndicator: true)
                 }
-                .buttonStyle(SecondaryButtonStyle())
+                .buttonStyle(.plain)
             } else {
                 if error != nil {
                     Button(L10n.text("action.retry")) { translate(preferredTarget) }

@@ -57,8 +57,7 @@ private struct StashCommandBar: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(palette.primarySoft)
-                Image(gattoSymbol: "archivebox.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                Image(gattoSymbol: "archivebox.fill", pointSize: 14)
                     .foregroundStyle(palette.primary)
             }
             .frame(width: 34, height: 34)
@@ -75,8 +74,7 @@ private struct StashCommandBar: View {
             Rectangle().fill(palette.divider).frame(width: 1, height: 30)
 
             HStack(spacing: 8) {
-                Image(gattoSymbol: "text.cursor")
-                    .font(.system(size: 11))
+                Image(gattoSymbol: "text.cursor", pointSize: 11)
                     .foregroundStyle(palette.subtleInk)
                 TextField(L10n.text("stash.message.placeholder"), text: $model.stashMessage)
                     .textFieldStyle(.plain)
@@ -215,8 +213,7 @@ private struct StashRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(gattoSymbol: "archivebox.fill")
-                    .font(.system(size: 11))
+                Image(gattoSymbol: "archivebox.fill", pointSize: 11)
                     .foregroundStyle(isSelected ? palette.primary : palette.subtleInk)
                     .frame(width: 22, height: 22)
                     .background(isSelected ? palette.primarySoft : palette.raisedSurface)
@@ -356,8 +353,7 @@ private struct StashInspector: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(palette.primarySoft)
-                Image(gattoSymbol: "archivebox.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                Image(gattoSymbol: "archivebox.fill", pointSize: 14)
                     .foregroundStyle(palette.primary)
             }
             .frame(width: 36, height: 36)
@@ -427,7 +423,7 @@ private struct StashMetric: View {
     var body: some View {
         HStack(spacing: 4) {
             if let symbol {
-                Image(gattoSymbol: symbol).font(.system(size: 8.5, weight: .semibold))
+                Image(gattoSymbol: symbol, pointSize: 8.5)
             }
             Text("\(prefix)\(value)")
         }

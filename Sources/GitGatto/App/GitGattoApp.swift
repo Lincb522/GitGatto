@@ -188,14 +188,14 @@ struct GitGattoApp: App {
                 }
                 .background(MonitoringSettingsLaunchAction(model: model, ready: model.hasCompletedStartup && model.hasMonitoringOwnership))
                 .task {
-                    await model.start()
 #if DEBUG
                     if !ProcessInfo.processInfo.arguments.contains("--snapshot") {
-                        updateManager.startIfConfigured()
+                        updateManager.startIfConfigured(checkOnLaunch: true)
                     }
 #else
-                    updateManager.startIfConfigured()
+                    updateManager.startIfConfigured(checkOnLaunch: true)
 #endif
+                    await model.start()
                 }
     }
 }

@@ -216,8 +216,7 @@ struct CodexWorkspaceView: View {
         palette: AppPalette
     ) -> some View {
         HStack(alignment: .top, spacing: 11) {
-            Image(gattoSymbol: "checkmark.shield")
-                .font(.system(size: 16, weight: .semibold))
+            Image(gattoSymbol: "checkmark.shield", pointSize: 16)
                 .foregroundStyle(palette.warning)
                 .frame(width: 32, height: 32)
                 .background(palette.warning.opacity(0.12))
@@ -284,8 +283,7 @@ struct CodexWorkspaceView: View {
             Button {
                 model.dismissAgentProtectionNotice()
             } label: {
-                Image(gattoSymbol: "xmark")
-                    .font(.system(size: 10.5, weight: .semibold))
+                Image(gattoSymbol: "xmark", pointSize: 10.5)
                     .frame(width: 26, height: 26)
             }
             .buttonStyle(.plain)
@@ -458,8 +456,7 @@ struct CodexWorkspaceView: View {
 
     private func unavailableState(_ palette: AppPalette) -> some View {
         VStack(spacing: 14) {
-            Image(gattoSymbol: "terminal")
-                .font(.system(size: 26, weight: .medium))
+            Image(gattoSymbol: "terminal", pointSize: 26)
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text("ai.unavailable.title"))
                 .font(.system(size: 17, weight: .semibold))
@@ -574,8 +571,7 @@ private struct CodexEmptyState: View {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(palette.accentSoft)
                     .frame(width: 58, height: 58)
-                Image(gattoSymbol: "sparkles")
-                    .font(.system(size: 23, weight: .semibold))
+                Image(gattoSymbol: "sparkles", pointSize: 23)
                     .foregroundStyle(palette.accent)
             }
             VStack(spacing: 6) {
@@ -630,8 +626,7 @@ private struct CodexMessageRow: View {
         let palette = AppPalette(colorScheme)
         HStack(alignment: .top, spacing: 10) {
             if message.role == .assistant {
-                Image(gattoSymbol: "sparkles")
-                    .font(.system(size: 12, weight: .semibold))
+                Image(gattoSymbol: "sparkles", pointSize: 12)
                     .foregroundStyle(palette.accent)
                     .frame(width: 26, height: 26)
                     .background(palette.accentSoft)
@@ -678,8 +673,7 @@ private struct CodexMessageRow: View {
                                 Text("·")
                                 Text(operation.completedAt, style: .time)
                                 if !operation.events.isEmpty {
-                                    Image(gattoSymbol: "chevron.right")
-                                        .font(.system(size: 8.5, weight: .bold))
+                                    Image(gattoSymbol: "chevron.right", pointSize: 8.5)
                                         .rotationEffect(.degrees(showsOperationEvents ? 90 : 0))
                                 }
                             }
@@ -691,7 +685,7 @@ private struct CodexMessageRow: View {
                             VStack(alignment: .leading, spacing: 7) {
                                 ForEach(Array(operation.events.enumerated()), id: \.offset) { _, event in
                                     HStack(alignment: .top, spacing: 7) {
-                                        Image(gattoSymbol: event.kind == .command ? "terminal" : "doc.badge.ellipsis")
+                                        Image(gattoSymbol: event.kind == .command ? "terminal" : "doc.badge.ellipsis", pointSize: 13)
                                             .frame(width: 13)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(

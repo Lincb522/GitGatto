@@ -130,16 +130,14 @@ private struct RepositoryToolNavigator: View {
                     Button {
                         model.refreshGitTools()
                     } label: {
-                        Image(gattoSymbol: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .semibold))
+                        Image(gattoSymbol: "arrow.clockwise", pointSize: 12)
                     }
                     .buttonStyle(.borderless)
                     .help(L10n.text("action.refresh"))
                     Button {
                         showingCreate = true
                     } label: {
-                        Image(gattoSymbol: "plus")
-                            .font(.system(size: 13, weight: .semibold))
+                        Image(gattoSymbol: "plus", pointSize: 13)
                     }
                     .buttonStyle(.borderless)
                     .disabled(selectedTool == .recovery || model.activeOperation != nil)
@@ -160,8 +158,7 @@ private struct RepositoryToolNavigator: View {
                 .pickerStyle(.segmented)
 
                 HStack(spacing: 8) {
-                    Image(gattoSymbol: "magnifyingglass")
-                        .font(.system(size: 11.5, weight: .medium))
+                    Image(gattoSymbol: "magnifyingglass", pointSize: 11.5)
                         .foregroundStyle(palette.subtleInk)
                     TextField(L10n.text("git_tools.search.placeholder"), text: $model.gitToolsSearchText)
                         .textFieldStyle(.plain)
@@ -281,8 +278,7 @@ private struct BranchToolRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(gattoSymbol: "arrow.triangle.branch")
-                    .font(.system(size: 13, weight: .medium))
+                Image(gattoSymbol: "arrow.triangle.branch", pointSize: 13)
                     .foregroundStyle(branch.isCurrent ? palette.primary : palette.subtleInk)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 4) {
@@ -326,8 +322,7 @@ private struct TagToolRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(gattoSymbol: "tag")
-                    .font(.system(size: 13, weight: .medium))
+                Image(gattoSymbol: "tag", pointSize: 13)
                     .foregroundStyle(palette.accent)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 4) {
@@ -366,8 +361,7 @@ private struct RemoteToolRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(gattoSymbol: "globe")
-                    .font(.system(size: 13, weight: .medium))
+                Image(gattoSymbol: "globe", pointSize: 13)
                     .foregroundStyle(palette.primary)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 4) {
@@ -401,8 +395,7 @@ private struct ReflogToolRow: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(gattoSymbol: "clock.arrow.circlepath")
-                    .font(.system(size: 13, weight: .medium))
+                Image(gattoSymbol: "clock.arrow.circlepath", pointSize: 13)
                     .foregroundStyle(palette.warning)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 4) {
@@ -438,8 +431,7 @@ private struct RepositoryToolInspector: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(spacing: 9) {
-                Image(gattoSymbol: selectedTool.symbol)
-                    .font(.system(size: 14, weight: .semibold))
+                Image(gattoSymbol: selectedTool.symbol, pointSize: 14)
                     .foregroundStyle(palette.primary)
                 Text(L10n.text(selectedTool.titleKey))
                     .font(.system(size: 14, weight: .semibold))
@@ -596,7 +588,7 @@ private struct BranchInspector: View {
     private func toolHero(symbol: String, color: Color) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12, style: .continuous).fill(color.opacity(0.12))
-            Image(gattoSymbol: symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(color)
+            Image(gattoSymbol: symbol, pointSize: 20).foregroundStyle(color)
         }
         .frame(width: 50, height: 50)
     }
@@ -632,7 +624,7 @@ private struct TagInspector: View {
                     HStack(spacing: 14) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 12).fill(palette.accentSoft)
-                            Image(gattoSymbol: "tag").font(.system(size: 20, weight: .semibold)).foregroundStyle(palette.accent)
+                            Image(gattoSymbol: "tag", pointSize: 20).foregroundStyle(palette.accent)
                         }.frame(width: 50, height: 50)
                         VStack(alignment: .leading, spacing: 5) {
                             Text(tag.name).font(.system(size: 19, weight: .semibold, design: .monospaced))
@@ -718,7 +710,7 @@ private struct RemoteInspector: View {
                     HStack(spacing: 14) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 12).fill(palette.primarySoft)
-                            Image(gattoSymbol: "globe").font(.system(size: 20, weight: .semibold)).foregroundStyle(palette.primary)
+                            Image(gattoSymbol: "globe", pointSize: 20).foregroundStyle(palette.primary)
                         }.frame(width: 50, height: 50)
                         Text(remote.name).font(.system(size: 19, weight: .semibold, design: .monospaced))
                         Spacer()
@@ -773,7 +765,7 @@ private struct ReflogInspector: View {
                     HStack(spacing: 14) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 12).fill(palette.warning.opacity(0.12))
-                            Image(gattoSymbol: "clock.arrow.circlepath").font(.system(size: 20, weight: .semibold)).foregroundStyle(palette.warning)
+                            Image(gattoSymbol: "clock.arrow.circlepath", pointSize: 20).foregroundStyle(palette.warning)
                         }.frame(width: 50, height: 50)
                         VStack(alignment: .leading, spacing: 5) {
                             Text(entry.subject).font(.system(size: 17, weight: .semibold)).lineLimit(2)

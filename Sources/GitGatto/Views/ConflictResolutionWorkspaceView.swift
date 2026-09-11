@@ -51,8 +51,7 @@ struct ConflictResolutionWorkspaceView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(palette.warning.opacity(0.13))
-                Image(gattoSymbol: "arrow.triangle.branch")
-                    .font(.system(size: 16, weight: .semibold))
+                Image(gattoSymbol: "arrow.triangle.branch", pointSize: 16)
                     .foregroundStyle(palette.warning)
             }
             .frame(width: 38, height: 38)
@@ -123,8 +122,7 @@ struct ConflictResolutionWorkspaceView: View {
                             model.selectConflict(path: path)
                         } label: {
                             HStack(spacing: 9) {
-                                Image(gattoSymbol: "exclamationmark")
-                                    .font(.system(size: 9, weight: .bold))
+                                Image(gattoSymbol: "exclamationmark", pointSize: 9)
                                     .foregroundStyle(palette.warning)
                                     .frame(width: 24, height: 24)
                                     .background(palette.warning.opacity(model.selectedConflictPath == path ? 0.15 : 0.08))
@@ -181,8 +179,7 @@ struct ConflictResolutionWorkspaceView: View {
 
     private func resolutionToolbar(document: ConflictFileDocument, palette: AppPalette) -> some View {
         HStack(spacing: 10) {
-            Image(gattoSymbol: "doc.text")
-                .font(.system(size: 12, weight: .semibold))
+            Image(gattoSymbol: "doc.text", pointSize: 12)
                 .foregroundStyle(palette.primary)
                 .frame(width: 28, height: 28)
                 .background(palette.primarySoft)
@@ -212,8 +209,7 @@ struct ConflictResolutionWorkspaceView: View {
                 .frame(maxWidth: .infinity)
             ZStack {
                 Rectangle().fill(palette.divider).frame(width: 1)
-                Image(gattoSymbol: "chevron.right")
-                    .font(.system(size: 8, weight: .bold))
+                Image(gattoSymbol: "chevron.right", pointSize: 8)
                     .foregroundStyle(palette.subtleInk)
                     .frame(width: 22, height: 22)
                     .background(palette.surface)
@@ -428,8 +424,7 @@ struct ConflictResolutionWorkspaceView: View {
         VStack(spacing: 14) {
             ZStack {
                 Circle().fill(palette.raisedSurface).frame(width: 62, height: 62)
-                Image(gattoSymbol: "doc.badge.gearshape")
-                    .font(.system(size: 26, weight: .medium))
+                Image(gattoSymbol: "doc.badge.gearshape", pointSize: 26)
                     .foregroundStyle(palette.mutedInk)
             }
             Text(L10n.text("conflict.binary.title"))
@@ -456,8 +451,7 @@ struct ConflictResolutionWorkspaceView: View {
         VStack(spacing: 14) {
             ZStack {
                 Circle().fill(palette.successSoft).frame(width: 68, height: 68)
-                Image(gattoSymbol: "checkmark")
-                    .font(.system(size: 25, weight: .bold))
+                Image(gattoSymbol: "checkmark", pointSize: 25)
                     .foregroundStyle(palette.success)
             }
             Text(L10n.text("conflict.all_resolved"))

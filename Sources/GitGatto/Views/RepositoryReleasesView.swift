@@ -176,8 +176,7 @@ struct ReleaseAssetRow: View {
         HStack(spacing: 11) {
             ZStack {
                 RoundedRectangle(cornerRadius: 9, style: .continuous).fill(palette.primarySoft)
-                Image(gattoSymbol: assetIcon)
-                    .font(.system(size: 12, weight: .semibold))
+                Image(gattoSymbol: assetIcon, pointSize: 12)
                     .foregroundStyle(palette.primary)
             }
             .frame(width: 36, height: 36)

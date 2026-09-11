@@ -289,8 +289,7 @@ struct ToolbarIconButton: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            Image(gattoSymbol: systemName)
-                .font(.system(size: 13, weight: .semibold))
+            Image(gattoSymbol: systemName, pointSize: 13)
                 .foregroundStyle(isDisabled ? palette.subtleInk : (isActive ? palette.primary : palette.mutedInk))
                 .rotationEffect(.degrees(rotation))
                 .frame(width: 32, height: 32)
@@ -347,8 +346,7 @@ struct SearchField: View {
         let palette = AppPalette(colorScheme)
         let theme = AppVisualTheme.resolved(themeRaw)
         HStack(spacing: 7) {
-            Image(gattoSymbol: "magnifyingglass")
-                .font(.system(size: 11.5, weight: .medium))
+            Image(gattoSymbol: "magnifyingglass", pointSize: 11.5)
                 .foregroundStyle(palette.subtleInk)
             TextField(L10n.text(placeholderKey), text: $text)
                 .textFieldStyle(.plain)
@@ -358,8 +356,7 @@ struct SearchField: View {
                 Button {
                     text = ""
                 } label: {
-                    Image(gattoSymbol: "xmark.circle.fill")
-                        .font(.system(size: 11))
+                    Image(gattoSymbol: "xmark.circle.fill", pointSize: 11)
                         .foregroundStyle(palette.subtleInk)
                 }
                 .buttonStyle(.plain)
@@ -840,8 +837,7 @@ struct AgentInstallationProgressView: View {
                 Circle()
                     .fill(isCompleted ? palette.success : isCurrent ? palette.primarySoft : palette.raisedSurface)
                 if isCompleted {
-                    Image(gattoSymbol: "checkmark")
-                        .font(.system(size: 9, weight: .bold))
+                    Image(gattoSymbol: "checkmark", pointSize: 9)
                         .foregroundStyle(Color.white)
                 } else if isCurrent {
                     AgentInstallationStageRing(color: palette.primary)
@@ -1085,7 +1081,7 @@ struct TaskActionLabel: View {
 
     private var idlePanel: some View {
         HStack(spacing: 7) {
-            Image(gattoSymbol: systemImage)
+            Image(gattoSymbol: systemImage, pointSize: 18)
                 .frame(width: 18, height: 18)
             Text(title)
                 .lineLimit(1)
@@ -1144,8 +1140,7 @@ private struct TaskActivityGlyph: View {
                 .stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
                 .opacity(0.46)
 
-            Image(gattoSymbol: kind.symbol)
-                .font(.system(size: 10.5, weight: .bold))
+            Image(gattoSymbol: kind.symbol, pointSize: 10.5)
                 .offset(
                     x: reduceMotion ? 0 : (isAtEnd ? travel.end.width : travel.start.width),
                     y: reduceMotion ? 0 : (isAtEnd ? travel.end.height : travel.start.height)

@@ -90,8 +90,7 @@ private struct CommitNavigator: View {
             VStack(spacing: 11) {
                 HStack {
                     HStack(spacing: 9) {
-                        Image(gattoSymbol: "point.3.connected.trianglepath.dotted")
-                            .font(.system(size: 12, weight: .semibold))
+                        Image(gattoSymbol: "point.3.connected.trianglepath.dotted", pointSize: 12)
                             .foregroundStyle(palette.primary)
                             .frame(width: 28, height: 28)
                             .background(palette.primarySoft)
@@ -543,8 +542,7 @@ private struct CommitInspector: View {
                 .fill(palette.primarySoft)
             Image(gattoSymbol: node?.parentHashes.count ?? 0 > 1
                   ? "arrow.triangle.merge"
-                  : "point.3.filled.connected.trianglepath.dotted")
-                .font(.system(size: 14, weight: .semibold))
+                  : "point.3.filled.connected.trianglepath.dotted", pointSize: 14)
                 .foregroundStyle(palette.primary)
         }
         .frame(width: 38, height: 38)
@@ -702,8 +700,7 @@ private struct ReferenceComparisonSheet: View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(gattoSymbol: "arrow.left.arrow.right")
-                    .font(.system(size: 16, weight: .semibold))
+                Image(gattoSymbol: "arrow.left.arrow.right", pointSize: 16)
                     .foregroundStyle(palette.primary)
                 Text(L10n.text("git_tools.compare.title"))
                     .font(.system(size: 16, weight: .semibold))
@@ -849,8 +846,7 @@ private struct CommitActionsMenu: View {
                 Button(L10n.text("git_tools.commit.reset_hard"), role: .destructive) { pendingAction = .resetHard }
             }
         } label: {
-            Image(gattoSymbol: "slider.horizontal.3")
-                .font(.system(size: 13, weight: .semibold))
+            Image(gattoSymbol: "slider.horizontal.3", pointSize: 13)
                 .frame(width: 26, height: 26)
         }
         .menuStyle(.borderlessButton)
@@ -976,8 +972,7 @@ private struct CommitMetric: View {
     var body: some View {
         HStack(spacing: 4) {
             if let symbol {
-                Image(gattoSymbol: symbol)
-                    .font(.system(size: 8.5, weight: .semibold))
+                Image(gattoSymbol: symbol, pointSize: 8.5)
             }
             Text("\(prefix)\(value)")
         }

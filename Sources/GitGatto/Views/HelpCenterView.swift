@@ -170,8 +170,7 @@ struct WorkspaceQuickGuideSheet: View {
                 Button {
                     dismiss()
                 } label: {
-                    Image(gattoSymbol: "xmark")
-                        .font(.system(size: 11.5, weight: .semibold))
+                    Image(gattoSymbol: "xmark", pointSize: 11.5)
                         .frame(width: 30, height: 30)
                 }
                 .buttonStyle(.plain)
@@ -288,8 +287,7 @@ private struct HelpTopicButton: View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(gattoSymbol: topic.icon)
-                    .font(.system(size: 12.5, weight: .semibold))
+                Image(gattoSymbol: topic.icon, pointSize: 12.5)
                     .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                     .frame(width: 18)
                 Text(L10n.text(topic.titleKey))
@@ -319,8 +317,7 @@ struct HelpArticleView: View {
         let palette = AppPalette(colorScheme)
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Image(gattoSymbol: topic.icon)
-                    .font(.system(size: 18, weight: .semibold))
+                Image(gattoSymbol: topic.icon, pointSize: 18)
                     .foregroundStyle(palette.primary)
                     .frame(width: 40, height: 40)
                     .background(palette.primarySoft)

@@ -325,8 +325,7 @@ struct RegressionInvestigationWorkspaceView: View {
         let selected = model.selectedRegressionInvestigation?.id == investigation.id
         return VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 8) {
-                Image(gattoSymbol: statusIcon(investigation.status))
-                    .font(.system(size: 13, weight: .semibold))
+                Image(gattoSymbol: statusIcon(investigation.status), pointSize: 13)
                     .foregroundStyle(statusColor(investigation.status, palette: palette))
                     .frame(width: 28, height: 28)
                     .background(statusColor(investigation.status, palette: palette).opacity(0.12))
@@ -819,8 +818,7 @@ struct RegressionInvestigationWorkspaceView: View {
         palette: AppPalette
     ) -> some View {
         HStack(spacing: 8) {
-            Image(gattoSymbol: icon)
-                .font(.system(size: 13, weight: .semibold))
+            Image(gattoSymbol: icon, pointSize: 13)
                 .foregroundStyle(palette.accent)
             VStack(alignment: .leading, spacing: 1) {
                 Text(value)
@@ -858,8 +856,7 @@ struct RegressionInvestigationWorkspaceView: View {
 
     private func sectionTitle(_ key: String, icon: String, palette: AppPalette) -> some View {
         HStack(spacing: 7) {
-            Image(gattoSymbol: icon)
-                .font(.system(size: 13, weight: .semibold))
+            Image(gattoSymbol: icon, pointSize: 13)
                 .foregroundStyle(palette.accent)
             Text(L10n.text(key))
                 .font(font(12.5, weight: .semibold))
@@ -875,8 +872,7 @@ struct RegressionInvestigationWorkspaceView: View {
             if status == .running || status == .agentFixing || status == .verifyingFix || status == .publishing {
                 ProgressView().controlSize(.mini)
             } else {
-                Image(gattoSymbol: statusIcon(status))
-                    .font(.system(size: 10, weight: .semibold))
+                Image(gattoSymbol: statusIcon(status), pointSize: 10)
             }
             Text(L10n.text("regression.status.\(status.rawValue)"))
                 .font(font(9.5, weight: .semibold))
@@ -890,8 +886,7 @@ struct RegressionInvestigationWorkspaceView: View {
 
     private func isolationBadge(_ palette: AppPalette) -> some View {
         HStack(spacing: 5) {
-            Image(gattoSymbol: "checkmark.shield")
-                .font(.system(size: 10.5, weight: .semibold))
+            Image(gattoSymbol: "checkmark.shield", pointSize: 10.5)
             Text(L10n.text("regression.isolated"))
                 .font(font(9.5, weight: .semibold))
         }

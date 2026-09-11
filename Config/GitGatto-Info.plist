@@ -45,7 +45,7 @@
     <key>SUAutomaticallyUpdate</key>
     <false/>
     <key>SUEnableAutomaticChecks</key>
-    <false/>
+    <true/>
     <key>SUPublicEDKey</key>
     <string>0F5eMfBantQV0kIXKecmWo0/HokMzQyRjTWP5GGB0R0=</string>
     <key>SUFeedURL</key>

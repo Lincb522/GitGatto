@@ -90,8 +90,7 @@ struct RepositoryRecoveryView: View {
         palette: AppPalette
     ) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(gattoSymbol: "exclamationmark.triangle.fill")
-                .font(.system(size: 16, weight: .semibold))
+            Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 16)
                 .foregroundStyle(palette.warning)
                 .frame(width: 34, height: 34)
                 .background(palette.warning.opacity(0.12))
@@ -321,8 +320,7 @@ struct RepositoryRecoveryView: View {
         palette: AppPalette
     ) -> some View {
         HStack(spacing: 9) {
-            Image(gattoSymbol: icon)
-                .font(.system(size: 12, weight: .semibold))
+            Image(gattoSymbol: icon, pointSize: 12)
                 .foregroundStyle(palette.accent)
                 .frame(width: 28, height: 28)
                 .background(palette.accentSoft)
@@ -358,8 +356,7 @@ struct RepositoryRecoveryView: View {
                 Button {
                     Task { await model.reloadRepositoryBackups() }
                 } label: {
-                    Image(gattoSymbol: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 11.5, weight: .semibold))
+                    Image(gattoSymbol: "arrow.triangle.2.circlepath", pointSize: 11.5)
                         .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)

@@ -252,8 +252,7 @@ struct DeveloperToolsCatalogView: View {
         palette: AppPalette
     ) -> some View {
         HStack(spacing: 5) {
-            Image(gattoSymbol: systemImage)
-                .font(.system(size: 10, weight: .semibold))
+            Image(gattoSymbol: systemImage, pointSize: 10)
             Text(title)
             Text("\(count)")
                 .font(.system(size: 9, weight: .bold, design: .rounded))
@@ -313,8 +312,7 @@ struct DeveloperToolsCatalogView: View {
                 } label: {
                     Image(gattoSymbol: developerTools.isUpgradeSelected(tool)
                         ? "checkmark.circle.fill"
-                        : "record.circle")
-                        .font(.system(size: 15, weight: .semibold))
+                        : "record.circle", pointSize: 15)
                         .foregroundStyle(developerTools.isUpgradeSelected(tool)
                             ? palette.primary
                             : palette.subtleInk)

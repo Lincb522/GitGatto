@@ -26,8 +26,7 @@ struct DiffInspectorView: View {
                             ZStack {
                                 RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
                                     .fill(palette.primarySoft)
-                                Image(gattoSymbol: changeIcon(for: change.path))
-                                    .font(.system(size: 12.5, weight: .semibold))
+                                Image(gattoSymbol: changeIcon(for: change.path), pointSize: 12.5)
                                     .foregroundStyle(palette.primary)
                             }
                             .frame(width: theme == .console ? 24 : 34, height: theme == .console ? 24 : 34)
@@ -405,8 +404,7 @@ struct InspectorEmptyState: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 10) {
-            Image(gattoSymbol: image)
-                .font(.system(size: 25, weight: .medium))
+            Image(gattoSymbol: image, pointSize: 25)
                 .foregroundStyle(palette.subtleInk)
             Text(L10n.text(titleKey))
                 .font(.system(size: 13.5, weight: .semibold))
