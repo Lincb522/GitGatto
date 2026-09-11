@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "实时情况";
-"monitoring.detail.no_repository" = "未选择仓库";
 "monitoring.detail.working_tree.clean" = "工作区无改动";
 "monitoring.detail.working_tree.changed" = "%d 个改动 · %d 个已暂存";
 "monitoring.detail.remote.no_upstream" = "未配置上游分支";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "所有仓库";
 "monitoring.repository.all.detail" = "汇总 %d 个本地仓库的活动";
-"monitoring.detail.all_repositories" = "汇总所有已添加仓库";
-"monitoring.detail.selected_repository" = "当前查看仓库的活动";
 
 // Repository tools
 "action.more" = "更多";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "等待后台监控交接…";
 
 "monitoring.background.takeover_failed" = "无法接管后台监控，请重试。";
+
+"monitoring.status.no_repositories" = "未添加仓库";
+"monitoring.status.scope" = "%d 库";
+"monitoring.status.pending" = "待检查";
+"monitoring.status.clean" = "无改动";
+"monitoring.status.changes" = "%@ 改动";
+"monitoring.status.worktree_paused" = "改动监控已暂停";
+"monitoring.status.coverage" = "已读取 %d / %d 个仓库";
+"monitoring.status.changes_title" = "改动文件";

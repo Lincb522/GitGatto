@@ -216,9 +216,11 @@ jobs:
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release edit "$RELEASE_TAG" \
               --title "GitGatto $VERSION" \
-              --notes-file "$NOTES" \
-              --latest
+              --notes-file "$NOTES"
             gh release upload "$RELEASE_TAG" "${ASSETS[@]}" --clobber
+            if [[ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" == "false" ]]; then
+              gh release edit "$RELEASE_TAG" --latest
+            fi
           else
             gh release create "$RELEASE_TAG" "${ASSETS[@]}" \
               --title "GitGatto $VERSION" \

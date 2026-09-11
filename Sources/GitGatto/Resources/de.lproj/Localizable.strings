@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "Live-Status";
-"monitoring.detail.no_repository" = "Kein Repository ausgewählt";
 "monitoring.detail.working_tree.clean" = "Arbeitsverzeichnis ohne Änderungen";
 "monitoring.detail.working_tree.changed" = "%d Änderungen · %d vorgemerkt";
 "monitoring.detail.remote.no_upstream" = "Kein Upstream-Branch eingerichtet";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "Alle Repositories";
 "monitoring.repository.all.detail" = "Zusammengefasste Aktivität aus %d lokalen Repositories";
-"monitoring.detail.all_repositories" = "Zusammenfassung aller hinzugefügten Repositories";
-"monitoring.detail.selected_repository" = "Aktivität des ausgewählten Repositories";
 
 // Repository tools
 "action.more" = "More";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "Übergabe der Hintergrundüberwachung wird abgewartet…";
 
 "monitoring.background.takeover_failed" = "Die Hintergrundüberwachung konnte nicht übernommen werden. Versuche es erneut.";
+
+"monitoring.status.no_repositories" = "Keine Repositories";
+"monitoring.status.scope" = "%d Repos";
+"monitoring.status.pending" = "Ungeprüft";
+"monitoring.status.clean" = "Keine Änderungen";
+"monitoring.status.changes" = "%@ Änderungen";
+"monitoring.status.worktree_paused" = "Änderungsüberwachung pausiert";
+"monitoring.status.coverage" = "%d von %d Repositories geprüft";
+"monitoring.status.changes_title" = "Geänderte Dateien";

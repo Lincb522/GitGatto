@@ -2,6 +2,7 @@
 set -euo pipefail
 
 APP="${1:?Expected the built GitGatto.app path}"
+ROOT="${0:A:h:h}"
 IDENTITY="${GITGATTO_CODESIGN_IDENTITY:--}"
 HELPER="$APP/Contents/Library/LoginItems/GitGattoMonitor.app"
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/GitGattoMonitor.XXXXXX")"
@@ -46,3 +47,15 @@ mkdir -p "${HELPER:h}"
 rm -rf "$HELPER"
 ditto "$BUNDLE" "$HELPER"
 codesign --verify --deep --strict "$HELPER"
+mkdir -p "$APP/Contents/Library/LaunchAgents"
+cp "$ROOT/Config/dev.gitgatto.monitor.agent.plist" "$APP/Contents/Library/LaunchAgents/dev.gitgatto.monitor.agent.plist"
+python3 - "$APP" <<'PY'
+import pathlib, plistlib, sys
+app = pathlib.Path(sys.argv[1])
+with (app / 'Contents/Library/LaunchAgents/dev.gitgatto.monitor.agent.plist').open('rb') as handle:
+    agent = plistlib.load(handle)
+assert agent['Label'] == 'dev.gitgatto.monitor.agent'
+assert agent['BundleProgram'] == 'Contents/Library/LoginItems/GitGattoMonitor.app/Contents/MacOS/GitGattoMonitor'
+assert (app / agent['BundleProgram']).is_file()
+assert agent['RunAtLoad'] is True and agent['KeepAlive'] == {'SuccessfulExit': False}
+PY

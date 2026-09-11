@@ -16,7 +16,7 @@ struct GitGattoMonitoringApp: App {
                 .environment(\.layoutDirection, model.appPreferences.language.usesRightToLeftLayout ? .rightToLeft : .leftToRight)
             }
         } label: {
-            if let model = host.model { MonitoringMenuBarLabel(engine: model.monitoringEngine) }
+            if let model = host.model { MonitoringMenuBarLabel(model: model) }
         }
         .menuBarExtraStyle(.window)
     }

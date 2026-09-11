@@ -8,6 +8,106 @@ import Testing
 @Suite("Background monitoring ownership", .serialized)
 @MainActor
 struct BackgroundMonitoringSessionTests {
+    @Test("Packaged launch agent names the executable explicitly and restarts only after failure")
+    func launchAgentManifest() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let url = root.appendingPathComponent("Config/\(MonitoringHelperRegistration.servicePlistName)")
+        let manifest = try #require(PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil) as? [String: Any])
+        #expect(manifest["Label"] as? String == "dev.gitgatto.monitor.agent")
+        #expect(manifest["BundleProgram"] as? String == "Contents/Library/LoginItems/GitGattoMonitor.app/Contents/MacOS/GitGattoMonitor")
+        #expect(manifest["Program"] == nil)
+        #expect(manifest["RunAtLoad"] as? Bool == true)
+        #expect(manifest["KeepAlive"] as? [String: Bool] == ["SuccessfulExit": false])
+        #expect(manifest["LimitLoadToSessionType"] as? String == "Aqua")
+    }
+
+    @Test("Registration migrates the login item before starting the explicit-path service")
+    func registrationMigration() async throws {
+        let defaults = try isolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: defaultsSuite) }
+        var events: [String] = []
+        let legacy = ServiceStub(status: .enabled, record: { events.append("legacy.\($0)") })
+        let service = ServiceStub(status: .notRegistered, record: { events.append("agent.\($0)") })
+        let registration = MonitoringHelperRegistration(defaults: defaults)
+        await registration.applyConfiguration(enabled: true, service: service, legacy: legacy, build: "18035")
+        #expect(events == ["legacy.unregister", "agent.register"])
+        #expect(registration.status == .enabled)
+        #expect(registration.error == nil)
+        #expect(!registration.isUpdating)
+        #expect(defaults.string(forKey: "backgroundMonitorRegisteredBuild") == "18035")
+        events = []
+        await registration.applyConfiguration(enabled: true, service: service, legacy: legacy, build: "18035")
+        #expect(events.isEmpty)
+        await registration.applyConfiguration(enabled: true, service: service, legacy: legacy, build: "18036")
+        #expect(events == ["agent.unregister", "agent.register"])
+    }
+
+    @Test("Pending system approval is preserved and disabling removes both registrations")
+    func registrationApprovalAndDisable() async throws {
+        let defaults = try isolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: defaultsSuite) }
+        var events: [String] = []
+        let legacy = ServiceStub(status: .notRegistered, record: { events.append("legacy.\($0)") })
+        let service = ServiceStub(status: .requiresApproval, record: { events.append("agent.\($0)") })
+        let registration = MonitoringHelperRegistration(defaults: defaults)
+        await registration.applyConfiguration(enabled: true, service: service, legacy: legacy, build: "18035")
+        #expect(events.isEmpty)
+        #expect(registration.status == .requiresApproval)
+        legacy.status = .enabled
+        await registration.applyConfiguration(enabled: false, service: service, legacy: legacy, build: "18035")
+        #expect(events == ["legacy.unregister", "agent.unregister"])
+        #expect(registration.status == .notRegistered)
+    }
+
+    @Test("A failed migration never creates a second job or records successful registration")
+    func registrationFailure() async throws {
+        let defaults = try isolatedDefaults()
+        defer { defaults.removePersistentDomain(forName: defaultsSuite) }
+        var events: [String] = []
+        let legacy = ServiceStub(status: .enabled, record: { events.append("legacy.\($0)") })
+        legacy.unregisterError = CocoaError(.fileWriteNoPermission)
+        let service = ServiceStub(status: .notRegistered, record: { events.append("agent.\($0)") })
+        let registration = MonitoringHelperRegistration(defaults: defaults)
+        await registration.applyConfiguration(enabled: true, service: service, legacy: legacy, build: "18035")
+        #expect(events == ["legacy.unregister"])
+        #expect(registration.error != nil)
+        #expect(defaults.string(forKey: "backgroundMonitorRegisteredBuild") == nil)
+        legacy.unregisterError = nil
+        service.registerError = CocoaError(.executableNotLoadable)
+        await registration.applyConfiguration(enabled: true, service: service, legacy: legacy, build: "18035")
+        #expect(registration.error != nil)
+        #expect(registration.status == .notRegistered)
+        #expect(defaults.string(forKey: "backgroundMonitorRegisteredBuild") == nil)
+    }
+
+    private let defaultsSuite = "GitGatto.MonitoringRegistration.\(UUID().uuidString)"
+    private func isolatedDefaults() throws -> UserDefaults {
+        let defaults = try #require(UserDefaults(suiteName: defaultsSuite))
+        defaults.removePersistentDomain(forName: defaultsSuite)
+        return defaults
+    }
+
+    private final class ServiceStub: MonitoringAppService {
+        var status: SMAppService.Status
+        var registerError: (any Error)?
+        var unregisterError: (any Error)?
+        let record: (String) -> Void
+        init(status: SMAppService.Status, record: @escaping (String) -> Void) {
+            self.status = status
+            self.record = record
+        }
+        func register() throws {
+            record("register")
+            if let registerError { throw registerError }
+            status = .enabled
+        }
+        func unregister() async throws {
+            record("unregister")
+            if let unregisterError { throw unregisterError }
+            status = .notRegistered
+        }
+    }
+
     @Test("Lease blocks a second owner, releases without deleting its inode, and rejects symlinks")
     func leases() throws {
         let root = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
@@ -67,7 +167,10 @@ struct BackgroundMonitoringSessionTests {
         #expect(model.snapshot == nil)
         #expect(model.backgroundRepositoryStates[a.path]?.changes.count == 1)
         #expect(model.backgroundRepositoryStates[b.path]?.changes.count == 1)
-        #expect(model.monitoringSnapshot(for: b)?.rootURL == b)
+        engine.selectRepository(b)
+        #expect(model.monitoringStatusSummary.repositories.first?.repository.path == b.standardizedFileURL.path)
+        #expect(model.monitoringStatusSummary.changed == 1)
+        engine.selectRepository(nil)
         #expect(!engine.isChannelEnabled(.remote))
         #expect(!engine.isChannelEnabled(.repositoryProtection))
         await model.stopBackgroundMonitoring()

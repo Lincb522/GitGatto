@@ -34,8 +34,8 @@ settings:
     CLANG_ENABLE_MODULES: YES
     DEVELOPMENT_LANGUAGE: en
     LOCALIZATION_PREFERS_STRING_CATALOGS: NO
-    MARKETING_VERSION: 0.18.34
-    CURRENT_PROJECT_VERSION: 18034
+    MARKETING_VERSION: 0.18.35
+    CURRENT_PROJECT_VERSION: 18035
 targets:
   GitGatto:
     type: application
@@ -57,10 +57,12 @@ targets:
         basedOnDependencyAnalysis: false
         inputFiles:
           - $(SRCROOT)/scripts/embed-monitor-helper.sh
+          - $(SRCROOT)/Config/dev.gitgatto.monitor.agent.plist
           - $(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)
           - $(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)
         outputFiles:
           - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LoginItems/GitGattoMonitor.app
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchAgents/dev.gitgatto.monitor.agent.plist
         script: |
           GITGATTO_CODESIGN_IDENTITY="${EXPANDED_CODE_SIGN_IDENTITY:--}" \
             "$SRCROOT/scripts/embed-monitor-helper.sh" "$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"

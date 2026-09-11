@@ -1,30 +1,40 @@
 import AppKit
+import Combine
 import SwiftUI
 
 struct MonitoringMenuBarLabel: View {
-    let engine: MonitoringEngine
-    @State private var overallState: MonitoringOverallState
+    let model: WorkspaceViewModel
+    @State private var summary: MonitoringStatusSummary
+    @State private var language: AppLanguage
 
-    init(engine: MonitoringEngine) {
-        self.engine = engine
-        _overallState = State(initialValue: engine.overallState)
+    init(model: WorkspaceViewModel) {
+        self.model = model
+        _summary = State(initialValue: model.monitoringStatusSummary)
+        _language = State(initialValue: model.appPreferences.language)
     }
 
     var body: some View {
-        GattoIcon(symbol: iconName, size: 16)
-            .frame(width: 18, height: 18)
-            .accessibilityLabel(L10n.text(overallState.localizationKey))
-            .onReceive(engine.overallStatePublisher) { state in
-                if overallState != state { overallState = state }
-            }
+        MonitoringMenuBarContent(summary: summary)
+            .environment(\.locale, language.locale)
+            .onReceive(model.monitoringStatusPublisher) { summary = $0 }
+            .onReceive(model.$appPreferences.map(\.language).removeDuplicates()) { language = $0 }
     }
+}
 
-    private var iconName: String {
-        switch overallState {
-        case .paused: "pause"
-        case .healthy, .monitoring: "dot.radiowaves.left.and.right"
-        case .attention: "exclamationmark.triangle.fill"
+struct MonitoringMenuBarContent: View {
+    let summary: MonitoringStatusSummary
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(nsImage: MonitoringStatusIcon.image(for: summary.state))
+            Text(summary.compactTitle)
+                .font(.system(size: 11, weight: .medium))
+                .monospacedDigit()
+                .lineLimit(1)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(summary.accessibilityDescription)
+        .help(summary.accessibilityDescription)
     }
 }
 
@@ -35,19 +45,30 @@ struct MonitoringStatusBarView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openSettings) private var openSettings
 
+    private var summary: MonitoringStatusSummary { model.monitoringStatusSummary }
+
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
     private var palette: AppPalette { AppPalette(colorScheme, theme: theme) }
 
     var body: some View {
         VStack(spacing: 12) {
             header
-            repositorySummary
-            activityPanel
-            channelPanel
+            ScrollView {
+                VStack(spacing: 12) {
+                    repositorySummary
+                    if !engine.repositories.isEmpty {
+                        repositoryPanel
+                        activityPanel
+                    }
+                    if !updateChannels.isEmpty { updatesPanel }
+                }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(minHeight: 0, maxHeight: engine.repositories.isEmpty ? 76 : 540)
             footer
         }
         .padding(14)
-        .frame(width: 430)
+        .frame(minWidth: 350, idealWidth: 430, maxWidth: 430)
         .background(palette.background)
         .task(id: engine.selectedRepositoryURL) {
             engine.refreshActivity()
@@ -176,6 +197,77 @@ struct MonitoringStatusBarView: View {
         return L10n.format("monitoring.repository.all.detail", engine.repositoryCount)
     }
 
+    private var repositoryPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(L10n.text("monitoring.status.changes_title"))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(palette.mutedInk)
+                Text(summary.changedValue)
+                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(palette.ink)
+                Spacer(minLength: 6)
+                Text(summary.coverageText)
+                    .font(.system(size: 10))
+                    .foregroundStyle(palette.subtleInk)
+                    .multilineTextAlignment(.trailing)
+            }
+            ForEach(engine.channels.filter { $0.isEnabled && $0.state == .attention && [.workingTree, .remote].contains($0.category) }) { channel in
+                Text(channel.detail ?? L10n.text("monitoring.overall.attention"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(palette.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(summary.repositories) { repository in
+                Button { openChannel(.workingTree, repository: repository.repository) } label: {
+                    HStack(spacing: 9) {
+                        GattoIcon(symbol: "folder", size: 18)
+                            .foregroundStyle(palette.primary)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(repository.repository.lastPathComponent)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(palette.ink)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Text(repositoryDetail(repository))
+                                .font(.system(size: 10))
+                                .foregroundStyle(palette.mutedInk)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 4)
+                        if summary.remoteEnabled, let ahead = repository.ahead, let behind = repository.behind {
+                            Text("↑\(ahead.formatted())  ↓\(behind.formatted())")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(ahead + behind > 0 ? palette.primary : palette.subtleInk)
+                                .accessibilityLabel(L10n.format("monitoring.detail.remote.counts", ahead, behind))
+                        }
+                        GattoIcon(symbol: "chevron.right", size: 10)
+                            .foregroundStyle(palette.subtleInk)
+                    }
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(repository.repository.path)
+            }
+        }
+        .padding(13)
+        .monitoringPanel(theme: theme, palette: palette)
+    }
+
+    private func repositoryDetail(_ repository: MonitoringRepositoryStatus) -> String {
+        guard summary.workingTreeEnabled else { return L10n.text("monitoring.status.worktree_paused") }
+        guard let changed = repository.changed, let staged = repository.staged else {
+            return L10n.text("monitoring.status.pending")
+        }
+        let detail = changed == 0 ? L10n.text("monitoring.detail.working_tree.clean")
+            : L10n.format("monitoring.detail.working_tree.changed", changed, staged)
+        let upstream = summary.remoteEnabled && repository.ahead == nil
+            ? L10n.text("monitoring.detail.remote.no_upstream") : nil
+        return [repository.branch, detail, upstream].compactMap { $0 }.joined(separator: " · ")
+    }
+
     private var activityPanel: some View {
         VStack(alignment: .leading, spacing: 11) {
             HStack {
@@ -226,7 +318,11 @@ struct MonitoringStatusBarView: View {
         .monitoringPanel(theme: theme, palette: palette)
     }
 
-    private var channelPanel: some View {
+    private var updateChannels: [MonitoringChannelSnapshot] {
+        engine.channels.filter { $0.isEnabled && [.repositoryProtection, .githubActions, .projectGoals].contains($0.category) }
+    }
+
+    private var updatesPanel: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(L10n.text("monitoring.status_overview"))
                 .font(.system(size: 12.5, weight: .semibold))
@@ -234,12 +330,8 @@ struct MonitoringStatusBarView: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 3)
 
-            ForEach(engine.channels) { channel in
-                if !channel.isEnabled {
-                    Button {
-                        openMonitoringSettings()
-                    } label: { channelRow(channel) }.buttonStyle(.plain)
-                } else if engine.selectedRepositoryURL == nil,
+            ForEach(updateChannels) { channel in
+                if engine.selectedRepositoryURL == nil,
                           [.workingTree, .githubActions, .projectGoals].contains(channel.category) {
                     Menu {
                         ForEach(engine.repositories, id: \.standardizedFileURL.path) { repository in
@@ -253,6 +345,7 @@ struct MonitoringStatusBarView: View {
             }
         }
         .padding(9)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .monitoringPanel(theme: theme, palette: palette)
     }
 
@@ -307,7 +400,7 @@ struct MonitoringStatusBarView: View {
         case .attention, .paused:
             L10n.text(engine.overallState.localizationKey)
         case .healthy, .monitoring:
-            L10n.format("monitoring.summary", engine.activeChannelCount, engine.repositoryCount)
+            L10n.text("monitoring.overall.monitoring")
         }
     }
 
@@ -320,46 +413,8 @@ struct MonitoringStatusBarView: View {
         }
 
         switch channel.category {
-        case .workingTree:
-            guard engine.selectedRepositoryURL != nil else {
-                return L10n.text("monitoring.detail.all_repositories")
-            }
-            guard let snapshot = model.monitoringSnapshot(for: engine.selectedRepositoryURL) else {
-                return L10n.text("monitoring.detail.no_repository")
-            }
-            guard snapshot.rootURL.standardizedFileURL == engine.selectedRepositoryURL else {
-                return L10n.text("monitoring.detail.selected_repository")
-            }
-            guard !snapshot.changes.isEmpty else {
-                return L10n.text("monitoring.detail.working_tree.clean")
-            }
-            return L10n.format(
-                "monitoring.detail.working_tree.changed",
-                snapshot.changes.count,
-                snapshot.stagedChanges.count
-            )
-
-        case .remote:
-            guard engine.selectedRepositoryURL != nil else {
-                return L10n.text("monitoring.detail.all_repositories")
-            }
-            guard let snapshot = model.monitoringSnapshot(for: engine.selectedRepositoryURL) else {
-                return L10n.text("monitoring.detail.no_repository")
-            }
-            guard snapshot.rootURL.standardizedFileURL == engine.selectedRepositoryURL else {
-                return L10n.text("monitoring.detail.selected_repository")
-            }
-            guard snapshot.upstreamName != nil else {
-                return L10n.text("monitoring.detail.remote.no_upstream")
-            }
-            guard snapshot.aheadCount > 0 || snapshot.behindCount > 0 else {
-                return L10n.text("monitoring.detail.remote.synced")
-            }
-            return L10n.format(
-                "monitoring.detail.remote.counts",
-                snapshot.aheadCount,
-                snapshot.behindCount
-            )
+        case .workingTree, .remote:
+            return summary.coverageText
 
         case .repositoryProtection:
             let repositoryPath = engine.selectedRepositoryURL?.standardizedFileURL.path
@@ -376,6 +431,10 @@ struct MonitoringStatusBarView: View {
             )
 
         case .githubActions:
+            if !model.isBackgroundMonitor, let repository = engine.selectedRepositoryURL,
+               model.snapshot?.rootURL.standardizedFileURL != repository.standardizedFileURL {
+                return L10n.text("monitoring.status.pending")
+            }
             let runs = model.monitoringActions(for: engine.selectedRepositoryURL)
             let activeCount = runs.count { run in
                 ["queued", "in_progress", "requested", "waiting", "pending"]
@@ -384,14 +443,15 @@ struct MonitoringStatusBarView: View {
             guard !runs.isEmpty else {
                 return L10n.text("monitoring.detail.actions.none")
             }
-            return L10n.format(
-                "monitoring.detail.actions.count",
-                activeCount,
-                runs.count
-            )
+            let detail = L10n.format("monitoring.detail.actions.count", activeCount, runs.count)
+            if !model.isBackgroundMonitor, engine.selectedRepositoryURL == nil,
+               let repository = model.snapshot?.rootURL, engine.repositoryCount > 1 {
+                return repository.lastPathComponent + ": " + detail
+            }
+            return detail
 
         case .projectGoals:
-            let repositoryPath = engine.selectedRepositoryURL?.standardizedFileURL.path ?? (model.isBackgroundMonitor ? nil : model.snapshot?.rootURL.standardizedFileURL.path)
+            let repositoryPath = engine.selectedRepositoryURL?.standardizedFileURL.path
             let goals = model.projectGoals.filter { goal in
                 repositoryPath == nil
                     || URL(fileURLWithPath: goal.repositoryPath).standardizedFileURL.path == repositoryPath
@@ -445,25 +505,19 @@ private struct MonitoringChannelRow: View {
                 Text(detail)
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(channel.state == .attention ? palette.warning : palette.mutedInk)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 6)
 
-            if channel.state == .monitoring {
-                ProgressView()
-                    .controlSize(.mini)
-            } else if channel.state == .attention {
-                Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 10)
+            if channel.state == .attention {
+                Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 14)
                     .foregroundStyle(palette.warning)
             }
-            if let lastUpdatedAt = channel.lastUpdatedAt, channel.isEnabled {
-                Text(lastUpdatedAt, style: .time)
-                    .font(.system(size: 8.5, design: .rounded))
-                    .foregroundStyle(palette.subtleInk)
-            }
+
         }
         .padding(.horizontal, 7)
+        .padding(.vertical, 6)
         .frame(minHeight: 44)
         .background(channel.state == .attention ? palette.warningSoft.opacity(0.48) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

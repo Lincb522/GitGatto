@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "État en direct";
-"monitoring.detail.no_repository" = "Aucun dépôt sélectionné";
 "monitoring.detail.working_tree.clean" = "Aucune modification locale";
 "monitoring.detail.working_tree.changed" = "%d modifications · %d indexées";
 "monitoring.detail.remote.no_upstream" = "Aucune branche amont configurée";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "Tous les dépôts";
 "monitoring.repository.all.detail" = "Activité combinée de %d dépôts locaux";
-"monitoring.detail.all_repositories" = "Vue combinée des dépôts ajoutés";
-"monitoring.detail.selected_repository" = "Activité du dépôt sélectionné";
 
 // Repository tools
 "action.more" = "More";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "En attente du transfert de la surveillance…";
 
 "monitoring.background.takeover_failed" = "Impossible de reprendre la surveillance en arrière-plan. Réessayez.";
+
+"monitoring.status.no_repositories" = "Aucun dépôt";
+"monitoring.status.scope" = "%d dépôts";
+"monitoring.status.pending" = "Non vérifié";
+"monitoring.status.clean" = "Aucun changement";
+"monitoring.status.changes" = "%@ changements";
+"monitoring.status.worktree_paused" = "Suivi des changements suspendu";
+"monitoring.status.coverage" = "%d dépôts vérifiés sur %d";
+"monitoring.status.changes_title" = "Fichiers modifiés";

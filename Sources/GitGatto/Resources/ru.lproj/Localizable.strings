@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "Состояние в реальном времени";
-"monitoring.detail.no_repository" = "Репозиторий не выбран";
 "monitoring.detail.working_tree.clean" = "В рабочем дереве нет изменений";
 "monitoring.detail.working_tree.changed" = "Изменений: %d · подготовлено: %d";
 "monitoring.detail.remote.no_upstream" = "Внешняя ветка не настроена";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "Все репозитории";
 "monitoring.repository.all.detail" = "Сводная активность по %d локальным репозиториям";
-"monitoring.detail.all_repositories" = "Сводка по добавленным репозиториям";
-"monitoring.detail.selected_repository" = "Активность выбранного репозитория";
 
 // Repository tools
 "action.more" = "More";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "Ожидание передачи фонового мониторинга…";
 
 "monitoring.background.takeover_failed" = "Не удалось принять управление фоновым мониторингом. Повторите попытку.";
+
+"monitoring.status.no_repositories" = "Нет репозиториев";
+"monitoring.status.scope" = "%d реп.";
+"monitoring.status.pending" = "Не проверено";
+"monitoring.status.clean" = "Нет изменений";
+"monitoring.status.changes" = "Изменений: %@";
+"monitoring.status.worktree_paused" = "Отслеживание изменений приостановлено";
+"monitoring.status.coverage" = "Проверено репозиториев: %d из %d";
+"monitoring.status.changes_title" = "Изменённые файлы";

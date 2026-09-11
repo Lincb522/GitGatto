@@ -1,11 +1,13 @@
-## Fixed
+## Added
 
-- Fixed page reinitialization that caused stuttering when switching themes and reloaded content when switching between light and dark appearances.
-- Fixed missing dark-mode images in READMEs. Color changes now preserve the reading position and expanded sections.
-- Fixed raw image tags appearing in issue descriptions and replies. Images fit the available width and can be clicked to open the original.
-- Fixed author avatars appearing as application icons in the catalog and details. Applications now use their own icons, with a default icon when none is available.
-- Fixed some README and application-description translations being incorrectly rejected as incomplete. Headings, code formatting, links and numbers are preserved; content that fails validation is retried once.
+- The collapsed menu bar item shows the repository scope and changed-file count, with an indicator for issues that need attention.
 
 ## Improved
 
-- Application icons load on demand, and the list and details reuse the same result to avoid duplicate requests.
+- Updated the monitoring icon and popover with per-repository changes, staged files and sync counts, alongside daily activity and recovery points.
+- Unchecked, partially checked and clean repositories are now distinguished. Channel counts no longer stand in for repository status.
+
+## Fixed
+
+- Fixed background monitoring and the menu bar item disappearing after quitting the main app with background monitoring enabled.
+- Fixed monitoring views for another repository using data from the main window’s selected repository.

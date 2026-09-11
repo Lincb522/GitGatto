@@ -134,7 +134,7 @@ struct GitGattoApp: App {
             }
             .appLocalization(model.appPreferences.language)
         } label: {
-            MonitoringMenuBarLabel(engine: model.monitoringEngine)
+            MonitoringMenuBarLabel(model: model)
         }
         .menuBarExtraStyle(.window)
 

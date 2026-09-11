@@ -8561,16 +8561,11 @@ extension WorkspaceViewModel {
         } else { monitoringEngine.markHealthy(category) }
     }
 
-    func monitoringSnapshot(for repository: URL?) -> RepositorySnapshot? {
-        guard isBackgroundMonitor else { return snapshot }
-        guard let repository, let state = backgroundRepositoryStates[repository.standardizedFileURL.path] else { return nil }
-        return RepositorySnapshot(rootURL: repository, branchName: state.branchName,
-            upstreamName: state.upstreamName, aheadCount: state.aheadCount, behindCount: state.behindCount,
-            changes: state.changes, commits: [], branches: [])
-    }
-
     func monitoringActions(for repository: URL?) -> [GitHubActionsRun] {
-        guard isBackgroundMonitor else { return githubActionRuns }
+        guard isBackgroundMonitor else {
+            guard repository == nil || snapshot?.rootURL.standardizedFileURL == repository?.standardizedFileURL else { return [] }
+            return githubActionRuns
+        }
         if let repository { return backgroundActionRuns[repository.standardizedFileURL.path] ?? [] }
         return backgroundActionRuns.values.flatMap { $0 }
     }

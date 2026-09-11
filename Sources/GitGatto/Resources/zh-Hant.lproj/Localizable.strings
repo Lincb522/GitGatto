@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "即時情況";
-"monitoring.detail.no_repository" = "未選擇倉庫";
 "monitoring.detail.working_tree.clean" = "工作區無改動";
 "monitoring.detail.working_tree.changed" = "%d 個改動 · %d 個已暫存";
 "monitoring.detail.remote.no_upstream" = "未設定上游分支";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "所有倉庫";
 "monitoring.repository.all.detail" = "彙總 %d 個本機倉庫的活動";
-"monitoring.detail.all_repositories" = "彙總所有已加入倉庫";
-"monitoring.detail.selected_repository" = "目前查看倉庫的活動";
 
 // Repository tools
 "action.more" = "更多";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "等待背景監控交接…";
 
 "monitoring.background.takeover_failed" = "無法接管背景監控，請重試。";
+
+"monitoring.status.no_repositories" = "未加入儲存庫";
+"monitoring.status.scope" = "%d 庫";
+"monitoring.status.pending" = "待檢查";
+"monitoring.status.clean" = "無變更";
+"monitoring.status.changes" = "%@ 變更";
+"monitoring.status.worktree_paused" = "變更監控已暫停";
+"monitoring.status.coverage" = "已讀取 %d / %d 個儲存庫";
+"monitoring.status.changes_title" = "變更檔案";

@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "リアルタイム状況";
-"monitoring.detail.no_repository" = "リポジトリが選択されていません";
 "monitoring.detail.working_tree.clean" = "作業ツリーに変更はありません";
 "monitoring.detail.working_tree.changed" = "変更 %d 件・ステージ済み %d 件";
 "monitoring.detail.remote.no_upstream" = "上流ブランチが設定されていません";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "すべてのリポジトリ";
 "monitoring.repository.all.detail" = "%d 個のローカルリポジトリの集計アクティビティ";
-"monitoring.detail.all_repositories" = "追加済みリポジトリの集計";
-"monitoring.detail.selected_repository" = "選択したリポジトリのアクティビティ";
 
 // Repository tools
 "action.more" = "More";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "バックグラウンド監視の引き継ぎを待っています…";
 
 "monitoring.background.takeover_failed" = "バックグラウンド監視を引き継げませんでした。再試行してください。";
+
+"monitoring.status.no_repositories" = "リポジトリなし";
+"monitoring.status.scope" = "%d リポジトリ";
+"monitoring.status.pending" = "未確認";
+"monitoring.status.clean" = "変更なし";
+"monitoring.status.changes" = "%@ 件の変更";
+"monitoring.status.worktree_paused" = "変更監視は停止中";
+"monitoring.status.coverage" = "%d / %d リポジトリを確認済み";
+"monitoring.status.changes_title" = "変更ファイル";

@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "실시간 현황";
-"monitoring.detail.no_repository" = "선택한 저장소 없음";
 "monitoring.detail.working_tree.clean" = "작업 트리에 변경 사항 없음";
 "monitoring.detail.working_tree.changed" = "변경 %d개 · 스테이징 %d개";
 "monitoring.detail.remote.no_upstream" = "업스트림 브랜치가 설정되지 않음";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "모든 저장소";
 "monitoring.repository.all.detail" = "%d개 로컬 저장소의 통합 활동";
-"monitoring.detail.all_repositories" = "추가된 저장소 통합 보기";
-"monitoring.detail.selected_repository" = "선택한 저장소 활동";
 
 // Repository tools
 "action.more" = "More";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "백그라운드 모니터링 인계를 기다리는 중…";
 
 "monitoring.background.takeover_failed" = "백그라운드 모니터링을 이어받지 못했습니다. 다시 시도하세요.";
+
+"monitoring.status.no_repositories" = "저장소 없음";
+"monitoring.status.scope" = "저장소 %d개";
+"monitoring.status.pending" = "확인 전";
+"monitoring.status.clean" = "변경 없음";
+"monitoring.status.changes" = "변경 %@개";
+"monitoring.status.worktree_paused" = "변경 감시 일시 중지";
+"monitoring.status.coverage" = "저장소 %d / %d개 확인됨";
+"monitoring.status.changes_title" = "변경된 파일";

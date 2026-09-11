@@ -1871,7 +1871,6 @@
 
 /* Monitoring live details */
 "monitoring.status_overview" = "الحالة المباشرة";
-"monitoring.detail.no_repository" = "لم يتم تحديد مستودع";
 "monitoring.detail.working_tree.clean" = "شجرة العمل بلا تغييرات";
 "monitoring.detail.working_tree.changed" = "%d تغييرات · %d مرحّلة";
 "monitoring.detail.remote.no_upstream" = "لا يوجد فرع تتبّع بعيد";
@@ -1894,8 +1893,6 @@
 
 "monitoring.repository.all" = "كل المستودعات";
 "monitoring.repository.all.detail" = "نشاط مجمّع من %d مستودعات محلية";
-"monitoring.detail.all_repositories" = "ملخص مجمّع للمستودعات المضافة";
-"monitoring.detail.selected_repository" = "نشاط المستودع المحدد";
 
 // Repository tools
 "action.more" = "More";
@@ -2951,3 +2948,12 @@
 "monitoring.background.waiting" = "بانتظار تسليم المراقبة من الخلفية…";
 
 "monitoring.background.takeover_failed" = "تعذّر تولّي المراقبة من خدمة الخلفية. أعد المحاولة.";
+
+"monitoring.status.no_repositories" = "لا توجد مستودعات";
+"monitoring.status.scope" = "%d مستودعات";
+"monitoring.status.pending" = "لم يُفحص";
+"monitoring.status.clean" = "لا تغييرات";
+"monitoring.status.changes" = "%@ تغييرات";
+"monitoring.status.worktree_paused" = "مراقبة التغييرات متوقفة مؤقتًا";
+"monitoring.status.coverage" = "تم فحص %d من %d مستودعات";
+"monitoring.status.changes_title" = "الملفات المعدّلة";
