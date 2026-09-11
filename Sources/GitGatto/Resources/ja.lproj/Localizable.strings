@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "変更、上流、保護、Actions、目標を確認する。";
 "help.monitoring.start" = "設定の監視でエンジンを有効にし、各チャンネルと更新間隔を個別に設定します。メニューバーの表示設定もここにあります。アイコンを隠すことと監視の停止は別です。 リポジトリごとに自動、アクティブ、低頻度を選択できます。バッテリー制限と危険な変更の確認は引き続き有効です。";
 "help.monitoring.result" = "メニューバーではメイン画面とは独立して全リポジトリまたは一つを選べます。実際の変更、同期状態、復元ポイント、日別活動を表示します。活動はコミットと変更シグナルであり、作業時間ではありません。";
-"help.monitoring.caution" = "ウインドウを最小化してもアプリが動いていれば監視しますが、終了後は監視しません。外部 Agent・CLI 保護は管理対象の変化を観測し復元基準を保持します。すべての破壊的コマンドの阻止や、未保存・除外ファイルの復元は保証できません。";
+"help.monitoring.caution" = "終了後の監視には、バックグラウンドサービスの有効化と macOS の許可が必要です。スリープ中やログアウト中は監視しません。外部 Agent と CLI の保護は管理対象リポジトリを監視して復元用の基準を保持しますが、すべての破壊的なコマンドを阻止したり、未保存・除外ファイルの復元を保証したりはできません。";
 "help.topic.applications.title" = "アプリリポジトリ";
 "help.topic.applications.summary" = "リリースを探してアプリをインストールする。";
 "help.applications.start" = "アプリリポジトリのアプリで検索するか、発見、お気に入り、インストール済み、最近の項目を確認します。アプリを選び、バージョンとダウンロードで OS と CPU に合うファイルを選択します。";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "低頻度";
 "monitoring.policy.repositories" = "リポジトリの監視頻度";
 "monitoring.policy.body" = "自動は操作と電源状態に従います。低頻度は通常の確認をまとめますが、危険な変更は速やかに確認します。アクティブでも省電力制限は有効です。";
+
+"process.error.input" = "%@ に入力を書き込めませんでした。プロセスが終了した可能性があります。";
+
+"monitoring.background.title" = "終了後も監視を続ける";
+
+"monitoring.background.body" = "独立したバックグラウンドサービスが監視を引き継ぎ、ログイン時に起動します。macOS の許可が必要な場合があります。";
+
+"monitoring.background.enabled" = "バックグラウンドサービスは有効です。メインアプリ終了後に監視を引き継ぎます。";
+
+"monitoring.background.approval" = "システム設定で GitGatto のバックグラウンド実行を許可してください。";
+
+"monitoring.background.unavailable" = "監視ヘルパーがありません。完全なアプリをインストールしてください。";
+
+"monitoring.background.disabled" = "未設定です。スイッチを変更したら設定を保存してください。";
+
+"monitoring.background.system_settings" = "バックグラウンド項目の設定を開く";
+
+"monitoring.background.refresh" = "サービスの状態を更新";
+
+"monitoring.background.waiting" = "バックグラウンド監視の引き継ぎを待っています…";
+
+"monitoring.background.takeover_failed" = "バックグラウンド監視を引き継げませんでした。再試行してください。";

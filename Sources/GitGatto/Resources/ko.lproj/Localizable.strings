@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "변경, 업스트림, 보호, Actions, 목표를 확인합니다.";
 "help.monitoring.start" = "설정의 모니터링에서 엔진, 각 채널, 갱신 주기를 설정하세요. 메뉴 막대 표시도 여기서 바꿉니다. 아이콘을 숨겨도 모니터링이 중지되지는 않습니다. 저장소마다 자동, 활성, 낮은 빈도를 선택할 수 있습니다. 배터리 제한과 위험한 변경 검사는 계속 적용됩니다.";
 "help.monitoring.result" = "주 창과 별개로 모든 저장소 또는 하나를 선택해 실제 변경, 동기화, 복구 지점, 일별 활동을 봅니다. 활동은 커밋과 변경 신호이며 코딩 시간이 아닙니다.";
-"help.monitoring.caution" = "앱이 실행 중이면 창을 최소화해도 계속하지만 종료 후에는 멈춥니다. 외부 Agent/CLI 보호는 관리 저장소를 관찰하고 복구 기준을 보관합니다. 모든 파괴 명령을 막거나 미저장·제외 파일의 복원을 보장하지는 않습니다.";
+"help.monitoring.caution" = "종료 후 모니터링에는 백그라운드 서비스 활성화와 macOS의 허용이 필요합니다. 잠자기나 로그아웃 중에는 모니터링하지 않습니다. 외부 Agent 및 CLI 보호는 관리 중인 저장소를 관찰하고 복구 기준을 보관하지만, 모든 파괴적 명령을 차단하거나 저장하지 않은 파일 및 제외된 파일의 복구를 보장하지는 않습니다.";
 "help.topic.applications.title" = "앱 저장소";
 "help.topic.applications.summary" = "릴리스를 찾아 다운로드하고 설치합니다.";
 "help.applications.start" = "앱 저장소에서 검색하거나 발견, 즐겨찾기, 설치됨, 최근 항목을 보세요. 버전과 다운로드에서 운영체제와 아키텍처에 맞는 패키지를 선택합니다.";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "낮은 빈도";
 "monitoring.policy.repositories" = "저장소 모니터링 빈도";
 "monitoring.policy.body" = "자동은 활동과 전원 상태를 따릅니다. 낮은 빈도는 일반 검사를 묶고 위험한 변경은 즉시 검사합니다. 활성 모드에도 배터리 절약 제한이 적용됩니다.";
+
+"process.error.input" = "%@에 입력을 쓰지 못했습니다. 프로세스가 종료되었을 수 있습니다.";
+
+"monitoring.background.title" = "종료 후에도 모니터링";
+
+"monitoring.background.body" = "별도 백그라운드 서비스가 모니터링을 이어받고 로그인 시 시작됩니다. macOS의 백그라운드 실행 허용이 필요할 수 있습니다.";
+
+"monitoring.background.enabled" = "백그라운드 서비스가 활성화되어 앱 종료 후 모니터링을 이어받습니다.";
+
+"monitoring.background.approval" = "시스템 설정에서 GitGatto의 백그라운드 실행을 허용하세요.";
+
+"monitoring.background.unavailable" = "모니터링 도우미가 없습니다. 전체 앱을 설치하세요.";
+
+"monitoring.background.disabled" = "활성화되지 않았습니다. 스위치를 변경한 뒤 설정을 저장하세요.";
+
+"monitoring.background.system_settings" = "백그라운드 항목 설정 열기";
+
+"monitoring.background.refresh" = "서비스 상태 새로 고침";
+
+"monitoring.background.waiting" = "백그라운드 모니터링 인계를 기다리는 중…";
+
+"monitoring.background.takeover_failed" = "백그라운드 모니터링을 이어받지 못했습니다. 다시 시도하세요.";

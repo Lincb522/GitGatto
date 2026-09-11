@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "Consultar cambios, upstream, protección, Actions y objetivos.";
 "help.monitoring.start" = "En Ajustes → Monitorización active el motor y configure cada canal e intervalo. Allí también se controla el icono de la barra; ocultarlo no detiene la monitorización. Cada repositorio puede usar Automático, Activo o Baja frecuencia. Se mantienen los límites de batería y las comprobaciones urgentes.";
 "help.monitoring.result" = "Seleccione todos los repositorios o uno, independientemente de la ventana principal. Consulte cambios, sincronización, puntos de recuperación y actividad diaria. Se cuentan commits y señales de cambio, no horas de programación.";
-"help.monitoring.caution" = "Continúa con la ventana minimizada mientras la app funciona, no después de salir. La protección de Agents/CLI externos observa repositorios administrados y conserva bases; no intercepta todas las órdenes destructivas ni garantiza archivos sin guardar o excluidos.";
+"help.monitoring.caution" = "La supervisión después de salir requiere un servicio activado y autorizado por macOS. Se pausa durante el reposo y al cerrar sesión. La protección frente a Agents y CLI externos observa los repositorios gestionados y conserva puntos de recuperación; no puede interceptar todos los comandos destructivos ni garantizar la recuperación de archivos sin guardar o excluidos.";
 "help.topic.applications.title" = "Repositorio de aplicaciones";
 "help.topic.applications.summary" = "Encontrar versiones, descargar e instalar apps.";
 "help.applications.start" = "Abra Aplicaciones y busque o explore descubrimiento, favoritas, instaladas y recientes. En versiones y descargas seleccione un paquete compatible con sistema y arquitectura.";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "Baja frecuencia";
 "monitoring.policy.repositories" = "Frecuencia por repositorio";
 "monitoring.policy.body" = "Automático sigue la actividad y la alimentación. Baja frecuencia agrupa revisiones habituales; los cambios críticos se revisan pronto. Activo también respeta el ahorro de batería.";
+
+"process.error.input" = "No se pudo escribir la entrada en %@. Es posible que el proceso haya terminado.";
+
+"monitoring.background.title" = "Supervisar después de salir";
+
+"monitoring.background.body" = "Un servicio independiente continúa la supervisión y se inicia al iniciar sesión. macOS puede solicitar permiso para ejecutarlo en segundo plano.";
+
+"monitoring.background.enabled" = "El servicio está activado y continúa cuando se cierra la aplicación principal.";
+
+"monitoring.background.approval" = "Permite que GitGatto se ejecute en segundo plano en Ajustes del Sistema.";
+
+"monitoring.background.unavailable" = "Falta el asistente de supervisión. Instala la aplicación completa.";
+
+"monitoring.background.disabled" = "No está activado. Guarda los ajustes después de cambiar el interruptor.";
+
+"monitoring.background.system_settings" = "Abrir ajustes de elementos en segundo plano";
+
+"monitoring.background.refresh" = "Actualizar estado del servicio";
+
+"monitoring.background.waiting" = "Esperando el traspaso de la supervisión…";
+
+"monitoring.background.takeover_failed" = "No se pudo retomar la supervisión en segundo plano. Reinténtalo.";

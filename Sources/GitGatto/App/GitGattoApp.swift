@@ -1,7 +1,6 @@
 @preconcurrency import AppKit
 import SwiftUI
 
-@main
 struct GitGattoApp: App {
     @NSApplicationDelegateAdaptor(GitGattoAppDelegate.self) private var appDelegate
     @StateObject private var model = WorkspaceViewModel()
@@ -61,7 +60,9 @@ struct GitGattoApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .commands {
-            GitGattoCommands(model: model, updateManager: updateManager)
+            if model.hasMonitoringOwnership {
+                GitGattoCommands(model: model, updateManager: updateManager)
+            }
         }
 
         Window(L10n.text("about.title"), id: "about") {
@@ -117,14 +118,15 @@ struct GitGattoApp: App {
         Window(L10n.text("repository.scan.title"), id: "repository-scanner") {
             AppThemeRoot { RepositoryScannerView(model: model) }
                 .appLocalization(model.appPreferences.language)
+                .disabled(!model.hasMonitoringOwnership)
         }
         .defaultSize(width: 760, height: 620)
         .windowStyle(.hiddenTitleBar)
 
         MenuBarExtra(
             isInserted: Binding(
-                get: { model.appPreferences.statusBarMonitoringEnabled },
-                set: { model.setStatusBarMonitoringEnabled($0) }
+                get: { model.hasMonitoringOwnership && model.appPreferences.statusBarMonitoringEnabled },
+                set: { if model.hasMonitoringOwnership { model.setStatusBarMonitoringEnabled($0) } }
             )
         ) {
             AppThemeRoot {
@@ -151,6 +153,7 @@ struct GitGattoApp: App {
         Settings {
             AppThemeRoot(resetsContentOnStyleChange: false) {
                 AppSettingsView(model: model, updateManager: updateManager)
+                    .disabled(!model.hasMonitoringOwnership)
             }
             .appLocalization(model.appPreferences.language)
         }
@@ -166,6 +169,24 @@ struct GitGattoApp: App {
                     || ProcessInfo.processInfo.environment["GITGATTO_LAUNCH_PREVIEW"] == "1"
             )
                 .frame(minWidth: 960, minHeight: 620)
+                .disabled(!model.hasMonitoringOwnership)
+                .overlay {
+                    if !model.hasMonitoringOwnership {
+                        VStack(spacing: 12) {
+                            if let error = model.monitoringStartupError {
+                                Text(L10n.text("monitoring.background.takeover_failed"))
+                                Text(error).font(.caption).textSelection(.enabled)
+                                Button(L10n.text("action.retry")) { Task { await model.start() } }
+                                    .buttonStyle(PrimaryButtonStyle())
+                            } else {
+                                ProgressView(L10n.text("monitoring.background.waiting"))
+                            }
+                        }
+                        .padding(24)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                }
+                .background(MonitoringSettingsLaunchAction(model: model, ready: model.hasCompletedStartup && model.hasMonitoringOwnership))
                 .task {
                     await model.start()
 #if DEBUG

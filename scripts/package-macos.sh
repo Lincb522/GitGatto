@@ -115,6 +115,7 @@ PY
 chmod +x "$APP/Contents/MacOS/GitGatto"
 if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
     codesign --force --deep --sign - "$APP"
+    "$ROOT/scripts/embed-monitor-helper.sh" "$APP"
     codesign --force --sign - --entitlements "$ENTITLEMENTS" \
         -r='designated => identifier "dev.gitgatto.client"' "$APP"
 else
@@ -130,9 +131,12 @@ else
     codesign $SIGN_ARGS "$SPARKLE_VERSION/Autoupdate"
     codesign $SIGN_ARGS "$SPARKLE_VERSION/Updater.app"
     codesign $SIGN_ARGS "$SPARKLE"
+    GITGATTO_CODESIGN_IDENTITY="$CODESIGN_IDENTITY" GITGATTO_SIGNING_KEYCHAIN="$SIGNING_KEYCHAIN" \
+        "$ROOT/scripts/embed-monitor-helper.sh" "$APP"
     codesign $SIGN_ARGS --entitlements "$ENTITLEMENTS" "$APP"
 fi
 
+[[ -x "$APP/Contents/Library/LoginItems/GitGattoMonitor.app/Contents/MacOS/GitGattoMonitor" ]]
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 codesign --verify --deep --strict "$APP"
 codesign -d --entitlements - --xml "$APP" 2>/dev/null \

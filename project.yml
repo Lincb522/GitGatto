@@ -34,8 +34,8 @@ settings:
     CLANG_ENABLE_MODULES: YES
     DEVELOPMENT_LANGUAGE: en
     LOCALIZATION_PREFERS_STRING_CATALOGS: NO
-    MARKETING_VERSION: 0.18.31
-    CURRENT_PROJECT_VERSION: 18031
+    MARKETING_VERSION: 0.18.32
+    CURRENT_PROJECT_VERSION: 18032
 targets:
   GitGatto:
     type: application
@@ -52,6 +52,18 @@ targets:
       - path: Sources/GitGatto/Resources/LanguageIcons
         type: folder
         buildPhase: resources
+    postBuildScripts:
+      - name: Embed background monitoring helper
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(SRCROOT)/scripts/embed-monitor-helper.sh
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)
+          - $(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LoginItems/GitGattoMonitor.app
+        script: |
+          GITGATTO_CODESIGN_IDENTITY="${EXPANDED_CODE_SIGN_IDENTITY:--}" \
+            "$SRCROOT/scripts/embed-monitor-helper.sh" "$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
     dependencies:
       - package: Sparkle
         product: Sparkle

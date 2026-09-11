@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 struct GitCommandResult: Sendable {
@@ -212,11 +213,22 @@ struct ProcessPipeOutput: Sendable {
     let standardError: Data
 }
 
+enum ProcessPipeInput {
+    static func write(_ data: Data, to handle: FileHandle) throws {
+        defer { try? handle.close() }
+        guard fcntl(handle.fileDescriptor, F_SETNOSIGPIPE, 1) != -1 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+        try handle.write(contentsOf: data)
+    }
+}
+
 enum ProcessPipeCollector {
     static func waitForExit(
         _ process: Process,
         standardOutput outputPipe: Pipe,
-        standardError errorPipe: Pipe
+        standardError errorPipe: Pipe,
+        writeInput: () -> Void = {}
     ) -> ProcessPipeOutput {
         let outputReader = ProcessPipeReader(
             handle: outputPipe.fileHandleForReading,
@@ -228,6 +240,7 @@ enum ProcessPipeCollector {
         )
         outputReader.start()
         errorReader.start()
+        writeInput()
         process.waitUntilExit()
         return ProcessPipeOutput(
             standardOutput: outputReader.waitForData(),

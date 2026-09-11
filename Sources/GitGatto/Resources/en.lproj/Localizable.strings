@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "Check repository changes, upstream state, protection, Actions, and goals.";
 "help.monitoring.start" = "In Settings → Monitoring, enable the engine and choose each channel and refresh interval separately. The menu-bar visibility switch is also there; hiding the icon is not the same as stopping monitoring. Each repository can use Automatic, Active, or Low frequency. Battery limits and urgent protection checks still apply.";
 "help.monitoring.result" = "Open the menu-bar panel and select All Repositories or one repository independently of the main window. It shows actual changes, sync state, recovery points, and daily activity. Activity combines commits and change signals, not coding hours.";
-"help.monitoring.caution" = "Monitoring continues while the app runs with its window minimized, not after Quit. External Agent/CLI protection observes managed repositories and retains recovery baselines; it cannot intercept every destructive command or guarantee recovery of unsaved or excluded files.";
+"help.monitoring.caution" = "Monitoring after quitting requires the background service to be enabled and allowed by macOS. Monitoring pauses during sleep and logout. External Agent and CLI protection observes managed repositories and retains recovery baselines; it cannot intercept every destructive command or guarantee recovery of unsaved or excluded files.";
 "help.topic.applications.title" = "Application Repository";
 "help.topic.applications.summary" = "Find releases, download assets, and install applications.";
 "help.applications.start" = "Open Application Repository → Applications. Search or browse discovery, favorites, installed, and recent items. Select an app, then inspect Versions & Downloads and choose an asset matching your platform and architecture.";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "Low frequency";
 "monitoring.policy.repositories" = "Repository monitoring frequency";
 "monitoring.policy.body" = "Automatic follows activity and power state. Low frequency batches routine checks; urgent repository changes still trigger prompt checks. Battery limits also apply to Active.";
+
+"process.error.input" = "Could not write input to %@. The process may have exited.";
+
+"monitoring.background.title" = "Monitor after quitting";
+
+"monitoring.background.body" = "An independent background service takes over monitoring and starts at login. macOS may require permission to run in the background.";
+
+"monitoring.background.enabled" = "The background service is enabled and takes over when the main app quits.";
+
+"monitoring.background.approval" = "Allow GitGatto to run in the background in System Settings.";
+
+"monitoring.background.unavailable" = "The monitoring helper is missing. Install the complete app bundle.";
+
+"monitoring.background.disabled" = "Not enabled. Save Settings after changing the switch.";
+
+"monitoring.background.system_settings" = "Open Background Items settings";
+
+"monitoring.background.refresh" = "Refresh service status";
+
+"monitoring.background.waiting" = "Waiting for background monitoring to hand over…";
+
+"monitoring.background.takeover_failed" = "Could not take over background monitoring. Retry.";

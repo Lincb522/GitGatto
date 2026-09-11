@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "查看改動、上游狀態、倉庫保護、Actions 和目標。";
 "help.monitoring.start" = "在“設置 → 監控”開啓引擎，分別選擇監控通道和刷新間隔。狀態欄顯示開關也在這裡；隱藏圖標不等於停止監控。 每個儲存庫可個別選擇自動、活躍或低頻。電池限制和危險變更檢查仍然生效。";
 "help.monitoring.result" = "點擊狀態欄圖標，可獨立選擇“所有倉庫”或單個倉庫，不受主窗口當前選擇限制。面板顯示實際改動、同步狀態、恢復點和每日活動；活動統計包含提交與改動信號，不是編碼時長。";
-"help.monitoring.caution" = "應用運行且窗口最小化時仍會監控，退出應用後不會繼續。外部 Agent 與 CLI 保護會觀察已管理倉庫並保留恢復基線，但不能攔截每條破壞性命令，也不能保證找回未保存或被排除的文件。";
+"help.monitoring.caution" = "只有開啟「退出後繼續監控」並獲系統允許，主程式退出後才會繼續監控。睡眠或登出期間不監控。外部 Agent 與 CLI 保護會觀察已管理倉庫並保留復原基準，但無法攔截每條破壞性命令，也無法保證找回未儲存或已排除的檔案。";
 "help.topic.applications.title" = "應用倉庫";
 "help.topic.applications.summary" = "查找發行版、下載安裝包和安裝應用。";
 "help.applications.start" = "進入“應用倉庫 → 應用”，搜索或瀏覽發現、收藏、已安裝、最近項目。選中應用後查看“版本與下載”，選擇符合系統和芯片架構的安裝包。";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "低頻";
 "monitoring.policy.repositories" = "儲存庫監控頻率";
 "monitoring.policy.body" = "自動模式跟隨儲存庫活動和電源狀態。低頻模式合併例行檢查，危險變更仍及時檢查。活躍模式也遵守電池省電限制。";
+
+"process.error.input" = "無法向 %@ 寫入輸入，子程序可能已結束。";
+
+"monitoring.background.title" = "退出後繼續監控";
+
+"monitoring.background.body" = "由獨立背景服務接管監控，登入本機後自動啟動。系統可能要求允許背景執行。";
+
+"monitoring.background.enabled" = "背景服務已啟用，主程式退出後繼續監控。";
+
+"monitoring.background.approval" = "請在系統設定中允許 GitGatto 在背景執行。";
+
+"monitoring.background.unavailable" = "目前應用程式套件缺少監控助手，請安裝完整版本。";
+
+"monitoring.background.disabled" = "尚未啟用。變更開關後請儲存設定。";
+
+"monitoring.background.system_settings" = "開啟系統背景項目設定";
+
+"monitoring.background.refresh" = "重新整理服務狀態";
+
+"monitoring.background.waiting" = "等待背景監控交接…";
+
+"monitoring.background.takeover_failed" = "無法接管背景監控，請重試。";

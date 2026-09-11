@@ -41,6 +41,11 @@ actor RepositoryActivityLedger: RepositoryActivityLedgerServing {
         decoder.dateDecodingStrategy = .iso8601
     }
 
+    func resetMonitoringBaselines() {
+        baselines.removeAll()
+        pendingSnapshots.removeAll()
+    }
+
     func seed(_ repositoryURLs: [URL]) async {
         for repositoryURL in repositoryURLs {
             let repository = repositoryURL.standardizedFileURL

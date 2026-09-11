@@ -237,8 +237,7 @@ struct MonitoringStatusBarView: View {
             ForEach(engine.channels) { channel in
                 if !channel.isEnabled {
                     Button {
-                        model.settingsDestination = "monitoring"
-                        openSettings()
+                        openMonitoringSettings()
                     } label: { channelRow(channel) }.buttonStyle(.plain)
                 } else if engine.selectedRepositoryURL == nil,
                           [.workingTree, .githubActions, .projectGoals].contains(channel.category) {
@@ -262,8 +261,12 @@ struct MonitoringStatusBarView: View {
     }
 
     private func openChannel(_ category: MonitoringCategory, repository: URL?) {
-        showMainWindow()
-        Task { await model.openMonitoringChannel(category, repositoryURL: repository) }
+        if model.isBackgroundMonitor {
+            MonitoringHelperHost.openApplication(category: category, repository: repository)
+        } else {
+            showMainWindow()
+            Task { await model.openMonitoringChannel(category, repositoryURL: repository) }
+        }
     }
 
     private var footer: some View {
@@ -274,19 +277,18 @@ struct MonitoringStatusBarView: View {
             .buttonStyle(PrimaryButtonStyle())
 
             Button(L10n.text("settings.title")) {
-                NSApp.activate(ignoringOtherApps: true)
-                openSettings()
+                openMonitoringSettings()
             }
             .buttonStyle(SecondaryButtonStyle())
 
             Spacer()
 
-            Button(L10n.text("monitoring.quit")) {
-                WindowCloseRuntime.quit()
+            if !model.isBackgroundMonitor {
+                Button(L10n.text("monitoring.quit")) { WindowCloseRuntime.quit() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(palette.mutedInk)
             }
-            .buttonStyle(.plain)
-            .font(.system(size: 10.5, weight: .medium))
-            .foregroundStyle(palette.mutedInk)
         }
         .padding(.horizontal, 2)
     }
@@ -322,7 +324,7 @@ struct MonitoringStatusBarView: View {
             guard engine.selectedRepositoryURL != nil else {
                 return L10n.text("monitoring.detail.all_repositories")
             }
-            guard let snapshot = model.snapshot else {
+            guard let snapshot = model.monitoringSnapshot(for: engine.selectedRepositoryURL) else {
                 return L10n.text("monitoring.detail.no_repository")
             }
             guard snapshot.rootURL.standardizedFileURL == engine.selectedRepositoryURL else {
@@ -341,7 +343,7 @@ struct MonitoringStatusBarView: View {
             guard engine.selectedRepositoryURL != nil else {
                 return L10n.text("monitoring.detail.all_repositories")
             }
-            guard let snapshot = model.snapshot else {
+            guard let snapshot = model.monitoringSnapshot(for: engine.selectedRepositoryURL) else {
                 return L10n.text("monitoring.detail.no_repository")
             }
             guard snapshot.rootURL.standardizedFileURL == engine.selectedRepositoryURL else {
@@ -360,11 +362,9 @@ struct MonitoringStatusBarView: View {
             )
 
         case .repositoryProtection:
-            guard let repositoryPath = model.snapshot?.rootURL.standardizedFileURL.path else {
-                return L10n.text("monitoring.detail.no_repository")
-            }
+            let repositoryPath = engine.selectedRepositoryURL?.standardizedFileURL.path
             let backups = model.repositoryBackups.filter {
-                URL(fileURLWithPath: $0.repositoryPath).standardizedFileURL.path == repositoryPath
+                repositoryPath == nil || URL(fileURLWithPath: $0.repositoryPath).standardizedFileURL.path == repositoryPath
             }
             guard let latest = backups.max(by: { $0.createdAt < $1.createdAt }) else {
                 return L10n.text("monitoring.detail.protection.none")
@@ -376,21 +376,22 @@ struct MonitoringStatusBarView: View {
             )
 
         case .githubActions:
-            let activeCount = model.githubActionRuns.count { run in
+            let runs = model.monitoringActions(for: engine.selectedRepositoryURL)
+            let activeCount = runs.count { run in
                 ["queued", "in_progress", "requested", "waiting", "pending"]
                     .contains(run.status.lowercased())
             }
-            guard !model.githubActionRuns.isEmpty else {
+            guard !runs.isEmpty else {
                 return L10n.text("monitoring.detail.actions.none")
             }
             return L10n.format(
                 "monitoring.detail.actions.count",
                 activeCount,
-                model.githubActionRuns.count
+                runs.count
             )
 
         case .projectGoals:
-            let repositoryPath = model.snapshot?.rootURL.standardizedFileURL.path
+            let repositoryPath = engine.selectedRepositoryURL?.standardizedFileURL.path ?? (model.isBackgroundMonitor ? nil : model.snapshot?.rootURL.standardizedFileURL.path)
             let goals = model.projectGoals.filter { goal in
                 repositoryPath == nil
                     || URL(fileURLWithPath: goal.repositoryPath).standardizedFileURL.path == repositoryPath
@@ -408,7 +409,19 @@ struct MonitoringStatusBarView: View {
         }
     }
 
-    private func showMainWindow() { WindowCloseRuntime.showWorkspace() }
+    private func showMainWindow() {
+        if model.isBackgroundMonitor { MonitoringHelperHost.openApplication() }
+        else { WindowCloseRuntime.showWorkspace() }
+    }
+
+    private func openMonitoringSettings() {
+        if model.isBackgroundMonitor { MonitoringHelperHost.openApplication(settings: true) }
+        else {
+            model.settingsDestination = "monitoring"
+            NSApp.activate(ignoringOtherApps: true)
+            openSettings()
+        }
+    }
 
 }
 

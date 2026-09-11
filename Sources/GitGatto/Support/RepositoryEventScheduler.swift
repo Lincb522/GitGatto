@@ -101,4 +101,10 @@ final class RepositoryEventScheduler {
         jobs.removeAll()
         // Keep running permits until cancellation cleanup actually finishes.
     }
+    func cancelAndWait() async {
+        cancelAll()
+        let tasks = Array(runningTasks.values)
+        for task in tasks { await task.value }
+    }
+
 }

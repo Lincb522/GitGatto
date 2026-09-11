@@ -201,6 +201,7 @@ struct AppPreferences: Codable, Sendable, Equatable {
     var language: AppLanguage = .system
     var defaultWorkspace: WorkspaceSection = .github
     var monitoringEngineEnabled = true
+    var backgroundMonitoringEnabled = false
     var repositoryMonitoringPolicies: [String: RepositoryMonitoringPolicy] = [:]
     var statusBarMonitoringEnabled = true
     var liveRefreshEnabled = true
@@ -231,6 +232,7 @@ struct AppPreferences: Codable, Sendable, Equatable {
         case language
         case defaultWorkspace
         case monitoringEngineEnabled
+        case backgroundMonitoringEnabled
         case repositoryMonitoringPolicies
         case statusBarMonitoringEnabled
         case liveRefreshEnabled
@@ -262,6 +264,7 @@ struct AppPreferences: Codable, Sendable, Equatable {
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        backgroundMonitoringEnabled = try container.decodeIfPresent(Bool.self, forKey: .backgroundMonitoringEnabled) ?? false
         repositoryMonitoringPolicies = (try container.decodeIfPresent([String: String].self, forKey: .repositoryMonitoringPolicies) ?? [:])
             .compactMapValues(RepositoryMonitoringPolicy.init(rawValue:))
         language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .system

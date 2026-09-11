@@ -36,6 +36,15 @@ struct ExternalProcessTimeoutError: LocalizedError, Sendable {
     }
 }
 
+struct ExternalProcessInputError: LocalizedError {
+    let executable: String
+    let underlying: any Error
+
+    var errorDescription: String? {
+        L10n.format("process.error.input", executable) + " " + underlying.localizedDescription
+    }
+}
+
 struct ExternalProcessRunner: Sendable {
     func run(
         executable: URL,
@@ -147,16 +156,21 @@ private final class ExternalProcessInvocation: @unchecked Sendable {
         lock.withLock { started = true }
         if lock.withLock({ cancelled }) { process.terminate() }
 
-        if let input, let inputPipe {
-            inputPipe.fileHandleForWriting.write(input)
-            try? inputPipe.fileHandleForWriting.close()
-        }
+        var inputError: (any Error)?
         let captured = ProcessPipeCollector.waitForExit(
             process,
             standardOutput: outputPipe,
             standardError: errorPipe
-        )
+        ) {
+            guard let input, let inputPipe else { return }
+            // Drain both output pipes before writing: a child may echo more than a pipe can hold.
+            do { try ProcessPipeInput.write(input, to: inputPipe.fileHandleForWriting) }
+            catch { inputError = error }
+        }
         if lock.withLock({ cancelled }) || Task.isCancelled { throw CancellationError() }
+        if let inputError, process.terminationStatus == 0 {
+            throw ExternalProcessInputError(executable: executable.lastPathComponent, underlying: inputError)
+        }
         return ExternalProcessResult(
             standardOutput: captured.standardOutput,
             standardError: captured.standardError,

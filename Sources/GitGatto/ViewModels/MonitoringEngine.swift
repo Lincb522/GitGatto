@@ -281,4 +281,11 @@ final class MonitoringEngine: ObservableObject {
         guard let index = channels.firstIndex(where: { $0.category == category }) else { return }
         mutation(&channels[index])
     }
+    func stopActivity() async {
+        pendingActivityRepositories.removeAll()
+        pendingRecordedRepositories.removeAll()
+        pendingReferenceReads.removeAll()
+        await activityScheduler.cancelAndWait()
+    }
+
 }

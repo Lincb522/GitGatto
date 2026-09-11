@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "查看改动、上游状态、仓库保护、Actions 和目标。";
 "help.monitoring.start" = "在“设置 → 监控”开启引擎，分别选择监控通道和刷新间隔。状态栏显示开关也在这里；隐藏图标不等于停止监控。 每个仓库可单独选择自动、活跃或低频。电池限制和危险改动检查仍然生效。";
 "help.monitoring.result" = "点击状态栏图标，可独立选择“所有仓库”或单个仓库，不受主窗口当前选择限制。面板显示实际改动、同步状态、恢复点和每日活动；活动统计包含提交与改动信号，不是编码时长。";
-"help.monitoring.caution" = "应用运行且窗口最小化时仍会监控，退出应用后不会继续。外部 Agent 与 CLI 保护会观察已管理仓库并保留恢复基线，但不能拦截每条破坏性命令，也不能保证找回未保存或被排除的文件。";
+"help.monitoring.caution" = "只有开启“退出后继续监控”并获系统允许，主程序退出后才会继续监控。休眠或注销期间不监控。外部 Agent 与 CLI 保护会观察已管理仓库并保留恢复基线，但不能拦截每条破坏性命令，也不能保证找回未保存或被排除的文件。";
 "help.topic.applications.title" = "应用仓库";
 "help.topic.applications.summary" = "查找发行版、下载安装包和安装应用。";
 "help.applications.start" = "进入“应用仓库 → 应用”，搜索或浏览发现、收藏、已安装、最近项目。选中应用后查看“版本与下载”，选择符合系统和芯片架构的安装包。";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "低频";
 "monitoring.policy.repositories" = "仓库监控频率";
 "monitoring.policy.body" = "自动模式跟随仓库活动和电源状态。低频模式合并常规检查，危险改动仍及时检查。活跃模式也遵守电池省电限制。";
+
+"process.error.input" = "无法向 %@ 写入输入，子进程可能已退出。";
+
+"monitoring.background.title" = "退出后继续监控";
+
+"monitoring.background.body" = "由独立后台服务接管监控，登录本机后自动启动。系统可能要求允许后台运行。";
+
+"monitoring.background.enabled" = "后台服务已启用，主程序退出后继续监控。";
+
+"monitoring.background.approval" = "请在系统设置中允许 GitGatto 后台运行。";
+
+"monitoring.background.unavailable" = "当前应用包缺少监控助手，请安装完整版本。";
+
+"monitoring.background.disabled" = "尚未启用。修改开关后请保存设置。";
+
+"monitoring.background.system_settings" = "打开系统后台项目设置";
+
+"monitoring.background.refresh" = "刷新服务状态";
+
+"monitoring.background.waiting" = "等待后台监控交接…";
+
+"monitoring.background.takeover_failed" = "无法接管后台监控，请重试。";

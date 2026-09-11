@@ -1535,21 +1535,24 @@ final class CodexCommandInvocation: @unchecked Sendable {
             throw CodexServiceError.launchFailed
         }
 
-        if let inputPipe, let input {
-            inputPipe.fileHandleForWriting.write(Data(input.utf8))
-            try? inputPipe.fileHandleForWriting.close()
-        }
-
+        var inputError: (any Error)?
         let capturedOutput = ProcessPipeCollector.waitForExit(
             process,
             standardOutput: outputPipe,
             standardError: errorPipe
-        )
+        ) {
+            guard let inputPipe, let input else { return }
+            do { try ProcessPipeInput.write(Data(input.utf8), to: inputPipe.fileHandleForWriting) }
+            catch { inputError = error }
+        }
 
         lock.lock()
         let cancelled = isCancelled
         lock.unlock()
         if cancelled { throw CancellationError() }
+        if let inputError, process.terminationStatus == 0 {
+            throw ExternalProcessInputError(executable: executableURL.lastPathComponent, underlying: inputError)
+        }
 
         return CodexCommandOutput(
             standardOutput: capturedOutput.standardOutput,

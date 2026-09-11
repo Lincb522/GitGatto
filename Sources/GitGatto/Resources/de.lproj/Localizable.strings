@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "Änderungen, Upstream, Schutz, Actions und Ziele prüfen.";
 "help.monitoring.start" = "Unter Einstellungen → Überwachung Engine, einzelne Kanäle und Intervalle festlegen. Dort auch das Menüleistensymbol einblenden; Ausblenden stoppt nicht die Überwachung. Pro Repository sind Automatisch, Aktiv und Selten wählbar. Batteriegrenzen und dringende Schutzprüfungen bleiben wirksam.";
 "help.monitoring.result" = "In der Menüleiste unabhängig vom Hauptfenster alle oder ein Repository auswählen. Änderungen, Synchronisierung, Wiederherstellungspunkte und Tagesaktivität ansehen. Aktivität zählt Commits und Änderungssignale, keine Arbeitsstunden.";
-"help.monitoring.caution" = "Läuft bei minimiertem Fenster weiter, aber nicht nach Beenden der App. Schutz externer Agents/CLIs beobachtet verwaltete Repositorys und hält Baselines vor; er blockiert nicht jeden zerstörerischen Befehl und garantiert keine Rettung ungespeicherter oder ausgeschlossener Dateien.";
+"help.monitoring.caution" = "Die Überwachung nach dem Beenden erfordert einen aktivierten und von macOS erlaubten Hintergrunddienst. Im Ruhezustand und nach der Abmeldung wird nicht überwacht. Der Schutz vor externen Agents und CLIs beobachtet verwaltete Repositorys und behält Wiederherstellungsstände; er kann nicht jeden destruktiven Befehl abfangen oder ungespeicherte beziehungsweise ausgeschlossene Dateien garantiert wiederherstellen.";
 "help.topic.applications.title" = "Anwendungsrepository";
 "help.topic.applications.summary" = "Releases finden, herunterladen und installieren.";
 "help.applications.start" = "Im Anwendungsrepository Anwendungen öffnen: suchen oder Entdecken, Favoriten, Installiert und Zuletzt ansehen. Unter Versionen und Downloads ein Paket passend zu System und Architektur wählen.";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "Selten";
 "monitoring.policy.repositories" = "Prüfhäufigkeit pro Repository";
 "monitoring.policy.body" = "Automatisch folgt Aktivität und Stromversorgung. Selten bündelt Routineprüfungen; kritische Änderungen werden weiterhin zeitnah geprüft. Energiespargrenzen gelten auch bei Aktiv.";
+
+"process.error.input" = "Die Eingabe konnte nicht an %@ geschrieben werden. Der Prozess wurde möglicherweise beendet.";
+
+"monitoring.background.title" = "Nach dem Beenden weiter überwachen";
+
+"monitoring.background.body" = "Ein unabhängiger Hintergrunddienst übernimmt die Überwachung und startet bei der Anmeldung. macOS kann eine Erlaubnis für die Hintergrundausführung verlangen.";
+
+"monitoring.background.enabled" = "Der Hintergrunddienst ist aktiviert und übernimmt nach dem Beenden der Haupt-App.";
+
+"monitoring.background.approval" = "Erlaube GitGatto in den Systemeinstellungen die Ausführung im Hintergrund.";
+
+"monitoring.background.unavailable" = "Der Überwachungshelfer fehlt. Installiere das vollständige App-Paket.";
+
+"monitoring.background.disabled" = "Nicht aktiviert. Speichere die Einstellungen nach dem Umschalten.";
+
+"monitoring.background.system_settings" = "Einstellungen für Hintergrundobjekte öffnen";
+
+"monitoring.background.refresh" = "Dienststatus aktualisieren";
+
+"monitoring.background.waiting" = "Übergabe der Hintergrundüberwachung wird abgewartet…";
+
+"monitoring.background.takeover_failed" = "Die Hintergrundüberwachung konnte nicht übernommen werden. Versuche es erneut.";

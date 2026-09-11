@@ -444,6 +444,7 @@ struct AppSettingsView: View {
         case .monitoring:
             MonitoringSettingsPage(
                 engine: model.monitoringEngine,
+                registration: model.backgroundMonitorRegistration,
                 preferences: $draftPreferences
             )
         case .recovery:
@@ -497,7 +498,7 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
         case .appearance: keys = ["settings.appearance.accent_section", "settings.appearance.custom_accent", "settings.appearance.custom_accent.body", "settings.appearance.mode", "settings.appearance.mode_control", "settings.appearance.mode_control.body", "settings.appearance.theme_section"]
         case .general: keys = ["settings.general.close_behavior", "settings.general.close_behavior.body", "settings.general.default_workspace", "settings.general.default_workspace.body", "settings.general.language", "settings.general.language.body", "settings.general.language_section", "settings.general.launch_animation", "settings.general.launch_animation.body", "settings.general.reopen_repository", "settings.general.reopen_repository.body", "settings.general.startup", "settings.general.window"]
         case .git: keys = ["settings.git.confirm_discard", "settings.git.confirm_discard.body", "settings.git.discovery", "settings.git.safety", "settings.github.account"]
-        case .monitoring: keys = ["settings.git.refresh_interval", "settings.git.refresh_interval.body", "settings.git.remote_interval", "settings.git.remote_interval.body", "settings.monitoring.cadence", "settings.monitoring.channels", "settings.monitoring.engine", "settings.monitoring.engine_enabled", "settings.monitoring.engine_enabled.body", "settings.monitoring.status_bar", "settings.monitoring.status_bar.body", "settings.seconds"]
+        case .monitoring: keys = ["settings.git.refresh_interval", "settings.git.refresh_interval.body", "settings.git.remote_interval", "settings.git.remote_interval.body", "settings.monitoring.cadence", "settings.monitoring.channels", "settings.monitoring.engine", "settings.monitoring.engine_enabled", "settings.monitoring.engine_enabled.body", "settings.monitoring.status_bar", "settings.monitoring.status_bar.body", "monitoring.background.title", "monitoring.background.body", "settings.seconds"]
         case .recovery: keys = ["settings.backups", "settings.files", "settings.git.backup_file_limit", "settings.git.backup_file_limit.body", "settings.git.backup_interval", "settings.git.backup_interval.body", "settings.git.backup_major_files", "settings.git.backup_major_files.body", "settings.git.backup_major_lines", "settings.git.backup_major_lines.body", "settings.git.backup_retention", "settings.git.backup_retention.body", "settings.lines", "settings.megabytes", "settings.minutes", "settings.recovery.agent_protection", "settings.recovery.agent_protection.body", "settings.recovery.external_protection", "settings.recovery.external_protection.body", "settings.recovery.protected_repositories", "settings.recovery.protected_repositories.value", "settings.recovery.protection", "settings.recovery.retention", "settings.recovery.schedule", "settings.recovery.storage", "settings.recovery.storage.choose", "settings.recovery.storage.location", "settings.recovery.storage.migrating", "settings.recovery.storage.reset", "settings.recovery.storage.reveal", "settings.recovery.storage_used"]
         case .agent: keys = ["ai.settings.project", "ai.settings.project.body", "settings.agent.conversation_context", "settings.agent.conversation_context.body", "settings.agent.default_mode", "settings.agent.default_mode.body", "settings.agent.draft_detail", "settings.agent.draft_detail.body", "settings.agent.engine", "settings.agent.messages", "settings.agent.profile"]
         case .translation: keys = ["settings.translation.default_target", "settings.translation.default_target.body", "settings.translation.defaults", "settings.translation.engine", "settings.translation.engine.body"]
@@ -1211,8 +1212,9 @@ struct GitHubAccountSettings: View {
     }
 }
 
-private struct MonitoringSettingsPage: View {
+struct MonitoringSettingsPage: View {
     @ObservedObject var engine: MonitoringEngine
+    @ObservedObject var registration: MonitoringHelperRegistration
     @Binding var preferences: AppPreferences
     @Environment(\.colorScheme) private var colorScheme
 
@@ -1227,6 +1229,39 @@ private struct MonitoringSettingsPage: View {
                 Toggle("", isOn: $preferences.monitoringEngineEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
+            }
+
+            SettingsControlRow(
+                titleKey: "monitoring.background.title",
+                descriptionKey: "monitoring.background.body"
+            ) {
+                Toggle(L10n.text("monitoring.background.title"), isOn: $preferences.backgroundMonitoringEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            if preferences.backgroundMonitoringEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.text(registration.statusKey))
+                        .font(.system(size: 11))
+                        .foregroundStyle(palette.mutedInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let error = registration.error {
+                        Text(error).font(.system(size: 11)).foregroundStyle(palette.warning)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack(spacing: 10) {
+                        if registration.status == .requiresApproval {
+                            Button(L10n.text("monitoring.background.system_settings")) { registration.openSystemSettings() }
+                        }
+                        Button(L10n.text("monitoring.background.refresh")) { registration.refreshStatus() }
+                            .disabled(registration.isUpdating)
+                    }.buttonStyle(SecondaryButtonStyle())
+                }
+                .onAppear { registration.refreshStatus() }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    registration.refreshStatus()
+                }
             }
 
             SettingsControlRow(

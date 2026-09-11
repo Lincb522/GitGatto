@@ -2577,7 +2577,7 @@
 "help.topic.monitoring.summary" = "Voir changements, amont, protection, Actions et objectifs.";
 "help.monitoring.start" = "Dans Réglages → Surveillance, activez le moteur puis chaque canal et intervalle séparément. L’affichage dans la barre des menus se règle ici ; masquer l’icône n’arrête pas la surveillance. Chaque dépôt peut utiliser Automatique, Actif ou Basse fréquence. Les limites sur batterie et les contrôles urgents restent actifs.";
 "help.monitoring.result" = "Le panneau permet de choisir tous les dépôts ou un seul indépendamment de la fenêtre principale. Il affiche changements, synchronisation, points de restauration et activité quotidienne. L’activité compte commits et signaux de changement, pas des heures de travail.";
-"help.monitoring.caution" = "La surveillance continue fenêtre minimisée tant que l’app tourne, pas après Quitter. La protection Agent/CLI externe observe les dépôts gérés et conserve des bases de restauration ; elle n’intercepte pas toute commande destructive et ne garantit pas les fichiers non enregistrés ou exclus.";
+"help.monitoring.caution" = "La surveillance après la fermeture nécessite un service activé et autorisé par macOS. Elle est suspendue pendant la veille et après la déconnexion. La protection des Agents et CLI externes observe les dépôts gérés et conserve des points de récupération ; elle ne peut pas intercepter chaque commande destructive ni garantir la récupération des fichiers non enregistrés ou exclus.";
 "help.topic.applications.title" = "Dépôt d’applications";
 "help.topic.applications.summary" = "Trouver des versions, télécharger et installer.";
 "help.applications.start" = "Dans le dépôt d’applications, cherchez ou consultez découverte, favoris, installations et éléments récents. Sélectionnez une app puis un fichier adapté au système et à l’architecture dans Versions et téléchargements.";
@@ -2929,3 +2929,25 @@
 "monitoring.policy.lowFrequency" = "Basse fréquence";
 "monitoring.policy.repositories" = "Fréquence par dépôt";
 "monitoring.policy.body" = "Automatique suit l’activité et l’alimentation. Basse fréquence regroupe les contrôles courants ; les changements critiques restent vérifiés rapidement. Les limites sur batterie restent actives.";
+
+"process.error.input" = "Impossible d’écrire l’entrée vers %@. Le processus est peut-être terminé.";
+
+"monitoring.background.title" = "Surveiller après la fermeture";
+
+"monitoring.background.body" = "Un service indépendant prend le relais en arrière-plan et démarre à l’ouverture de session. macOS peut demander une autorisation.";
+
+"monitoring.background.enabled" = "Le service est activé et prend le relais à la fermeture de l’app principale.";
+
+"monitoring.background.approval" = "Autorisez GitGatto à fonctionner en arrière-plan dans les Réglages Système.";
+
+"monitoring.background.unavailable" = "L’assistant de surveillance est absent. Installez l’app complète.";
+
+"monitoring.background.disabled" = "Non activé. Enregistrez les réglages après avoir changé le commutateur.";
+
+"monitoring.background.system_settings" = "Ouvrir les réglages des éléments en arrière-plan";
+
+"monitoring.background.refresh" = "Actualiser l’état du service";
+
+"monitoring.background.waiting" = "En attente du transfert de la surveillance…";
+
+"monitoring.background.takeover_failed" = "Impossible de reprendre la surveillance en arrière-plan. Réessayez.";

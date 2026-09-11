@@ -277,6 +277,20 @@ final class WorkspaceViewModel: ObservableObject {
     private let regressionInvestigationStore: any RegressionInvestigationStoring
     private let regressionInvestigationRuntime: RegressionInvestigationRuntime
     let repositoryBackupService: any RepositoryBackupServing
+    @Published private(set) var hasMonitoringOwnership = !ForegroundMonitoringSession.isApplicationProcess
+    @Published private(set) var monitoringStartupError: String?
+    let isBackgroundMonitor: Bool
+    let backgroundMonitorRegistration = MonitoringHelperRegistration()
+    private var backgroundMonitoringActive = false
+    @Published private(set) var backgroundRepositoryStates: [String: RepositoryLiveState] = [:]
+    @Published private(set) var backgroundActionRuns: [String: [GitHubActionsRun]] = [:]
+    private var backgroundRefreshMonitors: [RepositoryChangeMonitor] = []
+    private var backgroundRefreshTask: Task<Void, Never>?
+    private let backgroundRefreshScheduler = RepositoryEventScheduler(maximumConcurrentOperations: 1)
+    private var backgroundGitHubRepositories: [String: GitHubRepository] = [:]
+    private let activityLedger: RepositoryActivityLedger
+    private var backgroundErrors: [MonitoringCategory: [String: String]] = [:]
+    private var repositoryActivitySeedTask: Task<Void, Never>?
     private var hasStarted = false
     private var diffTask: Task<Void, Never>?
     private var selectedSectionDetailsTask: Task<Void, Never>?
@@ -394,10 +408,17 @@ final class WorkspaceViewModel: ObservableObject {
         regressionInvestigationStore: any RegressionInvestigationStoring = RegressionInvestigationStore(),
         regressionInvestigationRuntime: RegressionInvestigationRuntime = RegressionInvestigationRuntime(),
         monitoringEngine: MonitoringEngine = MonitoringEngine(),
+        isBackgroundMonitor: Bool = false,
+        monitoredRepositories: [URL]? = nil,
+        initialPreferences: AppPreferences? = nil,
+        activityLedger: RepositoryActivityLedger = .shared,
         repositoryBackupService: any RepositoryBackupServing = RepositoryBackupService(
             rootURL: AppPreferencesStore.load().repositoryBackupDirectoryURL
         )
     ) {
+        self.isBackgroundMonitor = isBackgroundMonitor
+        self.activityLedger = activityLedger
+        if let initialPreferences { self.appPreferences = initialPreferences }
         self.replyDraftStore = replyDraftStore
         self.service = service
         self.codexService = codexService
@@ -423,11 +444,13 @@ final class WorkspaceViewModel: ObservableObject {
         translationAIConfiguration = AIProviderSettings.load(.translation)
         codexRunMode = appPreferences.defaultAgentRunMode
         codexTranslationTarget = appPreferences.defaultTranslationTarget
-        UserDefaults.standard.removeObject(forKey: legacyLocalRepositoriesKey)
-        UserDefaults.standard.removeObject(forKey: legacyExcludedRepositoriesKey)
+        if !isBackgroundMonitor {
+            UserDefaults.standard.removeObject(forKey: legacyLocalRepositoriesKey)
+            UserDefaults.standard.removeObject(forKey: legacyExcludedRepositoriesKey)
+        }
         let storedRecentRepositories = Self.loadRepositoryURLs(key: recentRepositoriesKey)
         let storedRepositories = Self.uniqueRepositoryURLs(
-            storedRecentRepositories + Self.loadRepositoryURLs(key: localRepositoriesKey)
+            monitoredRepositories ?? (storedRecentRepositories + Self.loadRepositoryURLs(key: localRepositoriesKey))
         )
         let accessibleRecords = repositoryDiscoveryService.catalogRecords(for: storedRepositories)
         repositoryRecordsByPath = Dictionary(uniqueKeysWithValues: accessibleRecords.map { ($0.id, $0) })
@@ -436,7 +459,7 @@ final class WorkspaceViewModel: ObservableObject {
             repositoryRecordsByPath[$0.standardizedFileURL.path] != nil
         }
         normalizeRepositoryCatalog()
-        persistRepositoryLists()
+        if !isBackgroundMonitor { persistRepositoryLists() }
         monitoringEngine.configure(
             preferences: appPreferences,
             repositories: localRepositories
@@ -802,6 +825,18 @@ final class WorkspaceViewModel: ObservableObject {
     func start() async {
         guard !hasStarted else { return }
         hasStarted = true
+        monitoringStartupError = nil
+        do {
+            try await ForegroundMonitoringSession.acquireRuntime()
+            hasMonitoringOwnership = true
+        } catch {
+            hasStarted = false
+            hasCompletedStartup = true
+            hasCompletedRepositorySurfacePreload = true
+            monitoringStartupError = error.localizedDescription
+            return
+        }
+        backgroundMonitorRegistration.configure(enabled: appPreferences.backgroundMonitoringEnabled)
         defer { hasCompletedStartup = true }
         selectedSection = Self.sectionFromArguments() ?? appPreferences.defaultWorkspace
         #if DEBUG
@@ -835,6 +870,11 @@ final class WorkspaceViewModel: ObservableObject {
                 loadErrorPreviewFixture()
             }
         #endif
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "--monitoring-channel"), arguments.indices.contains(index + 1),
+           let category = MonitoringCategory(rawValue: arguments[index + 1]) {
+            await openMonitoringChannel(category, repositoryURL: snapshot?.rootURL)
+        }
     }
 
     #if DEBUG
@@ -3516,8 +3556,9 @@ final class WorkspaceViewModel: ObservableObject {
         monitoringEngine.markMonitoring(.repositoryProtection)
 
         let monitoredRepositories = localRepositories
-        Task {
-            await RepositoryActivityLedger.shared.seed(monitoredRepositories)
+        repositoryActivitySeedTask?.cancel()
+        repositoryActivitySeedTask = Task {
+            await activityLedger.seed(monitoredRepositories)
         }
 
         let generation = repositoryProtectionGeneration
@@ -3537,7 +3578,9 @@ final class WorkspaceViewModel: ObservableObject {
                     guard let self, self.repositoryProtectionGeneration == generation else { return }
                     if event.requiresLiveRefresh {
                         self.monitoringEngine.recordRepositoryChange(at: repository, event: event)
-                        if self.appPreferences.liveRefreshEnabled && self.snapshot?.rootURL.standardizedFileURL == repository {
+                        if self.isBackgroundMonitor {
+                            self.scheduleBackgroundRepositoryRefresh(repository, event: event)
+                        } else if self.appPreferences.liveRefreshEnabled && self.snapshot?.rootURL.standardizedFileURL == repository {
                             self.scheduleRepositoryEventRefresh(event: event)
                         } else {
                             self.recordRepositoryActivity(at: repository)
@@ -3948,7 +3991,7 @@ final class WorkspaceViewModel: ObservableObject {
 
         if appPreferences.monitoringEngineEnabled, appPreferences.liveRefreshEnabled {
             Task {
-                await RepositoryActivityLedger.shared.seed([repositoryURL])
+                await activityLedger.seed([repositoryURL])
             }
             if repositoryBackupMonitors[repositoryURL.standardizedFileURL.path] == nil {
                 let monitor = RepositoryChangeMonitor(repositoryURL: repositoryURL, filtersIgnoredPaths: true) { [weak self] event in
@@ -4056,7 +4099,7 @@ final class WorkspaceViewModel: ObservableObject {
 
     private func recordRepositoryActivity(at repository: URL, liveState: RepositoryLiveState? = nil) {
         repositoryActivityScheduler.schedule(key: repository.standardizedFileURL.path, delay: .seconds(monitoringEngine.budget(for: repository).activityDelay)) {
-            await RepositoryActivityLedger.shared.recordChange(in: repository, liveState: liveState)
+            await self.activityLedger.recordChange(in: repository, liveState: liveState)
         }
     }
 
@@ -6975,6 +7018,9 @@ final class WorkspaceViewModel: ObservableObject {
         AIProviderSettings.save(projectAIConfiguration, lane: .project)
         AIProviderSettings.save(translationAIConfiguration, lane: .translation)
         if appPreferences.requiresMonitoringRestart(comparedTo: previous) { restartMonitoringTasks() }
+        if previous.backgroundMonitoringEnabled != appPreferences.backgroundMonitoringEnabled {
+            backgroundMonitorRegistration.configure(enabled: appPreferences.backgroundMonitoringEnabled)
+        }
         if previousProject != projectAIConfiguration { retryCodexProbe() }
         if previousTranslation != translationAIConfiguration {
             translationProbeTask?.cancel()
@@ -8392,5 +8438,159 @@ extension WorkspaceViewModel {
             tab: .capsules, command: ProjectCommandOutput.redact(command),
             output: ProjectCommandOutput.redact(output))
         selectedSection = .intelligence
+    }
+}
+
+extension WorkspaceViewModel {
+    func startBackgroundMonitoring() async {
+        guard isBackgroundMonitor, !backgroundMonitoringActive else { return }
+        backgroundMonitoringActive = true
+        configureMonitoringEngine()
+        // A new lease owner reloads shared stores instead of keeping state from the foreground session.
+        await activityLedger.resetMonitoringBaselines()
+        await loadProjectGoals()
+        await reloadRepositoryBackups()
+        guard !Task.isCancelled else { return }
+        restartRepositoryProtection()
+        if appPreferences.liveRefreshEnabled {
+            for repository in localRepositories {
+                if repositoryBackupMonitors[repository.standardizedFileURL.path] == nil {
+                    let monitor = RepositoryChangeMonitor(repositoryURL: repository, filtersIgnoredPaths: true) { [weak self] event in
+                        Task { @MainActor in
+                            guard let self, self.backgroundMonitoringActive else { return }
+                            self.monitoringEngine.recordRepositoryChange(at: repository, event: event)
+                            self.scheduleBackgroundRepositoryRefresh(repository, event: event)
+                        }
+                    }
+                    backgroundRefreshMonitors.append(monitor)
+                    monitor.start()
+                }
+                scheduleBackgroundRepositoryRefresh(repository, event: .unknown)
+            }
+        }
+        backgroundRefreshTask = Task { [weak self] in
+            var lastRemote: [String: Date] = [:]
+            var lastActions: [String: Date] = [:]
+            var lastReconciliation: [String: Date] = [:]
+            while !Task.isCancelled {
+                guard let self, self.backgroundMonitoringActive else { return }
+                for repository in self.localRepositories {
+                    guard !Task.isCancelled else { return }
+                    let path = repository.standardizedFileURL.path
+                    let budget = self.monitoringEngine.budget(for: repository)
+                    if self.appPreferences.liveRefreshEnabled,
+                       Date().timeIntervalSince(lastReconciliation[path] ?? .distantPast) >= budget.reconciliationInterval {
+                        self.scheduleBackgroundRepositoryRefresh(repository, event: .unknown)
+                        lastReconciliation[path] = Date()
+                    }
+                    if self.appPreferences.remoteRefreshEnabled,
+                       Date().timeIntervalSince(lastRemote[path] ?? .distantPast) >= max(15, self.appPreferences.remoteRefreshInterval) * Double(budget.remoteMultiplier) {
+                        await self.refreshBackgroundRemote(repository)
+                        lastRemote[path] = Date()
+                    }
+                    if self.appPreferences.githubActionsMonitoringEnabled,
+                       Date().timeIntervalSince(lastActions[path] ?? .distantPast) >= 60 * Double(budget.remoteMultiplier) {
+                        await self.refreshBackgroundActions(repository)
+                        lastActions[path] = Date()
+                    }
+                }
+                do { try await Task.sleep(for: .seconds(15)) }
+                catch { return }
+            }
+        }
+    }
+
+    private func scheduleBackgroundRepositoryRefresh(_ repository: URL, event: RepositoryChangeEvent) {
+        guard backgroundMonitoringActive, appPreferences.liveRefreshEnabled else { return }
+        backgroundRefreshScheduler.schedule(key: repository.standardizedFileURL.path,
+            delay: .seconds(monitoringEngine.budget(for: repository).liveDelay),
+            priority: event.requiresPromptAudit ? 1 : 0) { [weak self] in
+            guard let self, self.backgroundMonitoringActive else { return }
+            do {
+                let state = try await self.service.loadLiveState(at: repository)
+                try Task.checkCancellation()
+                self.backgroundRepositoryStates[repository.standardizedFileURL.path] = state
+                await activityLedger.recordChange(in: repository, liveState: state)
+                self.recordBackgroundResult(.workingTree, repository: repository, error: nil)
+            } catch is CancellationError {} catch {
+                self.recordBackgroundResult(.workingTree, repository: repository, error: error)
+            }
+        }
+    }
+
+    private func refreshBackgroundRemote(_ repository: URL) async {
+        do {
+            let state = try await service.loadLiveState(at: repository)
+            if state.upstreamName != nil { try await service.fetchRemoteTracking(in: repository) }
+            try Task.checkCancellation()
+            let updated = state.upstreamName == nil ? state : try await service.loadLiveState(at: repository)
+            try Task.checkCancellation()
+            backgroundRepositoryStates[repository.standardizedFileURL.path] = updated
+            recordBackgroundResult(.remote, repository: repository, error: nil)
+        } catch is CancellationError {} catch { recordBackgroundResult(.remote, repository: repository, error: error) }
+    }
+
+    private func refreshBackgroundActions(_ repository: URL) async {
+        do {
+            if let identity = try await service.remoteIdentity(in: repository), identity.isGitHub {
+                let path = repository.standardizedFileURL.path
+                let remote: GitHubRepository
+                if let cached = backgroundGitHubRepositories[path], cached.fullName == identity.fullName {
+                    remote = cached
+                } else {
+                    let matches = try await githubService.searchRepositories(query: "repo:\(identity.fullName)", page: 1)
+                    guard let found = matches.first(where: { $0.fullName.caseInsensitiveCompare(identity.fullName) == .orderedSame }) else {
+                        throw GitHubServiceError.invalidResponse
+                    }
+                    remote = found
+                    backgroundGitHubRepositories[path] = found
+                }
+                let runs = try await githubService.actionRuns(for: remote)
+                try Task.checkCancellation()
+                backgroundActionRuns[repository.standardizedFileURL.path] = runs
+            }
+            recordBackgroundResult(.githubActions, repository: repository, error: nil)
+        } catch is CancellationError {} catch { recordBackgroundResult(.githubActions, repository: repository, error: error) }
+    }
+
+    private func recordBackgroundResult(_ category: MonitoringCategory, repository: URL, error: (any Error)?) {
+        let path = repository.standardizedFileURL.path
+        backgroundErrors[category, default: [:]][path] = error.map { repository.lastPathComponent + ": " + $0.localizedDescription }
+        if let message = backgroundErrors[category]?.sorted(by: { $0.key < $1.key }).first?.value {
+            monitoringEngine.markAttention(category, error: message)
+        } else { monitoringEngine.markHealthy(category) }
+    }
+
+    func monitoringSnapshot(for repository: URL?) -> RepositorySnapshot? {
+        guard isBackgroundMonitor else { return snapshot }
+        guard let repository, let state = backgroundRepositoryStates[repository.standardizedFileURL.path] else { return nil }
+        return RepositorySnapshot(rootURL: repository, branchName: state.branchName,
+            upstreamName: state.upstreamName, aheadCount: state.aheadCount, behindCount: state.behindCount,
+            changes: state.changes, commits: [], branches: [])
+    }
+
+    func monitoringActions(for repository: URL?) -> [GitHubActionsRun] {
+        guard isBackgroundMonitor else { return githubActionRuns }
+        if let repository { return backgroundActionRuns[repository.standardizedFileURL.path] ?? [] }
+        return backgroundActionRuns.values.flatMap { $0 }
+    }
+
+    func stopBackgroundMonitoring() async {
+        backgroundMonitoringActive = false
+        let tasks = [backgroundRefreshTask, repositoryActivitySeedTask, repositoryProtectionArmingTask,
+            repositoryBackupTimerTask, projectGoalMonitorTask, repositoryBackupLoadTask].compactMap { $0 }
+            + Array(repositoryBackupTasks.values)
+        for monitor in backgroundRefreshMonitors { monitor.stop() }
+        backgroundRefreshMonitors = []
+        for task in tasks { task.cancel() }
+        stopRepositoryProtection()
+        await backgroundRefreshScheduler.cancelAndWait()
+        await repositoryProtectionAuditScheduler.cancelAndWait()
+        await repositoryActivityScheduler.cancelAndWait()
+        for task in tasks { await task.value }
+        await monitoringEngine.stopActivity()
+        backgroundRefreshTask = nil
+        repositoryActivitySeedTask = nil
+        projectGoalMonitorTask = nil
     }
 }
