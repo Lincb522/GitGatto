@@ -267,8 +267,154 @@ struct BackgroundMonitoringSessionTests {
         #expect(host.model == nil)
     }
 
-    private func waitUntil(_ predicate: () throws -> Bool) async throws {
-        let deadline = ContinuousClock.now + .seconds(35)
+    @Test("Background timer creates restorable backups for every repository with live refresh and menu bar disabled", .timeLimit(.minutes(3)))
+    func backgroundScheduledRecovery() async throws {
+        let root = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repositories = [root.appendingPathComponent("a"), root.appendingPathComponent("b")]
+        for repository in repositories { try await makeRecoveryRepository(repository) }
+        var preferences = recoveryPreferences()
+        preferences.repositoryBackupIntervalMinutes = 1
+        preferences.majorBackupFileThreshold = 1_000
+        preferences.majorBackupLineThreshold = 10_000
+        let backing = RepositoryBackupService(rootURL: root.appendingPathComponent("backups"))
+        let model = recoveryModel(root: root, repositories: repositories, preferences: preferences, backing: backing)
+        do {
+            await model.startBackgroundMonitoring()
+            for repository in repositories {
+                try "unsaved \(repository.lastPathComponent)\n".write(to: repository.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+            }
+            try await waitUntil(timeout: .seconds(95)) { model.repositoryBackups.count == 2 }
+            #expect(model.snapshot == nil)
+            #expect(model.backgroundRepositoryStates.isEmpty)
+            #expect(model.monitoringEngine.isChannelEnabled(.repositoryProtection))
+            #expect(model.repositoryProtectionError == nil)
+            await model.stopBackgroundMonitoring()
+            for repository in repositories {
+                let backup = try #require(model.repositoryBackups.first { $0.repositoryPath == repository.path })
+                #expect(backup.reason == .scheduled)
+                let restored = try await backing.restore(backup, to: root.appendingPathComponent("restored-\(repository.lastPathComponent)"))
+                #expect(try String(contentsOf: restored.appendingPathComponent("tracked.txt"), encoding: .utf8) == "unsaved \(repository.lastPathComponent)\n")
+                #expect(FileManager.default.fileExists(atPath: restored.appendingPathComponent(".git").path))
+            }
+        } catch {
+            await model.stopBackgroundMonitoring()
+            throw error
+        }
+    }
+
+    @Test("Background file events create major-change backups and retain only three restorable versions", .timeLimit(.minutes(3)))
+    func backgroundMajorRecovery() async throws {
+        let root = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = root.appendingPathComponent("repository")
+        try await makeRecoveryRepository(repository)
+        var preferences = recoveryPreferences()
+        preferences.majorBackupFileThreshold = 1
+        preferences.majorBackupLineThreshold = 1
+        let backing = RepositoryBackupService(rootURL: root.appendingPathComponent("backups"))
+        let model = recoveryModel(root: root, repositories: [repository], preferences: preferences, backing: backing)
+        var expectedContents: [UUID: String] = [:]
+        do {
+            await model.startBackgroundMonitoring()
+            for revision in 1...4 {
+                let previousID = model.repositoryBackups.first?.id
+                let content = "uncommitted revision \(revision)\n"
+                try content.write(to: repository.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+                try await waitUntil { model.repositoryBackups.first.map { $0.id != previousID } == true }
+                let backup = try #require(model.repositoryBackups.first)
+                #expect(backup.reason == .majorChange)
+                expectedContents[backup.id] = content
+            }
+            await model.stopBackgroundMonitoring()
+            let retained = try await backing.loadBackups()
+            #expect(retained.count == 3)
+            #expect(model.snapshot == nil)
+            #expect(model.repositoryProtectionError == nil)
+            for backup in retained {
+                let restored = try await backing.restore(backup, to: root.appendingPathComponent("restored-\(backup.id)"))
+                #expect(try String(contentsOf: restored.appendingPathComponent("tracked.txt"), encoding: .utf8) == expectedContents[backup.id])
+            }
+            #expect(try String(contentsOf: repository.appendingPathComponent("tracked.txt"), encoding: .utf8) == "uncommitted revision 4\n")
+        } catch {
+            await model.stopBackgroundMonitoring()
+            throw error
+        }
+    }
+
+    @Test("Background guard detects external deletion and preserves the uncommitted content for recovery", .timeLimit(.minutes(2)))
+    func backgroundDeletionRecovery() async throws {
+        let root = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = root.appendingPathComponent("repository")
+        try await makeRecoveryRepository(repository)
+        let content = "uncommitted work before external deletion\n"
+        let file = repository.appendingPathComponent("tracked.txt")
+        try content.write(to: file, atomically: true, encoding: .utf8)
+        var preferences = recoveryPreferences()
+        preferences.externalRepositoryProtectionEnabled = true
+        let backing = RepositoryBackupService(rootURL: root.appendingPathComponent("backups"))
+        let model = recoveryModel(root: root, repositories: [repository], preferences: preferences, backing: backing)
+        do {
+            await model.startBackgroundMonitoring()
+            try await waitUntil { !model.repositoryBackups.isEmpty }
+            try FileManager.default.removeItem(at: file)
+            try await waitUntil { !model.repositoryProtectionIncidents.isEmpty }
+            let incident = try #require(model.repositoryProtectionIncidents.first)
+            #expect(incident.kind == .destructiveChange)
+            #expect(incident.backup.reason == .externalCheckpoint)
+            #expect(incident.assessment?.deletedPaths.contains("tracked.txt") == true)
+            #expect(model.snapshot == nil)
+            await model.stopBackgroundMonitoring()
+            let restored = try await backing.restore(incident.backup, to: root.appendingPathComponent("restored"))
+            #expect(try String(contentsOf: restored.appendingPathComponent("tracked.txt"), encoding: .utf8) == content)
+            #expect(!FileManager.default.fileExists(atPath: file.path))
+        } catch {
+            await model.stopBackgroundMonitoring()
+            throw error
+        }
+    }
+
+    private func recoveryPreferences() -> AppPreferences {
+        var preferences = AppPreferences()
+        preferences.backgroundMonitoringEnabled = true
+        preferences.repositoryBackupEnabled = true
+        preferences.repositoryBackupRetentionCount = 3
+        preferences.repositoryBackupIntervalMinutes = 60
+        preferences.externalRepositoryProtectionEnabled = false
+        preferences.liveRefreshEnabled = false
+        preferences.statusBarMonitoringEnabled = false
+        preferences.remoteRefreshEnabled = false
+        preferences.githubActionsMonitoringEnabled = false
+        preferences.projectGoalMonitoringEnabled = false
+        return preferences
+    }
+
+    private func recoveryModel(root: URL, repositories: [URL], preferences: AppPreferences,
+                               backing: RepositoryBackupService) -> WorkspaceViewModel {
+        WorkspaceViewModel(projectGoalStore: ProjectGoalStore(fileURL: root.appendingPathComponent("goals.json")),
+            monitoringEngine: MonitoringEngine(backgroundService: BackgroundMonitoringService(rootURL: root.appendingPathComponent("activity"))),
+            isBackgroundMonitor: true, monitoredRepositories: repositories, initialPreferences: preferences,
+            activityLedger: RepositoryActivityLedger(rootURL: root.appendingPathComponent("ledger")),
+            repositoryBackupService: backing)
+    }
+
+    private func makeRecoveryRepository(_ repository: URL) async throws {
+        try FileManager.default.createDirectory(at: repository, withIntermediateDirectories: true)
+        let runner = ExternalProcessRunner()
+        let git = URL(fileURLWithPath: "/usr/bin/git")
+        let environment = ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1", "GIT_TEMPLATE_DIR": ""]
+        for arguments in [["init", "-b", "main"], ["config", "user.name", "Test"], ["config", "user.email", "test@example.invalid"]] {
+            _ = try await runner.run(executable: git, arguments: ["-C", repository.path] + arguments, environment: environment)
+        }
+        try "committed\n".write(to: repository.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        for arguments in [["add", "tracked.txt"], ["-c", "commit.gpgsign=false", "commit", "-m", "fixture"]] {
+            _ = try await runner.run(executable: git, arguments: ["-C", repository.path] + arguments, environment: environment)
+        }
+    }
+
+    private func waitUntil(timeout: Duration = .seconds(35), _ predicate: () throws -> Bool) async throws {
+        let deadline = ContinuousClock.now + timeout
         while try !predicate() {
             guard ContinuousClock.now < deadline else { throw CocoaError(.fileReadUnknown) }
             try await Task.sleep(for: .milliseconds(100))
