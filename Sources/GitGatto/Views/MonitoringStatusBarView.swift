@@ -41,6 +41,8 @@ struct MonitoringMenuBarContent: View {
 struct MonitoringStatusBarView: View {
     @ObservedObject var model: WorkspaceViewModel
     @ObservedObject var engine: MonitoringEngine
+    var availableSize: CGSize?
+    @State private var screenSize = Self.currentScreenSize
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openSettings) private var openSettings
@@ -50,7 +52,19 @@ struct MonitoringStatusBarView: View {
     private var theme: AppVisualTheme { AppVisualTheme.resolved(themeRaw) }
     private var palette: AppPalette { AppPalette(colorScheme, theme: theme) }
 
+    private static var currentScreenSize: CGSize {
+        (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.size
+            ?? CGSize(width: 1024, height: 768)
+    }
+
+    static func panelSize(availableSize: CGSize, hasRepositories: Bool) -> CGSize {
+        CGSize(width: min(560, max(0, availableSize.width - 32)),
+               height: min(hasRepositories ? 700 : 260, max(0, availableSize.height - 32)))
+    }
+
     var body: some View {
+        let size = Self.panelSize(availableSize: availableSize ?? screenSize,
+                                  hasRepositories: !engine.repositories.isEmpty)
         VStack(spacing: 12) {
             header
             ScrollView {
@@ -64,12 +78,18 @@ struct MonitoringStatusBarView: View {
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .frame(minHeight: 0, maxHeight: engine.repositories.isEmpty ? 76 : 540)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             footer
         }
-        .padding(14)
-        .frame(minWidth: 350, idealWidth: 430, maxWidth: 430)
+        .padding(16)
+        // Give MenuBarExtra a stable preferred size while repository results load;
+        // the scroll viewport takes the remaining space between header and footer.
+        .frame(width: size.width, height: size.height)
         .background(palette.background)
+        .onAppear { screenSize = Self.currentScreenSize }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
+            screenSize = Self.currentScreenSize
+        }
         .task(id: engine.selectedRepositoryURL) {
             engine.refreshActivity()
         }
@@ -84,24 +104,24 @@ struct MonitoringStatusBarView: View {
 
     private var header: some View {
         HStack(spacing: 11) {
-            AppBrandLockup(iconSize: 33, wordmarkWidth: 86, spacing: 8)
+            AppBrandLockup(iconSize: 38, wordmarkWidth: 100, spacing: 9)
 
             Spacer(minLength: 8)
 
             HStack(spacing: 7) {
                 Circle()
                     .fill(statusColor)
-                    .frame(width: 7, height: 7)
+                    .frame(width: 8, height: 8)
                 Text(headerStatusText)
-                    .font(.system(size: 10.5, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(palette.ink)
             }
             .padding(.horizontal, 10)
-            .frame(height: 28)
+            .frame(height: 30)
             .background(statusColor.opacity(0.11))
             .clipShape(Capsule())
         }
-        .padding(13)
+        .padding(15)
         .monitoringPanel(theme: theme, palette: palette, elevated: true)
     }
 
@@ -111,10 +131,10 @@ struct MonitoringStatusBarView: View {
             HStack(spacing: 10) {
                 GattoIcon(
                     symbol: engine.selectedRepositoryURL == nil ? "square.stack.3d.up" : "folder.fill",
-                    size: 18
+                    size: 22
                 )
                 .foregroundStyle(palette.primary)
-                .frame(width: 30, height: 30)
+                .frame(width: 36, height: 36)
                 .background(palette.primarySoft)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
 
@@ -139,7 +159,7 @@ struct MonitoringStatusBarView: View {
                     } label: {
                         HStack(spacing: 5) {
                             Text(repositoryScopeTitle)
-                                .font(.system(size: 12.5, weight: .semibold))
+                                .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(palette.ink)
                                 .lineLimit(1)
                             GattoIcon(symbol: "chevron.down", size: 11)
@@ -150,7 +170,7 @@ struct MonitoringStatusBarView: View {
                     .buttonStyle(.plain)
 
                     Text(repositoryScopeDetail)
-                        .font(.system(size: 9.5, design: engine.selectedRepositoryURL == nil ? .default : .monospaced))
+                        .font(.system(size: 12, design: engine.selectedRepositoryURL == nil ? .default : .monospaced))
                         .foregroundStyle(palette.subtleInk)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -161,26 +181,26 @@ struct MonitoringStatusBarView: View {
                     engine.refreshActivity()
                 } label: {
                     Image(gattoSymbol: "arrow.clockwise")
-                        .frame(width: 28, height: 28)
+                        .frame(width: 32, height: 32)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(palette.mutedInk)
                 .help(L10n.text("monitoring.activity.refresh"))
             }
             .padding(.horizontal, 12)
-            .frame(height: 52)
+            .frame(height: 64)
             .monitoringPanel(theme: theme, palette: palette)
         } else {
             HStack(spacing: 9) {
                 Image(gattoSymbol: "folder")
                     .foregroundStyle(palette.subtleInk)
                 Text(L10n.text("monitoring.repository.none"))
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(palette.mutedInk)
                 Spacer()
             }
             .padding(.horizontal, 12)
-            .frame(height: 46)
+            .frame(minHeight: 54)
             .monitoringPanel(theme: theme, palette: palette)
         }
     }
@@ -201,58 +221,58 @@ struct MonitoringStatusBarView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
                 Text(L10n.text("monitoring.status.changes_title"))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(palette.mutedInk)
                 Text(summary.changedValue)
-                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(palette.ink)
                 Spacer(minLength: 6)
                 Text(summary.coverageText)
-                    .font(.system(size: 10))
+                    .font(.system(size: 12))
                     .foregroundStyle(palette.subtleInk)
                     .multilineTextAlignment(.trailing)
             }
             ForEach(engine.channels.filter { $0.isEnabled && $0.state == .attention && [.workingTree, .remote].contains($0.category) }) { channel in
                 Text(channel.detail ?? L10n.text("monitoring.overall.attention"))
-                    .font(.system(size: 11))
+                    .font(.system(size: 13))
                     .foregroundStyle(palette.warning)
                     .fixedSize(horizontal: false, vertical: true)
             }
             ForEach(summary.repositories) { repository in
                 Button { openChannel(.workingTree, repository: repository.repository) } label: {
                     HStack(spacing: 9) {
-                        GattoIcon(symbol: "folder", size: 18)
+                        GattoIcon(symbol: "folder", size: 22)
                             .foregroundStyle(palette.primary)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(repository.repository.lastPathComponent)
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(palette.ink)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             Text(repositoryDetail(repository))
-                                .font(.system(size: 10))
+                                .font(.system(size: 12))
                                 .foregroundStyle(palette.mutedInk)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer(minLength: 4)
                         if summary.remoteEnabled, let ahead = repository.ahead, let behind = repository.behind {
                             Text("↑\(ahead.formatted())  ↓\(behind.formatted())")
-                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundStyle(ahead + behind > 0 ? palette.primary : palette.subtleInk)
                                 .accessibilityLabel(L10n.format("monitoring.detail.remote.counts", ahead, behind))
                         }
                         GattoIcon(symbol: "chevron.right", size: 10)
                             .foregroundStyle(palette.subtleInk)
                     }
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 8)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help(repository.repository.path)
             }
         }
-        .padding(13)
+        .padding(15)
         .monitoringPanel(theme: theme, palette: palette)
     }
 
@@ -272,7 +292,7 @@ struct MonitoringStatusBarView: View {
         VStack(alignment: .leading, spacing: 11) {
             HStack {
                 Text(L10n.text("monitoring.activity.title"))
-                    .font(.system(size: 12.5, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(palette.ink)
                 Spacer()
                 if let today = engine.todayActivity {
@@ -281,7 +301,7 @@ struct MonitoringStatusBarView: View {
                         today.commitCount,
                         today.monitoredChangeCount
                     ))
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(palette.mutedInk)
                 }
             }
@@ -291,10 +311,10 @@ struct MonitoringStatusBarView: View {
                     ProgressView()
                         .controlSize(.small)
                     Text(L10n.text("loading.generic"))
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(palette.mutedInk)
                 }
-                .frame(maxWidth: .infinity, minHeight: 76)
+                .frame(maxWidth: .infinity, minHeight: 92)
             } else {
                 RepositoryActivityHeatmap(
                     activity: engine.dailyActivity,
@@ -303,18 +323,18 @@ struct MonitoringStatusBarView: View {
                     futureColor: palette.divider.opacity(0.18),
                     labelColor: palette.subtleInk
                 )
-                .frame(height: 76)
+                .frame(height: 92)
                 .accessibilityLabel(L10n.text("monitoring.activity.accessibility"))
             }
 
             if let error = engine.activityError {
                 Text(L10n.format("monitoring.activity.error", error))
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(palette.warning)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(13)
+        .padding(15)
         .monitoringPanel(theme: theme, palette: palette)
     }
 
@@ -325,7 +345,7 @@ struct MonitoringStatusBarView: View {
     private var updatesPanel: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(L10n.text("monitoring.status_overview"))
-                .font(.system(size: 12.5, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(palette.ink)
                 .padding(.horizontal, 4)
                 .padding(.bottom, 3)
@@ -379,7 +399,7 @@ struct MonitoringStatusBarView: View {
             if !model.isBackgroundMonitor {
                 Button(L10n.text("monitoring.quit")) { WindowCloseRuntime.quit() }
                     .buttonStyle(.plain)
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(palette.mutedInk)
             }
         }
@@ -492,18 +512,18 @@ private struct MonitoringChannelRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(gattoSymbol: channel.category.iconName, pointSize: 12.5)
+            Image(gattoSymbol: channel.category.iconName, pointSize: 18)
                 .foregroundStyle(channel.isEnabled ? stateColor : palette.subtleInk)
-                .frame(width: 30, height: 30)
+                .frame(width: 36, height: 36)
                 .background((channel.isEnabled ? stateColor : palette.subtleInk).opacity(0.10))
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(L10n.text(channel.category.titleKey))
-                    .font(.system(size: 11.5, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(palette.ink)
                 Text(detail)
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(channel.state == .attention ? palette.warning : palette.mutedInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -517,7 +537,7 @@ private struct MonitoringChannelRow: View {
 
         }
         .padding(.horizontal, 7)
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
         .frame(minHeight: 44)
         .background(channel.state == .attention ? palette.warningSoft.opacity(0.48) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

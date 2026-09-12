@@ -128,6 +128,21 @@ struct MonitoringStatusSummaryTests {
         }
     }
 
+    @Test("Popup has a readable preferred size and stays inside the available display")
+    func popupDisplayBounds() {
+        for available in [CGSize(width: 1440, height: 900), CGSize(width: 1024, height: 688),
+                          CGSize(width: 462, height: 600)] {
+            let content = MonitoringStatusBarView.panelSize(availableSize: available, hasRepositories: true)
+            #expect(content.width <= available.width - 32)
+            #expect(content.height <= available.height - 32)
+            #expect(content.width >= 430)
+            #expect(content.height >= 568)
+            let empty = MonitoringStatusBarView.panelSize(availableSize: available, hasRepositories: false)
+            #expect(empty.width == content.width)
+            #expect(empty.height == 260)
+        }
+    }
+
     @Test("Popup keeps repository information and actions reachable in narrow and wide themed surfaces", .timeLimit(.minutes(3)))
     func renderPopup() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("MonitoringUI-\(UUID())")
@@ -154,8 +169,14 @@ struct MonitoringStatusSummaryTests {
             monitoringEngine: engine, isBackgroundMonitor: true, monitoredRepositories: repositories,
             initialPreferences: preferences, activityLedger: RepositoryActivityLedger(rootURL: root.appendingPathComponent("ledger")),
             repositoryBackupService: RepositoryBackupService(rootURL: root.appendingPathComponent("backups")))
-        try render(MonitoringStatusBarView(model: model, engine: engine).defaultAppStorage(defaults),
-            size: NSSize(width: 350, height: 680), name: "popup-loading", scheme: .light)
+        let desktop = CGSize(width: 1440, height: 900)
+        let compact = CGSize(width: 462, height: 600)
+        let natural = NSHostingView(rootView: MonitoringStatusBarView(model: model, engine: engine, availableSize: desktop)
+            .defaultAppStorage(defaults))
+        let naturalSize = natural.fittingSize
+        #expect(naturalSize == CGSize(width: 560, height: 700))
+        try render(MonitoringStatusBarView(model: model, engine: engine, availableSize: desktop).defaultAppStorage(defaults),
+            size: NSSize(width: 560, height: 700), name: "popup-loading", scheme: .light)
         for repository in repositories {
             try "fixture".write(to: repository.appendingPathComponent("example.swift"), atomically: true, encoding: .utf8)
         }
@@ -169,42 +190,71 @@ struct MonitoringStatusSummaryTests {
         for theme in [AppVisualTheme.softGlass, .lumen, .folio] {
             defaults.set(theme.rawValue, forKey: AppStyleDefaults.themeKey)
             for scheme in [ColorScheme.light, .dark] {
-                for width in [350, 430] {
-                    let view = AppThemeRoot { MonitoringStatusBarView(model: model, engine: engine) }
+                for available in [compact, desktop] {
+                    let size = MonitoringStatusBarView.panelSize(availableSize: available, hasRepositories: true)
+                    let view = AppThemeRoot { MonitoringStatusBarView(model: model, engine: engine, availableSize: available) }
                         .defaultAppStorage(defaults)
                         .environment(\.colorScheme, scheme)
-                        .environment(\.layoutDirection, width == 350 ? .rightToLeft : .leftToRight)
-                        .frame(width: CGFloat(width), height: 680)
-                    try render(view, size: NSSize(width: width, height: 680),
-                        name: "popup-\(theme)-\(scheme)-\(width)", scheme: scheme)
+                        .environment(\.layoutDirection, available == compact ? .rightToLeft : .leftToRight)
+                    try render(view, size: size,
+                        name: "popup-\(theme)-\(scheme)-\(Int(size.width))", scheme: scheme)
                 }
             }
         }
         engine.selectRepository(repositories[1])
         #expect(model.monitoringStatusSummary.changed == 1)
-        try render(MonitoringStatusBarView(model: model, engine: engine).defaultAppStorage(defaults),
-            size: NSSize(width: 350, height: 680), name: "popup-selected", scheme: .dark)
+        try render(MonitoringStatusBarView(model: model, engine: engine, availableSize: compact).defaultAppStorage(defaults),
+            size: NSSize(width: 430, height: 568), name: "popup-selected", scheme: .dark)
         await model.stopBackgroundMonitoring()
         engine.markAttention(.workingTree, error: "Fixture: repository access failed. Check access in Settings. 仓库无法读取，请在设置中检查访问权限。")
-        try render(MonitoringStatusBarView(model: model, engine: engine).defaultAppStorage(defaults),
-            size: NSSize(width: 350, height: 680), name: "popup-error", scheme: .light)
+        try render(MonitoringStatusBarView(model: model, engine: engine, availableSize: compact).defaultAppStorage(defaults),
+            size: NSSize(width: 430, height: 568), name: "popup-error", scheme: .light)
         engine.markHealthy(.workingTree)
+        engine.selectRepository(nil)
+        let manyRepositories = repositories + (1...20).map { root.appendingPathComponent("repository-\($0)-long-name") }
+        engine.configure(preferences: preferences, repositories: manyRepositories)
+        let originalLanguage = AppPreferencesStore.load().language
+        defer { L10n.activate(originalLanguage) }
+        for language in [AppLanguage.german, .arabic] {
+            L10n.activate(language)
+            try render(MonitoringStatusBarView(model: model, engine: engine, availableSize: compact)
+                .defaultAppStorage(defaults)
+                .environment(\.locale, language.locale)
+                .environment(\.layoutDirection, language.usesRightToLeftLayout ? .rightToLeft : .leftToRight),
+                size: NSSize(width: 430, height: 568), name: "popup-many-\(language.rawValue)", scheme: .light,
+                scrollToBottom: true)
+        }
+        L10n.activate(originalLanguage)
         engine.configure(preferences: preferences, repositories: [])
-        try render(MonitoringStatusBarView(model: model, engine: engine).defaultAppStorage(defaults),
-            size: NSSize(width: 350, height: 680), name: "popup-empty", scheme: .light)
+        try render(MonitoringStatusBarView(model: model, engine: engine, availableSize: desktop).defaultAppStorage(defaults),
+            size: NSSize(width: 560, height: 260), name: "popup-empty", scheme: .light)
         await engine.stopActivity()
     }
 
-    private func render<Content: View>(_ view: Content, size: NSSize, name: String, scheme: ColorScheme) throws {
+    private func render<Content: View>(_ view: Content, size: NSSize, name: String, scheme: ColorScheme,
+                                      scrollToBottom: Bool = false) throws {
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless], backing: .buffered, defer: false)
         window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
-        let hosting = NSHostingView(rootView: view.frame(width: size.width, height: size.height))
+        let hosting = NSHostingView(rootView: view)
+        // Use the content's real fitting size, as MenuBarExtra does, rather than
+        // masking collapsed or oversized content with a frame supplied by the test.
+        #expect(hosting.fittingSize == size)
         window.contentView = hosting
         defer { window.orderOut(nil); window.contentView = nil }
         window.orderBack(nil)
         hosting.layoutSubtreeIfNeeded()
         hosting.displayIfNeeded()
+        if scrollToBottom {
+            func descendants(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(descendants) }
+            let scroll = try #require(descendants(hosting).compactMap { $0 as? NSScrollView }.first)
+            let document = try #require(scroll.documentView)
+            #expect(document.bounds.height > scroll.contentView.bounds.height)
+            document.scrollToVisible(NSRect(x: 0, y: document.bounds.maxY - 1, width: 1, height: 1))
+            hosting.layoutSubtreeIfNeeded()
+            #expect(scroll.documentVisibleRect.maxY >= document.bounds.maxY - 1)
+            #expect(scroll.contentView.bounds.width <= size.width)
+        }
         let bitmap = try #require(hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds))
         hosting.cacheDisplay(in: hosting.bounds, to: bitmap)
         let png = try #require(bitmap.representation(using: .png, properties: [:]))
