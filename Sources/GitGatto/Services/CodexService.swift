@@ -1647,3 +1647,10 @@ private enum CodexExecutableLocator {
         return nil
     }
 }
+
+
+extension CodexService: RepositoryConfigurationAgent {
+    func repositoryConfigurationAction(prompt: String) async throws -> String {
+        try await runIsolatedResult(prompt: prompt, timeout: .seconds(90), preserveResponseFormatting: true).response
+    }
+}

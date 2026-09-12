@@ -6,6 +6,7 @@ struct GlobalCommandPalette: View {
     let openScanner: () -> Void
     let openHelp: () -> Void
     var openProjectTool: (ProjectTool) -> Void = { _ in }
+    var openRepositorySetup: (URL?, Bool) -> Void = { _, _ in }
     let dismiss: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -136,6 +137,22 @@ struct GlobalCommandPalette: View {
                 subtitle: L10n.text("tools.title"), symbol: tool.symbol,
                 keywords: [tool.rawValue, "code", "project"]
                     + HelpTopic.allCases.filter { $0.projectTool == tool }.flatMap { [L10n.text($0.titleKey), L10n.text($0.summaryKey)] }, action: { openProjectTool(tool) })
+        }
+
+        values.append(CommandPaletteItem(
+            id: "repository-create", title: L10n.text("repository.create.title"),
+            subtitle: L10n.text("command_palette.group.git"), symbol: "folder.badge.plus",
+            keywords: ["init", "create", "GitHub", L10n.text("repository.upstream.title")],
+            action: { openRepositorySetup(nil, false) }))
+        if let folder = model.snapshot?.rootURL, model.activeOperation == nil {
+            for usesAgent in [true, false] {
+                values.append(CommandPaletteItem(
+                    id: usesAgent ? "repository-upstream-agent" : "repository-upstream-manual",
+                    title: L10n.text(usesAgent ? "repository.upstream.agent" : "repository.upstream.manual"),
+                    subtitle: L10n.text("repository.upstream.title"), symbol: "globe",
+                    keywords: ["upstream", "remote", "origin", "GitHub", "publish", L10n.text("repository.upstream.title"), L10n.text("git_tools.tab.remotes")],
+                    action: { openRepositorySetup(folder, usesAgent) }))
+            }
         }
 
         values += model.localRepositories.map { repositoryURL in

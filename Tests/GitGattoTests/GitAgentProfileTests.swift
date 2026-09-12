@@ -15,7 +15,7 @@ struct GitAgentProfileTests {
         #expect(GitAgentProfile.core.contains("worktrees"))
         #expect(GitAgentProfile.core.contains("git fsck"))
         #expect(GitAgentProfile.core.lowercased().contains("release readiness"))
-        #expect(GitAgentSkill.allCases.count == 13)
+        #expect(GitAgentSkill.allCases.count == 14)
     }
 
     @Test("Every Agent skill has a bundled semantic icon")

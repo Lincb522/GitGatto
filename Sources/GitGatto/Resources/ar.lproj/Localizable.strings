@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "مراقبة التغييرات متوقفة مؤقتًا";
 "monitoring.status.coverage" = "تم فحص %d من %d مستودعات";
 "monitoring.status.changes_title" = "الملفات المعدّلة";
+
+"error.recovery.intelligence" = "راجع تفاصيل الخطأ وعالج المشكلة ثم أعد المحاولة.";
+"error.explanation.intelligence_verification" = "فشل تنفيذ أمر التحقق.";
+"error.explanation.intelligence_rollback" = "فشل إنشاء الالتزام وتعذرت استعادة الفهرس.";
+"error.recovery.intelligence_rollback" = "تحقق من الفهرس ونسخة الاستعادة الاحتياطية قبل إعادة المحاولة لتجنب الكتابة فوق التغييرات المرحّلة.";
+
+// Repository creation
+"repository.create.title" = "إنشاء مستودع";
+"repository.create.folder" = "مجلد المشروع";
+"repository.create.choose" = "اختيار مجلد…";
+"repository.create.files_note" = "تنشئ التهيئة التزامًا فارغًا فقط. تبقى الملفات الحالية محليًا دون تجهيز أو رفع تلقائي.";
+"repository.create.existing_note" = "يُحفظ السجل الحالي، ويحتاج رفعه إلى تأكيد منفصل.";
+"repository.create.branch" = "الفرع الأولي";
+"repository.create.identity" = "تعيين مؤلف لهذا المستودع";
+"repository.create.author" = "اسم المؤلف";
+"repository.create.email" = "بريد المؤلف";
+"repository.create.remote" = "إنشاء مستودع GitHub";
+"repository.create.name" = "اسم المستودع";
+"repository.create.visibility" = "مستوى الظهور";
+"repository.create.private" = "خاص";
+"repository.create.public" = "عام";
+"repository.create.existing" = "السماح بربط مستودع موجود بالاسم نفسه";
+"repository.create.push" = "دفع الالتزام الأولي الفارغ";
+"repository.create.success" = "المستودع جاهز";
+"repository.create.agent" = "التحضير باستخدام Agent";
+"repository.create.agent_prompt" = "أكمل README وقواعد التجاهل حسب المشروع مع حفظ الملفات الحالية، دون تجهيز أو التزام أو دفع.";
+"repository.create.refresh_account" = "تحديث حساب GitHub";
+"repository.create.recovery" = "تُحفظ الخطوات المكتملة. عالج الخطوة الفاشلة ثم أعد المحاولة. يتطلب ربط مستودع موجود إذنًا صريحًا.";
+"repository.create.step.check" = "فحص المجلد والحساب";
+"repository.create.step.local" = "تهيئة المستودع المحلي";
+"repository.create.step.remote" = "إنشاء المستودع البعيد";
+"repository.create.step.link" = "ربط origin";
+"repository.create.step.push" = "رفع الالتزامات";
+"repository.create.step.verify" = "التحقق من المستودع";
+"repository.create.error.folder" = "اختر مجلد مشروع يمكن الوصول إليه، وليس مستودع Git مجردًا أو تالفًا.";
+"repository.create.error.nested" = "المجلد داخل مستودع آخر. اختر جذره أو مجلدًا منفصلًا.";
+"repository.create.error.name" = "استخدم من 1 إلى 100 حرف لاتيني أو رقم أو نقطة أو شرطة أو شرطة سفلية، دون النهاية .git.";
+"repository.create.error.branch" = "أدخل اسم فرع أولي صالحًا.";
+"repository.create.error.identity" = "أدخل اسم المؤلف وبريده أو اضبط هوية Git أولًا.";
+"repository.create.error.origin" = "يشير origin إلى عنوان آخر. عدّله في الفروع ← المستودعات البعيدة ثم أعد المحاولة.";
+"repository.create.error.remoteExists" = "الاسم موجود بالفعل. اسمح بربط المستودع الموجود أو اختر اسمًا آخر.";
+"repository.create.error.remoteMismatch" = "حساب GitHub أو المستودع أو مستوى الظهور لا يطابق اختيارك. حدّث الحساب وافحص الإعدادات.";
+"repository.create.error.history" = "الالتزام الحالي لا يطابق الموافقة على الرفع. أعد فتح الإعداد وراجع الالتزام وأكده.";
+"repository.create.error.changed" = "تغير المجلد أو المستودع أثناء التهيئة. افحصه قبل إعادة المحاولة.";
+"repository.create.error.busy" = "يجري إنشاء مستودع بالفعل.";
+"repository.create.error.verification" = "فشل التحقق. افحص الحالة المحلية والبعيدة قبل إعادة المحاولة.";
+"codex.skill.repositorySetup" = "إنشاء مستودع";
+
+"repository.upstream.title" = "إعداد المنبع";
+"repository.upstream.manual" = "إعداد يدوي";
+"repository.upstream.manual_execute" = "تطبيق الإعداد";
+"repository.upstream.agent" = "إعداد بنقرة عبر Agent";
+"repository.upstream.missing" = "لا يوجد منبع لهذا الفرع";
+"repository.upstream.push_history" = "رفع سجل التزامات هذا الفرع";
+"repository.upstream.history_warning" = "سيتم رفع الالتزام المحدد وسجله. تحقق من عدم وجود كلمات مرور أو مفاتيح أو ملفات غير مخصصة للنشر.";
+"repository.upstream.confirm" = "تأكيد إعداد المستودع";
+"repository.upstream.continue" = "تأكيد وتنفيذ";
+"repository.upstream.preserved" = "لن تتغير الملفات غير المرحّلة أو غير الملتزم بها.";
+"repository.upstream.owner" = "مستخدم أو مؤسسة GitHub";
+"repository.create.step.agent" = "إعداد Agent";
+"repository.create.error.agentAction" = "لم يُرجع Agent إجراء إعداد صالحًا، ولم يتم الإعداد. أعد المحاولة أو استخدم الإعداد اليدوي.";
+"repository.visibility.make_public" = "جعله عامًا";
+"repository.visibility.make_private" = "جعله خاصًا";
+"repository.visibility.public_warning" = "سيتمكن الجميع من عرض الكود وسجل الالتزامات.";
+"repository.visibility.private_warning" = "قد يؤثر التحويل إلى خاص في المتعاونين ونسخ Fork وGitHub Pages. لن تُسحب النسخ العامة الموجودة.";
+"repository.visibility.error.permission" = "يمكن للمسؤولين فقط تغيير ظهور مستودعات غير مؤرشفة وليست نسخ Fork.";
+"repository.visibility.error.changed" = "تغيرت هوية المستودع أو حالة ظهوره. حدّث الحالة وأكد مجددًا.";
+"repository.visibility.error.verification" = "تعذر التحقق من الظهور. حدّث الحالة الفعلية قبل إعادة المحاولة.";
+
+"repository.actions.add" = "إضافة";
+"repository.actions.commit" = "إجراءات الالتزام";
+
+"repository.actions.file" = "إجراءات الملف";

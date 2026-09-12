@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "Отслеживание изменений приостановлено";
 "monitoring.status.coverage" = "Проверено репозиториев: %d из %d";
 "monitoring.status.changes_title" = "Изменённые файлы";
+
+"error.recovery.intelligence" = "Проверьте сведения об ошибке, устраните проблему и повторите попытку.";
+"error.explanation.intelligence_verification" = "Не удалось выполнить команду проверки.";
+"error.explanation.intelligence_rollback" = "Не удалось создать коммит и восстановить индекс.";
+"error.recovery.intelligence_rollback" = "Перед повторной попыткой проверьте индекс и резервную копию, чтобы не перезаписать подготовленные изменения.";
+
+// Repository creation
+"repository.create.title" = "Создать репозиторий";
+"repository.create.folder" = "Папка проекта";
+"repository.create.choose" = "Выбрать папку…";
+"repository.create.files_note" = "Инициализация создаёт пустой коммит. Существующие файлы остаются локально, без индексации и отправки.";
+"repository.create.existing_note" = "История сохраняется. Для загрузки требуется подтверждение.";
+"repository.create.branch" = "Начальная ветка";
+"repository.create.identity" = "Задать автора для этого репозитория";
+"repository.create.author" = "Имя автора";
+"repository.create.email" = "Почта автора";
+"repository.create.remote" = "Создать репозиторий GitHub";
+"repository.create.name" = "Название репозитория";
+"repository.create.visibility" = "Видимость";
+"repository.create.private" = "Приватный";
+"repository.create.public" = "Публичный";
+"repository.create.existing" = "Разрешить подключение существующего одноимённого репозитория";
+"repository.create.push" = "Отправить пустой начальный коммит";
+"repository.create.success" = "Репозиторий готов";
+"repository.create.agent" = "Подготовить с Agent";
+"repository.create.agent_prompt" = "Дополнить README и правила исключения по проекту. Сохранить файлы; не индексировать, не создавать коммиты и не отправлять изменения.";
+"repository.create.refresh_account" = "Обновить аккаунт GitHub";
+"repository.create.recovery" = "Завершённые шаги сохраняются. Исправьте ошибку и повторите. Подключение существующего удалённого репозитория требует разрешения.";
+"repository.create.step.check" = "Проверить папку и аккаунт";
+"repository.create.step.local" = "Инициализировать локальный репозиторий";
+"repository.create.step.remote" = "Создать удалённый репозиторий";
+"repository.create.step.link" = "Подключить origin";
+"repository.create.step.push" = "Загрузить коммиты";
+"repository.create.step.verify" = "Проверить репозиторий";
+"repository.create.error.folder" = "Выберите доступную папку проекта, не bare-репозиторий и не повреждённый репозиторий Git.";
+"repository.create.error.nested" = "Папка находится внутри другого репозитория. Выберите его корень или отдельную папку.";
+"repository.create.error.name" = "Используйте 1–100 букв ASCII, цифр, точек, дефисов или подчёркиваний; не заканчивайте имя на .git.";
+"repository.create.error.branch" = "Введите допустимое имя начальной ветки.";
+"repository.create.error.identity" = "Введите имя и почту автора или настройте авторство Git.";
+"repository.create.error.origin" = "origin указывает на другой адрес. Измените его в Ветки → Удалённые и повторите попытку.";
+"repository.create.error.remoteExists" = "Такое имя уже есть. Разрешите подключение существующего репозитория или выберите другое имя.";
+"repository.create.error.remoteMismatch" = "Аккаунт GitHub, репозиторий или видимость не совпадают с выбором. Обновите аккаунт и проверьте настройки.";
+"repository.create.error.history" = "Текущий коммит не совпадает с разрешённым. Откройте настройку заново, проверьте и подтвердите.";
+"repository.create.error.changed" = "Папка или репозиторий изменились при инициализации. Проверьте их перед повтором.";
+"repository.create.error.busy" = "Создание репозитория уже выполняется.";
+"repository.create.error.verification" = "Проверка не пройдена. Проверьте локальное и удалённое состояние перед повтором.";
+"codex.skill.repositorySetup" = "Создать репозиторий";
+
+"repository.upstream.title" = "Настроить upstream";
+"repository.upstream.manual" = "Ручная настройка";
+"repository.upstream.manual_execute" = "Применить настройки";
+"repository.upstream.agent" = "Настроить через Agent";
+"repository.upstream.missing" = "У ветки нет upstream";
+"repository.upstream.push_history" = "Загрузить историю коммитов ветки";
+"repository.upstream.history_warning" = "Будут загружены выбранный коммит и его история. Проверьте пароли, ключи и файлы, не предназначенные для публикации.";
+"repository.upstream.confirm" = "Подтвердить настройку";
+"repository.upstream.continue" = "Подтвердить и выполнить";
+"repository.upstream.preserved" = "Неиндексированные и незакоммиченные файлы не изменятся.";
+"repository.upstream.owner" = "Пользователь или организация GitHub";
+"repository.create.step.agent" = "Настройка Agent";
+"repository.create.error.agentAction" = "Agent не вернул допустимое действие. Настройка не выполнена. Повторите попытку или настройте вручную.";
+"repository.visibility.make_public" = "Сделать публичным";
+"repository.visibility.make_private" = "Сделать приватным";
+"repository.visibility.public_warning" = "Код и история коммитов будут доступны всем.";
+"repository.visibility.private_warning" = "Приватность может повлиять на участников, форки и GitHub Pages. Публичные копии останутся доступными.";
+"repository.visibility.error.permission" = "Только администраторы могут менять видимость неархивированных репозиториев, не являющихся форками.";
+"repository.visibility.error.changed" = "Идентификатор или видимость изменились. Обновите и подтвердите снова.";
+"repository.visibility.error.verification" = "Не удалось проверить видимость. Обновите фактическое состояние перед повтором.";
+
+"repository.actions.add" = "Добавить";
+"repository.actions.commit" = "Действия с коммитом";
+
+"repository.actions.file" = "Действия с файлом";

@@ -189,7 +189,8 @@ struct RepositorySidebar: View {
 
     private func localRepositoryNavigation(palette: AppPalette) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 7) {
+            RepositoryActionGroup {
+                HStack(spacing: 7) {
                 Button {
                     localRepositoriesExpanded.toggle()
                 } label: {
@@ -208,7 +209,7 @@ struct RepositorySidebar: View {
                     CountBadge(count: model.localRepositories.count, emphasized: false)
                 }
 
-                Spacer(minLength: 4)
+                }
                 repositoryMenu(palette: palette)
             }
             .padding(.leading, 8)
@@ -275,18 +276,20 @@ struct RepositorySidebar: View {
         )
 
         return VStack(spacing: 0) {
-            HStack(spacing: 8) {
+            RepositoryActionGroup {
+                HStack(spacing: 8) {
                 Text(L10n.text("sidebar.repositories"))
                     .font(.system(size: inline ? 12 : 15, weight: .semibold, design: AppStyleDefaults.theme == .console ? .monospaced : .default))
                     .lineLimit(1)
                     .foregroundStyle(palette.ink)
                 CountBadge(count: model.localRepositories.count, emphasized: false)
-                Spacer(minLength: 8)
+                }
                 repositoryMenu(palette: palette)
             }
             .padding(.leading, 14)
             .padding(.trailing, 8)
-            .frame(height: 48)
+            .padding(.vertical, 8)
+            .frame(minHeight: 48)
 
             Rectangle()
                 .fill(palette.divider)
@@ -452,28 +455,22 @@ struct RepositorySidebar: View {
 
     private func repositoryMenu(palette: AppPalette) -> some View {
         Menu {
+            Button(L10n.text("repository.create.title")) { model.presentRepositoryCreation() }
             Button(L10n.text("action.open_repository")) { model.chooseRepository() }
             Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
         } label: {
-            Color.clear
-                .frame(width: 32, height: 32)
-                .contentShape(Rectangle())
+            HStack(spacing: 5) {
+                if model.isScanningRepositories { GattoLoadingGlyph(size: 16) }
+                else { GattoIcon(symbol: "folder.badge.plus", size: 17) }
+                Text(L10n.text("repository.actions.add"))
+                    .font(.system(size: 11.5, weight: .medium))
+            }
+            .foregroundStyle(palette.ink)
+            .padding(.horizontal, 5).frame(minHeight: 32)
         }
         .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .overlay {
-            Group {
-                if model.isScanningRepositories {
-                    GattoLoadingGlyph(size: 18)
-                } else {
-                    GattoIcon(symbol: "folder.badge.plus", size: 20)
-                        .foregroundStyle(palette.ink)
-                }
-            }
-            .allowsHitTesting(false)
-        }
         .fixedSize()
-        .help(L10n.text("action.open_repository"))
+        .help(L10n.text("repository.actions.add"))
     }
 
     private func sidebarFooter(palette: AppPalette, showsBrand: Bool) -> some View {
@@ -638,6 +635,7 @@ struct RepositorySidebar: View {
                     if !model.localRepositories.isEmpty {
                         Divider()
                     }
+                    Button(L10n.text("repository.create.title")) { model.presentRepositoryCreation() }
                     Button(L10n.text("action.open_repository")) { model.chooseRepository() }
                     Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
                 } label: {

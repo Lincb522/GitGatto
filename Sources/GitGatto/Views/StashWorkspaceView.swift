@@ -389,7 +389,7 @@ private struct StashInspector: View {
     }
 
     private var stashActions: some View {
-        HStack(spacing: 7) {
+        RepositoryActionGroup {
             Button {
                 Task { await model.applySelectedStash() }
             } label: {
@@ -407,8 +407,9 @@ private struct StashInspector: View {
             Button(role: .destructive) {
                 isConfirmingDrop = true
             } label: {
-                Image(gattoSymbol: "trash")
+                GattoLabel(L10n.text("stash.action.drop"), systemImage: "trash")
             }
+            .buttonStyle(SecondaryButtonStyle())
             .help(L10n.text("stash.action.drop"))
         }
     }

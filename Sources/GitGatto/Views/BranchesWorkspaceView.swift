@@ -124,24 +124,26 @@ private struct RepositoryToolNavigator: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(palette.ink)
                     Spacer()
-                    if model.isLoadingGitTools {
-                        ProgressView().controlSize(.small)
-                    }
+                    if model.isLoadingGitTools { ProgressView().controlSize(.small) }
+                }
+                RepositoryActionGroup {
                     Button {
                         model.refreshGitTools()
                     } label: {
-                        Image(gattoSymbol: "arrow.clockwise", pointSize: 12)
+                        GattoLabel(L10n.text("action.refresh"), systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.borderless)
                     .help(L10n.text("action.refresh"))
-                    Button {
-                        showingCreate = true
-                    } label: {
-                        Image(gattoSymbol: "plus", pointSize: 13)
+                    if selectedTool != .recovery {
+                        Button {
+                            showingCreate = true
+                        } label: {
+                            GattoLabel(L10n.text(selectedTool == .branches ? "git_tools.branch.create" : selectedTool == .tags ? "git_tools.tag.create" : "git_tools.remote.add"), systemImage: "plus")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(model.activeOperation != nil)
+                        .help(L10n.text("git_tools.action.create"))
                     }
-                    .buttonStyle(.borderless)
-                    .disabled(selectedTool == .recovery || model.activeOperation != nil)
-                    .help(L10n.text("git_tools.action.create"))
                 }
 
                     Picker("", selection: $selectedTool) {
@@ -488,15 +490,6 @@ private struct BranchInspector: View {
                         }
                         Spacer()
                         Menu {
-                            Button(L10n.text("git_tools.branch.rename")) {
-                                rename = branch.name
-                                showingRename = true
-                            }
-                            Button(L10n.text("git_tools.branch.upstream")) {
-                                upstream = branch.upstream ?? ""
-                                showingUpstream = true
-                            }
-                            Divider()
                             Button(L10n.text("git_tools.branch.cleanup")) { showingCleanup = true }
                             if !branch.isCurrent {
                                 Button(L10n.text("action.delete"), role: .destructive) { showingDelete = true }
@@ -517,9 +510,19 @@ private struct BranchInspector: View {
                         ("branches.upstream", branch.upstream ?? L10n.text("branches.no_upstream"), branch.upstream != nil),
                         ("branches.status", branch.isCurrent ? L10n.text("branches.active") : L10n.text("branches.inactive"), false),
                     ])
+                    RepositoryActionGroup {
+                        Button(L10n.text("git_tools.branch.rename")) {
+                            rename = branch.name
+                            showingRename = true
+                        }.buttonStyle(SecondaryButtonStyle())
+                    Button(L10n.text("git_tools.branch.upstream")) {
+                        upstream = branch.upstream ?? ""
+                        showingUpstream = true
+                    }.buttonStyle(SecondaryButtonStyle())
+                    }
 
                     if !branch.isCurrent {
-                        HStack(spacing: 10) {
+                        RepositoryActionGroup {
                             Button(L10n.text("branches.quick_switch")) {
                                 Task { await model.switchBranch(to: branch.name) }
                             }
@@ -716,6 +719,9 @@ private struct RemoteInspector: View {
                         Spacer()
                         Button(L10n.text("action.edit")) { showingEdit = true }
                     }
+                    if let fullName = GitHubRepositoryVisibilityService.fullName(remote: remote.fetchURL) {
+                        GitHubVisibilityControl(fullName: fullName, changed: model.applyRepositoryVisibility).id(fullName)
+                    }
                     VStack(spacing: 0) {
                         BranchMetadataRow(labelKey: "git_tools.remote.fetch_url", value: remote.fetchURL, monospaced: true)
                         Divider()
@@ -745,7 +751,10 @@ private struct RemoteInspector: View {
                 Button(L10n.text("action.cancel"), role: .cancel) {}
             }
         } else {
-            InspectorEmptyState(image: "globe", titleKey: "git_tools.remote.empty", bodyKey: "git_tools.empty.body")
+            VStack {
+                RepositoryUpstreamActions(model: model)
+                InspectorEmptyState(image: "globe", titleKey: "git_tools.remote.empty", bodyKey: "git_tools.empty.body")
+            }
         }
     }
 }

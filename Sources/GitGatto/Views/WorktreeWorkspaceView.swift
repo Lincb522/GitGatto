@@ -74,62 +74,66 @@ struct WorktreeWorkspaceView: View {
     }
 
     private func commandBar(_ palette: AppPalette) -> some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 7) {
-                Text(L10n.text("worktree.title"))
-                    .font(font(size: 15, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                CountBadge(count: model.worktrees.count)
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                HStack(spacing: 7) {
+                    Text(L10n.text("worktree.title"))
+                        .font(font(size: 15, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                    CountBadge(count: model.worktrees.count)
+                }
 
-            Spacer(minLength: 12)
-
-            HStack(spacing: 7) {
-                TextField(L10n.text("worktree.branch.placeholder"), text: $model.worktreeBranchName)
-                    .textFieldStyle(.plain)
-                    .font(font(size: 11.5, weight: .medium))
-                    .frame(width: 170)
-                Rectangle().fill(palette.divider).frame(width: 1, height: 18)
-                TextField(L10n.text("worktree.start_point.placeholder"), text: $model.worktreeStartPoint)
-                    .textFieldStyle(.plain)
-                    .font(font(size: 11.5, weight: .medium))
-                    .frame(width: 92)
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 32)
-            .background(palette.raisedSurface)
-            .clipShape(RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
-                    .stroke(palette.divider, lineWidth: 1)
-            }
-
-            Button {
-                model.chooseWorktreeDestinationAndCreate()
-            } label: {
-                if model.activeWorktreeOperation == .create {
-                    ProgressView().controlSize(.small)
-                } else {
-                    GattoLabel(L10n.text("worktree.action.create"), systemImage: "plus")
+                Spacer(minLength: 12)
+                ToolbarIconButton(
+                    systemName: "arrow.clockwise",
+                    helpKey: "action.refresh",
+                    showsTitle: true,
+                    isActive: model.activeWorktreeOperation == .refresh,
+                    isDisabled: model.activeWorktreeOperation != nil
+                ) {
+                    model.refreshWorktrees()
                 }
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(
-                model.worktreeBranchName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    || model.activeWorktreeOperation != nil
-            )
+            RepositoryActionGroup {
+                HStack(spacing: 7) {
+                    TextField(L10n.text("worktree.branch.placeholder"), text: $model.worktreeBranchName)
+                        .textFieldStyle(.plain)
+                        .font(font(size: 11.5, weight: .medium))
+                        .frame(width: 170)
+                    Rectangle().fill(palette.divider).frame(width: 1, height: 18)
+                    TextField(L10n.text("worktree.start_point.placeholder"), text: $model.worktreeStartPoint)
+                        .textFieldStyle(.plain)
+                        .font(font(size: 11.5, weight: .medium))
+                        .frame(width: 92)
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 32)
+                .background(palette.raisedSurface)
+                .clipShape(RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: theme == .console ? 4 : 8, style: .continuous)
+                        .stroke(palette.divider, lineWidth: 1)
+                }
 
-            ToolbarIconButton(
-                systemName: "arrow.clockwise",
-                helpKey: "action.refresh",
-                isActive: model.activeWorktreeOperation == .refresh,
-                isDisabled: model.activeWorktreeOperation != nil
-            ) {
-                model.refreshWorktrees()
+                Button {
+                    model.chooseWorktreeDestinationAndCreate()
+                } label: {
+                    if model.activeWorktreeOperation == .create {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        GattoLabel(L10n.text("worktree.action.create"), systemImage: "plus")
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(
+                    model.worktreeBranchName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        || model.activeWorktreeOperation != nil
+                )
+
             }
         }
+        .padding(.vertical, 12)
         .padding(.horizontal, 18)
-        .frame(height: 62)
         .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
     }
 
@@ -254,6 +258,8 @@ struct WorktreeWorkspaceView: View {
                 }
                 Spacer(minLength: 8)
 
+            }
+            RepositoryActionGroup {
                 Button(L10n.text("worktree.action.open")) { model.openSelectedWorktree() }
                     .buttonStyle(SecondaryButtonStyle())
                 Button(L10n.text("worktree.action.reveal")) { model.revealSelectedWorktree() }
@@ -262,11 +268,10 @@ struct WorktreeWorkspaceView: View {
                     Button {
                         confirmsRemoval = true
                     } label: {
-                        Image(gattoSymbol: "trash")
+                        GattoLabel(L10n.text("worktree.action.remove"), systemImage: "trash")
                             .foregroundStyle(palette.danger)
-                            .frame(width: 30, height: 30)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(SecondaryButtonStyle())
                     .disabled(model.activeWorktreeOperation != nil)
                     .help(L10n.text("worktree.action.remove"))
                 }
@@ -290,30 +295,40 @@ struct WorktreeWorkspaceView: View {
         .background(theme == .softGlass ? palette.surface.opacity(0.14) : palette.surface)
     }
 
+    private var agentModePicker: some View {
+        Picker(L10n.text("worktree.agent.title"), selection: $model.worktreeAgentMode) {
+            Text(L10n.text("codex.mode.analyze")).tag(CodexRunMode.analyze)
+            Text(L10n.text("codex.mode.edit")).tag(CodexRunMode.edit)
+        }
+        .labelsHidden()
+    }
+
     private func agentWorkspace(_ worktree: GitWorktreeRecord, palette: AppPalette) -> some View {
         let run = model.worktreeAgentRuns[worktree.id]
         return VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(gattoSymbol: "sparkles")
-                    .foregroundStyle(palette.accent)
-                Text(L10n.text("worktree.agent.title"))
-                    .font(font(size: 13, weight: .semibold))
-                    .foregroundStyle(palette.ink)
-                if let run {
-                    WorktreeAgentStateBadge(state: run.state, theme: theme)
+            RepositoryActionGroup {
+                HStack(spacing: 8) {
+                    Image(gattoSymbol: "sparkles")
+                        .foregroundStyle(palette.accent)
+                    Text(L10n.text("worktree.agent.title"))
+                        .font(font(size: 13, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                    if let run {
+                        WorktreeAgentStateBadge(state: run.state, theme: theme)
+                    }
                 }
-                Spacer()
-                Picker("", selection: $model.worktreeAgentMode) {
-                    Text(L10n.text("codex.mode.analyze")).tag(CodexRunMode.analyze)
-                    Text(L10n.text("codex.mode.edit")).tag(CodexRunMode.edit)
+                ViewThatFits(in: .horizontal) {
+                    agentModePicker
+                        .pickerStyle(.segmented)
+                        .fixedSize(horizontal: true, vertical: false)
+                    agentModePicker
+                        .pickerStyle(.menu)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 154)
                 .disabled(run?.state == .running)
             }
             .padding(.horizontal, 16)
-            .frame(height: 46)
+            .padding(.vertical, 10)
+            .frame(minHeight: 46)
 
             Rectangle().fill(palette.divider).frame(height: 1)
 

@@ -125,6 +125,7 @@ struct FileTimelineWorkspaceView: View {
             ToolbarIconButton(
                 systemName: "arrow.clockwise",
                 helpKey: "action.refresh",
+                showsTitle: true,
                 isActive: model.isLoadingRepositoryFiles,
                 isDisabled: model.isLoadingRepositoryFiles
             ) {

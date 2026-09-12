@@ -16,7 +16,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
     @Published private(set) var isLoadingIntentPlan = false
     @Published private(set) var isRefiningIntentPlan = false
     @Published private(set) var isApplyingIntentPlan = false
-    @Published private(set) var intentError: String?
+    @Published private(set) var intentError: AppErrorReport?
     @Published private(set) var intentApplyResult: ChangeIntentApplyResult?
 
     @Published var provenanceRevision: String?
@@ -24,20 +24,20 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
     @Published var provenanceLine = "1"
     @Published private(set) var provenanceReport: CodeProvenanceReport?
     @Published private(set) var isTracingProvenance = false
-    @Published private(set) var provenanceError: String?
+    @Published private(set) var provenanceError: AppErrorReport?
 
     @Published private(set) var capsules: [ReproductionCapsule] = []
     @Published var selectedCapsuleID: UUID?
     @Published var capsuleFailingCommand = ""
     @Published var capsuleFailureOutput = ""
     @Published private(set) var isWorkingWithCapsule = false
-    @Published private(set) var capsuleError: String?
+    @Published private(set) var capsuleError: AppErrorReport?
     @Published private(set) var restoredCapsuleURL: URL?
 
     @Published private(set) var activityEvents: [RepositoryActivityEvent] = []
     @Published var selectedActivityEventID: UUID?
     @Published private(set) var isLoadingActivity = false
-    @Published private(set) var activityError: String?
+    @Published private(set) var activityError: AppErrorReport?
 
     @Published private(set) var notice: String?
 
@@ -115,7 +115,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
             intentSelection = try ChangeIntentSelection(document: document, change: change, selectedIDs: selectedIDs)
         } catch {
             intentSelection = nil
-            intentError = error.localizedDescription
+            intentError = GlobalErrorHandler.report(for: error, context: .intelligence(.intent), repositoryURL: repositoryURL)
             return
         }
         loadTask = Task { [weak self] in
@@ -154,7 +154,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
                   intentLoadID == operationID else { return }
             intentPlan = nil
             selectedIntentGroupID = nil
-            intentError = (error as? ChangeIntentError) == .noChanges ? nil : error.localizedDescription
+            intentError = (error as? ChangeIntentError) == .noChanges ? nil : GlobalErrorHandler.report(for: error, context: .intelligence(.intent), repositoryURL: repositoryURL)
         }
     }
 
@@ -195,7 +195,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
             } catch {
                 guard !(error is CancellationError), self.repositoryURL == repositoryURL,
                       self.intentAgentID == operationID else { return }
-                self.intentError = error.localizedDescription
+                self.intentError = GlobalErrorHandler.report(for: error, context: .intelligence(.intent), repositoryURL: repositoryURL)
             }
         }
     }
@@ -329,7 +329,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
                 await refreshIntentPlan()
                 return false
             }
-            if !(error is CancellationError) { intentError = error.localizedDescription }
+            if !(error is CancellationError) { intentError = GlobalErrorHandler.report(for: error, context: .intelligence(.intent), repositoryURL: repositoryURL) }
             return false
         }
     }
@@ -338,7 +338,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         guard let repositoryURL, !isTracingProvenance else { return }
         let path = provenancePath
         guard let line = Int(provenanceLine) else {
-            provenanceError = CodeProvenanceError.invalidLine.localizedDescription
+            provenanceError = GlobalErrorHandler.report(for: CodeProvenanceError.invalidLine, context: .intelligence(.provenance), repositoryURL: repositoryURL)
             return
         }
         isTracingProvenance = true
@@ -360,7 +360,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
             return
         } catch {
             guard self.repositoryURL == repositoryURL else { return }
-            provenanceError = error.localizedDescription
+            provenanceError = GlobalErrorHandler.report(for: error, context: .intelligence(.provenance), repositoryURL: repositoryURL)
         }
     }
 
@@ -392,7 +392,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
-            capsuleError = error.localizedDescription
+            capsuleError = GlobalErrorHandler.report(for: error, context: .intelligence(.capsules), repositoryURL: repositoryURL)
         }
     }
 
@@ -421,7 +421,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
-            capsuleError = error.localizedDescription
+            capsuleError = GlobalErrorHandler.report(for: error, context: .intelligence(.capsules), repositoryURL: repositoryURL)
         }
     }
 
@@ -438,7 +438,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
-            capsuleError = error.localizedDescription
+            capsuleError = GlobalErrorHandler.report(for: error, context: .intelligence(.capsules), repositoryURL: repositoryURL)
         }
     }
 
@@ -451,7 +451,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
             try await capsuleService.delete(capsule)
             await refreshCapsules()
         } catch {
-            capsuleError = error.localizedDescription
+            capsuleError = GlobalErrorHandler.report(for: error, context: .intelligence(.capsules), repositoryURL: repositoryURL)
         }
     }
 
@@ -473,7 +473,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
             }
             capsuleError = nil
         } catch {
-            capsuleError = error.localizedDescription
+            capsuleError = GlobalErrorHandler.report(for: error, context: .intelligence(.capsules), repositoryURL: repositoryURL)
         }
     }
 
@@ -503,7 +503,7 @@ final class RepositoryIntelligenceViewModel: ObservableObject {
             selectedActivityEventID = nil
             activityError = nil
         } catch {
-            activityError = error.localizedDescription
+            activityError = GlobalErrorHandler.report(for: error, context: .intelligence(.activity), repositoryURL: repositoryURL)
         }
     }
 

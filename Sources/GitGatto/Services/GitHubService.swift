@@ -1162,6 +1162,21 @@ actor GitHubService: GitHubServing, MarketplaceGitHubServing {
         }
     }
 
+    func configureRepositoryAuthentication(in folder: URL) async throws {
+        guard let executable = GitHubExecutableLocator.find() else { throw GitHubServiceError.executableNotFound }
+        for arguments in Self.repositoryAuthenticationArguments(executable: executable) {
+            _ = try await GitCommandRunner().run(at: folder, arguments: arguments)
+        }
+    }
+
+    static func repositoryAuthenticationArguments(executable: URL) -> [[String]] {
+        let quoted = "'" + executable.path.replacingOccurrences(of: "'", with: "'\"'\"'") + "'"
+        let key = "credential.https://github.com.helper"
+        // Reset inherited helpers only for GitHub in this repository; gh retains custody of credentials.
+        return [["config", "--local", "--replace-all", key, ""],
+                ["config", "--local", "--add", key, "!\(quoted) auth git-credential"]]
+    }
+
     func api(_ arguments: [String]) async throws -> Data {
         try await execute(arguments: ["api"] + arguments, currentDirectoryURL: nil).standardOutput
     }

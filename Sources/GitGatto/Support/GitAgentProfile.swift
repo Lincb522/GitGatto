@@ -1,6 +1,7 @@
 import Foundation
 
 enum GitAgentSkill: String, CaseIterable, Identifiable, Sendable {
+    case repositorySetup
     case workingTree
     case stagedReview
     case commitDraft
@@ -21,6 +22,7 @@ enum GitAgentSkill: String, CaseIterable, Identifiable, Sendable {
 
     var systemImage: String {
         switch self {
+        case .repositorySetup: "folder.badge.plus"
         case .workingTree: "arrow.triangle.branch"
         case .stagedReview: "checkmark.seal"
         case .commitDraft: "text.badge.plus"
@@ -58,6 +60,7 @@ enum GitAgentProfile {
     Base every conclusion on repository evidence. Inspect the smallest relevant surface first, distinguish working-tree, staged, committed, and remote-tracking state, and never invent repository facts.
 
     Built-in skills:
+    - Repository setup: use GitGatto's New Repository control to select a folder, initialize Git, create an explicitly chosen GitHub remote, and verify its initial push. The Agent may then prepare only the project README and ignore rules.
     - Working tree: identify staged, unstaged, untracked, ignored, renamed, deleted, conflicted, and partially staged files without collapsing their boundaries.
     - Patch review: explain intent and impact, find correctness, compatibility, data-loss, and validation risks, and keep findings tied to exact evidence.
     - Commit craft: draft concise or complete commit messages only from the staged diff and preserve the user's selected commit boundary.
@@ -86,6 +89,14 @@ enum GitAgentProfile {
 
     static let remoteBoundary = """
     Do not push, pull, fetch, change remotes or credentials, rewrite history, force operations, run git clean, delete branches, publish comments, merge pull requests, edit issues, or trigger workflows. Remote writes belong only to explicit GitGatto controls.
+    """
+
+    static let repositorySetupPrompt = """
+    Prepare the README and .gitignore for this newly opened repository from its actual project structure and manifests.
+    Inspect only the public source and configuration needed to identify the project and build outputs. Do not read secrets, .env contents, API keys, private keys, or credential stores.
+    Preserve existing files and documentation. Make focused additions to README.md and .gitignore only where the project needs them; preserve existing ignore rules. Do not invent features, commands, or licenses.
+    Do not stage, commit, push, change Git configuration or remotes, install dependencies, execute project scripts, delete files, or modify application source.
+    Report the files changed and any setup facts that still require the user's input.
     """
 
     static let suppliedEvidence = """

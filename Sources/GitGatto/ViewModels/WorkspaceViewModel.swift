@@ -92,6 +92,15 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var codexPrompt = ""
     @Published var codexRunMode: CodexRunMode = .analyze
     @Published var codexTranslationTarget: CodexTranslationTarget = .simplifiedChinese
+    @Published var showsRepositoryCreation = false
+    private(set) var repositoryCreationFolder: URL?
+    private(set) var repositoryCreationUsesAgent = false
+
+    func presentRepositoryCreation(folder: URL? = nil, usingAgent: Bool = false) {
+        repositoryCreationFolder = folder
+        repositoryCreationUsesAgent = usingAgent
+        showsRepositoryCreation = true
+    }
     @Published var showsCommitSearch = false
     var settingsDestination: String?
     @Published var appPreferences = AppPreferencesStore.load()
@@ -3312,6 +3321,21 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    func repositoryConfigurationCompleted(in folder: URL) async {
+        let canonical = folder.standardizedFileURL.resolvingSymlinksInPath().path
+        guard snapshot?.rootURL.standardizedFileURL.resolvingSymlinksInPath().path == canonical else { return }
+        do {
+            async let overview = service.loadRepositoryOverview(at: folder)
+            async let references = service.referenceSnapshot(in: folder)
+            let (loaded, loadedReferences) = try await (overview, references)
+            try Task.checkCancellation()
+            guard snapshot?.rootURL.standardizedFileURL.resolvingSymlinksInPath().path == canonical else { return }
+            apply(loaded, preservingSelection: true)
+            apply(loadedReferences)
+        } catch is CancellationError { }
+        catch { presentError(error, context: .repositoryRefresh, repositoryURL: folder) }
+    }
+
     func refresh() async {
         guard let url = snapshot?.rootURL else { return }
         activeRepositoryLoadID = nil
@@ -5680,6 +5704,19 @@ final class WorkspaceViewModel: ObservableObject {
         selectGitHubRepository(githubAccountRepositories.first)
     }
 
+    func applyRepositoryVisibility(_ state: GitHubVisibilityState) {
+        func update(_ repository: GitHubRepository) -> GitHubRepository {
+            guard repository.fullName.caseInsensitiveCompare(state.fullName) == .orderedSame else { return repository }
+            return GitHubRepository(fullName: repository.fullName, name: repository.name, owner: repository.owner,
+                description: repository.description, webURL: repository.webURL, stars: repository.stars, forks: repository.forks,
+                openIssues: repository.openIssues, language: repository.language, updatedAt: repository.updatedAt,
+                isPrivate: state.isPrivate, defaultBranch: repository.defaultBranch)
+        }
+        githubAccountRepositories = githubAccountRepositories.map(update)
+        githubDeveloperRepositories = githubDeveloperRepositories.map(update)
+        if let repository = selectedGitHubRepository { selectedGitHubRepository = update(repository) }
+    }
+
     func selectGitHubRepository(_ repository: GitHubRepository?) {
         if isTranslatingGitHubReadme {
             Task { await translationService.cancel() }
@@ -7132,6 +7169,12 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    func prepareRepositoryWithAgent() {
+        selectedSection = .codex
+        runCodex(prompt: GitAgentProfile.repositorySetupPrompt,
+                 displayPrompt: L10n.text("repository.create.agent_prompt"), mode: .edit)
+    }
+
     func runGitAgentSkill(_ skill: GitAgentSkill) {
         let promptKey: String
         let includesStagedDiff: Bool
@@ -7139,6 +7182,9 @@ final class WorkspaceViewModel: ObservableObject {
         let automaticallyStagesChanges: Bool
 
         switch skill {
+        case .repositorySetup:
+            presentRepositoryCreation(folder: snapshot?.rootURL, usingAgent: true)
+            return
         case .workingTree:
             promptKey = "codex.prompt.explain_changes"
             includesStagedDiff = false

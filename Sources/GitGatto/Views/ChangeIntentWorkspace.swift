@@ -25,7 +25,7 @@ struct ChangeIntentWorkspace: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         composer(plan: plan, palette: palette)
-                        if let error = model.intentError { IntelligenceInlineError(message: error) }
+                        if let error = model.intentError { IntelligenceInlineError(report: error) }
                         LazyVStack(spacing: 12) {
                             ForEach(Array(plan.groups.enumerated()), id: \.element.id) { index, group in
                                 ChangeIntentCommitCard(model: model, plan: plan, group: group,
@@ -53,7 +53,7 @@ struct ChangeIntentWorkspace: View {
                 Divider().overlay(palette.divider)
                 footer(plan: plan, palette: palette)
             } else if let error = model.intentError {
-                IntelligenceErrorState(message: error) { Task { await model.refreshIntentPlan() } }
+                IntelligenceErrorState(report: error) { Task { await model.refreshIntentPlan() } }
             } else {
                 VStack(spacing: 14) {
                     InspectorEmptyState(image: "checkmark.circle", titleKey: "intelligence.intent.empty.title",

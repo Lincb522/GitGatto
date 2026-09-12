@@ -6,6 +6,28 @@ import Testing
 
 @Suite("Commit planning workflow", .serialized)
 struct CommitPlanningTests {
+    @MainActor @Test("Git revision failures are explained in the selected language")
+    func localizedRevisionFailure() async throws {
+        defer { L10n.activate(AppPreferencesStore.load().language) }
+        L10n.activate(.simplifiedChinese)
+        let fixture = try PlanningFixture(); defer { fixture.remove() }
+        let service = PlanningService()
+        await service.setGitFailure(GitCommandError(arguments: ["show", "HEAD"], exitCode: 128,
+            message: "fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree."))
+        let model = fixture.model(service: service)
+        model.load(repositoryURL: fixture.repository)
+        try await eventually { model.intentError != nil && !model.isIntentBusy }
+        #expect(model.intentError?.explanation == L10n.text("error.explanation.git_revision"))
+        #expect(model.intentError?.exitCode == 128)
+        #expect(model.intentError?.message.contains("ambiguous argument") == true)
+        await service.setGitFailure(nil)
+        await model.refreshIntentPlan()
+        #expect(model.intentError == nil && model.intentPlan != nil)
+        await service.setFailure(.noChanges)
+        await model.refreshIntentPlan()
+        #expect(model.intentError == nil && model.intentPlan == nil)
+    }
+
     @MainActor @Test("Diff handoff, refresh and Agent replan retain scope until explicitly using all changes")
     func selectedScopeWorkflow() async throws {
         let fixture = try PlanningFixture(); defer { fixture.remove() }
@@ -363,6 +385,7 @@ private actor PlanningService: ChangeIntentServing {
     var selections: [ChangeIntentSelection?] = []
     var applyCount = 0
     private var failure: ChangeIntentError?
+    private var gitFailure: GitCommandError?
     private var applyGate: CheckedContinuation<Void, Never>?
     private var readsPaused = false
     private var readGates: [Int: CheckedContinuation<Void, Never>] = [:]
@@ -376,6 +399,7 @@ private actor PlanningService: ChangeIntentServing {
         let index = readCount
         if readsPaused { await withCheckedContinuation { readGates[index] = $0 } }
         completedReads.insert(index)
+        if let gitFailure { throw gitFailure }
         if let failure { throw failure }
         var plan = PlanningFixture.plan(in: repositoryURL)
         plan.selection = selection
@@ -386,6 +410,7 @@ private actor PlanningService: ChangeIntentServing {
         await withCheckedContinuation { applyGate = $0 }
         return ChangeIntentApplyResult(commitHashes: ["1234567890abcdef", "abcdef1234567890"], verificationOutputs: [])
     }
+    func setGitFailure(_ value: GitCommandError?) { gitFailure = value }
     func setFailure(_ value: ChangeIntentError?) { failure = value }
     func finishApply() { applyGate?.resume(); applyGate = nil }
 }

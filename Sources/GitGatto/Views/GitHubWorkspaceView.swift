@@ -627,6 +627,8 @@ struct GitHubWorkspaceView: View {
         if let repository = model.selectedGitHubRepository {
             VStack(spacing: 0) {
                 repositoryHeader(repository, palette: palette)
+                GitHubVisibilityControl(fullName: repository.fullName, changed: model.applyRepositoryVisibility)
+                    .id(repository.fullName).padding(.horizontal, 16).padding(.vertical, 8)
                 Rectangle().fill(palette.divider).frame(height: 1)
                 projectTabBar(palette)
                 Rectangle().fill(palette.divider).frame(height: 1)

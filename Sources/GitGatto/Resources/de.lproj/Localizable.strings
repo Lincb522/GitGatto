@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "Änderungsüberwachung pausiert";
 "monitoring.status.coverage" = "%d von %d Repositories geprüft";
 "monitoring.status.changes_title" = "Geänderte Dateien";
+
+"error.recovery.intelligence" = "Prüfe die Fehlerdetails, behebe das Problem und versuche es erneut.";
+"error.explanation.intelligence_verification" = "Der Prüfungsbefehl ist fehlgeschlagen.";
+"error.explanation.intelligence_rollback" = "Der Commit ist fehlgeschlagen und der Index konnte nicht wiederhergestellt werden.";
+"error.recovery.intelligence_rollback" = "Prüfe vor einem erneuten Versuch den Index und die Sicherung, damit vorgemerkte Änderungen nicht überschrieben werden.";
+
+// Repository creation
+"repository.create.title" = "Repository erstellen";
+"repository.create.folder" = "Projektordner";
+"repository.create.choose" = "Ordner auswählen…";
+"repository.create.files_note" = "Es wird ein leerer Commit erstellt. Vorhandene Dateien bleiben lokal und werden weder vorgemerkt noch hochgeladen.";
+"repository.create.existing_note" = "Der Verlauf bleibt erhalten. Das Hochladen muss bestätigt werden.";
+"repository.create.branch" = "Anfangsbranch";
+"repository.create.identity" = "Autor für dieses Repository festlegen";
+"repository.create.author" = "Name des Autors";
+"repository.create.email" = "E-Mail des Autors";
+"repository.create.remote" = "GitHub-Repository erstellen";
+"repository.create.name" = "Repository-Name";
+"repository.create.visibility" = "Sichtbarkeit";
+"repository.create.private" = "Privat";
+"repository.create.public" = "Öffentlich";
+"repository.create.existing" = "Verbindung mit vorhandenem gleichnamigem Repository erlauben";
+"repository.create.push" = "Leeren ersten Commit pushen";
+"repository.create.success" = "Repository bereit";
+"repository.create.agent" = "Mit Agent vorbereiten";
+"repository.create.agent_prompt" = "README und Ignorierregeln anhand des Projekts ergänzen. Dateien bewahren; kein Staging, Commit oder Push.";
+"repository.create.refresh_account" = "GitHub-Konto aktualisieren";
+"repository.create.recovery" = "Abgeschlossene Schritte bleiben erhalten. Beheben Sie den fehlgeschlagenen Schritt und versuchen Sie es erneut. Vorhandene Remotes erfordern Ihre Zustimmung.";
+"repository.create.step.check" = "Ordner und Konto prüfen";
+"repository.create.step.local" = "Lokales Repository initialisieren";
+"repository.create.step.remote" = "Remote-Repository erstellen";
+"repository.create.step.link" = "origin verbinden";
+"repository.create.step.push" = "Commits hochladen";
+"repository.create.step.verify" = "Repository überprüfen";
+"repository.create.error.folder" = "Wählen Sie einen zugänglichen Projektordner, kein Bare- oder beschädigtes Git-Repository.";
+"repository.create.error.nested" = "Der Ordner liegt in einem anderen Repository. Wählen Sie dessen Stammordner oder einen separaten Ordner.";
+"repository.create.error.name" = "Verwenden Sie 1–100 Buchstaben, Ziffern, Punkte, Unter- oder Bindestriche; nicht mit .git enden.";
+"repository.create.error.branch" = "Geben Sie einen gültigen Branchnamen ein.";
+"repository.create.error.identity" = "Geben Sie Name und E-Mail ein oder konfigurieren Sie zuerst Ihre Git-Identität.";
+"repository.create.error.origin" = "origin zeigt auf eine andere Adresse. Unter Branches → Remotes bearbeiten und erneut versuchen.";
+"repository.create.error.remoteExists" = "Der Name existiert bereits. Erlauben Sie die Verbindung oder wählen Sie einen anderen Namen.";
+"repository.create.error.remoteMismatch" = "GitHub-Konto, Repository oder Sichtbarkeit weichen ab. Aktualisieren Sie das Konto und prüfen Sie die Einstellungen.";
+"repository.create.error.history" = "Der aktuelle Commit stimmt nicht mit der Freigabe überein. Einrichtung erneut öffnen, Commit prüfen und bestätigen.";
+"repository.create.error.changed" = "Der Ordner oder das Repository wurde während der Initialisierung geändert. Prüfen Sie es vor einem erneuten Versuch.";
+"repository.create.error.busy" = "Ein Repository wird bereits erstellt.";
+"repository.create.error.verification" = "Die Überprüfung ist fehlgeschlagen. Prüfen Sie den lokalen und entfernten Zustand, bevor Sie es erneut versuchen.";
+"codex.skill.repositorySetup" = "Repository erstellen";
+
+"repository.upstream.title" = "Upstream konfigurieren";
+"repository.upstream.manual" = "Manuell konfigurieren";
+"repository.upstream.manual_execute" = "Konfiguration anwenden";
+"repository.upstream.agent" = "Agent-Schnelleinrichtung";
+"repository.upstream.missing" = "Dieser Branch hat keinen Upstream";
+"repository.upstream.push_history" = "Commit-Verlauf dieses Branches hochladen";
+"repository.upstream.history_warning" = "Der gewählte Commit und sein Verlauf werden hochgeladen. Prüfe Passwörter, Schlüssel und nicht öffentliche Dateien.";
+"repository.upstream.confirm" = "Repository-Einrichtung bestätigen";
+"repository.upstream.continue" = "Bestätigen und ausführen";
+"repository.upstream.preserved" = "Nicht vorgemerkte und nicht committete Dateien bleiben unverändert.";
+"repository.upstream.owner" = "GitHub-Benutzer oder Organisation";
+"repository.create.step.agent" = "Agent-Konfiguration";
+"repository.create.error.agentAction" = "Der Agent lieferte keine gültige Aktion. Es wurde nichts konfiguriert. Erneut versuchen oder manuell konfigurieren.";
+"repository.visibility.make_public" = "Öffentlich machen";
+"repository.visibility.make_private" = "Privat machen";
+"repository.visibility.public_warning" = "Jeder kann den Code und den Commit-Verlauf des Repositorys einsehen.";
+"repository.visibility.private_warning" = "Privatstellung kann Mitwirkende, Forks und GitHub Pages betreffen. Öffentliche Kopien bleiben bestehen.";
+"repository.visibility.error.permission" = "Nur Administratoren können die Sichtbarkeit nicht archivierter Repositorys ohne Fork-Status ändern.";
+"repository.visibility.error.changed" = "Identität oder Sichtbarkeit wurde geändert. Aktualisieren und erneut bestätigen.";
+"repository.visibility.error.verification" = "Sichtbarkeit konnte nicht bestätigt werden. Vor erneutem Versuch den tatsächlichen Status aktualisieren.";
+
+"repository.actions.add" = "Hinzufügen";
+"repository.actions.commit" = "Commit-Aktionen";
+
+"repository.actions.file" = "Dateiaktionen";

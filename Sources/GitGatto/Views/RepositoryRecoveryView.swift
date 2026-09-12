@@ -356,8 +356,9 @@ struct RepositoryRecoveryView: View {
                 Button {
                     Task { await model.reloadRepositoryBackups() }
                 } label: {
-                    Image(gattoSymbol: "arrow.triangle.2.circlepath", pointSize: 11.5)
-                        .frame(width: 28, height: 28)
+                    GattoLabel(L10n.text("action.refresh"), systemImage: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .frame(minHeight: 28)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(palette.mutedInk)

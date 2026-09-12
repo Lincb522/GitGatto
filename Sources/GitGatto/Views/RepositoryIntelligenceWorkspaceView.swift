@@ -165,7 +165,7 @@ private struct CodeProvenanceWorkspace: View {
             Rectangle().fill(palette.divider).frame(height: 1)
 
             if let error = model.provenanceError {
-                IntelligenceErrorState(message: error) {
+                IntelligenceErrorState(report: error) {
                     Task { await model.traceProvenance() }
                 }
             } else if model.isTracingProvenance, model.provenanceReport == nil {
@@ -513,7 +513,7 @@ private struct ReproductionCapsuleWorkspace: View {
                     }
 
                     if let error = model.capsuleError {
-                        IntelligenceInlineError(message: error)
+                        IntelligenceInlineError(report: error)
                     }
                     if let url = model.restoredCapsuleURL {
                         HStack {
@@ -564,7 +564,7 @@ private struct ReproductionCapsuleWorkspace: View {
                                     .allowsHitTesting(false)
                             }
                         }
-                    if let error = model.capsuleError { IntelligenceInlineError(message: error) }
+                    if let error = model.capsuleError { IntelligenceInlineError(report: error) }
                     HStack {
                         Spacer()
                         Button(L10n.text("intelligence.capsule.export")) {
@@ -733,7 +733,7 @@ private struct RepositoryActivityWorkspace: View {
                             }
                         }
                     }
-                    if let error = model.activityError { IntelligenceInlineError(message: error) }
+                    if let error = model.activityError { IntelligenceInlineError(report: error) }
                 }
                 .padding(16)
             }
@@ -943,7 +943,7 @@ struct ChangeCountBadge: View {
 }
 
 struct IntelligenceInlineError: View {
-    let message: String
+    let report: AppErrorReport
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -951,10 +951,17 @@ struct IntelligenceInlineError: View {
         HStack(alignment: .top, spacing: 8) {
             Image(gattoSymbol: "exclamationmark.triangle.fill")
                 .foregroundStyle(palette.danger)
-            Text(message)
-                .font(.system(size: 10.5))
-                .foregroundStyle(palette.danger)
-                .textSelection(.enabled)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(report.explanation)
+                    .foregroundStyle(palette.danger)
+                Text(report.recoverySuggestion)
+                    .foregroundStyle(palette.mutedInk)
+                IntelligenceErrorDetails(report: report).id(report.id)
+            }
+            .font(.system(size: 11.5))
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -964,26 +971,64 @@ struct IntelligenceInlineError: View {
 }
 
 struct IntelligenceErrorState: View {
-    let message: String
+    let report: AppErrorReport
     let retry: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 12) {
-            Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 28)
-                .foregroundStyle(palette.danger)
-            Text(message)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 12) {
+                    Image(gattoSymbol: "exclamationmark.triangle.fill", pointSize: 28)
+                        .foregroundStyle(palette.danger)
+                        .accessibilityHidden(true)
+                    Text(report.explanation)
+                        .foregroundStyle(palette.ink)
+                    Text(report.recoverySuggestion)
+                        .foregroundStyle(palette.mutedInk)
+                    Button(L10n.text("action.retry"), action: retry)
+                        .buttonStyle(SecondaryButtonStyle())
+                        .accessibilityIdentifier("intelligence.error.retry")
+                    IntelligenceErrorDetails(report: report).id(report.id)
+                        .multilineTextAlignment(.leading)
+                }
                 .font(.system(size: 11.5))
-                .foregroundStyle(palette.mutedInk)
                 .multilineTextAlignment(.center)
                 .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 560)
-            Button(L10n.text("action.retry"), action: retry)
-                .buttonStyle(SecondaryButtonStyle())
+                .padding(20)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height)
+            }
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct IntelligenceErrorDetails: View {
+    let report: AppErrorReport
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        DisclosureGroup(L10n.text("error.section.details")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(report.diagnosticText)
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(L10n.text("error.action.copy")) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(report.diagnosticText, forType: .string)
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .accessibilityIdentifier("intelligence.error.copy")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
+        }
+        .font(.system(size: 11.5))
+        .foregroundStyle(AppPalette(colorScheme).mutedInk)
+        .accessibilityIdentifier("intelligence.error.details")
     }
 }
 

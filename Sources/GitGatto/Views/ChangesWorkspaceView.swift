@@ -32,28 +32,14 @@ struct ChangesWorkspaceView: View {
                     ChangeNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                     Rectangle().fill(palette.divider).frame(width: 1)
-                    DiffInspectorView(
-                        change: model.selectedChange,
-                        document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL,
-                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
-                        onPlanSelection: onPlanSelection,
-                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
-                    )
+                    fileInspector
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                 HStack(spacing: 0) {
                     ChangeNavigator(model: model)
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                     Rectangle().fill(palette.divider).frame(width: 1)
-                    DiffInspectorView(
-                        change: model.selectedChange,
-                        document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL,
-                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
-                        onPlanSelection: onPlanSelection,
-                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
-                    )
+                    fileInspector
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .emerald {
                 HorizontalResizableSplitView(
@@ -66,10 +52,7 @@ struct ChangesWorkspaceView: View {
                     minimumSecondaryWidth: 280,
                     separatorWidth: 7
                 ) {
-                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL,
-                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
-                        onPlanSelection: onPlanSelection,
-                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+                    fileInspector
                 } secondary: {
                     ChangeNavigator(model: model, showsTitle: false)
                         .overlay(alignment: .leading) { Rectangle().fill(palette.divider).frame(width: 1) }
@@ -86,24 +69,14 @@ struct ChangesWorkspaceView: View {
                 ) {
                     ChangeNavigator(model: model, showsTitle: false)
                 } secondary: {
-                    DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL,
-                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
-                        onPlanSelection: onPlanSelection,
-                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+                    fileInspector
                 }
             } else {
                 HStack(spacing: 8) {
                     ChangeNavigator(model: model)
                         .frame(width: min(390, max(315, proxy.size.width * 0.35)))
                         .appConsolePanel()
-                    DiffInspectorView(
-                        change: model.selectedChange,
-                        document: model.diffDocument,
-                        previewURL: model.selectedChangePreviewURL,
-                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
-                        onPlanSelection: onPlanSelection,
-                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
-                    )
+                    fileInspector
                         .appConsolePanel()
                 }
                 .padding(8)
@@ -111,6 +84,30 @@ struct ChangesWorkspaceView: View {
             }
         }
     }
+    private var fileInspector: some View {
+        VStack(spacing: 0) {
+            if let change = model.selectedChange {
+                WorkingFileActionsMenu(model: model, change: change)
+                    .id(change.id)
+                    .id(model.snapshot?.rootURL)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(AppPalette(colorScheme).surface.opacity(AppStyleDefaults.theme == .softGlass ? 0.15 : 1))
+            }
+            DiffInspectorView(
+                change: model.selectedChange,
+                document: model.diffDocument,
+                previewURL: model.selectedChangePreviewURL,
+                onStageSelection: { ids, document, change in
+                    Task { await model.stageSelection(ids, document: document, change: change) }
+                },
+                onPlanSelection: onPlanSelection,
+                isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
+            )
+        }
+    }
+
     private func folioWorkspace(palette: AppPalette, width: CGFloat) -> some View {
         VStack(spacing: 14) {
             VStack(spacing: 8) {
@@ -119,7 +116,8 @@ struct ChangesWorkspaceView: View {
                         .frame(maxWidth: 280)
                     CountBadge(count: model.snapshot?.changes.count ?? 0, emphasized: false)
                     Spacer(minLength: 8)
-                    Menu {
+                }
+                RepositoryActionGroup {
                         Button(L10n.text("action.stage_all")) {
                             Task { await model.stage(model.filteredChanges.filter { !$0.isStaged }) }
                         }
@@ -128,21 +126,10 @@ struct ChangesWorkspaceView: View {
                             Task { await model.unstage(model.filteredChanges.filter(\.isStaged)) }
                         }
                         .disabled(!model.filteredChanges.contains(where: \.isStaged))
-                    } label: {
-                        Color.clear.frame(width: 32, height: 32)
                     }
-                    .menuStyle(.borderlessButton)
-                    .menuIndicator(.hidden)
-                    .frame(width: 32, height: 32)
-                    .overlay {
-                        GattoIcon(symbol: "ellipsis", size: 18)
-                            .foregroundStyle(palette.mutedInk)
-                            .allowsHitTesting(false)
-                    }
-                    .help(L10n.text("changes.title"))
-                    .accessibilityLabel(L10n.text("changes.title"))
-                    .disabled(model.activeOperation != nil)
-                }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+
                 if !model.filteredChanges.isEmpty {
                     ScrollViewReader { scroll in
                         ScrollView(.horizontal) {
@@ -190,10 +177,7 @@ struct ChangesWorkspaceView: View {
                     if model.snapshot?.changes.isEmpty == true {
                         ChangesEmptyState()
                     } else {
-                        DiffInspectorView(change: model.selectedChange, document: model.diffDocument, previewURL: model.selectedChangePreviewURL,
-                        onStageSelection: { ids, document, change in Task { await model.stageSelection(ids, document: document, change: change) } },
-                        onPlanSelection: onPlanSelection,
-                        isEditingIndex: isPlanningBusy || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+                        fileInspector
                     }
                 }
                 .folioSurface(.panel, cornerRadius: 14)
@@ -257,7 +241,7 @@ private struct ChangeNavigator: View {
                                 count: staged.count,
                                 actionTitleKey: "action.unstage_all",
                                 isActionLoading: staged.contains { model.pendingStagePaths.contains($0.path) },
-                                isActionDisabled: model.activeOperation != nil
+                                isActionDisabled: model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
                             ) {
                                 Task { await model.unstage(staged) }
                             }
@@ -282,7 +266,7 @@ private struct ChangeNavigator: View {
                                 count: unstaged.count,
                                 actionTitleKey: "action.stage_all",
                                 isActionLoading: unstaged.contains { model.pendingStagePaths.contains($0.path) },
-                                isActionDisabled: model.activeOperation != nil
+                                isActionDisabled: model.activeOperation != nil || model.isSelectedRepositoryAgentEditing
                             ) {
                                 Task { await model.stage(unstaged) }
                             }
@@ -316,6 +300,147 @@ private struct ChangeNavigator: View {
     }
 }
 
+private struct WorkingFileActionsMenu: View {
+    @ObservedObject var model: WorkspaceViewModel
+    let change: WorkingTreeChange
+    @State private var isConfirmingDiscard = false
+
+    var body: some View {
+        Menu {
+            WorkingFileActionItems(model: model, change: change) {
+                if model.appPreferences.confirmDiscardChanges { isConfirmingDiscard = true }
+                else { Task { await model.discard(change) } }
+            }
+        } label: {
+            GattoLabel(L10n.text("repository.actions.file"), systemImage: "doc.text")
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(minHeight: 28)
+        .confirmationDialog(L10n.text("discard.confirm.title"), isPresented: $isConfirmingDiscard, titleVisibility: .visible) {
+            Button(L10n.text("discard.confirm.action"), role: .destructive) {
+                Task { await model.discard(change) }
+            }
+            Button(L10n.text("action.cancel"), role: .cancel) {}
+        } message: {
+            Text(L10n.format("discard.confirm.message", change.path))
+        }
+    }
+}
+
+private struct WorkingFileActionItems: View {
+    @ObservedObject var model: WorkspaceViewModel
+    let change: WorkingTreeChange
+    let requestDiscard: () -> Void
+
+    private var parentRelativePath: String { (change.path as NSString).deletingLastPathComponent }
+    private var fileExtension: String {
+        (change.path as NSString).pathExtension
+    }
+
+    private var folderPaths: [String] {
+        let components = parentRelativePath.split(separator: "/").map(String.init)
+        guard !components.isEmpty else { return [] }
+        return components.indices.reversed().map { index in
+            components[...index].joined(separator: "/")
+        }
+    }
+
+
+    var body: some View {
+        Button(L10n.text(RepositoryIntelligenceTab.provenance.titleKey)) {
+            model.inspectFileContext(change.path)
+        }
+        Divider()
+        Button {
+            Task {
+                if change.isStaged { await model.unstage([change]) }
+                else { await model.stage([change]) }
+            }
+        } label: {
+            GattoLabel(
+                L10n.text(change.isStaged ? "action.unstage" : "action.stage"),
+                systemImage: change.isStaged ? "minus.circle" : "plus.circle"
+            )
+        }
+        .disabled(model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+
+        Divider()
+
+        Button(role: .destructive) {
+            requestDiscard()
+        } label: {
+            GattoLabel(L10n.text("action.discard_changes"), systemImage: "arrow.uturn.backward")
+        }
+        .disabled(model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+
+        Divider()
+
+        Button {
+            Task { await model.ignore(change, scope: .file) }
+        } label: {
+            GattoLabel(L10n.text("action.ignore_file"), systemImage: "eye.slash")
+        }
+        .disabled(model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+
+        Menu {
+            ForEach(folderPaths, id: \.self) { folderPath in
+                Button(folderPath) {
+                    Task { await model.ignore(change, scope: .folder(folderPath)) }
+                }
+            }
+        } label: {
+            GattoLabel(L10n.text("action.ignore_folder"), systemImage: "folder.badge.minus")
+        }
+        .disabled(folderPaths.isEmpty || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+
+        Button {
+            Task { await model.ignore(change, scope: .fileExtension) }
+        } label: {
+            GattoLabel(
+                L10n.format("action.ignore_extension", fileExtension),
+                systemImage: "doc.badge.minus"
+            )
+        }
+        .disabled(fileExtension.isEmpty || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
+
+        Divider()
+
+        Button {
+            model.copyAbsolutePath(for: change)
+        } label: {
+            GattoLabel(L10n.text("action.copy_path"), systemImage: "doc.on.doc")
+        }
+
+        Button {
+            model.copyRelativePath(for: change)
+        } label: {
+            GattoLabel(L10n.text("action.copy_relative_path"), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+        }
+
+        Divider()
+
+        Button {
+            model.revealInFinder(change)
+        } label: {
+            GattoLabel(L10n.text("action.reveal_finder"), systemImage: "folder")
+        }
+
+        Button {
+            model.openInXcode(change)
+        } label: {
+            GattoLabel(L10n.text("action.open_xcode"), systemImage: "hammer")
+        }
+        .disabled(!model.canOpenInXcode)
+
+        Button {
+            model.openWithDefaultApplication(change)
+        } label: {
+            GattoLabel(L10n.text("action.open_default"), systemImage: "arrow.up.forward.app")
+        }
+    }
+}
+
 private struct ChangeRow: View {
     @ObservedObject var model: WorkspaceViewModel
     let change: WorkingTreeChange
@@ -340,25 +465,14 @@ private struct ChangeRow: View {
         (change.path as NSString).deletingLastPathComponent
     }
 
-    private var fileExtension: String {
-        (change.path as NSString).pathExtension
-    }
-
-    private var folderPaths: [String] {
-        let components = parentRelativePath.split(separator: "/").map(String.init)
-        guard !components.isEmpty else { return [] }
-        return components.indices.reversed().map { index in
-            components[...index].joined(separator: "/")
-        }
-    }
-
     private var isUpdatingStage: Bool {
         model.pendingStagePaths.contains(change.path)
     }
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        Button(action: select) {
+        HStack(spacing: 8) {
+            Button(action: select) {
             HStack(spacing: 10) {
                 Text(change.primaryStatus.rawValue)
                     .font(.system(size: 10.5, weight: .bold, design: .monospaced))
@@ -381,123 +495,32 @@ private struct ChangeRow: View {
 
                 Spacer(minLength: 4)
 
-                if isHovering || isSelected || isUpdatingStage || AppStyleDefaults.theme == .folio {
-                    Button(action: toggleStage) {
-                        Group {
-                            if isUpdatingStage {
-                                GattoLoadingGlyph(size: 14)
-                            } else {
-                                Image(gattoSymbol: change.isStaged ? "minus" : "plus", pointSize: 10.5)
-                                    .foregroundStyle(palette.primary)
-                            }
-                        }
-                        .frame(width: 24, height: 24)
-                        .background(palette.raisedSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isUpdatingStage)
-                    .help(L10n.text(change.isStaged ? "action.unstage" : "action.stage"))
-                }
             }
-            .padding(.horizontal, 14)
-            .frame(height: isConsole ? 40 : 48)
             .contentShape(Rectangle())
-            .background(isSelected ? palette.primarySoft : (isHovering ? palette.raisedSurface.opacity(0.75) : Color.clear))
+            }.buttonStyle(.plain)
+            Button(action: toggleStage) {
+                HStack(spacing: 5) {
+                    if isUpdatingStage { GattoLoadingGlyph(size: 13) }
+                    Text(L10n.text(change.isStaged ? "action.unstage" : "action.stage"))
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .padding(.horizontal, 6).frame(minHeight: 28)
+                .foregroundStyle(palette.primary)
+                .background(palette.raisedSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .fixedSize(horizontal: true, vertical: false)
+            .disabled(isUpdatingStage || model.activeOperation != nil || model.isSelectedRepositoryAgentEditing)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 14)
+        .frame(minHeight: isConsole ? 40 : 48)
+        .background(isSelected ? palette.primarySoft : (isHovering ? palette.raisedSurface.opacity(0.75) : Color.clear))
         .onHover { isHovering = $0 }
         .contextMenu {
-            Button(L10n.text(RepositoryIntelligenceTab.provenance.titleKey)) {
-                model.inspectFileContext(change.path)
-            }
-            Divider()
-            Button {
-                toggleStage()
-            } label: {
-                GattoLabel(
-                    L10n.text(change.isStaged ? "action.unstage" : "action.stage"),
-                    systemImage: change.isStaged ? "minus.circle" : "plus.circle"
-                )
-            }
-            .disabled(model.activeOperation != nil)
-
-            Divider()
-
-            Button(role: .destructive) {
-                if model.appPreferences.confirmDiscardChanges {
-                    isConfirmingDiscard = true
-                } else {
-                    Task { await model.discard(change) }
-                }
-            } label: {
-                GattoLabel(L10n.text("action.discard_changes"), systemImage: "arrow.uturn.backward")
-            }
-            .disabled(model.activeOperation != nil)
-
-            Divider()
-
-            Button {
-                Task { await model.ignore(change, scope: .file) }
-            } label: {
-                GattoLabel(L10n.text("action.ignore_file"), systemImage: "eye.slash")
-            }
-            .disabled(model.activeOperation != nil)
-
-            Menu {
-                ForEach(folderPaths, id: \.self) { folderPath in
-                    Button(folderPath) {
-                        Task { await model.ignore(change, scope: .folder(folderPath)) }
-                    }
-                }
-            } label: {
-                GattoLabel(L10n.text("action.ignore_folder"), systemImage: "folder.badge.minus")
-            }
-            .disabled(folderPaths.isEmpty || model.activeOperation != nil)
-
-            Button {
-                Task { await model.ignore(change, scope: .fileExtension) }
-            } label: {
-                GattoLabel(
-                    L10n.format("action.ignore_extension", fileExtension),
-                    systemImage: "doc.badge.minus"
-                )
-            }
-            .disabled(fileExtension.isEmpty || model.activeOperation != nil)
-
-            Divider()
-
-            Button {
-                model.copyAbsolutePath(for: change)
-            } label: {
-                GattoLabel(L10n.text("action.copy_path"), systemImage: "doc.on.doc")
-            }
-
-            Button {
-                model.copyRelativePath(for: change)
-            } label: {
-                GattoLabel(L10n.text("action.copy_relative_path"), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
-            }
-
-            Divider()
-
-            Button {
-                model.revealInFinder(change)
-            } label: {
-                GattoLabel(L10n.text("action.reveal_finder"), systemImage: "folder")
-            }
-
-            Button {
-                model.openInXcode(change)
-            } label: {
-                GattoLabel(L10n.text("action.open_xcode"), systemImage: "hammer")
-            }
-            .disabled(!model.canOpenInXcode)
-
-            Button {
-                model.openWithDefaultApplication(change)
-            } label: {
-                GattoLabel(L10n.text("action.open_default"), systemImage: "arrow.up.forward.app")
+            WorkingFileActionItems(model: model, change: change) {
+                if model.appPreferences.confirmDiscardChanges { isConfirmingDiscard = true }
+                else { Task { await model.discard(change) } }
             }
         }
         .confirmationDialog(

@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "變更監控已暫停";
 "monitoring.status.coverage" = "已讀取 %d / %d 個儲存庫";
 "monitoring.status.changes_title" = "變更檔案";
+
+"error.recovery.intelligence" = "查看錯誤詳情，處理問題後重試。";
+"error.explanation.intelligence_verification" = "驗證命令執行失敗。";
+"error.explanation.intelligence_rollback" = "提交失敗，暫存區也未能還原。";
+"error.recovery.intelligence_rollback" = "重試前請檢查暫存區和還原備份，避免覆蓋已暫存的變更。";
+
+// Repository creation
+"repository.create.title" = "新增儲存庫";
+"repository.create.folder" = "專案資料夾";
+"repository.create.choose" = "選擇資料夾…";
+"repository.create.files_note" = "初始化僅建立空提交。既有檔案留在本機，不會自動暫存或上傳。";
+"repository.create.existing_note" = "保留已有提交歷史；上傳歷史需要另外確認。";
+"repository.create.branch" = "初始分支";
+"repository.create.identity" = "為此儲存庫設定提交身分";
+"repository.create.author" = "作者姓名";
+"repository.create.email" = "作者電子郵件";
+"repository.create.remote" = "建立 GitHub 遠端儲存庫";
+"repository.create.name" = "儲存庫名稱";
+"repository.create.visibility" = "可見性";
+"repository.create.private" = "私人";
+"repository.create.public" = "公開";
+"repository.create.existing" = "允許連結同名的既有儲存庫";
+"repository.create.push" = "推送空的初始提交";
+"repository.create.success" = "儲存庫已就緒";
+"repository.create.agent" = "交給 Agent 完善";
+"repository.create.agent_prompt" = "依專案完善 README 和忽略規則，保留既有檔案，不暫存、不提交、不推送。";
+"repository.create.refresh_account" = "重新整理 GitHub 帳號";
+"repository.create.recovery" = "已完成的步驟會保留。請處理失敗步驟後重試；連結既有遠端需要明確勾選。";
+"repository.create.step.check" = "檢查資料夾與帳號";
+"repository.create.step.local" = "初始化本機儲存庫";
+"repository.create.step.remote" = "建立遠端儲存庫";
+"repository.create.step.link" = "連結 origin";
+"repository.create.step.push" = "上傳提交";
+"repository.create.step.verify" = "驗證儲存庫";
+"repository.create.error.folder" = "請選擇可存取的專案資料夾，不支援裸儲存庫或損壞的 Git 儲存庫。";
+"repository.create.error.nested" = "所選資料夾位於另一個儲存庫內。請選擇根目錄或獨立資料夾。";
+"repository.create.error.name" = "名稱需為 1–100 個字母、數字、點、底線或連字號，不能以 .git 結尾。";
+"repository.create.error.branch" = "請輸入有效的初始分支名稱。";
+"repository.create.error.identity" = "請填寫作者姓名和電子郵件，或先設定 Git 提交身分。";
+"repository.create.error.origin" = "origin 已指向其他位址。請在「分支 → 遠端」編輯位址後重試。";
+"repository.create.error.remoteExists" = "同名儲存庫已存在。請勾選允許連結既有儲存庫，或更換名稱。";
+"repository.create.error.remoteMismatch" = "GitHub 帳號、儲存庫或可見性與選擇不一致。請重新整理帳號並檢查設定。";
+"repository.create.error.history" = "目前提交與上傳確認不一致。請重新開啟設定並確認提交。";
+"repository.create.error.changed" = "初始化期間資料夾或儲存庫發生變化。請檢查後重試。";
+"repository.create.error.busy" = "正在建立儲存庫，請等待目前操作完成。";
+"repository.create.error.verification" = "儲存庫驗證未通過。請檢查本機和遠端狀態後重試。";
+"codex.skill.repositorySetup" = "新增儲存庫";
+
+"repository.upstream.title" = "設定上游";
+"repository.upstream.manual" = "手動設定";
+"repository.upstream.manual_execute" = "執行設定";
+"repository.upstream.agent" = "Agent 一鍵設定";
+"repository.upstream.missing" = "目前分支尚未設定上游";
+"repository.upstream.push_history" = "上傳目前分支的已提交歷史";
+"repository.upstream.history_warning" = "將上傳所選提交及其歷史。請確認沒有密碼、金鑰或不應上傳的檔案。";
+"repository.upstream.confirm" = "確認儲存庫設定";
+"repository.upstream.continue" = "確認並執行";
+"repository.upstream.preserved" = "未暫存、未提交的檔案保持不變。";
+"repository.upstream.owner" = "GitHub 使用者或組織";
+"repository.create.step.agent" = "Agent 設定";
+"repository.create.error.agentAction" = "Agent 未傳回有效的設定操作，尚未執行。請重試或手動設定。";
+"repository.visibility.make_public" = "設為公開";
+"repository.visibility.make_private" = "設為私有";
+"repository.visibility.public_warning" = "設為公開後，任何人都可查看程式碼和提交歷史。";
+"repository.visibility.private_warning" = "設為私有可能影響協作者、Fork 和 GitHub Pages；已有公開副本不會被收回。";
+"repository.visibility.error.permission" = "僅管理員可切換非 Fork、未封存儲存庫的公開或私有狀態。";
+"repository.visibility.error.changed" = "儲存庫身分或可見性已變更。請重新整理後再次確認。";
+"repository.visibility.error.verification" = "無法驗證儲存庫可見性。請重新整理確認實際狀態。";
+
+"repository.actions.add" = "新增";
+"repository.actions.commit" = "提交操作";
+
+"repository.actions.file" = "檔案操作";

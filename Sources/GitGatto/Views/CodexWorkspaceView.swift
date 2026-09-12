@@ -61,9 +61,9 @@ struct CodexWorkspaceView: View {
                         GattoLabel(L10n.text(skill.titleKey), systemImage: skill.systemImage)
                     }
                     .disabled(
-                        model.codexAvailability.state != .available
+                        skill != .repositorySetup && (model.codexAvailability.state != .available
                             || model.isCodexRunning
-                            || model.snapshot == nil
+                            || model.snapshot == nil)
                     )
                 }
             } label: {

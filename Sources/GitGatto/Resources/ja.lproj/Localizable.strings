@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "変更監視は停止中";
 "monitoring.status.coverage" = "%d / %d リポジトリを確認済み";
 "monitoring.status.changes_title" = "変更ファイル";
+
+"error.recovery.intelligence" = "エラーの詳細を確認し、問題を解決してから再試行してください。";
+"error.explanation.intelligence_verification" = "検証コマンドの実行に失敗しました。";
+"error.explanation.intelligence_rollback" = "コミットに失敗し、インデックスも復元できませんでした。";
+"error.recovery.intelligence_rollback" = "ステージ済みの変更を上書きしないよう、再試行前にインデックスと復元用バックアップを確認してください。";
+
+// Repository creation
+"repository.create.title" = "リポジトリを作成";
+"repository.create.folder" = "プロジェクトフォルダ";
+"repository.create.choose" = "フォルダを選択…";
+"repository.create.files_note" = "初期化では空のコミットだけを作成します。既存ファイルはローカルに残り、自動でステージやアップロードは行いません。";
+"repository.create.existing_note" = "既存の履歴は保持します。アップロードには別途確認が必要です。";
+"repository.create.branch" = "初期ブランチ";
+"repository.create.identity" = "このリポジトリの作成者を設定";
+"repository.create.author" = "作成者名";
+"repository.create.email" = "メールアドレス";
+"repository.create.remote" = "GitHub リポジトリを作成";
+"repository.create.name" = "リポジトリ名";
+"repository.create.visibility" = "公開範囲";
+"repository.create.private" = "非公開";
+"repository.create.public" = "公開";
+"repository.create.existing" = "同名の既存リポジトリへの接続を許可";
+"repository.create.push" = "空の初期コミットをプッシュ";
+"repository.create.success" = "リポジトリの準備完了";
+"repository.create.agent" = "Agent で整える";
+"repository.create.agent_prompt" = "プロジェクトに合わせて README と除外ルールを整えてください。既存ファイルを保持し、ステージ・コミット・プッシュは行わないでください。";
+"repository.create.refresh_account" = "GitHub アカウントを更新";
+"repository.create.recovery" = "完了済みの手順は保持されます。失敗した手順を確認して再試行してください。既存のリモートへの接続には明示的な許可が必要です。";
+"repository.create.step.check" = "フォルダとアカウントを確認";
+"repository.create.step.local" = "ローカルリポジトリを初期化";
+"repository.create.step.remote" = "リモートリポジトリを作成";
+"repository.create.step.link" = "origin を接続";
+"repository.create.step.push" = "コミットをアップロード";
+"repository.create.step.verify" = "リポジトリを検証";
+"repository.create.error.folder" = "アクセス可能なプロジェクトフォルダを選択してください。ベアリポジトリや破損した Git リポジトリは使えません。";
+"repository.create.error.nested" = "別のリポジトリ内のフォルダです。そのルートか独立したフォルダを選択してください。";
+"repository.create.error.name" = "名前は英数字・ピリオド・下線・ハイフンの 1～100 文字で、末尾に .git は使えません。";
+"repository.create.error.branch" = "有効な初期ブランチ名を入力してください。";
+"repository.create.error.identity" = "作成者名とメールアドレスを入力するか、Git の作成者情報を設定してください。";
+"repository.create.error.origin" = "origin は別のアドレスを参照しています。「ブランチ → リモート」で編集して再試行してください。";
+"repository.create.error.remoteExists" = "同名のリポジトリがあります。既存リポジトリへの接続を許可するか、別の名前を選択してください。";
+"repository.create.error.remoteMismatch" = "GitHub アカウント、リポジトリまたは公開範囲が選択と異なります。アカウントを更新し、設定を確認してください。";
+"repository.create.error.history" = "現在のコミットが承認されたものと異なります。設定を開き直し、確認してください。";
+"repository.create.error.changed" = "初期化中にフォルダまたはリポジトリが変更されました。確認してから再試行してください。";
+"repository.create.error.busy" = "リポジトリの作成が進行中です。";
+"repository.create.error.verification" = "検証に失敗しました。ローカルとリモートの状態を確認して再試行してください。";
+"codex.skill.repositorySetup" = "リポジトリを作成";
+
+"repository.upstream.title" = "上流を設定";
+"repository.upstream.manual" = "手動設定";
+"repository.upstream.manual_execute" = "設定を実行";
+"repository.upstream.agent" = "Agent で一括設定";
+"repository.upstream.missing" = "このブランチに上流がありません";
+"repository.upstream.push_history" = "このブランチのコミット履歴をアップロード";
+"repository.upstream.history_warning" = "選択したコミットとその履歴をアップロードします。パスワード、キー、公開できないファイルがないか確認してください。";
+"repository.upstream.confirm" = "リポジトリ設定の確認";
+"repository.upstream.continue" = "確認して実行";
+"repository.upstream.preserved" = "未ステージ・未コミットのファイルは変更しません。";
+"repository.upstream.owner" = "GitHub ユーザーまたは組織";
+"repository.create.step.agent" = "Agent による設定";
+"repository.create.error.agentAction" = "Agent から有効な設定操作が返されなかったため、設定していません。再試行するか手動で設定してください。";
+"repository.visibility.make_public" = "公開にする";
+"repository.visibility.make_private" = "非公開にする";
+"repository.visibility.public_warning" = "誰でもコードとコミット履歴を閲覧できるようになります。";
+"repository.visibility.private_warning" = "非公開への変更は共同作業者、Fork、GitHub Pages に影響する場合があります。既存の公開コピーは回収できません。";
+"repository.visibility.error.permission" = "管理者のみが、Fork ではない未アーカイブのリポジトリの公開設定を変更できます。";
+"repository.visibility.error.changed" = "リポジトリの識別情報または公開設定が変わりました。更新して再確認してください。";
+"repository.visibility.error.verification" = "公開設定を検証できませんでした。実際の状態を更新して確認してください。";
+
+"repository.actions.add" = "追加";
+"repository.actions.commit" = "コミット操作";
+
+"repository.actions.file" = "ファイル操作";

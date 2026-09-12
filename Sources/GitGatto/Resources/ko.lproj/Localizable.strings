@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "변경 감시 일시 중지";
 "monitoring.status.coverage" = "저장소 %d / %d개 확인됨";
 "monitoring.status.changes_title" = "변경된 파일";
+
+"error.recovery.intelligence" = "오류 세부 정보를 확인하고 문제를 해결한 후 다시 시도하세요.";
+"error.explanation.intelligence_verification" = "검증 명령 실행에 실패했습니다.";
+"error.explanation.intelligence_rollback" = "커밋에 실패했으며 스테이징 영역도 복원하지 못했습니다.";
+"error.recovery.intelligence_rollback" = "스테이징된 변경 사항을 덮어쓰지 않도록 다시 시도하기 전에 스테이징 영역과 복구 백업을 확인하세요.";
+
+// Repository creation
+"repository.create.title" = "저장소 만들기";
+"repository.create.folder" = "프로젝트 폴더";
+"repository.create.choose" = "폴더 선택…";
+"repository.create.files_note" = "초기화는 빈 커밋만 만듭니다. 기존 파일은 로컬에 남으며 자동으로 스테이징하거나 업로드하지 않습니다.";
+"repository.create.existing_note" = "기존 이력을 보존합니다. 업로드에는 별도 확인이 필요합니다.";
+"repository.create.branch" = "초기 브랜치";
+"repository.create.identity" = "이 저장소의 작성자 설정";
+"repository.create.author" = "작성자 이름";
+"repository.create.email" = "작성자 이메일";
+"repository.create.remote" = "GitHub 저장소 만들기";
+"repository.create.name" = "저장소 이름";
+"repository.create.visibility" = "공개 범위";
+"repository.create.private" = "비공개";
+"repository.create.public" = "공개";
+"repository.create.existing" = "같은 이름의 기존 저장소 연결 허용";
+"repository.create.push" = "빈 초기 커밋 푸시";
+"repository.create.success" = "저장소 준비 완료";
+"repository.create.agent" = "Agent로 준비";
+"repository.create.agent_prompt" = "프로젝트에 맞게 README와 제외 규칙을 보완하세요. 기존 파일을 보존하고 스테이징, 커밋, 푸시는 하지 마세요.";
+"repository.create.refresh_account" = "GitHub 계정 새로 고침";
+"repository.create.recovery" = "완료된 단계는 유지됩니다. 실패한 단계를 해결한 후 다시 시도하세요. 기존 원격 저장소 연결에는 명시적 허용이 필요합니다.";
+"repository.create.step.check" = "폴더 및 계정 확인";
+"repository.create.step.local" = "로컬 저장소 초기화";
+"repository.create.step.remote" = "원격 저장소 만들기";
+"repository.create.step.link" = "origin 연결";
+"repository.create.step.push" = "커밋 업로드";
+"repository.create.step.verify" = "저장소 검증";
+"repository.create.error.folder" = "접근 가능한 프로젝트 폴더를 선택하세요. bare 저장소나 손상된 Git 저장소는 사용할 수 없습니다.";
+"repository.create.error.nested" = "다른 저장소 내부의 폴더입니다. 루트 또는 별도 폴더를 선택하세요.";
+"repository.create.error.name" = "이름은 영문, 숫자, 점, 밑줄, 하이픈 1~100자이며 .git으로 끝날 수 없습니다.";
+"repository.create.error.branch" = "유효한 초기 브랜치 이름을 입력하세요.";
+"repository.create.error.identity" = "작성자 이름과 이메일을 입력하거나 Git 작성자 정보를 설정하세요.";
+"repository.create.error.origin" = "origin이 다른 주소를 가리킵니다. 브랜치 → 원격에서 주소를 수정한 후 다시 시도하세요.";
+"repository.create.error.remoteExists" = "같은 이름의 저장소가 있습니다. 기존 저장소 연결을 허용하거나 이름을 바꾸세요.";
+"repository.create.error.remoteMismatch" = "GitHub 계정, 저장소 또는 공개 범위가 선택과 다릅니다. 계정을 새로 고치고 설정을 확인하세요.";
+"repository.create.error.history" = "현재 커밋이 업로드 승인과 다릅니다. 설정을 다시 열고 커밋을 확인하세요.";
+"repository.create.error.changed" = "초기화 중 폴더 또는 저장소가 변경되었습니다. 확인한 후 다시 시도하세요.";
+"repository.create.error.busy" = "저장소 생성이 이미 진행 중입니다.";
+"repository.create.error.verification" = "검증에 실패했습니다. 로컬 및 원격 상태를 확인한 후 다시 시도하세요.";
+"codex.skill.repositorySetup" = "저장소 만들기";
+
+"repository.upstream.title" = "업스트림 설정";
+"repository.upstream.manual" = "수동 설정";
+"repository.upstream.manual_execute" = "설정 실행";
+"repository.upstream.agent" = "Agent 원클릭 설정";
+"repository.upstream.missing" = "이 브랜치에 업스트림이 없습니다";
+"repository.upstream.push_history" = "이 브랜치의 커밋 이력 업로드";
+"repository.upstream.history_warning" = "선택한 커밋과 이력을 업로드합니다. 비밀번호, 키, 공개하면 안 되는 파일이 없는지 확인하세요.";
+"repository.upstream.confirm" = "저장소 설정 확인";
+"repository.upstream.continue" = "확인 후 실행";
+"repository.upstream.preserved" = "스테이징 또는 커밋하지 않은 파일은 변경하지 않습니다.";
+"repository.upstream.owner" = "GitHub 사용자 또는 조직";
+"repository.create.step.agent" = "Agent 설정";
+"repository.create.error.agentAction" = "Agent가 유효한 설정 작업을 반환하지 않아 설정하지 않았습니다. 다시 시도하거나 수동으로 설정하세요.";
+"repository.visibility.make_public" = "공개로 변경";
+"repository.visibility.make_private" = "비공개로 변경";
+"repository.visibility.public_warning" = "누구나 저장소 코드와 커밋 이력을 볼 수 있게 됩니다.";
+"repository.visibility.private_warning" = "비공개 전환은 협업자, Fork, GitHub Pages에 영향을 줄 수 있습니다. 기존 공개 사본은 회수되지 않습니다.";
+"repository.visibility.error.permission" = "관리자만 Fork가 아닌 보관되지 않은 저장소의 공개 상태를 변경할 수 있습니다.";
+"repository.visibility.error.changed" = "저장소 식별 정보 또는 공개 상태가 변경되었습니다. 새로 고친 후 다시 확인하세요.";
+"repository.visibility.error.verification" = "공개 상태를 검증하지 못했습니다. 실제 상태를 새로 고친 후 다시 시도하세요.";
+
+"repository.actions.add" = "추가";
+"repository.actions.commit" = "커밋 작업";
+
+"repository.actions.file" = "파일 작업";

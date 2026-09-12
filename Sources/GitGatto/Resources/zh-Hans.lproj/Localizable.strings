@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "改动监控已暂停";
 "monitoring.status.coverage" = "已读取 %d / %d 个仓库";
 "monitoring.status.changes_title" = "改动文件";
+
+"error.recovery.intelligence" = "查看错误详情，处理问题后重试。";
+"error.explanation.intelligence_verification" = "验证命令执行失败。";
+"error.explanation.intelligence_rollback" = "提交失败，暂存区也未能恢复。";
+"error.recovery.intelligence_rollback" = "重试前请检查暂存区和恢复备份，避免覆盖已暂存的改动。";
+
+// Repository creation
+"repository.create.title" = "新建仓库";
+"repository.create.folder" = "项目文件夹";
+"repository.create.choose" = "选择文件夹…";
+"repository.create.files_note" = "初始化仅创建空提交。已有文件留在本地，不会自动暂存或上传。";
+"repository.create.existing_note" = "已有提交历史会保留；上传历史需要单独确认。";
+"repository.create.branch" = "初始分支";
+"repository.create.identity" = "为此仓库设置提交身份";
+"repository.create.author" = "作者姓名";
+"repository.create.email" = "作者邮箱";
+"repository.create.remote" = "创建 GitHub 远端仓库";
+"repository.create.name" = "仓库名称";
+"repository.create.visibility" = "可见性";
+"repository.create.private" = "私有";
+"repository.create.public" = "公开";
+"repository.create.existing" = "允许关联同名的已有仓库";
+"repository.create.push" = "推送空的初始提交";
+"repository.create.success" = "仓库已就绪";
+"repository.create.agent" = "交给 Agent 完善";
+"repository.create.agent_prompt" = "根据项目完善 README 和忽略规则，保留已有文件，不暂存、不提交、不推送。";
+"repository.create.refresh_account" = "刷新 GitHub 账号";
+"repository.create.recovery" = "已完成的步骤会保留。请处理失败步骤后重试；关联已有远端需要明确勾选。";
+"repository.create.step.check" = "检查文件夹与账号";
+"repository.create.step.local" = "初始化本地仓库";
+"repository.create.step.remote" = "创建远端仓库";
+"repository.create.step.link" = "关联 origin";
+"repository.create.step.push" = "上传提交";
+"repository.create.step.verify" = "验证仓库";
+"repository.create.error.folder" = "请选择可访问的项目文件夹，不支持裸仓库或损坏的 Git 仓库。";
+"repository.create.error.nested" = "所选文件夹位于另一个仓库内。请选择仓库根目录或独立文件夹。";
+"repository.create.error.name" = "名称需为 1–100 个字母、数字、点、下划线或短横线，不能以 .git 结尾。";
+"repository.create.error.branch" = "请输入有效的初始分支名称。";
+"repository.create.error.identity" = "请填写作者姓名和邮箱，或先配置 Git 提交身份。";
+"repository.create.error.origin" = "origin 已指向其他地址。请在「分支 → 远程」编辑地址后重试。";
+"repository.create.error.remoteExists" = "同名仓库已存在。请勾选允许关联已有仓库，或更换名称。";
+"repository.create.error.remoteMismatch" = "GitHub 账号、仓库或可见性与选择不一致。请刷新账号并检查设置。";
+"repository.create.error.history" = "当前提交与上传确认不一致。请重新打开配置，核对提交后确认上传。";
+"repository.create.error.changed" = "初始化期间文件夹或仓库发生了变化。请检查后重试。";
+"repository.create.error.busy" = "正在创建仓库，请等待当前操作完成。";
+"repository.create.error.verification" = "仓库验证未通过。请检查本地和远端状态后重试。";
+"codex.skill.repositorySetup" = "新建仓库";
+
+"repository.upstream.title" = "配置上游";
+"repository.upstream.manual" = "手动配置";
+"repository.upstream.manual_execute" = "执行配置";
+"repository.upstream.agent" = "Agent 一键配置";
+"repository.upstream.missing" = "当前分支未配置上游";
+"repository.upstream.push_history" = "上传当前分支的已提交历史";
+"repository.upstream.history_warning" = "将上传所选提交及其历史。请确认其中没有密码、密钥或不应上传的文件。";
+"repository.upstream.confirm" = "确认仓库配置";
+"repository.upstream.continue" = "确认并执行";
+"repository.upstream.preserved" = "未暂存、未提交的文件保持不变。";
+"repository.upstream.owner" = "GitHub 用户或组织";
+"repository.create.step.agent" = "Agent 配置";
+"repository.create.error.agentAction" = "Agent 未返回有效的配置操作，未执行配置。请重试或使用手动配置。";
+"repository.visibility.make_public" = "设为公开";
+"repository.visibility.make_private" = "设为私有";
+"repository.visibility.public_warning" = "设为公开后，任何人都可查看仓库代码和提交历史。";
+"repository.visibility.private_warning" = "设为私有可能影响协作者、Fork 和 GitHub Pages；已有公开副本不会被收回。";
+"repository.visibility.error.permission" = "仅管理员可切换非 Fork、未归档仓库的公开或私有状态。";
+"repository.visibility.error.changed" = "仓库身份或可见性已变化。请刷新后重新确认。";
+"repository.visibility.error.verification" = "未能核验仓库可见性。请刷新查看实际状态后再操作。";
+
+"repository.actions.add" = "添加";
+"repository.actions.commit" = "提交操作";
+
+"repository.actions.file" = "文件操作";

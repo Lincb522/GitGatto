@@ -112,7 +112,7 @@ struct UIOptimizationRenderingTests {
                 let content = VStack(alignment: .leading, spacing: 16) {
                     DiffSelectionActions(count: state == "empty" ? 0 : 2, isStaged: true, isBusy: state == "busy", onStage: {}, onPlan: {})
                     ChangeIntentSelectionBanner(selection: selection, isBusy: state == "busy", showAll: {})
-                    if state == "error" { IntelligenceInlineError(message: ChangeIntentError.selectionDependency.localizedDescription).padding(16) }
+                    if state == "error" { IntelligenceInlineError(report: GlobalErrorHandler.report(for: ChangeIntentError.selectionDependency, context: .intelligence(.intent))).padding(16) }
                     Spacer()
                 }.background(AppPalette(scheme).background)
                 let container = GeometryReader { _ in

@@ -2957,3 +2957,76 @@
 "monitoring.status.worktree_paused" = "Seguimiento de cambios pausado";
 "monitoring.status.coverage" = "%d de %d repositorios comprobados";
 "monitoring.status.changes_title" = "Archivos modificados";
+
+"error.recovery.intelligence" = "Consulta los detalles del error, resuelve el problema y vuelve a intentarlo.";
+"error.explanation.intelligence_verification" = "La ejecución del comando de verificación ha fallado.";
+"error.explanation.intelligence_rollback" = "El commit ha fallado y no se ha podido restaurar el índice.";
+"error.recovery.intelligence_rollback" = "Revisa el índice y la copia de recuperación antes de reintentar para no sobrescribir los cambios preparados.";
+
+// Repository creation
+"repository.create.title" = "Crear repositorio";
+"repository.create.folder" = "Carpeta del proyecto";
+"repository.create.choose" = "Elegir carpeta…";
+"repository.create.files_note" = "Se crea un commit vacío. Los archivos existentes permanecen locales, sin prepararse ni subirse.";
+"repository.create.existing_note" = "Se conserva el historial; subirlo requiere confirmación.";
+"repository.create.branch" = "Rama inicial";
+"repository.create.identity" = "Definir autor para este repositorio";
+"repository.create.author" = "Nombre del autor";
+"repository.create.email" = "Correo del autor";
+"repository.create.remote" = "Crear repositorio en GitHub";
+"repository.create.name" = "Nombre del repositorio";
+"repository.create.visibility" = "Visibilidad";
+"repository.create.private" = "Privado";
+"repository.create.public" = "Público";
+"repository.create.existing" = "Permitir conectar un repositorio existente con este nombre";
+"repository.create.push" = "Enviar el commit inicial vacío";
+"repository.create.success" = "Repositorio listo";
+"repository.create.agent" = "Preparar con Agent";
+"repository.create.agent_prompt" = "Completar README y las reglas de exclusión según el proyecto. Conservar archivos; no preparar, confirmar ni enviar cambios.";
+"repository.create.refresh_account" = "Actualizar cuenta de GitHub";
+"repository.create.recovery" = "Los pasos completados se conservan. Corrige el paso fallido y reintenta. Conectar un remoto existente requiere tu permiso.";
+"repository.create.step.check" = "Comprobar carpeta y cuenta";
+"repository.create.step.local" = "Inicializar repositorio local";
+"repository.create.step.remote" = "Crear repositorio remoto";
+"repository.create.step.link" = "Conectar origin";
+"repository.create.step.push" = "Subir commits";
+"repository.create.step.verify" = "Verificar repositorio";
+"repository.create.error.folder" = "Elige una carpeta accesible, no un repositorio Git bare ni dañado.";
+"repository.create.error.nested" = "La carpeta está dentro de otro repositorio. Elige su raíz o una carpeta independiente.";
+"repository.create.error.name" = "Usa entre 1 y 100 letras, números, puntos, guiones o guiones bajos, sin terminar en .git.";
+"repository.create.error.branch" = "Introduce un nombre de rama válido.";
+"repository.create.error.identity" = "Introduce el nombre y correo del autor o configura tu identidad Git.";
+"repository.create.error.origin" = "origin apunta a otra dirección. Edítela en Ramas → Remotos y reintente.";
+"repository.create.error.remoteExists" = "El nombre ya existe. Permite conectar el repositorio existente o cambia el nombre.";
+"repository.create.error.remoteMismatch" = "La cuenta, el repositorio o la visibilidad no coincide. Actualiza la cuenta y revisa los ajustes.";
+"repository.create.error.history" = "El commit actual no coincide con la autorización. Reabra la configuración, revíselo y confirme.";
+"repository.create.error.changed" = "La carpeta o el repositorio cambió durante la inicialización. Revísalo antes de reintentar.";
+"repository.create.error.busy" = "Ya se está creando un repositorio.";
+"repository.create.error.verification" = "La verificación falló. Comprueba el estado local y remoto antes de reintentar.";
+"codex.skill.repositorySetup" = "Crear repositorio";
+
+"repository.upstream.title" = "Configurar upstream";
+"repository.upstream.manual" = "Configuración manual";
+"repository.upstream.manual_execute" = "Aplicar configuración";
+"repository.upstream.agent" = "Configuración con Agent";
+"repository.upstream.missing" = "Esta rama no tiene upstream";
+"repository.upstream.push_history" = "Subir el historial de esta rama";
+"repository.upstream.history_warning" = "Se subirán el commit elegido y su historial. Revise contraseñas, claves y archivos que no deban publicarse.";
+"repository.upstream.confirm" = "Confirmar configuración";
+"repository.upstream.continue" = "Confirmar y ejecutar";
+"repository.upstream.preserved" = "Los archivos sin preparar o sin confirmar no se modifican.";
+"repository.upstream.owner" = "Usuario u organización de GitHub";
+"repository.create.step.agent" = "Configuración de Agent";
+"repository.create.error.agentAction" = "El Agent no devolvió una acción válida. No se configuró nada. Reintente o configure manualmente.";
+"repository.visibility.make_public" = "Hacer público";
+"repository.visibility.make_private" = "Hacer privado";
+"repository.visibility.public_warning" = "Cualquiera podrá consultar el código y el historial del repositorio.";
+"repository.visibility.private_warning" = "Hacerlo privado puede afectar colaboradores, forks y GitHub Pages. Las copias públicas existentes permanecerán.";
+"repository.visibility.error.permission" = "Solo los administradores pueden cambiar la visibilidad de repositorios no archivados que no sean forks.";
+"repository.visibility.error.changed" = "La identidad o visibilidad cambió. Actualice y vuelva a confirmar.";
+"repository.visibility.error.verification" = "No se pudo verificar la visibilidad. Actualice el estado real antes de reintentar.";
+
+"repository.actions.add" = "Añadir";
+"repository.actions.commit" = "Acciones del commit";
+
+"repository.actions.file" = "Acciones del archivo";

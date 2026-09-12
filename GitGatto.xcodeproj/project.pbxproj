@@ -40,6 +40,7 @@
 		0B8B1340A2D528EFFAC3D993 /* gatto-building-2.svg in Resources */ = {isa = PBXBuildFile; fileRef = AE7DF7DA906E28195A5A3E37 /* gatto-building-2.svg */; };
 		0BE926BEAC22991F2D621174 /* podman.png in Resources */ = {isa = PBXBuildFile; fileRef = 226A6B51766EF1E85AC7FF36 /* podman.png */; };
 		0C7A58D68C97B6652F1759E8 /* gatto-checklist.svg in Resources */ = {isa = PBXBuildFile; fileRef = 0AFE34DDCC9EC4612BCDA7ED /* gatto-checklist.svg */; };
+		0C83B21E93008722F811A501 /* RepositoryBootstrapRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F837B4A95A8DBDC1422AB183 /* RepositoryBootstrapRenderingTests.swift */; };
 		0D150AE82C3C9240074124AF /* FileRestorePreviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942E90A92AA6E161CC81268C /* FileRestorePreviewService.swift */; };
 		0D97C291AF0FF82B4B1F16EE /* gatto-questionmark-circle.svg in Resources */ = {isa = PBXBuildFile; fileRef = 1D77D0808FC9F431333834AE /* gatto-questionmark-circle.svg */; };
 		0E8A387A6B1593537F176C87 /* RecoveryObservationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D295A03D6A9B0860222560EC /* RecoveryObservationTests.swift */; };
@@ -69,6 +70,7 @@
 		1E20FA8077ECBCF5CFE6BA44 /* BackgroundMonitoringSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3274A8F4C04CF533F29460B /* BackgroundMonitoringSessionTests.swift */; };
 		1E25B8D50991274CE18D9BDB /* CenterRenderingSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B9DCCFD7A6B44FA9B634AB3 /* CenterRenderingSupport.swift */; };
 		1E6E442E8EFF50979342C2EC /* postgresql.png in Resources */ = {isa = PBXBuildFile; fileRef = A4A2221BA9863E2B542B6FBF /* postgresql.png */; };
+		1ED2CA82F11459A79208CA54 /* GitHubRepositoryVisibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79AFF72BE0EF0CEEDF58055E /* GitHubRepositoryVisibilityService.swift */; };
 		1F2EA959BF0A9369F4EE8A43 /* gatto-house-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = A448475E2BB9D323B0C9D83B /* gatto-house-fill.svg */; };
 		1F6AD0A92F394411C909D65B /* SelectedCommitPlanningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E0BA84C1D4E9119D46B6DD /* SelectedCommitPlanningTests.swift */; };
 		22D9ECC04B8483B27C93409A /* CodexWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38287E6370FD3144329DA3D8 /* CodexWorkspaceView.swift */; };
@@ -84,6 +86,7 @@
 		26CF80EFFB2CBCA8B48D39C7 /* gatto-person.svg in Resources */ = {isa = PBXBuildFile; fileRef = 831FD861FD36ECF467CA742F /* gatto-person.svg */; };
 		26DEAB77B137F29C73B62C8A /* MenuLocalization.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB40D5EF971016F605A31059 /* MenuLocalization.swift */; };
 		26ECF792EBF521935B8260B2 /* DevelopmentToolTaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D169B2823A9D46177DA64892 /* DevelopmentToolTaskStore.swift */; };
+		27B1B2AD7A01620E92173C99 /* GitHubVisibilityControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F4335F604C601881AD95522 /* GitHubVisibilityControl.swift */; };
 		27FECA157113DAA15F3964BE /* CodeProvenanceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB8A64D270B139B4416464A /* CodeProvenanceService.swift */; };
 		2802742CE660CF0CA4A33CCC /* GitGatto-AppIcon-Dark.svg in Resources */ = {isa = PBXBuildFile; fileRef = 53FD91FF93BDC65F0C514CDC /* GitGatto-AppIcon-Dark.svg */; };
 		2865CFBE9170E8628623D4C9 /* gatto-exclamationmark-triangle.svg in Resources */ = {isa = PBXBuildFile; fileRef = A40FF6E290FBB958CFDA261E /* gatto-exclamationmark-triangle.svg */; };
@@ -135,6 +138,7 @@
 		420C02C0E6597304543C495B /* gatto-externaldrive-badge-timemachine.svg in Resources */ = {isa = PBXBuildFile; fileRef = 785701812764EC9B43DD59FF /* gatto-externaldrive-badge-timemachine.svg */; };
 		420DD091852BE4356BC26AEA /* mariadb.png in Resources */ = {isa = PBXBuildFile; fileRef = DAE3E714A24704F0C6319FE0 /* mariadb.png */; };
 		4250ED87A2B1C33FBDB7EB04 /* CodexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE00C157F088AA82ACBAFBBD /* CodexService.swift */; };
+		42737C28511C593610359324 /* RepositoryUpstreamAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBBDC4721E04A260A956B0B9 /* RepositoryUpstreamAgent.swift */; };
 		429656490DBAC3062099D9D6 /* gatto-arrow-up-forward-app.svg in Resources */ = {isa = PBXBuildFile; fileRef = 4941F17AB0B2A0A9F5AFD6BF /* gatto-arrow-up-forward-app.svg */; };
 		42984F13465C6D2EB89BBC5A /* gatto-globe.svg in Resources */ = {isa = PBXBuildFile; fileRef = 51420AA231364892A6A82DB2 /* gatto-globe.svg */; };
 		42ACDCBD1092EEE6BECAB77C /* gatto-arrow-up-circle.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8071A279A709143CDD07A419 /* gatto-arrow-up-circle.svg */; };
@@ -157,6 +161,7 @@
 		4F1B5B9572E4C6480FACF801 /* AppNavigationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A896D4762F2F2D74715E739D /* AppNavigationModel.swift */; };
 		4F702C7330106E845C6D4AC7 /* HelpCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF785C10169BD2CBAA7F8B3 /* HelpCenterView.swift */; };
 		50395871BE578E35F9174174 /* RepositoryChangeFingerprint.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0A6BC6387A6E73C6852F12B /* RepositoryChangeFingerprint.swift */; };
+		51A6D4CA90ACE0FE4EFDCC3E /* RepositoryUpstreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95D1C5F6640A11B1AB198B1 /* RepositoryUpstreamTests.swift */; };
 		53096346AF4932CAF0CC5B5E /* ExternalProcessInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CAE318290FB12DBCEA059B8 /* ExternalProcessInputTests.swift */; };
 		533B939E9A5ED427BE857FE3 /* AIAPIConfigurationEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5541AFFD1C13300C4853BB6 /* AIAPIConfigurationEditor.swift */; };
 		53BFDF7E8C6806EC7331A712 /* AutomaticTranslationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2499A00D87FC375AA9037D7 /* AutomaticTranslationPolicy.swift */; };
@@ -240,7 +245,9 @@
 		7F1CD2720AE3A2DE425B13A1 /* WorkSceneService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F788BC6D22311C57ABA0FE /* WorkSceneService.swift */; };
 		7F32040932B80B69CF3CD17C /* MarketplaceWorkspaceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618F5110C830814EA3497544 /* MarketplaceWorkspaceLayout.swift */; };
 		804D77344CC25E684B6C99F2 /* gatto-minus.svg in Resources */ = {isa = PBXBuildFile; fileRef = 0D9DA3AAF7AD20214EA783BD /* gatto-minus.svg */; };
+		813EAA59869B2FE01EDE49DF /* RepositoryBootstrapSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 264EB1FFC1A619157E760A99 /* RepositoryBootstrapSheet.swift */; };
 		814DB1A1DC7214591DAFB16D /* GitHubReplyDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8970433E99F9B1174561F56 /* GitHubReplyDraftStore.swift */; };
+		820654CBB7846E289975EF1C /* RepositoryBootstrapService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BBD8360E372D9F97B800CC3 /* RepositoryBootstrapService.swift */; };
 		820FBCAA82D9BFDC5E3F16A1 /* LocalizationRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D8B113159C1712C3D7A960 /* LocalizationRuntimeTests.swift */; };
 		83D4DFAFDE295D39F0CCD0A5 /* LumenColorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7046B1FAA4E1F7D2F385ABCC /* LumenColorTests.swift */; };
 		85504F99C9689CD1F00E895D /* ProjectCodeSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68696177C658AAED534DD954 /* ProjectCodeSearchService.swift */; };
@@ -324,11 +331,13 @@
 		B29CC1BBF1B3C164D4598518 /* ProjectToolsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B4B429E846ACAA5CB24265 /* ProjectToolsPanel.swift */; };
 		B2C478BCCBC4759A2541EDD1 /* RemainingOptimizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4D3BEC0B54089EAA04E1008 /* RemainingOptimizationTests.swift */; };
 		B31318E504056E6BE1309307 /* gatto-ellipsis.svg in Resources */ = {isa = PBXBuildFile; fileRef = 6FEE57C462224C367BB8E34C /* gatto-ellipsis.svg */; };
+		B31D3F64B5D017A55248DE3F /* RepositoryUpstreamRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64718027420F3850161D473B /* RepositoryUpstreamRenderingTests.swift */; };
 		B376CBE24C25EF4D2F6D031E /* gatto-sun-max.svg in Resources */ = {isa = PBXBuildFile; fileRef = 9B1B4BD27B33174104D4D9E2 /* gatto-sun-max.svg */; };
 		B3815369F1ABDE1DC8221A04 /* BranchesWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 374F3114C5929DCAEEDAADA1 /* BranchesWorkspaceView.swift */; };
 		B3F2193DA66B8CDD14C0195B /* gatto-arrow-right.svg in Resources */ = {isa = PBXBuildFile; fileRef = 25AE95C4D82BF7F0614E985B /* gatto-arrow-right.svg */; };
 		B42E4936EB352BA4C666F483 /* BranchSwitchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFC02A55C70F3B71538B240 /* BranchSwitchModels.swift */; };
 		B52A682F6A9088087E87396F /* RepositoryReleasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16C74D39831C6FC8698DF462 /* RepositoryReleasesView.swift */; };
+		B63EE208A96F2A368C28CD7D /* RepositoryUpstreamActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10CEA1673373836F8A6773A1 /* RepositoryUpstreamActions.swift */; };
 		B65DDB82A3D08376F292853B /* gatto-arrow-up-right-square.svg in Resources */ = {isa = PBXBuildFile; fileRef = EBF519234CFCC58C402186A3 /* gatto-arrow-up-right-square.svg */; };
 		B6783596E4BF7B569DF79922 /* RepositoryAgentProcessProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458510A35025F2F7FACD74FD /* RepositoryAgentProcessProbeTests.swift */; };
 		B7866BD5B798709781DA8BC4 /* gatto-minus-circle-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = 99E614C8D25A1B2284D43A8B /* gatto-minus-circle-fill.svg */; };
@@ -345,6 +354,7 @@
 		BDC279D8F2CE6272238AE553 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 3AE0E0B71FD60BC9CE882670 /* Alamofire */; };
 		BDEDCBE229C26FAB4BF71C1F /* gatto-info-circle.svg in Resources */ = {isa = PBXBuildFile; fileRef = 89BF63A21E067E47CEBBF600 /* gatto-info-circle.svg */; };
 		BE4D14CD96E72EDFF42239F8 /* gatto-square-grid-2x2.svg in Resources */ = {isa = PBXBuildFile; fileRef = 9A4DA786F53E654413C634F6 /* gatto-square-grid-2x2.svg */; };
+		BF0A4F4E961481178A0D2B1B /* RepositoryBootstrapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41B72541C5405333C9A303DC /* RepositoryBootstrapTests.swift */; };
 		BF7B6F50399A27CA790487B8 /* LumenColorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BDD0E099827A8EAD675D4D2 /* LumenColorSettingsView.swift */; };
 		C0625AD4FCE7B92010F9490E /* DevelopmentToolHomebrewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62E028DBE713F4671D6C8AE /* DevelopmentToolHomebrewService.swift */; };
 		C0DE2031322B70C780E69CDC /* CommandAndDraftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309DF2B07177239A4E472857 /* CommandAndDraftTests.swift */; };
@@ -398,17 +408,20 @@
 		DB691963845850107C3556DF /* AIAPIStreamDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AACCF0493237D322F30CF8 /* AIAPIStreamDecoder.swift */; };
 		DB8A35C0D42E7AC06FACA4CC /* RepositorySyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5F315AED549F05ED195A1C /* RepositorySyncService.swift */; };
 		DD0777BB34FE118B29E0D326 /* RepositoryIdentitiesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427307EAFBFD77961BD5829C /* RepositoryIdentitiesPanel.swift */; };
+		DD1CDFDFC96F6479DDEC6A5A /* RepositoryBootstrapModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E2DC4ABD0A9E7E5EF72178F /* RepositoryBootstrapModels.swift */; };
 		DD674F39856D11A5600B46C7 /* gatto-bubble-left-and-bubble-right.svg in Resources */ = {isa = PBXBuildFile; fileRef = D98D6B571DFD65465145925B /* gatto-bubble-left-and-bubble-right.svg */; };
 		DDF1079572A0DBC7F040F821 /* RepositoryIntelligenceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98B16C5D2A5E5000C4640FB1 /* RepositoryIntelligenceViewModel.swift */; };
 		DE566F91185F80EB2C73CAEF /* GitHubReadmeHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 327B8AF3AD0437C6BD5932E9 /* GitHubReadmeHTML.swift */; };
 		DE5B5351A5D0F6856FEBAB58 /* duckdb.png in Resources */ = {isa = PBXBuildFile; fileRef = 4A79D99AEEB6EC36D525C858 /* duckdb.png */; };
 		DEFB2EC13BD27FCA371A5E4F /* gatto-archivebox.svg in Resources */ = {isa = PBXBuildFile; fileRef = 400585A8DF81E93CBEF56F68 /* gatto-archivebox.svg */; };
 		DFED9D1B471CF8F8552C75DA /* GitRepositoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B4CA750027B3A466F92659 /* GitRepositoryService.swift */; };
+		E0A15D80848F58D9DF808821 /* RepositoryActionsRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042926AE82323D245CC81201 /* RepositoryActionsRenderingTests.swift */; };
 		E0FED3E7844879EF0061A37A /* gatto-folder-badge-plus.svg in Resources */ = {isa = PBXBuildFile; fileRef = 7E3A519B52DBAA9394413C4A /* gatto-folder-badge-plus.svg */; };
 		E1DE19865BBA03242B528369 /* GlobalCommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = F694C0E591EE36D6AC97F7FE /* GlobalCommandPalette.swift */; };
 		E225DF738059191409C04042 /* UserAgreement.md in Resources */ = {isa = PBXBuildFile; fileRef = 19C49EC380E92D01EB0EA0EE /* UserAgreement.md */; };
 		E22F223136A7F5A16AC9A40C /* HistoryWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECA2653BCF345EECA3E79074 /* HistoryWorkspaceView.swift */; };
 		E27F3E4B2FE216C6D2A9F258 /* RepositoryDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FAFC785742101330AD241A /* RepositoryDiagnosticsView.swift */; };
+		E2DE7FAC4E9E15C644F38C68 /* GitHubVisibilityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942090117A2FF748B9C3EE70 /* GitHubVisibilityViewModel.swift */; };
 		E32FABAA3DB9A446B2634F5D /* AIAPICredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A9C3E689567E9F132C933AA /* AIAPICredentialStore.swift */; };
 		E4EAD995F783E2AB046AD7FA /* AIAPIHTTPTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ABE566679FD8B9329330E1 /* AIAPIHTTPTests.swift */; };
 		E4F37B96C690C4F0C68C541F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD21DE9AA0B8783D5C105D3A /* Assets.xcassets */; };
@@ -416,6 +429,7 @@
 		E6EE2421B84D22EDE5048983 /* cmake.png in Resources */ = {isa = PBXBuildFile; fileRef = EB3CF215F4ABB8962D2BCB0C /* cmake.png */; };
 		E7032BC88B917F42BE45953A /* GlobalErrorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C712C177F1BCAB280A543C5 /* GlobalErrorSheet.swift */; };
 		E80A1B08425EBA1C25678168 /* DevelopmentToolReceipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 199C604CF0061CDC80CE3F10 /* DevelopmentToolReceipt.swift */; };
+		E8BA4FED16F6FAF04027C9D2 /* RepositoryIntelligenceErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE049FBAA4DEC3FFB5679D23 /* RepositoryIntelligenceErrorTests.swift */; };
 		E8CD5C5F215464A6A91BC1A6 /* gatto-checkmark-square-fill.svg in Resources */ = {isa = PBXBuildFile; fileRef = 3919AB174B55CF8321192223 /* gatto-checkmark-square-fill.svg */; };
 		E9153E0D4E4C95403B442C64 /* GitHubReleaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DFFE66F91DB4047D2D4660 /* GitHubReleaseService.swift */; };
 		E9D2D625858320CF882AD88D /* DevelopmentToolProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D4170C843A69F0F226DE2F /* DevelopmentToolProbe.swift */; };
@@ -429,6 +443,7 @@
 		EC2329692E17EE8C0D40EF77 /* gatto-return.svg in Resources */ = {isa = PBXBuildFile; fileRef = 40E2AB65074F80849EFECEEA /* gatto-return.svg */; };
 		EC667F4120D4F1231DA39614 /* ReleaseNotes.md in Resources */ = {isa = PBXBuildFile; fileRef = A4D3A0D2E31483150372F869 /* ReleaseNotes.md */; };
 		EC7F24B7C2EF0B9DA42FF95F /* gatto-arrow-turn-up-left.svg in Resources */ = {isa = PBXBuildFile; fileRef = FE12A726443039F2C92B5A91 /* gatto-arrow-turn-up-left.svg */; };
+		EC9ADFCBE5DE7BCD4B4AC8F3 /* GitHubVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 460BE9E98C8A2ECE3AAF6AF4 /* GitHubVisibilityTests.swift */; };
 		ECB9A8F7DC97CB753DFB8005 /* DeveloperToolsObservation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5FDDF13086E17D46CFB4CF3 /* DeveloperToolsObservation.swift */; };
 		ECBE21A31E9A296DA2416581 /* nodedotjs.png in Resources */ = {isa = PBXBuildFile; fileRef = F7E547672C148461C667AAC9 /* nodedotjs.png */; };
 		ECC3A0F3FD537AC6C68D291F /* gatto-git-pull-request.svg in Resources */ = {isa = PBXBuildFile; fileRef = CE9BB87F3C2024F152CC773B /* gatto-git-pull-request.svg */; };
@@ -448,6 +463,7 @@
 		EFA1A582B9C0F6A89680C9C9 /* RepositoryIntelligenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F8E77AE755F670C1A9CD2F /* RepositoryIntelligenceTests.swift */; };
 		EFC682FF4A692BFC19776C08 /* SecondBatchGitToolsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF134A8FA55CEC3BFA78F38F /* SecondBatchGitToolsTests.swift */; };
 		F0067ACEB8E1593240D67AB4 /* gatto-pause.svg in Resources */ = {isa = PBXBuildFile; fileRef = 46897CF56C0582A4D36C2B62 /* gatto-pause.svg */; };
+		F0D0A57D0555C88A0E610E26 /* RepositoryBootstrapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 524B547624886D6DFC16335B /* RepositoryBootstrapViewModel.swift */; };
 		F1B61D4D958AB6A9AC606CA1 /* ReleaseHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F56654C1C1C14A54E9676F80 /* ReleaseHistoryView.swift */; };
 		F1FF515097E31D4D82635263 /* ExternalProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16647B9D6CD3339E001410B3 /* ExternalProcessRunner.swift */; };
 		F270AC95F41880172D3B6364 /* AgentContinuityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1CD039F1818EA8C692B1CF /* AgentContinuityTests.swift */; };
@@ -501,6 +517,7 @@
 		036D1A7B338A858161C1F7CA /* HelpTopic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpTopic.swift; sourceTree = "<group>"; };
 		037409197010393E2B2D96FF /* lua.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = lua.png; sourceTree = "<group>"; };
 		03FAFC785742101330AD241A /* RepositoryDiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDiagnosticsView.swift; sourceTree = "<group>"; };
+		042926AE82323D245CC81201 /* RepositoryActionsRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryActionsRenderingTests.swift; sourceTree = "<group>"; };
 		043386E609A91D865DCBA618 /* IssueImageRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueImageRenderingTests.swift; sourceTree = "<group>"; };
 		0489600D8AFB3ED30F2A95B5 /* meta.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = meta.png; sourceTree = "<group>"; };
 		051E4BD4D843828AC076CE32 /* AppThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeTests.swift; sourceTree = "<group>"; };
@@ -525,6 +542,7 @@
 		0F60DC160127DD7A372187EB /* AppUpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdateManager.swift; sourceTree = "<group>"; };
 		0F8DCD96644566728EE4BC41 /* gatto-lock-open.svg */ = {isa = PBXFileReference; path = "gatto-lock-open.svg"; sourceTree = "<group>"; };
 		10A09C9C271208D3D6C22889 /* MarketplaceTranslationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceTranslationStore.swift; sourceTree = "<group>"; };
+		10CEA1673373836F8A6773A1 /* RepositoryUpstreamActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryUpstreamActions.swift; sourceTree = "<group>"; };
 		1186E7884A32E3992581D0E7 /* DOCUMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DOCUMENTATION.md; sourceTree = "<group>"; };
 		1189141191D0F65182423FB2 /* GitHubAPIParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubAPIParserTests.swift; sourceTree = "<group>"; };
 		119B35732ACB422CB0555477 /* gatto-hammer.svg */ = {isa = PBXFileReference; path = "gatto-hammer.svg"; sourceTree = "<group>"; };
@@ -539,6 +557,7 @@
 		16C74D39831C6FC8698DF462 /* RepositoryReleasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryReleasesView.swift; sourceTree = "<group>"; };
 		173E6EF8EE4B9ED204792802 /* gatto-arrow-uturn-backward.svg */ = {isa = PBXFileReference; path = "gatto-arrow-uturn-backward.svg"; sourceTree = "<group>"; };
 		17C52BEA697D86FADDDAB3F4 /* GitCommitSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitCommitSearchService.swift; sourceTree = "<group>"; };
+		1868C578BD60CCEE49C10057 /* generate-star-history.cpython-314.pyc */ = {isa = PBXFileReference; path = "generate-star-history.cpython-314.pyc"; sourceTree = "<group>"; };
 		1891D83FE899D5B4A7995A94 /* UpdateActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateActionButton.swift; sourceTree = "<group>"; };
 		189EE2EE7C7054C681586354 /* git.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = git.png; sourceTree = "<group>"; };
 		18B7EBF0043E1FFA5F44194C /* gatto-archivebox-fill.svg */ = {isa = PBXFileReference; path = "gatto-archivebox-fill.svg"; sourceTree = "<group>"; };
@@ -574,6 +593,7 @@
 		2461F515072A137810E93D11 /* gatto-person-crop-circle-badge-questionmark.svg */ = {isa = PBXFileReference; path = "gatto-person-crop-circle-badge-questionmark.svg"; sourceTree = "<group>"; };
 		25AE95C4D82BF7F0614E985B /* gatto-arrow-right.svg */ = {isa = PBXFileReference; path = "gatto-arrow-right.svg"; sourceTree = "<group>"; };
 		25D648D1DF53340FB8CE5215 /* bazel.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bazel.png; sourceTree = "<group>"; };
+		264EB1FFC1A619157E760A99 /* RepositoryBootstrapSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBootstrapSheet.swift; sourceTree = "<group>"; };
 		265DF0D844ED91FC92B556E2 /* embed-monitor-helper.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "embed-monitor-helper.sh"; sourceTree = "<group>"; };
 		268F1AEE4AABC2392D17145D /* gatto-media-fit.svg */ = {isa = PBXFileReference; path = "gatto-media-fit.svg"; sourceTree = "<group>"; };
 		26978AF004E438D4A7D16029 /* ProjectGoalWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectGoalWorkspaceTests.swift; sourceTree = "<group>"; };
@@ -638,11 +658,13 @@
 		40E2AB65074F80849EFECEEA /* gatto-return.svg */ = {isa = PBXFileReference; path = "gatto-return.svg"; sourceTree = "<group>"; };
 		41842C5E15BD25A736A34E10 /* deno.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = deno.png; sourceTree = "<group>"; };
 		419E2CCD6AAB672F407B415C /* reicon-icon-map.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "reicon-icon-map.json"; sourceTree = "<group>"; };
+		41B72541C5405333C9A303DC /* RepositoryBootstrapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBootstrapTests.swift; sourceTree = "<group>"; };
 		427307EAFBFD77961BD5829C /* RepositoryIdentitiesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryIdentitiesPanel.swift; sourceTree = "<group>"; };
 		42BB34C145EAE4581E3475C4 /* RenderingPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderingPerformanceTests.swift; sourceTree = "<group>"; };
 		43355ED93C1917072AFE4690 /* gatto-chevron-down.svg */ = {isa = PBXFileReference; path = "gatto-chevron-down.svg"; sourceTree = "<group>"; };
 		44807EB44E38E167B753C2D4 /* gatto-chevron-left-forwardslash-chevron-right.svg */ = {isa = PBXFileReference; path = "gatto-chevron-left-forwardslash-chevron-right.svg"; sourceTree = "<group>"; };
 		458510A35025F2F7FACD74FD /* RepositoryAgentProcessProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryAgentProcessProbeTests.swift; sourceTree = "<group>"; };
+		460BE9E98C8A2ECE3AAF6AF4 /* GitHubVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubVisibilityTests.swift; sourceTree = "<group>"; };
 		4632ACDE21143752F5DD476B /* ProjectGoalRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectGoalRuntime.swift; sourceTree = "<group>"; };
 		46422E1D0CDCDF75895804EA /* AppUpdateDiagnostic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdateDiagnostic.swift; sourceTree = "<group>"; };
 		46897CF56C0582A4D36C2B62 /* gatto-pause.svg */ = {isa = PBXFileReference; path = "gatto-pause.svg"; sourceTree = "<group>"; };
@@ -656,6 +678,7 @@
 		4AD027E4123129FE436F55F4 /* DevelopmentToolInstallScopeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevelopmentToolInstallScopeView.swift; sourceTree = "<group>"; };
 		4B0921C44134C9CFA292D890 /* DownloadModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadModels.swift; sourceTree = "<group>"; };
 		4BA06EC24B8A70B5F1C08BF1 /* WorkspaceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceViewModel.swift; sourceTree = "<group>"; };
+		4BBD8360E372D9F97B800CC3 /* RepositoryBootstrapService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBootstrapService.swift; sourceTree = "<group>"; };
 		4BEE6491A5EDBA22D507B35C /* apachemaven.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = apachemaven.png; sourceTree = "<group>"; };
 		4C3255784B15A2D0387C1835 /* ProjectGoalComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectGoalComposerView.swift; sourceTree = "<group>"; };
 		4C45674EE9A05191B1206BA5 /* AIProviderConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIProviderConfiguration.swift; sourceTree = "<group>"; };
@@ -671,6 +694,7 @@
 		5130ECA2270C6A946203AA96 /* gatto-text-bubble.svg */ = {isa = PBXFileReference; path = "gatto-text-bubble.svg"; sourceTree = "<group>"; };
 		51420AA231364892A6A82DB2 /* gatto-globe.svg */ = {isa = PBXFileReference; path = "gatto-globe.svg"; sourceTree = "<group>"; };
 		51887A5BE330B009A67C3818 /* gatto-lifepreserver.svg */ = {isa = PBXFileReference; path = "gatto-lifepreserver.svg"; sourceTree = "<group>"; };
+		524B547624886D6DFC16335B /* RepositoryBootstrapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBootstrapViewModel.swift; sourceTree = "<group>"; };
 		536346183CCCF55A74141A21 /* MonitoringStatusSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringStatusSummaryTests.swift; sourceTree = "<group>"; };
 		53FD91FF93BDC65F0C514CDC /* GitGatto-AppIcon-Dark.svg */ = {isa = PBXFileReference; path = "GitGatto-AppIcon-Dark.svg"; sourceTree = "<group>"; };
 		544ED07AA1E59DA3082DD683 /* verify-update-signature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "verify-update-signature.swift"; sourceTree = "<group>"; };
@@ -701,6 +725,7 @@
 		5D43A6ACA18C90DDB0A380CE /* gatto-xmark.svg */ = {isa = PBXFileReference; path = "gatto-xmark.svg"; sourceTree = "<group>"; };
 		5DC883891F349699049E9237 /* gatto-clock-arrow-circlepath.svg */ = {isa = PBXFileReference; path = "gatto-clock-arrow-circlepath.svg"; sourceTree = "<group>"; };
 		5DE1FDDBDA8C40E3B92E81DF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		5E2DC4ABD0A9E7E5EF72178F /* RepositoryBootstrapModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBootstrapModels.swift; sourceTree = "<group>"; };
 		5E6F91E3398EB52624AD2311 /* RepositoryBackupModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBackupModels.swift; sourceTree = "<group>"; };
 		5F774A817FA5D71AB60B7C68 /* gatto-circle-fill.svg */ = {isa = PBXFileReference; path = "gatto-circle-fill.svg"; sourceTree = "<group>"; };
 		5FCBAE9E0E60F75CA7C2BC65 /* GitWorktreeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitWorktreeService.swift; sourceTree = "<group>"; };
@@ -710,6 +735,7 @@
 		618F5110C830814EA3497544 /* MarketplaceWorkspaceLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketplaceWorkspaceLayout.swift; sourceTree = "<group>"; };
 		63D1F572908F41B437B432D7 /* RepositoryEventScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryEventScheduler.swift; sourceTree = "<group>"; };
 		63F8E77AE755F670C1A9CD2F /* RepositoryIntelligenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryIntelligenceTests.swift; sourceTree = "<group>"; };
+		64718027420F3850161D473B /* RepositoryUpstreamRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryUpstreamRenderingTests.swift; sourceTree = "<group>"; };
 		64DD4040FDD008DA464CB7B9 /* GitGattoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GitGattoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6556CC4E9052D4AB21F49ADF /* AppDownloadSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDownloadSummary.swift; sourceTree = "<group>"; };
 		6557A7EAD99B0DD2409DE299 /* gatto-slider-horizontal-3.svg */ = {isa = PBXFileReference; path = "gatto-slider-horizontal-3.svg"; sourceTree = "<group>"; };
@@ -753,6 +779,7 @@
 		78D8B04491F14B9B237B5FBF /* GitHubReadmeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubReadmeView.swift; sourceTree = "<group>"; };
 		78E0BA84C1D4E9119D46B6DD /* SelectedCommitPlanningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectedCommitPlanningTests.swift; sourceTree = "<group>"; };
 		78FF7BBC34336097B90B4D6B /* LegalDocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDocumentsView.swift; sourceTree = "<group>"; };
+		79AFF72BE0EF0CEEDF58055E /* GitHubRepositoryVisibilityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubRepositoryVisibilityService.swift; sourceTree = "<group>"; };
 		7ADBAA19DB515C209BBCDBBE /* inventory-icons.cpython-314.pyc */ = {isa = PBXFileReference; path = "inventory-icons.cpython-314.pyc"; sourceTree = "<group>"; };
 		7CB1173411D360CC66EFA1BB /* gatto-curlybraces-square.svg */ = {isa = PBXFileReference; path = "gatto-curlybraces-square.svg"; sourceTree = "<group>"; };
 		7DCE959484AEE9D6CEB7FC3D /* GitRepositoryReferenceServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitRepositoryReferenceServiceTests.swift; sourceTree = "<group>"; };
@@ -799,6 +826,7 @@
 		8E254DA366E7A793A216AF2E /* gatto-arrow-down-app.svg */ = {isa = PBXFileReference; path = "gatto-arrow-down-app.svg"; sourceTree = "<group>"; };
 		8E3F3687A03C557918DF5DD5 /* GitEnvironmentDiagnosticServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitEnvironmentDiagnosticServiceTests.swift; sourceTree = "<group>"; };
 		8F2451B645A20649FD76C919 /* ProjectGoalPlanning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectGoalPlanning.swift; sourceTree = "<group>"; };
+		8F4335F604C601881AD95522 /* GitHubVisibilityControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubVisibilityControl.swift; sourceTree = "<group>"; };
 		8F98F69A63FD0A276E2E7EBC /* docker.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = docker.png; sourceTree = "<group>"; };
 		90EFCAE48255F2EB176B08BA /* gatto-doc-richtext.svg */ = {isa = PBXFileReference; path = "gatto-doc-richtext.svg"; sourceTree = "<group>"; };
 		90FDA74DA5B092F11772BA42 /* GitWorktreeServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitWorktreeServiceTests.swift; sourceTree = "<group>"; };
@@ -807,6 +835,7 @@
 		91F49E3F53152D042701A096 /* RepositoryBackupComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBackupComparison.swift; sourceTree = "<group>"; };
 		9359C749488F4B567A280652 /* gatto-exclamationmark.svg */ = {isa = PBXFileReference; path = "gatto-exclamationmark.svg"; sourceTree = "<group>"; };
 		93ADB66BEC9C7FA8BC46485E /* sqlite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sqlite.png; sourceTree = "<group>"; };
+		942090117A2FF748B9C3EE70 /* GitHubVisibilityViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubVisibilityViewModel.swift; sourceTree = "<group>"; };
 		942E90A92AA6E161CC81268C /* FileRestorePreviewService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileRestorePreviewService.swift; sourceTree = "<group>"; };
 		94C6C4BDE2C0CF8D20D670C6 /* gatto-chevron-down-circle.svg */ = {isa = PBXFileReference; path = "gatto-chevron-down-circle.svg"; sourceTree = "<group>"; };
 		95AACCF0493237D322F30CF8 /* AIAPIStreamDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAPIStreamDecoder.swift; sourceTree = "<group>"; };
@@ -872,6 +901,7 @@
 		AD696D0E43A383C3D89EFCF8 /* gatto-history-file.svg */ = {isa = PBXFileReference; path = "gatto-history-file.svg"; sourceTree = "<group>"; };
 		AD7790916E7B9F093BFD8E46 /* RepositoryActivityLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryActivityLedger.swift; sourceTree = "<group>"; };
 		ADD8DE8F3613E3D66FCF78D4 /* gitlfs.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gitlfs.png; sourceTree = "<group>"; };
+		AE049FBAA4DEC3FFB5679D23 /* RepositoryIntelligenceErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryIntelligenceErrorTests.swift; sourceTree = "<group>"; };
 		AE4312B0266A32E8E23997ED /* MonitoringStatusProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringStatusProjection.swift; sourceTree = "<group>"; };
 		AE7DF7DA906E28195A5A3E37 /* gatto-building-2.svg */ = {isa = PBXFileReference; path = "gatto-building-2.svg"; sourceTree = "<group>"; };
 		AECB4A8CF7E094D8F28F51C4 /* GitHubMarketplaceViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubMarketplaceViewModelTests.swift; sourceTree = "<group>"; };
@@ -924,6 +954,7 @@
 		C612C7B8397822054067E33F /* gatto-externaldrive-fill.svg */ = {isa = PBXFileReference; path = "gatto-externaldrive-fill.svg"; sourceTree = "<group>"; };
 		C618B64027FA9418301BDFC8 /* AIProviderCLITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIProviderCLITests.swift; sourceTree = "<group>"; };
 		C69AAE73F6C2D5DBA2DFA09A /* ProjectToolsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectToolsTests.swift; sourceTree = "<group>"; };
+		C72F26B168C71A989E99E66E /* generate-document-diagrams.cpython-314.pyc */ = {isa = PBXFileReference; path = "generate-document-diagrams.cpython-314.pyc"; sourceTree = "<group>"; };
 		C736048806507E0AB3ED39DD /* RELEASING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = RELEASING.md; sourceTree = "<group>"; };
 		C749AD2A0B5999B6773C3A24 /* InteractionMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionMotion.swift; sourceTree = "<group>"; };
 		C7631443A6D6230798A83B33 /* SECURITY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SECURITY.md; sourceTree = "<group>"; };
@@ -936,6 +967,7 @@
 		CA703395BF6491FCF438A0CF /* AIAPIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAPIConfiguration.swift; sourceTree = "<group>"; };
 		CAFCD6EBB04334B3013CB03C /* githubactions.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = githubactions.png; sourceTree = "<group>"; };
 		CBBD61ED5EC15E1B09CC2938 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = "zh-Hans"; path = "zh-Hans.lproj/ReleaseNotes.md"; sourceTree = "<group>"; };
+		CBBDC4721E04A260A956B0B9 /* RepositoryUpstreamAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryUpstreamAgent.swift; sourceTree = "<group>"; };
 		CC7833C42F4B838B5B8F6A33 /* GitHubLanguageVisual.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubLanguageVisual.swift; sourceTree = "<group>"; };
 		CCE53CFB6DEEA99F9DB3F000 /* CodexJSONLParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexJSONLParserTests.swift; sourceTree = "<group>"; };
 		CCFC02A55C70F3B71538B240 /* BranchSwitchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchSwitchModels.swift; sourceTree = "<group>"; };
@@ -1030,8 +1062,10 @@
 		F7B297B0D056D40DF7E14E81 /* AppSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsView.swift; sourceTree = "<group>"; };
 		F7E547672C148461C667AAC9 /* nodedotjs.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = nodedotjs.png; sourceTree = "<group>"; };
 		F829EBF7EED56722E682B299 /* python.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = python.png; sourceTree = "<group>"; };
+		F837B4A95A8DBDC1422AB183 /* RepositoryBootstrapRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryBootstrapRenderingTests.swift; sourceTree = "<group>"; };
 		F905C1948A7E62B420B91ADE /* PartialDiffPatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PartialDiffPatch.swift; sourceTree = "<group>"; };
 		F926523BFF04D5361C6D5A53 /* gatto-arrow-up-circle-fill.svg */ = {isa = PBXFileReference; path = "gatto-arrow-up-circle-fill.svg"; sourceTree = "<group>"; };
+		F95D1C5F6640A11B1AB198B1 /* RepositoryUpstreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryUpstreamTests.swift; sourceTree = "<group>"; };
 		FA817353E2902590214BA2BE /* UpdateCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCenterView.swift; sourceTree = "<group>"; };
 		FC1410112BD08198763E1067 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		FC6200D41EDF823855D964D4 /* ProductOptimizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductOptimizationTests.swift; sourceTree = "<group>"; };
@@ -1080,9 +1114,11 @@
 				95E035B303B67B49C98ABCA9 /* GitCommitSearchViewModel.swift */,
 				C812543E51EF748D98E3D1BF /* GitHubCollaborationViewModel.swift */,
 				F035454E4B1A98EE1EE9AF1C /* GitHubMarketplaceViewModel.swift */,
+				942090117A2FF748B9C3EE70 /* GitHubVisibilityViewModel.swift */,
 				01E3CC09EFECBAE2EA1203AD /* MonitoringEngine.swift */,
 				AE4312B0266A32E8E23997ED /* MonitoringStatusProjection.swift */,
 				096E5A75F415096F09E35812 /* ProjectToolsViewModel.swift */,
+				524B547624886D6DFC16335B /* RepositoryBootstrapViewModel.swift */,
 				98B16C5D2A5E5000C4640FB1 /* RepositoryIntelligenceViewModel.swift */,
 				8969C73D76962FE52745A166 /* RepositoryRecoveryObservation.swift */,
 				DAF1CD32DD2E8288CA4155B2 /* RepositorySyncViewModel.swift */,
@@ -1167,6 +1203,7 @@
 				46D7808D76C0C6B19F16E6C1 /* GitHubReadmeTranslationStore.swift */,
 				09DFFE66F91DB4047D2D4660 /* GitHubReleaseService.swift */,
 				B8970433E99F9B1174561F56 /* GitHubReplyDraftStore.swift */,
+				79AFF72BE0EF0CEEDF58055E /* GitHubRepositoryVisibilityService.swift */,
 				0D19CD54219F3C4974C39220 /* GitHubService.swift */,
 				D3FA30446EDDAF380C17C53E /* GitParsers.swift */,
 				87E3CC6F9773E92267D13B37 /* GitRepositoryReferenceService.swift */,
@@ -1190,10 +1227,12 @@
 				91F49E3F53152D042701A096 /* RepositoryBackupComparison.swift */,
 				AAC4611FB0CA1129CD5041D7 /* RepositoryBackupInspectionService.swift */,
 				88B6C9BD5F34503C692EA6EC /* RepositoryBackupService.swift */,
+				4BBD8360E372D9F97B800CC3 /* RepositoryBootstrapService.swift */,
 				D0A6BC6387A6E73C6852F12B /* RepositoryChangeFingerprint.swift */,
 				21974E05AB7668106EE25D39 /* RepositoryDiscoveryService.swift */,
 				4E239BBB3696912F659470C6 /* RepositoryIdentityService.swift */,
 				AD5F315AED549F05ED195A1C /* RepositorySyncService.swift */,
+				CBBDC4721E04A260A956B0B9 /* RepositoryUpstreamAgent.swift */,
 				78C659630D2737BB24EA738C /* ReproductionCapsuleService.swift */,
 				D4F788BC6D22311C57ABA0FE /* WorkSceneService.swift */,
 			);
@@ -1502,6 +1541,8 @@
 		B3510FEF313E05FF700C325A /* __pycache__ */ = {
 			isa = PBXGroup;
 			children = (
+				C72F26B168C71A989E99E66E /* generate-document-diagrams.cpython-314.pyc */,
+				1868C578BD60CCEE49C10057 /* generate-star-history.cpython-314.pyc */,
 				2FB07723D57CAF960FF9605F /* import-reicon-icons.cpython-314.pyc */,
 				7ADBAA19DB515C209BBCDBBE /* inventory-icons.cpython-314.pyc */,
 			);
@@ -1538,6 +1579,7 @@
 				DB3F838C12140877D2D7A533 /* ProjectToolsModels.swift */,
 				869510ADC24C6E1D1260FF39 /* RegressionInvestigationModels.swift */,
 				5E6F91E3398EB52624AD2311 /* RepositoryBackupModels.swift */,
+				5E2DC4ABD0A9E7E5EF72178F /* RepositoryBootstrapModels.swift */,
 				B03F6C818FEC868DFE082BC7 /* RepositoryInsightModels.swift */,
 				751D43B98D1DF3D19CE60599 /* RepositoryIntelligenceModels.swift */,
 				65AFCE495FC58D2F8D701481 /* RepositoryMonitoringBudget.swift */,
@@ -1637,6 +1679,7 @@
 				AECB4A8CF7E094D8F28F51C4 /* GitHubMarketplaceViewModelTests.swift */,
 				372E6E5DA981FB5242C60F27 /* GitHubReadmeScrollTests.swift */,
 				B6EA29373B2BB404D23EC90F /* GitHubReleaseServiceTests.swift */,
+				460BE9E98C8A2ECE3AAF6AF4 /* GitHubVisibilityTests.swift */,
 				CA3D850F531F9ED8D3124D4B /* GitParsersTests.swift */,
 				7DCE959484AEE9D6CEB7FC3D /* GitRepositoryReferenceServiceTests.swift */,
 				98B9BF0AABE19613D6E50F6F /* GitRepositoryServiceTests.swift */,
@@ -1665,16 +1708,22 @@
 				A4D3BEC0B54089EAA04E1008 /* RemainingOptimizationTests.swift */,
 				CFB2E2A074CB17EA135F4DEE /* RemoteImageDataCacheTests.swift */,
 				42BB34C145EAE4581E3475C4 /* RenderingPerformanceTests.swift */,
+				042926AE82323D245CC81201 /* RepositoryActionsRenderingTests.swift */,
 				458510A35025F2F7FACD74FD /* RepositoryAgentProcessProbeTests.swift */,
 				E96BF1D2B9105BED29D701B6 /* RepositoryBackupServiceTests.swift */,
+				F837B4A95A8DBDC1422AB183 /* RepositoryBootstrapRenderingTests.swift */,
+				41B72541C5405333C9A303DC /* RepositoryBootstrapTests.swift */,
 				F62A8CC6F9FFD2503F03CBE2 /* RepositoryChangeMonitorTests.swift */,
 				BCC90B8A203C02679751AFF8 /* RepositoryDiscoveryServiceTests.swift */,
 				7383E0D98453D741A70C8FCC /* RepositoryEventSchedulerTests.swift */,
 				2BD5B7792E0722CEFD7F532F /* RepositoryGuardRegressionTests.swift */,
+				AE049FBAA4DEC3FFB5679D23 /* RepositoryIntelligenceErrorTests.swift */,
 				63F8E77AE755F670C1A9CD2F /* RepositoryIntelligenceTests.swift */,
 				9C3DBAA84E42B40D67B130C8 /* RepositoryMediaSupportTests.swift */,
 				989B03EB2334E190E2392FC6 /* RepositoryMonitoringBudgetTests.swift */,
 				CD3C07A57C8873EDB7890AF4 /* RepositorySyncContinuityTests.swift */,
+				64718027420F3850161D473B /* RepositoryUpstreamRenderingTests.swift */,
+				F95D1C5F6640A11B1AB198B1 /* RepositoryUpstreamTests.swift */,
 				BF134A8FA55CEC3BFA78F38F /* SecondBatchGitToolsTests.swift */,
 				78E0BA84C1D4E9119D46B6DD /* SelectedCommitPlanningTests.swift */,
 				F70F4CCA77466AA7FF452043 /* UIOptimizationRenderingTests.swift */,
@@ -1749,6 +1798,7 @@
 				7F0ED6BACD3586F96BB08C35 /* GitHubMarketplaceView.swift */,
 				B424C5FE176CEC83AFDF747C /* GitHubPullRequestReviewView.swift */,
 				78D8B04491F14B9B237B5FBF /* GitHubReadmeView.swift */,
+				8F4335F604C601881AD95522 /* GitHubVisibilityControl.swift */,
 				9182BDEF2994C48C40821377 /* GitHubWorkspaceView.swift */,
 				F694C0E591EE36D6AC97F7FE /* GlobalCommandPalette.swift */,
 				3C712C177F1BCAB280A543C5 /* GlobalErrorSheet.swift */,
@@ -1769,6 +1819,7 @@
 				7648352ECB0849B3FD1C43BA /* RegressionInvestigationWorkspaceView.swift */,
 				F56654C1C1C14A54E9676F80 /* ReleaseHistoryView.swift */,
 				3E70892C156554984BAA0161 /* RepositoryBackupInspectionView.swift */,
+				264EB1FFC1A619157E760A99 /* RepositoryBootstrapSheet.swift */,
 				03FAFC785742101330AD241A /* RepositoryDiagnosticsView.swift */,
 				427307EAFBFD77961BD5829C /* RepositoryIdentitiesPanel.swift */,
 				1AE57E4639D421A3ED36BAF2 /* RepositoryIntelligenceWorkspaceView.swift */,
@@ -1778,6 +1829,7 @@
 				E5649B16EE1334024C7235B4 /* RepositoryScannerView.swift */,
 				77025BF377170681403BE545 /* RepositorySidebar.swift */,
 				2EB291166B59F79320DE8723 /* RepositorySyncWorkspaceView.swift */,
+				10CEA1673373836F8A6773A1 /* RepositoryUpstreamActions.swift */,
 				C02F87E0B394B3FE2150128D /* StashWorkspaceView.swift */,
 				1891D83FE899D5B4A7995A94 /* UpdateActionButton.swift */,
 				FA817353E2902590214BA2BE /* UpdateCenterView.swift */,
@@ -2192,6 +2244,7 @@
 				6CBEDB0602FDBDA075297B40 /* GitHubMarketplaceViewModelTests.swift in Sources */,
 				4A2C1B75C10F0DB6203EE2CE /* GitHubReadmeScrollTests.swift in Sources */,
 				2C9697A7813DDA25E3590F26 /* GitHubReleaseServiceTests.swift in Sources */,
+				EC9ADFCBE5DE7BCD4B4AC8F3 /* GitHubVisibilityTests.swift in Sources */,
 				5839893346E13680EC8D4DEB /* GitParsersTests.swift in Sources */,
 				4EA6B43450A38C46EBE1D384 /* GitRepositoryReferenceServiceTests.swift in Sources */,
 				ACA948DB407093BBDF7AE2BB /* GitRepositoryServiceTests.swift in Sources */,
@@ -2220,16 +2273,22 @@
 				B2C478BCCBC4759A2541EDD1 /* RemainingOptimizationTests.swift in Sources */,
 				F3F188E09286410F89A3989C /* RemoteImageDataCacheTests.swift in Sources */,
 				68D5F261F13430E9A1AAB129 /* RenderingPerformanceTests.swift in Sources */,
+				E0A15D80848F58D9DF808821 /* RepositoryActionsRenderingTests.swift in Sources */,
 				B6783596E4BF7B569DF79922 /* RepositoryAgentProcessProbeTests.swift in Sources */,
 				C9502D6050BF6FDF4B5E6509 /* RepositoryBackupServiceTests.swift in Sources */,
+				0C83B21E93008722F811A501 /* RepositoryBootstrapRenderingTests.swift in Sources */,
+				BF0A4F4E961481178A0D2B1B /* RepositoryBootstrapTests.swift in Sources */,
 				7900A6022F2EB59905897F5C /* RepositoryChangeMonitorTests.swift in Sources */,
 				C53394B112AF3961A135DBCF /* RepositoryDiscoveryServiceTests.swift in Sources */,
 				6D44D4BF57A9E0EB4BFD39E7 /* RepositoryEventSchedulerTests.swift in Sources */,
 				048F5A3800A484B4D2F04100 /* RepositoryGuardRegressionTests.swift in Sources */,
+				E8BA4FED16F6FAF04027C9D2 /* RepositoryIntelligenceErrorTests.swift in Sources */,
 				EFA1A582B9C0F6A89680C9C9 /* RepositoryIntelligenceTests.swift in Sources */,
 				65D01D9945A5CF4587BC02B7 /* RepositoryMediaSupportTests.swift in Sources */,
 				6E8148E29EEC68D1C334C75E /* RepositoryMonitoringBudgetTests.swift in Sources */,
 				34B2D7643943462D9C7B77DB /* RepositorySyncContinuityTests.swift in Sources */,
+				B31D3F64B5D017A55248DE3F /* RepositoryUpstreamRenderingTests.swift in Sources */,
+				51A6D4CA90ACE0FE4EFDCC3E /* RepositoryUpstreamTests.swift in Sources */,
 				EFC682FF4A692BFC19776C08 /* SecondBatchGitToolsTests.swift in Sources */,
 				1F6AD0A92F394411C909D65B /* SelectedCommitPlanningTests.swift in Sources */,
 				28BFB85EBA10F0DE1EC6B776 /* UIOptimizationRenderingTests.swift in Sources */,
@@ -2328,8 +2387,11 @@
 				E9153E0D4E4C95403B442C64 /* GitHubReleaseService.swift in Sources */,
 				814DB1A1DC7214591DAFB16D /* GitHubReplyDraftStore.swift in Sources */,
 				66E17B146499DD19480AFC26 /* GitHubRepositoryLink.swift in Sources */,
+				1ED2CA82F11459A79208CA54 /* GitHubRepositoryVisibilityService.swift in Sources */,
 				F465A0FBAC83662D5C0D8A1B /* GitHubSearchQueryResolver.swift in Sources */,
 				9D23EBCA039D00FBA8405F8C /* GitHubService.swift in Sources */,
+				27B1B2AD7A01620E92173C99 /* GitHubVisibilityControl.swift in Sources */,
+				E2DE7FAC4E9E15C644F38C68 /* GitHubVisibilityViewModel.swift in Sources */,
 				C7C3EA9AB358CEC6F8F7AC64 /* GitHubWorkspaceView.swift in Sources */,
 				57134C4FB37171ABC4CCA1DA /* GitModels.swift in Sources */,
 				D8C1AD12912B854B89702755 /* GitParsers.swift in Sources */,
@@ -2397,6 +2459,10 @@
 				63030E7746A998F96CF9D4AA /* RepositoryBackupInspectionView.swift in Sources */,
 				A34C8F017E4594D30E92C20D /* RepositoryBackupModels.swift in Sources */,
 				2576953B25100C0E2A190F6F /* RepositoryBackupService.swift in Sources */,
+				DD1CDFDFC96F6479DDEC6A5A /* RepositoryBootstrapModels.swift in Sources */,
+				820654CBB7846E289975EF1C /* RepositoryBootstrapService.swift in Sources */,
+				813EAA59869B2FE01EDE49DF /* RepositoryBootstrapSheet.swift in Sources */,
+				F0D0A57D0555C88A0E610E26 /* RepositoryBootstrapViewModel.swift in Sources */,
 				50395871BE578E35F9174174 /* RepositoryChangeFingerprint.swift in Sources */,
 				36164D018CB458055A91299A /* RepositoryChangeMonitor.swift in Sources */,
 				E27F3E4B2FE216C6D2A9F258 /* RepositoryDiagnosticsView.swift in Sources */,
@@ -2419,6 +2485,8 @@
 				DB8A35C0D42E7AC06FACA4CC /* RepositorySyncService.swift in Sources */,
 				DA5DEC4126D8E427BEE481B3 /* RepositorySyncViewModel.swift in Sources */,
 				5FDEE23AF419D6D46AD69B5E /* RepositorySyncWorkspaceView.swift in Sources */,
+				B63EE208A96F2A368C28CD7D /* RepositoryUpstreamActions.swift in Sources */,
+				42737C28511C593610359324 /* RepositoryUpstreamAgent.swift in Sources */,
 				907825C2C43E64A3BFAC416C /* ReproductionCapsuleService.swift in Sources */,
 				8EA71A5BC73551C3984F776C /* StableHash.swift in Sources */,
 				5FF280EB62E8240C979A63D9 /* StashWorkspaceView.swift in Sources */,
@@ -2598,7 +2666,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18036;
+				CURRENT_PROJECT_VERSION = 18037;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2619,7 +2687,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.36;
+				MARKETING_VERSION = 0.18.37;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -2665,7 +2733,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 18036;
+				CURRENT_PROJECT_VERSION = 18037;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_LANGUAGE = en;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2680,7 +2748,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.18.36;
+				MARKETING_VERSION = 0.18.37;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

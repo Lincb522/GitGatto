@@ -467,6 +467,9 @@ private struct GitGattoCommands: Commands {
         }
 
         CommandGroup(replacing: .newItem) {
+            Button(L10n.text("repository.create.title")) { model.presentRepositoryCreation() }
+                .keyboardShortcut("n", modifiers: .command)
+
             Button(L10n.text("action.open_repository")) {
                 model.chooseRepository()
             }

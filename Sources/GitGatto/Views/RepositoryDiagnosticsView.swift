@@ -58,6 +58,7 @@ struct RepositoryDiagnosticsView: View {
             ToolbarIconButton(
                 systemName: "arrow.clockwise",
                 helpKey: "action.refresh",
+                showsTitle: true,
                 isActive: model.activeDiagnosticOperation == .refresh,
                 isDisabled: model.activeDiagnosticOperation != nil
             ) {

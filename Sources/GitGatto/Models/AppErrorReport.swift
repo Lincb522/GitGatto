@@ -3,6 +3,7 @@ import Foundation
 
 enum AppErrorContext: Sendable, Equatable {
     case repositoryOpen
+    case repositoryCreate
     case repositoryRefresh
     case diffLoad
     case fileHistory
@@ -13,10 +14,12 @@ enum AppErrorContext: Sendable, Equatable {
     case regression
     case github
     case goal
+    case intelligence(RepositoryIntelligenceTab)
 
     fileprivate var codeComponent: String {
         switch self {
         case .repositoryOpen: "REPOSITORY-OPEN"
+        case .repositoryCreate: "REPOSITORY-CREATE"
         case .repositoryRefresh: "REPOSITORY-REFRESH"
         case .diffLoad: "DIFF-LOAD"
         case .fileHistory: "FILE-HISTORY"
@@ -27,12 +30,14 @@ enum AppErrorContext: Sendable, Equatable {
         case .regression: "REGRESSION"
         case .github: "GITHUB"
         case .goal: "PROJECT-GOAL"
+        case let .intelligence(tab): "INTELLIGENCE-\(tab.rawValue.uppercased())"
         }
     }
 
     fileprivate var operationName: String {
         switch self {
         case .repositoryOpen: L10n.text("error.operation.repository_open")
+        case .repositoryCreate: L10n.text("repository.create.title")
         case .repositoryRefresh: L10n.text("error.operation.repository_refresh")
         case .diffLoad: L10n.text("error.operation.diff_load")
         case .fileHistory: L10n.text("error.operation.file_history")
@@ -43,6 +48,7 @@ enum AppErrorContext: Sendable, Equatable {
         case .regression: L10n.text("error.operation.regression")
         case .github: L10n.text("error.operation.github")
         case .goal: L10n.text("error.operation.goal")
+        case let .intelligence(tab): L10n.text(tab.titleKey)
         }
     }
 
@@ -50,6 +56,8 @@ enum AppErrorContext: Sendable, Equatable {
         switch self {
         case .repositoryOpen, .repositoryRefresh, .diffLoad, .fileHistory:
             L10n.text("error.recovery.repository")
+        case .repositoryCreate:
+            L10n.text("repository.create.recovery")
         case .diagnostics:
             L10n.text("error.recovery.diagnostics")
         case .git(.commit):
@@ -70,6 +78,8 @@ enum AppErrorContext: Sendable, Equatable {
             L10n.text("error.recovery.github")
         case .goal:
             L10n.text("error.recovery.goal")
+        case .intelligence:
+            L10n.text("error.recovery.intelligence")
         }
     }
 }
@@ -206,7 +216,7 @@ enum GlobalErrorHandler {
             code: "GG-\(context.codeComponent)-\(numericCode(nsError.code))",
             title: title,
             message: message,
-            explanation: diagnosis.explanation,
+            explanation: redact(diagnosis.explanation),
             recoverySuggestion: diagnosis.recoverySuggestion,
             operation: operation,
             repositoryPath: repositoryPath,
@@ -258,9 +268,10 @@ enum GlobalErrorHandler {
 
     private static func redact(_ value: String) -> String {
         var result = value
+        // Locale formatting can wrap tokens in bidi isolates that do not form regex word boundaries.
         let patterns = [
             #"(?i)(https?://)[^/@\s]+@"#,
-            #"(?i)\b(?:gh[pousr]|github_pat)_[A-Za-z0-9_]+\b"#,
+            #"(?i)(?<![A-Za-z0-9_])(?:gh[pousr]|github_pat)_[A-Za-z0-9_]+"#,
             #"(?i)(authorization:\s*(?:bearer|token)\s+)[^\s]+"#
         ]
         for pattern in patterns {
@@ -295,27 +306,47 @@ private enum AppErrorCatalog {
             return diagnosis
         }
 
-        let explanationKey: String = switch context {
-        case .repositoryOpen: "error.explanation.repository_open"
-        case .repositoryRefresh: "error.explanation.repository_refresh"
-        case .diffLoad: "error.explanation.diff_load"
-        case .fileHistory: "error.explanation.file_history"
-        case .diagnostics: "error.explanation.diagnostics"
-        case .agent: "error.explanation.agent_unknown"
-        case .worktree: "error.explanation.worktree_unknown"
-        case .regression: "error.explanation.regression_unknown"
-        case .github: "error.explanation.github_unknown"
-        case .goal: "error.explanation.goal_unknown"
-        case .git: exitCode == 128 ? "error.explanation.git_fatal" : "error.explanation.git_unknown"
+        let explanation = switch context {
+        case .repositoryOpen: L10n.text("error.explanation.repository_open")
+        case .repositoryCreate: L10n.format("error.dialog.operation_title", context.operationName)
+        case .repositoryRefresh: L10n.text("error.explanation.repository_refresh")
+        case .diffLoad: L10n.text("error.explanation.diff_load")
+        case .fileHistory: L10n.text("error.explanation.file_history")
+        case .diagnostics: L10n.text("error.explanation.diagnostics")
+        case .agent: L10n.text("error.explanation.agent_unknown")
+        case .worktree: L10n.text("error.explanation.worktree_unknown")
+        case .regression: L10n.text("error.explanation.regression_unknown")
+        case .github: L10n.text("error.explanation.github_unknown")
+        case .goal: L10n.text("error.explanation.goal_unknown")
+        case .intelligence: L10n.format("error.dialog.operation_title", context.operationName)
+        case .git: L10n.text(exitCode == 128 ? "error.explanation.git_fatal" : "error.explanation.git_unknown")
         }
         return AppErrorDiagnosis(
-            explanation: L10n.text(explanationKey),
+            explanation: explanation,
             recoverySuggestion: context.recoverySuggestion
         )
     }
 
     private static func typedDiagnosis(for error: (any Error)?) -> AppErrorDiagnosis? {
         switch error {
+        case let error as RepositoryBootstrapError:
+            return AppErrorDiagnosis(explanation: error.localizedDescription, recoverySuggestion: L10n.text("repository.create.recovery"))
+        case let error as ChangeIntentError:
+            switch error {
+            case .verificationFailed:
+                return localized("error.explanation.intelligence_verification", "error.recovery.intelligence")
+            case .rollbackFailed:
+                return localized("error.explanation.intelligence_rollback", "error.recovery.intelligence_rollback")
+            default:
+                return AppErrorDiagnosis(explanation: error.localizedDescription,
+                                        recoverySuggestion: L10n.text("error.recovery.intelligence"))
+            }
+        case let error as CodeProvenanceError:
+            return AppErrorDiagnosis(explanation: error.localizedDescription,
+                                    recoverySuggestion: L10n.text("error.recovery.intelligence"))
+        case let error as ReproductionCapsuleError:
+            return AppErrorDiagnosis(explanation: error.localizedDescription,
+                                    recoverySuggestion: L10n.text("error.recovery.intelligence"))
         case let error as CodexServiceError:
             return switch error {
             case .executableNotFound:

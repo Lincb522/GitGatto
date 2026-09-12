@@ -277,6 +277,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 struct ToolbarIconButton: View {
     let systemName: String
     let helpKey: String
+    var showsTitle = false
     var isActive = false
     var isDisabled = false
     let action: () -> Void
@@ -289,10 +290,14 @@ struct ToolbarIconButton: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
-            Image(gattoSymbol: systemName, pointSize: 13)
+            HStack(spacing: 6) {
+                Image(gattoSymbol: systemName, pointSize: 13)
+                    .rotationEffect(.degrees(rotation))
+                if showsTitle { Text(L10n.text(helpKey)).font(.system(size: 11.5, weight: .medium)) }
+            }
                 .foregroundStyle(isDisabled ? palette.subtleInk : (isActive ? palette.primary : palette.mutedInk))
-                .rotationEffect(.degrees(rotation))
-                .frame(width: 32, height: 32)
+                .padding(.horizontal, showsTitle ? 8 : 0)
+                .frame(width: showsTitle ? nil : 32, height: 32)
                 .background(isHovering && !isDisabled ? palette.raisedSurface : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
         }
@@ -303,6 +308,7 @@ struct ToolbarIconButton: View {
         .onChange(of: isActive) { _, _ in updateAnimation() }
         .onChange(of: reduceMotion) { _, _ in updateAnimation() }
         .help(L10n.text(helpKey))
+        .accessibilityLabel(L10n.text(helpKey))
     }
 
     private func updateAnimation() {
@@ -1221,5 +1227,19 @@ private struct TaskActivityTrack: View {
         withAnimation(.linear(duration: 0.78).repeatForever(autoreverses: false)) {
             isAtEnd = true
         }
+    }
+}
+
+
+struct RepositoryActionGroup<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { content }
+                .fixedSize(horizontal: true, vertical: false)
+            VStack(alignment: .leading, spacing: 8) { content }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

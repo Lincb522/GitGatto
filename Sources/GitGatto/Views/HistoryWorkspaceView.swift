@@ -385,14 +385,17 @@ private struct CommitInspector: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
+        GeometryReader { geometry in
         VStack(spacing: 0) {
             if let commit {
-                ViewThatFits(in: .horizontal) {
-                    wideHeader(commit: commit, palette: palette)
-                        .fixedSize(horizontal: true, vertical: false)
-                    compactHeader(commit: commit, palette: palette)
+                Group {
+                    if geometry.size.width >= 600 { wideHeader(commit: commit, palette: palette) }
+                    else { compactHeader(commit: commit, palette: palette) }
                 }
                 .background(palette.surface)
+                CommitActionsBar(model: model, commit: commit)
+                    .padding(.horizontal, 14).padding(.bottom, 10)
+                    .background(palette.surface)
             } else {
                 HStack {
                     Text(L10n.text("history.detail.title"))
@@ -468,13 +471,13 @@ private struct CommitInspector: View {
                 VStack(alignment: .leading, spacing: 11) {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(palette.raisedSurface)
-                        .frame(width: 360, height: 12)
+                        .frame(width: min(360, max(0, geometry.size.width - 36)), height: 12)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(palette.raisedSurface)
-                        .frame(width: 280, height: 10)
+                        .frame(width: min(280, max(0, geometry.size.width - 36)), height: 10)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(palette.raisedSurface)
-                        .frame(width: 320, height: 10)
+                        .frame(width: min(320, max(0, geometry.size.width - 36)), height: 10)
                     Spacer()
                 }
                 .padding(18)
@@ -484,6 +487,7 @@ private struct CommitInspector: View {
         .background(palette.background)
         .onChange(of: commit?.id) { _, _ in
             presentation = .preview
+        }
         }
     }
 
@@ -500,7 +504,6 @@ private struct CommitInspector: View {
             references(palette: palette)
             metrics(palette: palette)
             hashBadge(commit: commit, palette: palette)
-            CommitActionsMenu(model: model, commit: commit)
         }
         .padding(.horizontal, 16)
         .frame(height: 76)
@@ -516,7 +519,6 @@ private struct CommitInspector: View {
                     .lineLimit(1)
                 Spacer(minLength: 8)
                 hashBadge(commit: commit, palette: palette)
-                CommitActionsMenu(model: model, commit: commit)
             }
             HStack(spacing: 8) {
                 HStack(spacing: 7) {
@@ -806,7 +808,7 @@ private struct ComboBox: NSViewRepresentable {
     }
 }
 
-private struct CommitActionsMenu: View {
+private struct CommitActionsBar: View {
     @ObservedObject var model: WorkspaceViewModel
     let commit: CommitRecord
     @State private var pendingAction: PendingAction?
@@ -816,41 +818,43 @@ private struct CommitActionsMenu: View {
     private var isHead: Bool { model.snapshot?.commits.first?.hash == commit.hash }
 
     var body: some View {
-        Menu {
+        RepositoryActionGroup {
             Button(L10n.text("git_tools.commit.copy_hash")) { model.copyCommitHash(commit) }
-            Divider()
-            if isHead {
-                Button(L10n.text("git_tools.commit.amend")) {
+                .buttonStyle(SecondaryButtonStyle())
+            Button(L10n.text("git_tools.commit.cherry_pick")) { pendingAction = .cherryPick }
+                .buttonStyle(SecondaryButtonStyle())
+            Menu {
+                if isHead {
+                    Button(L10n.text("git_tools.commit.amend")) {
+                        message = commit.subject
+                        pendingAction = .amend
+                        showingMessageEditor = true
+                    }
+                }
+                Button(L10n.text("git_tools.commit.reword")) {
                     message = commit.subject
-                    pendingAction = .amend
+                    pendingAction = .reword
                     showingMessageEditor = true
                 }
+                Menu(L10n.text("git_tools.commit.organize")) {
+                    Button(L10n.text("git_tools.commit.squash")) { pendingAction = .squash }
+                    Button(L10n.text("git_tools.commit.fixup")) { pendingAction = .fixup }
+                    Button(L10n.text("git_tools.commit.split")) { pendingAction = .split }
+                    Button(L10n.text("git_tools.commit.drop"), role: .destructive) { pendingAction = .drop }
+                }
+                Divider()
+                Button(L10n.text("git_tools.commit.revert")) { pendingAction = .revert }
+                Menu(L10n.text("git_tools.commit.reset")) {
+                    Button(L10n.text("git_tools.commit.reset_soft")) { pendingAction = .resetSoft }
+                    Button(L10n.text("git_tools.commit.reset_mixed")) { pendingAction = .resetMixed }
+                    Button(L10n.text("git_tools.commit.reset_hard"), role: .destructive) { pendingAction = .resetHard }
+                }
+            } label: {
+                GattoLabel(L10n.text("repository.actions.commit"), systemImage: "slider.horizontal.3")
             }
-            Button(L10n.text("git_tools.commit.reword")) {
-                message = commit.subject
-                pendingAction = .reword
-                showingMessageEditor = true
-            }
-            Menu(L10n.text("git_tools.commit.organize")) {
-                Button(L10n.text("git_tools.commit.squash")) { pendingAction = .squash }
-                Button(L10n.text("git_tools.commit.fixup")) { pendingAction = .fixup }
-                Button(L10n.text("git_tools.commit.split")) { pendingAction = .split }
-                Button(L10n.text("git_tools.commit.drop"), role: .destructive) { pendingAction = .drop }
-            }
-            Divider()
-            Button(L10n.text("git_tools.commit.cherry_pick")) { pendingAction = .cherryPick }
-            Button(L10n.text("git_tools.commit.revert")) { pendingAction = .revert }
-            Menu(L10n.text("git_tools.commit.reset")) {
-                Button(L10n.text("git_tools.commit.reset_soft")) { pendingAction = .resetSoft }
-                Button(L10n.text("git_tools.commit.reset_mixed")) { pendingAction = .resetMixed }
-                Button(L10n.text("git_tools.commit.reset_hard"), role: .destructive) { pendingAction = .resetHard }
-            }
-        } label: {
-            Image(gattoSymbol: "slider.horizontal.3", pointSize: 13)
-                .frame(width: 26, height: 26)
+            .menuStyle(.borderlessButton)
+            .fixedSize()
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
         .disabled(model.activeOperation != nil || model.repositoryOperationState != nil)
         .sheet(isPresented: $showingMessageEditor, onDismiss: {
             if pendingAction == .amend || pendingAction == .reword {

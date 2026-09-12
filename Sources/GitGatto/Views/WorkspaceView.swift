@@ -11,6 +11,8 @@ struct WorkspaceView: View {
     @StateObject private var readmeRendererCache = GitHubReadmeRendererCache()
     @State private var didReportInitialContentReady = false
     @State private var showsCommandPalette = false
+    @State private var pendingRepositorySetup: (folder: URL?, agent: Bool)?
+    @State private var createdRepository: RepositoryBootstrapOpenRequest?
     @State private var pendingProjectTool: ProjectTool?
     @StateObject private var projectTools = ProjectToolsViewModel()
     @State private var activeProjectCommands = 0
@@ -285,6 +287,20 @@ struct WorkspaceView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             model.stopAgentTasks()
         }
+        .sheet(isPresented: $model.showsRepositoryCreation) {
+            RepositoryBootstrapSheet(workspace: model, model: RepositoryBootstrapViewModel(
+                folder: model.repositoryCreationFolder, automaticAgent: model.repositoryCreationUsesAgent,
+                manualOptions: model.repositoryCreationFolder != nil && !model.repositoryCreationUsesAgent)) { folder, useAgent in
+                model.showsRepositoryCreation = false
+                createdRepository = RepositoryBootstrapOpenRequest(folder: folder, useAgent: useAgent)
+            }
+        }
+        .task(id: createdRepository) {
+            guard let request = createdRepository else { return }
+            await model.openRepository(request.folder)
+            guard !Task.isCancelled, model.snapshot?.rootURL.standardizedFileURL == request.folder.standardizedFileURL else { return }
+            if request.useAgent { model.prepareRepositoryWithAgent() }
+        }
         .sheet(item: activeErrorBinding) { report in
             GlobalErrorSheet(
                 report: report,
@@ -316,6 +332,10 @@ struct WorkspaceView: View {
         }
         .sheet(isPresented: $showsCommandPalette, onDismiss: {
             if let tool = pendingProjectTool { pendingProjectTool = nil; model.projectTool = tool }
+            if let request = pendingRepositorySetup {
+                pendingRepositorySetup = nil
+                model.presentRepositoryCreation(folder: request.folder, usingAgent: request.agent)
+            }
         }) {
             GlobalCommandPalette(
                 model: model,
@@ -323,6 +343,10 @@ struct WorkspaceView: View {
                 openScanner: { openWindow(id: "repository-scanner") },
                 openHelp: { openWindow(id: "help") },
                 openProjectTool: { tool in pendingProjectTool = tool; showsCommandPalette = false },
+                openRepositorySetup: { folder, usesAgent in
+                    pendingRepositorySetup = (folder, usesAgent)
+                    showsCommandPalette = false
+                },
                 dismiss: { showsCommandPalette = false }
             )
         }
@@ -352,6 +376,19 @@ struct WorkspaceView: View {
 
     @ViewBuilder
     private var workspaceDetail: some View {
+        VStack(spacing: 0) {
+            if let snapshot = model.snapshot, snapshot.upstreamName == nil,
+               snapshot.branches.first(where: \.isCurrent)?.upstream == nil,
+               model.selectedSection != .github, model.selectedSection != .marketplace {
+                RepositoryUpstreamActions(model: model)
+                Divider()
+            }
+            workspaceDetailContent
+        }
+    }
+
+    @ViewBuilder
+    private var workspaceDetailContent: some View {
         if model.selectedSection == .github {
             GitHubWorkspaceView(model: model, downloads: downloads, readmeRendererCache: readmeRendererCache)
         } else if model.selectedSection == .marketplace {
@@ -1128,6 +1165,13 @@ private struct WelcomeView: View {
     @ObservedObject var model: WorkspaceViewModel
     @Environment(\.colorScheme) private var colorScheme
 
+    @ViewBuilder private var repositoryEntryButtons: some View {
+        Button(L10n.text("repository.create.title")) { model.presentRepositoryCreation() }
+            .buttonStyle(PrimaryButtonStyle())
+        Button(L10n.text("action.open_repository")) { model.chooseRepository() }
+            .buttonStyle(SecondaryButtonStyle())
+    }
+
     var body: some View {
         let palette = AppPalette(colorScheme)
         VStack(spacing: 0) {
@@ -1147,10 +1191,10 @@ private struct WelcomeView: View {
                 .frame(maxWidth: 420)
                 .padding(.top, 8)
 
-            Button(L10n.text("action.open_repository")) {
-                model.chooseRepository()
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { repositoryEntryButtons }
+                VStack(spacing: 12) { repositoryEntryButtons }
             }
-            .buttonStyle(PrimaryButtonStyle())
             .padding(.top, 22)
 
             if !model.recentRepositories.isEmpty {
@@ -1196,4 +1240,10 @@ private struct WelcomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(palette.background)
     }
+}
+
+private struct RepositoryBootstrapOpenRequest: Equatable {
+    let id = UUID()
+    let folder: URL
+    let useAgent: Bool
 }
