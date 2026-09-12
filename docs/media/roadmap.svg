@@ -40,21 +40,16 @@
 </defs>
 <rect class="bg" x="0" y="0" width="1520" height="560" rx="24"/>
 <text class="title" x="64" y="58">GitGatto 路线图</text>
-<text class="detail" x="64" y="84">已实现版本按 CHANGELOG 记录；虚线阶段为下一步计划</text>
+<text class="detail" x="64" y="84">源码已实现范围见 CHANGELOG；发布状态见 Releases；虚线为计划</text>
 <text class="section" x="64" y="138">已实现</text>
 <line class="connector-accent" x1="142" y1="222" x2="1378" y2="222"/>
-<rect class="panel-green" x="62" y="166" width="250" height="112" rx="16"/><text class="label" x="187.0" y="212.0" text-anchor="middle"><tspan x="187.0" dy="0">0.14–0.16</tspan></text><text class="detail" x="187.0" y="236.0" text-anchor="middle"><tspan x="187.0" dy="0">Git · GitHub · 工作区</tspan><tspan x="187.0" dy="18">历史与更新</tspan></text>
-<circle class="dot" cx="187.0" cy="222" r="6"/>
-<rect class="panel-green" x="350" y="166" width="250" height="112" rx="16"/><text class="label" x="475.0" y="212.0" text-anchor="middle"><tspan x="475.0" dy="0">0.17–0.18.10</tspan></text><text class="detail" x="475.0" y="236.0" text-anchor="middle"><tspan x="475.0" dy="0">Agent · 内容预览</tspan><tspan x="475.0" dy="18">工具安装</tspan></text>
-<circle class="dot" cx="475.0" cy="222" r="6"/>
-<rect class="panel-green" x="638" y="166" width="250" height="112" rx="16"/><text class="label" x="763.0" y="212.0" text-anchor="middle"><tspan x="763.0" dy="0">0.18.11</tspan></text><text class="detail" x="763.0" y="236.0" text-anchor="middle"><tspan x="763.0" dy="0">目标驱动交付</tspan><tspan x="763.0" dy="18">完整发布</tspan></text>
-<circle class="dot" cx="763.0" cy="222" r="6"/>
-<rect class="panel-green" x="926" y="166" width="250" height="112" rx="16"/><text class="label" x="1051.0" y="212.0" text-anchor="middle"><tspan x="1051.0" dy="0">0.18.12</tspan></text><text class="detail" x="1051.0" y="236.0" text-anchor="middle"><tspan x="1051.0" dy="0">回归取证</tspan><tspan x="1051.0" dy="18">仓库灾备</tspan></text>
-<circle class="dot" cx="1051.0" cy="222" r="6"/>
-<rect class="panel-accent" x="1214" y="166" width="250" height="112" rx="16"/><text class="label" x="1339.0" y="212.0" text-anchor="middle"><tspan x="1339.0" dy="0">0.18.13–0.18.26</tspan></text><text class="detail" x="1339.0" y="236.0" text-anchor="middle"><tspan x="1339.0" dy="0">监控 · 协作 · 变更取证</tspan><tspan x="1339.0" dy="18">五项项目工具</tspan></text>
-<circle class="dot" cx="1339.0" cy="222" r="6"/>
+<rect class="panel-green" x="62" y="166" width="250" height="112" rx="16"/><text class="label" x="187.0" y="212.0" text-anchor="middle"><tspan x="187.0" dy="0">0.14–0.18.10</tspan></text><text class="detail" x="187.0" y="236.0" text-anchor="middle"><tspan x="187.0" dy="0">Git · GitHub · 工作区</tspan><tspan x="187.0" dy="18">Agent · 工具安装</tspan></text>
+<rect class="panel-green" x="350" y="166" width="250" height="112" rx="16"/><text class="label" x="475.0" y="212.0" text-anchor="middle"><tspan x="475.0" dy="0">0.18.11–0.18.26</tspan></text><text class="detail" x="475.0" y="236.0" text-anchor="middle"><tspan x="475.0" dy="0">目标 · 回归 · 灾备</tspan><tspan x="475.0" dy="18">编排与项目工具</tspan></text>
+<rect class="panel-green" x="638" y="166" width="250" height="112" rx="16"/><text class="label" x="763.0" y="212.0" text-anchor="middle"><tspan x="763.0" dy="0">0.18.27–0.18.31</tspan></text><text class="detail" x="763.0" y="236.0" text-anchor="middle"><tspan x="763.0" dy="0">目标简化 · 自定义 API</tspan><tspan x="763.0" dy="18">监控降频 · 更新签名</tspan></text>
+<rect class="panel-green" x="926" y="166" width="250" height="112" rx="16"/><text class="label" x="1051.0" y="212.0" text-anchor="middle"><tspan x="1051.0" dy="0">0.18.32–0.18.35</tspan></text><text class="detail" x="1051.0" y="236.0" text-anchor="middle"><tspan x="1051.0" dy="0">独立后台 · 全仓状态栏</tspan><tspan x="1051.0" dy="18">翻译与主题切换</tspan></text>
+<rect class="panel-accent" x="1214" y="166" width="250" height="112" rx="16"/><text class="label" x="1339.0" y="212.0" text-anchor="middle"><tspan x="1339.0" dy="0">0.18.36</tspan></text><text class="detail" x="1339.0" y="236.0" text-anchor="middle"><tspan x="1339.0" dy="0">监控面板扩展</tspan><tspan x="1339.0" dy="18">灾备落盘顺序修复</tspan></text>
 <text class="section" x="64" y="354">下一阶段</text>
-<rect class="panel-muted" x="62" y="386" width="390" height="108" rx="16"/><text class="label" x="257.0" y="430.0" text-anchor="middle"><tspan x="257.0" dy="0">恢复证据</tspan></text><text class="detail" x="257.0" y="454.0" text-anchor="middle"><tspan x="257.0" dy="0">恢复点导入与导出</tspan></text>
+<rect class="panel-muted" x="62" y="386" width="390" height="108" rx="16"/><text class="label" x="257.0" y="430.0" text-anchor="middle"><tspan x="257.0" dy="0">恢复验证回执</tspan></text><text class="detail" x="257.0" y="454.0" text-anchor="middle"><tspan x="257.0" dy="0">完整恢复点导入与导出</tspan></text>
 <text class="badge" x="80" y="410">NEXT 01</text>
 <path class="connector" d="M464 440 L518 440" marker-end="url(#arrow)"/>
 <rect class="panel-muted" x="530" y="386" width="390" height="108" rx="16"/><text class="label" x="725.0" y="430.0" text-anchor="middle"><tspan x="725.0" dy="0">可复用 Agent</tspan></text><text class="detail" x="725.0" y="454.0" text-anchor="middle"><tspan x="725.0" dy="0">处理方案</tspan></text>

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1010" viewBox="0 0 1600 1010" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="1130" viewBox="0 0 1520 1130" role="img" aria-labelledby="title desc">
 <title id="title">GitGatto 系统架构</title>
-<desc id="desc">GitGatto 的状态所有权、运行时、适配器和外部边界。</desc>
+<desc id="desc">前后台进程、监控任务交接、灾备、应用交互、存储与外部服务。</desc>
 <style>
     :root { color-scheme: light dark; }
     .bg { fill: #ffffff; }
@@ -38,39 +38,27 @@
     <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b979f"/>
   </marker>
 </defs>
-<rect class="bg" x="0" y="0" width="1600" height="1010" rx="24"/>
+<rect class="bg" x="0" y="0" width="1520" height="1130" rx="24"/>
 <text class="title" x="64" y="58">GitGatto 系统架构</text>
-<text class="detail" x="64" y="84">界面状态、任务运行时、能力适配与系统边界</text>
-<text class="section" x="270.0" y="132" text-anchor="middle"><tspan x="270.0" dy="0">界面与状态</tspan></text>
-<rect class="lane" x="121" y="154" width="298" height="740" rx="22"/>
-<text class="section" x="640.0" y="132" text-anchor="middle"><tspan x="640.0" dy="0">任务运行时</tspan></text>
-<rect class="lane" x="491" y="154" width="298" height="740" rx="22"/>
-<text class="section" x="1010.0" y="132" text-anchor="middle"><tspan x="1010.0" dy="0">能力适配</tspan></text>
-<rect class="lane" x="861" y="154" width="298" height="740" rx="22"/>
-<text class="section" x="1380.0" y="132" text-anchor="middle"><tspan x="1380.0" dy="0">系统与远端</tspan></text>
-<rect class="lane" x="1231" y="154" width="298" height="740" rx="22"/>
-<rect class="panel-blue" x="145" y="244" width="250" height="92" rx="16"/><text class="label" x="270.0" y="280.0" text-anchor="middle"><tspan x="270.0" dy="0">SwiftUI / AppKit</tspan></text><text class="detail" x="270.0" y="304.0" text-anchor="middle"><tspan x="270.0" dy="0">窗口 · 导航 · 主题</tspan></text>
-<rect class="panel-blue" x="145" y="376" width="250" height="92" rx="16"/><text class="label" x="270.0" y="412.0" text-anchor="middle"><tspan x="270.0" dy="0">WorkspaceViewModel</tspan></text><text class="detail" x="270.0" y="436.0" text-anchor="middle"><tspan x="270.0" dy="0">仓库与工作区</tspan></text>
-<rect class="panel-blue" x="145" y="508" width="250" height="92" rx="16"/><text class="label" x="270.0" y="544.0" text-anchor="middle"><tspan x="270.0" dy="0">Marketplace</tspan></text><text class="detail" x="270.0" y="568.0" text-anchor="middle"><tspan x="270.0" dy="0">应用仓库</tspan></text>
-<rect class="panel-blue" x="145" y="640" width="250" height="92" rx="16"/><text class="label" x="270.0" y="676.0" text-anchor="middle"><tspan x="270.0" dy="0">DeveloperTools</tspan></text><text class="detail" x="270.0" y="700.0" text-anchor="middle"><tspan x="270.0" dy="0">工具与队列</tspan></text>
-<rect class="panel-purple" x="515" y="188" width="250" height="92" rx="16"/><text class="label" x="640.0" y="224.0" text-anchor="middle"><tspan x="640.0" dy="0">Project Goals</tspan></text><text class="detail" x="640.0" y="248.0" text-anchor="middle"><tspan x="640.0" dy="0">交付与发布条件</tspan></text>
-<rect class="panel-purple" x="515" y="320" width="250" height="92" rx="16"/><text class="label" x="640.0" y="356.0" text-anchor="middle"><tspan x="640.0" dy="0">Regression</tspan></text><text class="detail" x="640.0" y="380.0" text-anchor="middle"><tspan x="640.0" dy="0">worktree + git bisect</tspan></text>
-<rect class="panel-purple" x="515" y="452" width="250" height="92" rx="16"/><text class="label" x="640.0" y="488.0" text-anchor="middle"><tspan x="640.0" dy="0">Recovery</tspan></text><text class="detail" x="640.0" y="512.0" text-anchor="middle"><tspan x="640.0" dy="0">三代滚动恢复点</tspan></text>
-<rect class="panel-purple" x="515" y="584" width="250" height="92" rx="16"/><text class="label" x="640.0" y="620.0" text-anchor="middle"><tspan x="640.0" dy="0">Downloads</tspan></text><text class="detail" x="640.0" y="644.0" text-anchor="middle"><tspan x="640.0" dy="0">下载与安装</tspan></text>
-<rect class="panel-purple" x="515" y="716" width="250" height="92" rx="16"/><text class="label" x="640.0" y="752.0" text-anchor="middle"><tspan x="640.0" dy="0">Global Errors</tspan></text><text class="detail" x="640.0" y="776.0" text-anchor="middle"><tspan x="640.0" dy="0">原文 · 归一 · 脱敏</tspan></text>
-<rect class="panel-green" x="885" y="188" width="250" height="92" rx="16"/><text class="label" x="1010.0" y="224.0" text-anchor="middle"><tspan x="1010.0" dy="0">Git Service</tspan></text><text class="detail" x="1010.0" y="248.0" text-anchor="middle"><tspan x="1010.0" dy="0">GitCommandRunner</tspan></text>
-<rect class="panel-green" x="885" y="320" width="250" height="92" rx="16"/><text class="label" x="1010.0" y="356.0" text-anchor="middle"><tspan x="1010.0" dy="0">GitHub Service</tspan></text><text class="detail" x="1010.0" y="380.0" text-anchor="middle"><tspan x="1010.0" dy="0">API · Release</tspan></text>
-<rect class="panel-green" x="885" y="452" width="250" height="92" rx="16"/><text class="label" x="1010.0" y="488.0" text-anchor="middle"><tspan x="1010.0" dy="0">Agent Lanes</tspan></text><text class="detail" x="1010.0" y="512.0" text-anchor="middle"><tspan x="1010.0" dy="0">仓库 · 翻译 · 安装</tspan></text>
-<rect class="panel-green" x="885" y="584" width="250" height="92" rx="16"/><text class="label" x="1010.0" y="620.0" text-anchor="middle"><tspan x="1010.0" dy="0">Tool Services</tspan></text><text class="detail" x="1010.0" y="644.0" text-anchor="middle"><tspan x="1010.0" dy="0">探测 · Brew · 授权</tspan></text>
-<rect class="panel-green" x="885" y="716" width="250" height="92" rx="16"/><text class="label" x="1010.0" y="752.0" text-anchor="middle"><tspan x="1010.0" dy="0">Sparkle / Media</tspan></text><text class="detail" x="1010.0" y="776.0" text-anchor="middle"><tspan x="1010.0" dy="0">更新 · 文档 · 媒体</tspan></text>
-<rect class="panel-accent" x="1255" y="188" width="250" height="92" rx="16"/><text class="label" x="1380.0" y="224.0" text-anchor="middle"><tspan x="1380.0" dy="0">Local Repositories</tspan></text><text class="detail" x="1380.0" y="248.0" text-anchor="middle"><tspan x="1380.0" dy="0">Git · SSH</tspan></text>
-<rect class="panel-accent" x="1255" y="320" width="250" height="92" rx="16"/><text class="label" x="1380.0" y="356.0" text-anchor="middle"><tspan x="1380.0" dy="0">GitHub</tspan></text><text class="detail" x="1380.0" y="380.0" text-anchor="middle"><tspan x="1380.0" dy="0">CLI · API · Releases</tspan></text>
-<rect class="panel-accent" x="1255" y="452" width="250" height="92" rx="16"/><text class="label" x="1380.0" y="488.0" text-anchor="middle"><tspan x="1380.0" dy="0">Agent CLIs</tspan></text><text class="detail" x="1380.0" y="512.0" text-anchor="middle"><tspan x="1380.0" dy="0">Codex · Claude · Gemini</tspan></text>
-<rect class="panel-accent" x="1255" y="584" width="250" height="92" rx="16"/><text class="label" x="1380.0" y="620.0" text-anchor="middle"><tspan x="1380.0" dy="0">Homebrew</tspan></text><text class="detail" x="1380.0" y="644.0" text-anchor="middle"><tspan x="1380.0" dy="0">开发工具与运行库</tspan></text>
-<rect class="panel-accent" x="1255" y="716" width="250" height="92" rx="16"/><text class="label" x="1380.0" y="752.0" text-anchor="middle"><tspan x="1380.0" dy="0">Local Persistence</tspan></text><text class="detail" x="1380.0" y="776.0" text-anchor="middle"><tspan x="1380.0" dy="0">设置 · 记录 · 译文 · 备份</tspan></text>
-<path class="connector" d="M403 174 L507 174" marker-end="url(#arrow)"/>
-<path class="connector-accent" d="M773 174 L877 174" marker-end="url(#arrow)"/>
-<path class="connector" d="M1143 174 L1247 174" marker-end="url(#arrow)"/>
-<rect class="panel" x="121" y="920" width="1358" height="54" rx="16"/>
-<text class="detail" x="800" y="952" text-anchor="middle">所有写操作绑定明确仓库或受控目录；Agent 输出必须回到 Git、GitHub、可执行文件或文件系统重新验证</text>
+<text class="detail" x="64" y="84">主程序与系统后台助手分别运行；监控和灾备由一个持有者执行</text>
+<rect class="panel-blue" x="160" y="126" width="500" height="112" rx="16"/><text class="label" x="410.0" y="172.0" text-anchor="middle"><tspan x="410.0" dy="0">GitGatto 主程序</tspan></text><text class="detail" x="410.0" y="196.0" text-anchor="middle"><tspan x="410.0" dy="0">SwiftUI · AppKit · WebKit</tspan><tspan x="410.0" dy="18">界面状态与用户操作</tspan></text>
+<rect class="panel-purple" x="860" y="126" width="500" height="112" rx="16"/><text class="label" x="1110.0" y="172.0" text-anchor="middle"><tspan x="1110.0" dy="0">GitGattoMonitor 后台助手</tspan></text><text class="detail" x="1110.0" y="196.0" text-anchor="middle"><tspan x="1110.0" dy="0">SMAppService · LaunchAgent</tspan><tspan x="1110.0" dy="18">主程序退出后接手已开启的监控与灾备</tspan></text>
+<path class="connector" d="M410 246 L590 290" marker-end="url(#arrow)"/>
+<path class="connector" d="M1110 246 L930 290" marker-end="url(#arrow)"/>
+<rect class="panel-accent" x="340" y="298" width="840" height="100" rx="16"/><text class="label" x="760.0" y="338.0" text-anchor="middle"><tspan x="760.0" dy="0">监控任务所有权</tspan></text><text class="detail" x="760.0" y="362.0" text-anchor="middle"><tspan x="760.0" dy="0">foreground.lock / runtime.lock</tspan><tspan x="760.0" dy="18">交接时先取消并等待旧任务结束，再释放运行锁</tspan></text>
+<text class="section" x="64" y="450">主程序运行或后台接手时持续执行</text>
+<rect class="panel-green" x="64" y="478" width="318" height="132" rx="16"/><text class="label" x="223.0" y="534.0" text-anchor="middle"><tspan x="223.0" dy="0">仓库变化与活动</tspan></text><text class="detail" x="223.0" y="558.0" text-anchor="middle"><tspan x="223.0" dy="0">文件事件合并 · 增量刷新</tspan><tspan x="223.0" dy="18">Git 状态 · 活动点阵</tspan></text>
+<rect class="panel-green" x="422" y="478" width="318" height="132" rx="16"/><text class="label" x="581.0" y="534.0" text-anchor="middle"><tspan x="581.0" dy="0">灾备与仓库守卫</tspan></text><text class="detail" x="581.0" y="558.0" text-anchor="middle"><tspan x="581.0" dy="0">定时 · 重大改动 · 外部异常</tspan><tspan x="581.0" dy="18">内容落盘 → 完成标记 → 三份轮换</tspan></text>
+<rect class="panel-green" x="780" y="478" width="318" height="132" rx="16"/><text class="label" x="939.0" y="534.0" text-anchor="middle"><tspan x="939.0" dy="0">远端与 Actions</tspan></text><text class="detail" x="939.0" y="558.0" text-anchor="middle"><tspan x="939.0" dy="0">上游状态 · 检查结果</tspan><tspan x="939.0" dy="18">按已开启通道读取</tspan></text>
+<rect class="panel-green" x="1138" y="478" width="318" height="132" rx="16"/><text class="label" x="1297.0" y="534.0" text-anchor="middle"><tspan x="1297.0" dy="0">目标状态</tspan></text><text class="detail" x="1297.0" y="558.0" text-anchor="middle"><tspan x="1297.0" dy="0">读取待完成条件</tspan><tspan x="1297.0" dy="18">发布与安装仍需单独确认</tspan></text>
+<path class="connector" d="M760 406 V462 H223 V470 M760 462 H581 V470 M760 462 H939 V470 M939 462 H1297 V470"/>
+<text class="section" x="64" y="680">主程序中的交互功能</text>
+<rect class="panel-blue" x="64" y="708" width="318" height="132" rx="16"/><text class="label" x="223.0" y="764.0" text-anchor="middle"><tspan x="223.0" dy="0">Git / GitHub</tspan></text><text class="detail" x="223.0" y="788.0" text-anchor="middle"><tspan x="223.0" dy="0">工作区 · PR · Issue · 历史</tspan><tspan x="223.0" dy="18">GitCommandRunner · GitHubService</tspan></text>
+<rect class="panel-blue" x="422" y="708" width="318" height="132" rx="16"/><text class="label" x="581.0" y="764.0" text-anchor="middle"><tspan x="581.0" dy="0">目标 / 编排 / 回归</tspan></text><text class="detail" x="581.0" y="788.0" text-anchor="middle"><tspan x="581.0" dy="0">交付条件 · Hunk 分组提交</tspan><tspan x="581.0" dy="18">独立 worktree · git bisect</tspan></text>
+<rect class="panel-blue" x="780" y="708" width="318" height="132" rx="16"/><text class="label" x="939.0" y="764.0" text-anchor="middle"><tspan x="939.0" dy="0">Agent 执行通道</tspan></text><text class="detail" x="939.0" y="788.0" text-anchor="middle"><tspan x="939.0" dy="0">项目 · 翻译 · 搜索 · 安装</tspan><tspan x="939.0" dy="18">CLI / OpenAI 兼容 API / DeepSeek</tspan></text>
+<rect class="panel-blue" x="1138" y="708" width="318" height="132" rx="16"/><text class="label" x="1297.0" y="764.0" text-anchor="middle"><tspan x="1297.0" dy="0">应用与开发工具</tspan></text><text class="detail" x="1297.0" y="788.0" text-anchor="middle"><tspan x="1297.0" dy="0">下载 · 安装 · 配置 · 验证</tspan><tspan x="1297.0" dy="18">三路队列 · Homebrew 写入串行</tspan></text>
+<text class="section" x="64" y="902">系统、存储与发布边界</text>
+<rect class="panel" x="64" y="930" width="438" height="124" rx="16"/><text class="label" x="283.0" y="982.0" text-anchor="middle"><tspan x="283.0" dy="0">本地数据</tspan></text><text class="detail" x="283.0" y="1006.0" text-anchor="middle"><tspan x="283.0" dy="0">Git 仓库 · Git bundle · 未提交文件</tspan><tspan x="283.0" dy="18">目标 · 记录 · 译文 · 三份恢复点</tspan></text>
+<rect class="panel" x="541" y="930" width="438" height="124" rx="16"/><text class="label" x="760.0" y="982.0" text-anchor="middle"><tspan x="760.0" dy="0">网络与凭据</tspan></text><text class="detail" x="760.0" y="1006.0" text-anchor="middle"><tspan x="760.0" dy="0">GitHub / CLI / 配置的模型服务</tspan><tspan x="760.0" dy="18">API 密钥存系统钥匙串</tspan></text>
+<rect class="panel" x="1018" y="930" width="438" height="124" rx="16"/><text class="label" x="1237.0" y="982.0" text-anchor="middle"><tspan x="1237.0" dy="0">版本更新</tspan></text><text class="detail" x="1237.0" y="1006.0" text-anchor="middle"><tspan x="1237.0" dy="0">Sparkle · Developer ID · EdDSA</tspan><tspan x="1237.0" dy="18">Appcast · DMG · 公证单独申请</tspan></text>
 </svg>

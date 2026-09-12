@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import math
 import subprocess
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
@@ -69,7 +70,10 @@ def render(repository: str, created: date, starred: list[date]) -> str:
     chart_width = width - left - right
     chart_height = height - top - bottom
     maximum = max(1, max(cumulative, default=0))
-    y_max = max(5, ((maximum + 4) // 5) * 5)
+    magnitude = 10 ** math.floor(math.log10(maximum / 6))
+    step = max(1, next(n * magnitude for n in (1, 2, 5, 10) if n * magnitude >= maximum / 6))
+    step = int(step)
+    y_max = max(step, math.ceil(maximum / step) * step)
     x_step = chart_width / max(1, len(days) - 1)
 
     def x(index: int) -> float:
@@ -89,7 +93,7 @@ def render(repository: str, created: date, starred: list[date]) -> str:
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
         f'<title id="title">{title}</title>',
-        f'<desc id="desc">{len(starred)} GitHub stars from {created.isoformat()} through {end.isoformat()}.</desc>',
+        f'<desc id="desc">{len(starred)} current stargazers, accumulated by starred_at from {created.isoformat()} through {end.isoformat()}; removed stars are not included.</desc>',
         """<style>
             :root { color-scheme: light dark; }
             .background { fill: #ffffff; }
@@ -112,11 +116,10 @@ def render(repository: str, created: date, starred: list[date]) -> str:
         </style>""",
         '<rect class="background" width="1280" height="560" rx="24"/>',
         f'<text class="title" x="64" y="54">{title}</text>',
-        f'<text class="subtitle" x="64" y="81">GitHub stargazers · {created.isoformat()} — {end.isoformat()}</text>',
+        f'<text class="subtitle" x="64" y="81">Current stargazers · {created.isoformat()} — {end.isoformat()}</text>',
         f'<text class="total" x="1216" y="58" text-anchor="end">★ {len(starred)}</text>',
     ]
 
-    step = 5 if y_max >= 10 else 1
     for value in range(0, y_max + 1, step):
         py = y(value)
         parts.append(f'<line class="grid" x1="{left}" y1="{py:.1f}" x2="{width - right}" y2="{py:.1f}"/>')
@@ -136,7 +139,7 @@ def render(repository: str, created: date, starred: list[date]) -> str:
         parts.append(f'<text class="axis" x="{x(index):.1f}" y="{top + chart_height + 32:.1f}" text-anchor="middle">{days[index].strftime("%m-%d")}</text>')
 
     parts.extend([
-        f'<text class="axis" x="{left}" y="{height - 28}" text-anchor="start">Source: GitHub Stargazers API</text>',
+        f'<text class="axis" x="{left}" y="{height - 28}" text-anchor="start">Source: GitHub Stargazers API · Removed stars not included</text>',
         f'<text class="axis" x="{width - right}" y="{height - 28}" text-anchor="end">Updated {end.isoformat()} UTC</text>',
         '</svg>',
     ])

@@ -47,7 +47,7 @@
 <rect class="panel" x="351.6" y="150" width="241.6" height="132" rx="16"/><text class="label" x="472.40000000000003" y="206.0" text-anchor="middle"><tspan x="472.40000000000003" dy="0">读取证据</tspan></text><text class="detail" x="472.40000000000003" y="230.0" text-anchor="middle"><tspan x="472.40000000000003" dy="0">分支 · Diff · 错误</tspan></text>
 <text class="badge" x="367.6" y="174">02</text>
 <path class="connector-accent" d="M602.2 216.0 L630.2 216.0" marker-end="url(#arrow)"/>
-<rect class="panel" x="639.2" y="150" width="241.6" height="132" rx="16"/><text class="label" x="760.0" y="206.0" text-anchor="middle"><tspan x="760.0" dy="0">Agent 执行</tspan></text><text class="detail" x="760.0" y="230.0" text-anchor="middle"><tspan x="760.0" dy="0">限定目录与独立通道</tspan></text>
+<rect class="panel" x="639.2" y="150" width="241.6" height="132" rx="16"/><text class="label" x="760.0" y="206.0" text-anchor="middle"><tspan x="760.0" dy="0">Agent 执行</tspan></text><text class="detail" x="760.0" y="230.0" text-anchor="middle"><tspan x="760.0" dy="0">CLI / API · 独立通道</tspan></text>
 <text class="badge" x="655.2" y="174">03</text>
 <path class="connector-accent" d="M889.8000000000001 216.0 L917.8000000000001 216.0" marker-end="url(#arrow)"/>
 <rect class="panel" x="926.8000000000001" y="150" width="241.6" height="132" rx="16"/><text class="label" x="1047.6000000000001" y="206.0" text-anchor="middle"><tspan x="1047.6000000000001" dy="0">重新读取</tspan></text><text class="detail" x="1047.6000000000001" y="230.0" text-anchor="middle"><tspan x="1047.6000000000001" dy="0">Git · GitHub · 文件系统</tspan></text>

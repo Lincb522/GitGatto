@@ -101,20 +101,20 @@ def base_svg(width: int, height: int, title: str, description: str, body: str) -
 def roadmap() -> str:
     width, height = 1520, 560
     stages = [
-        ("0.14–0.16", ["Git · GitHub · 工作区", "历史与更新"], "panel-green"),
-        ("0.17–0.18.10", ["Agent · 内容预览", "工具安装"], "panel-green"),
-        ("0.18.11", ["目标驱动交付", "完整发布"], "panel-green"),
-        ("0.18.12", ["回归取证", "仓库灾备"], "panel-green"),
-        ("0.18.13–0.18.26", ["监控 · 协作 · 变更取证", "五项项目工具"], "panel-accent"),
+        ("0.14–0.18.10", ["Git · GitHub · 工作区", "Agent · 工具安装"], "panel-green"),
+        ("0.18.11–0.18.26", ["目标 · 回归 · 灾备", "编排与项目工具"], "panel-green"),
+        ("0.18.27–0.18.31", ["目标简化 · 自定义 API", "监控降频 · 更新签名"], "panel-green"),
+        ("0.18.32–0.18.35", ["独立后台 · 全仓状态栏", "翻译与主题切换"], "panel-green"),
+        ("0.18.36", ["监控面板扩展", "灾备落盘顺序修复"], "panel-accent"),
     ]
     planned = [
-        ("NEXT 01", ["恢复证据", "恢复点导入与导出"]),
+        ("NEXT 01", ["恢复验证回执", "完整恢复点导入与导出"]),
         ("NEXT 02", ["可复用 Agent", "处理方案"]),
         ("NEXT 03", ["公证与更新", "发行验证"]),
     ]
     body = [
         '<text class="title" x="64" y="58">GitGatto 路线图</text>',
-        '<text class="detail" x="64" y="84">已实现版本按 CHANGELOG 记录；虚线阶段为下一步计划</text>',
+        '<text class="detail" x="64" y="84">源码已实现范围见 CHANGELOG；发布状态见 Releases；虚线为计划</text>',
         '<text class="section" x="64" y="138">已实现</text>',
         '<line class="connector-accent" x1="142" y1="222" x2="1378" y2="222"/>',
     ]
@@ -122,7 +122,6 @@ def roadmap() -> str:
     for index, (version, details, css) in enumerate(stages):
         x = start_x + index * (card_w + gap)
         body.append(card(x, 166, card_w, 112, version, details, css))
-        body.append(f'<circle class="dot" cx="{x + card_w / 2}" cy="222" r="6"/>')
 
     body.extend([
         '<text class="section" x="64" y="354">下一阶段</text>',
@@ -138,76 +137,44 @@ def roadmap() -> str:
 
 
 def architecture() -> str:
-    width, height = 1600, 1010
-    columns = [145, 515, 885, 1255]
-    card_w = 250
+    width, height = 1520, 1130
     body = [
         '<text class="title" x="64" y="58">GitGatto 系统架构</text>',
-        '<text class="detail" x="64" y="84">界面状态、任务运行时、能力适配与系统边界</text>',
+        '<text class="detail" x="64" y="84">主程序与系统后台助手分别运行；监控和灾备由一个持有者执行</text>',
+        card(160, 126, 500, 112, "GitGatto 主程序", ["SwiftUI · AppKit · WebKit", "界面状态与用户操作"], "panel-blue"),
+        card(860, 126, 500, 112, "GitGattoMonitor 后台助手", ["SMAppService · LaunchAgent", "主程序退出后接手已开启的监控与灾备"], "panel-purple"),
+        arrow(410, 246, 590, 290), arrow(1110, 246, 930, 290),
+        card(340, 298, 840, 100, "监控任务所有权", ["foreground.lock / runtime.lock", "交接时先取消并等待旧任务结束，再释放运行锁"], "panel-accent"),
+        '<text class="section" x="64" y="450">主程序运行或后台接手时持续执行</text>',
     ]
-    headers = ["界面与状态", "任务运行时", "能力适配", "系统与远端"]
-    for x, header in zip(columns, headers):
-        body.append(text_block(x + card_w / 2, 132, [header], "section"))
-        body.append(f'<rect class="lane" x="{x - 24}" y="154" width="{card_w + 48}" height="740" rx="22"/>')
-
-    ui_cards = [
-        ("SwiftUI / AppKit", ["窗口 · 导航 · 主题"]),
-        ("WorkspaceViewModel", ["仓库与工作区"]),
-        ("Marketplace", ["应用仓库"]),
-        ("DeveloperTools", ["工具与队列"]),
+    xs = [64, 422, 780, 1138]
+    monitoring = [
+        ("仓库变化与活动", ["文件事件合并 · 增量刷新", "Git 状态 · 活动点阵"]),
+        ("灾备与仓库守卫", ["定时 · 重大改动 · 外部异常", "内容落盘 → 完成标记 → 三份轮换"]),
+        ("远端与 Actions", ["上游状态 · 检查结果", "按已开启通道读取"]),
+        ("目标状态", ["读取待完成条件", "发布与安装仍需单独确认"]),
     ]
-    runtime_cards = [
-        ("Project Goals", ["交付与发布条件"]),
-        ("Regression", ["worktree + git bisect"]),
-        ("Recovery", ["三代滚动恢复点"]),
-        ("Downloads", ["下载与安装"]),
-        ("Global Errors", ["原文 · 归一 · 脱敏"]),
-    ]
-    adapter_cards = [
-        ("Git Service", ["GitCommandRunner"]),
-        ("GitHub Service", ["API · Release"]),
-        ("Agent Lanes", ["仓库 · 翻译 · 安装"]),
-        ("Tool Services", ["探测 · Brew · 授权"]),
-        ("Sparkle / Media", ["更新 · 文档 · 媒体"]),
-    ]
-    external_cards = [
-        ("Local Repositories", ["Git · SSH"]),
-        ("GitHub", ["CLI · API · Releases"]),
-        ("Agent CLIs", ["Codex · Claude · Gemini"]),
-        ("Homebrew", ["开发工具与运行库"]),
-        ("Local Persistence", ["设置 · 记录 · 译文 · 备份"]),
-    ]
-    groups = [ui_cards, runtime_cards, adapter_cards, external_cards]
-    styles = ["panel-blue", "panel-purple", "panel-green", "panel-accent"]
-    positions: list[list[tuple[float, float]]] = []
-    for column_index, (x, entries, css) in enumerate(zip(columns, groups, styles)):
-        group_positions = []
-        top = 188 if len(entries) == 5 else 244
-        step = 132
-        for row, (title, details) in enumerate(entries):
-            y = top + row * step
-            body.append(card(x, y, card_w, 92, title, details, css))
-            group_positions.append((x, y))
-        positions.append(group_positions)
-
-    # The overview shows dependency direction between layers. Exact many-to-many
-    # service relationships stay in the owning prose below the diagram.
-    for index in range(len(columns) - 1):
-        body.append(
-            arrow(
-                columns[index] + card_w + 8,
-                174,
-                columns[index + 1] - 8,
-                174,
-                accent=(index == 1),
-            )
-        )
-
+    for x, (title, details) in zip(xs, monitoring):
+        body.append(card(x, 478, 318, 132, title, details, "panel-green"))
     body.extend([
-        '<rect class="panel" x="121" y="920" width="1358" height="54" rx="16"/>',
-        '<text class="detail" x="800" y="952" text-anchor="middle">所有写操作绑定明确仓库或受控目录；Agent 输出必须回到 Git、GitHub、可执行文件或文件系统重新验证</text>',
+        '<path class="connector" d="M760 406 V462 H223 V470 M760 462 H581 V470 M760 462 H939 V470 M939 462 H1297 V470"/>',
+        '<text class="section" x="64" y="680">主程序中的交互功能</text>',
     ])
-    return base_svg(width, height, "GitGatto 系统架构", "GitGatto 的状态所有权、运行时、适配器和外部边界。", "\n".join(body))
+    interactive = [
+        ("Git / GitHub", ["工作区 · PR · Issue · 历史", "GitCommandRunner · GitHubService"]),
+        ("目标 / 编排 / 回归", ["交付条件 · Hunk 分组提交", "独立 worktree · git bisect"]),
+        ("Agent 执行通道", ["项目 · 翻译 · 搜索 · 安装", "CLI / OpenAI 兼容 API / DeepSeek"]),
+        ("应用与开发工具", ["下载 · 安装 · 配置 · 验证", "三路队列 · Homebrew 写入串行"]),
+    ]
+    for x, (title, details) in zip(xs, interactive):
+        body.append(card(x, 708, 318, 132, title, details, "panel-blue"))
+    body.extend([
+        '<text class="section" x="64" y="902">系统、存储与发布边界</text>',
+        card(64, 930, 438, 124, "本地数据", ["Git 仓库 · Git bundle · 未提交文件", "目标 · 记录 · 译文 · 三份恢复点"]),
+        card(541, 930, 438, 124, "网络与凭据", ["GitHub / CLI / 配置的模型服务", "API 密钥存系统钥匙串"]),
+        card(1018, 930, 438, 124, "版本更新", ["Sparkle · Developer ID · EdDSA", "Appcast · DMG · 公证单独申请"]),
+    ])
+    return base_svg(width, height, "GitGatto 系统架构", "前后台进程、监控任务交接、灾备、应用交互、存储与外部服务。", "\n".join(body))
 
 
 def flow_diagram(
@@ -240,19 +207,19 @@ def recovery() -> str:
     steps = [
         ("触发", ["文件事件 · 定时 · 手动"]),
         ("检查", ["Git 状态与内容指纹"]),
-        ("写入", ["暂存目录 · bundle · 文件"]),
-        ("安装", ["清单完成后原子移动"]),
+        ("数据落盘", ["bundle · 文件 · 清单"]),
+        ("完成标记", ["标记落盘后发布目录"]),
         ("轮换", ["每个仓库最多三份"]),
         ("恢复", ["还原为新的仓库副本"]),
     ]
-    return flow_diagram("灾备与恢复流程", "空工作区或相同内容不会重复生成恢复点", steps, height=420)
+    return flow_diagram("灾备与恢复流程", "定时与重大改动备份跳过无变化内容；新恢复点落盘后才轮换旧备份", steps, height=420)
 
 
 def agent_flow() -> str:
     steps = [
         ("选择操作", ["当前仓库与明确任务"]),
         ("读取证据", ["分支 · Diff · 错误"]),
-        ("Agent 执行", ["限定目录与独立通道"]),
+        ("Agent 执行", ["CLI / API · 独立通道"]),
         ("重新读取", ["Git · GitHub · 文件系统"]),
         ("显示结果", ["远端写入仍需确认"]),
     ]
@@ -264,7 +231,7 @@ def release_flow() -> str:
         ("版本标签", ["版本与构建号"]),
         ("测试构建", ["通用架构应用"]),
         ("Developer ID", ["签名与嵌套组件"]),
-        ("DMG + Appcast", ["校验值与更新源"]),
+        ("DMG + Appcast", ["SHA-256 · EdDSA"]),
         ("GitHub Release", ["安装包与版本说明"]),
         ("独立公证", ["Notary · Staple · Gatekeeper"]),
     ]

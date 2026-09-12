@@ -52,6 +52,8 @@
   </tr>
 </table>
 
+Screenshots use demo data to show the interface; project names and counts are not usage metrics.
+
 GitGatto is a native Git and GitHub client for macOS, supporting Apple Silicon and Intel. Alongside repository operations, it provides backups of uncommitted work, external Agent activity records, delivery goals, regression investigation, and development-tool setup.
 
 <a id="why"></a>
@@ -69,26 +71,25 @@ Agents add practical questions: what changed, why, what evidence remains after a
 <a id="recovery"></a>
 ### Back up uncommitted work and observe external changes
 
-Recovery Center protects local repositories added to GitGatto. Scheduled, major-change, and manual backups skip unchanged content. Recovery points include a Git bundle and copies of uncommitted files, with at most three rotating points per repository.
+Recovery Center stores a Git bundle and uncommitted files for each added local repository. Scheduled and major-change backups skip unchanged content; manual recovery points are also available. Each repository retains at most three rotating backups.
 
-- Create a recovery point before an in-app Agent writes. Repository Guard also observes deletion, lost uncommitted changes, ref rollback, and unavailable repositories affected by external Agents, terminals, or scripts.
-- Inspect the reason and affected paths, then open the repository or recovery point. An alert is a request to investigate, not proof that a particular process caused damage.
-- Staged writes and completion markers keep interrupted backups from being treated as valid recovery points after an abnormal exit.
-- Inspect storage use, delete individual or repository backups, and migrate existing backups when changing directories. Restore creates a new copy rather than overwriting the source.
+Create a point before in-app Agent writes. Repository Guard watches external Agents, terminals and scripts for deletions, lost edits, ref rollback and unavailable repositories, and lists affected paths. Inspect and compare backup files, export selected files, or restore a new repository copy. Changing the backup directory migrates existing backups.
 
-This is not a system-wide command interceptor. Unsaved files and files excluded by backup rules cannot be guaranteed recoverable.
+Power-loss recovery uses the latest completed point. Contents and the manifest are synced before the completion marker; old backups rotate only afterward. Startup handles interrupted writes. Only disk-saved files included in a successful backup are covered. Later edits, editor-only changes and excluded files may be lost. Guard detects changes; it does not intercept every command from other apps.
 
 <a id="monitoring"></a>
 ### Check repositories from the menu bar
 
-Choose all repositories or one repository independently of the main window. Inspect uncommitted work, upstream status, recovery points, Actions, goals, and a year of daily activity dots.
+Choose all repositories or one independently of the main window. The menu bar shows changes, upstream status, recovery points, Actions, goals and daily activity. Its collapsed label includes scope, change count and alerts; the scrollable popover follows the app theme. Activity counts commits and observed changes, not working hours.
 
-Working-tree, remote, protection, Actions, and goal monitoring have separate switches in Settings, alongside the engine, menu-bar visibility, and refresh interval. Activity counts commits and observed changes, not working hours. Monitoring continues while the app runs in the background and stops when it quits.
+Enable “Monitor after quitting” in Settings to let the independent helper take over monitoring, scheduled backups, major-change backups and Repository Guard according to your existing settings. Reopening the main app transfers work back without duplicate scans. Background operation is off by default and may require macOS approval.
+
+The engine, channels, menu-bar visibility and intervals have separate settings. Hiding the menu bar does not disable enabled background recovery; disabling the engine or repository protection stops the corresponding work.
 
 <a id="goals"></a>
 ### Save delivery as a goal you can resume
 
-Choose Deliver Current Changes, GitHub Delivery, Complete Release, or a natural-language goal. Review steps before creation; inspect progress, blockers, and records afterward. Search goals and filter active or historical work.
+Choose Commit and Push, Create PR, Publish Release or Custom, or start from changes, an Issue, PR or failed check. Current progress stays visible; detailed steps and history expand when needed.
 
 The selected flow checks staging, commits, push, PR, review, Actions, artifacts, Release, DMG, Appcast, and the installed version. Custom goals require approval of the Agent's proposed conditions. After interruption, GitGatto reads actual state again; Agent prose alone does not establish success. Merging, publishing tags, and installation retain separate confirmations.
 
@@ -116,9 +117,11 @@ Pass the evidence to an Agent for a fix, verification, and PR preparation. The c
 <a id="agent"></a>
 ### Agents beyond commit messages
 
-Use Codex CLI, Claude Code, Gemini CLI, OpenCode, or a custom CLI. Built-in Git guidance covers staged review, commit drafting, conflicts, branch maintenance, history recovery, repository health, and release checks. Investigations can carry original Git LFS, hook, signing, or synchronization errors.
+Use Codex CLI, Claude Code, Gemini CLI, OpenCode, DeepSeek Harness (dsh), Cursor Agent, GitHub Copilot CLI, Qwen Code, or a custom CLI. Built-in Git guidance covers staged review, commit drafting, conflicts, branch maintenance, history recovery, repository health, and release checks. Investigations can carry original Git LFS, hook, signing, or synchronization errors.
 
 Project work, translation, search, and installation have separate execution lanes. Preview README rewrites before applying them. Issue and PR replies are drafted from discussion and diffs, remain editable, and are sent only after confirmation. Keep the CLI and model configuration you already use.
+
+Alternatively, configure an OpenAI-compatible or DeepSeek API without installing a CLI for API mode. Project work and translation have separate endpoints and models, model discovery, capability checks and streamed replies. API keys are stored in macOS Keychain. API Agents can read projects, run commands and write within controlled paths; translation has no project-writing tools.
 
 <a id="project-tools"></a>
 ### Save more than a branch when switching tasks
@@ -175,7 +178,7 @@ Download the DMG from [Releases](https://github.com/Lincb522/GitGatto/releases/l
 | --- | --- |
 | Local Git and ordinary remote sync | Git and the remote's Git / SSH authentication |
 | GitHub account, PRs, issues, Actions | Signed-in [GitHub CLI](https://cli.github.com/) |
-| Agents, translation, Agent installation | Installed CLI with its provider's required sign-in or configuration |
+| Agents, translation, Agent installation | Configured CLI or OpenAI-compatible / DeepSeek API, with a model and permissions for the selected task |
 | Homebrew detection and upgrades | Homebrew |
 
 Open a local repository or manually scan and select repositories to add; there is no automatic whole-disk import. Configure GitHub and Agents in Settings. Updates use GitHub Releases and the Appcast.
@@ -185,7 +188,7 @@ Open a local repository or manually scan and select repositories to add; there i
 
 Repository lists, settings, goals, investigations, conversations, translations, download records, and recovery points are stored locally; backup storage can move. Git, SSH, GitHub CLI, and Agent CLIs reuse their credential sources.
 
-Local storage does not mean everything is offline. GitHub features contact GitHub. Agents and translation pass necessary context to your configured CLI; subsequent handling depends on that tool and model service. Review what you send and keep credentials out of commands, drafts, and capsules. System-directory changes remain subject to macOS authorization.
+Local storage does not mean everything is offline. GitHub features contact GitHub. Agents and translation pass necessary context to your configured CLI or API; subsequent handling depends on that tool and model service. Review what you send and keep credentials out of commands, drafts, and capsules. System-directory changes remain subject to macOS authorization.
 
 <a id="docs"></a>
 ## Roadmap, architecture, and project history
@@ -198,7 +201,7 @@ Local storage does not mean everything is offline. GitHub features contact GitHu
 
 [![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
-The roadmap follows repository version records; dashed stages are plans. Star History is a committed data snapshot; follow the image link for the online record.
+The roadmap follows source and version records; dashed stages are plans. Updated 2026-09-12 UTC, the Star chart accumulates current stargazers by their star dates and excludes removed stars. Click for the online record.
 
 <a id="development"></a>
 ## Run from source
@@ -209,7 +212,7 @@ Requires macOS 14+ and Swift 6.1+. Xcode configuration lives in `project.yml`.
 git clone https://github.com/Lincb522/GitGatto.git
 cd GitGatto
 swift package resolve
-swift test
+swift test --no-parallel
 swift run GitGatto
 ```
 

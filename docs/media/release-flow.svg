@@ -50,7 +50,7 @@
 <rect class="panel" x="543.3333333333333" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="640.1666666666666" y="206.0" text-anchor="middle"><tspan x="640.1666666666666" dy="0">Developer ID</tspan></text><text class="detail" x="640.1666666666666" y="230.0" text-anchor="middle"><tspan x="640.1666666666666" dy="0">签名与嵌套组件</tspan></text>
 <text class="badge" x="559.3333333333333" y="174">03</text>
 <path class="connector-accent" d="M745.9999999999999 216.0 L773.9999999999999 216.0" marker-end="url(#arrow)"/>
-<rect class="panel" x="783.0" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="879.8333333333334" y="206.0" text-anchor="middle"><tspan x="879.8333333333334" dy="0">DMG + Appcast</tspan></text><text class="detail" x="879.8333333333334" y="230.0" text-anchor="middle"><tspan x="879.8333333333334" dy="0">校验值与更新源</tspan></text>
+<rect class="panel" x="783.0" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="879.8333333333334" y="206.0" text-anchor="middle"><tspan x="879.8333333333334" dy="0">DMG + Appcast</tspan></text><text class="detail" x="879.8333333333334" y="230.0" text-anchor="middle"><tspan x="879.8333333333334" dy="0">SHA-256 · EdDSA</tspan></text>
 <text class="badge" x="799.0" y="174">04</text>
 <path class="connector-accent" d="M985.6666666666666 216.0 L1013.6666666666666 216.0" marker-end="url(#arrow)"/>
 <rect class="panel" x="1022.6666666666666" y="150" width="193.66666666666666" height="132" rx="16"/><text class="label" x="1119.5" y="206.0" text-anchor="middle"><tspan x="1119.5" dy="0">GitHub Release</tspan></text><text class="detail" x="1119.5" y="230.0" text-anchor="middle"><tspan x="1119.5" dy="0">安装包与版本说明</tspan></text>

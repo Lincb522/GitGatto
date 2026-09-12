@@ -34,6 +34,8 @@
   </tr>
 </table>
 
+Las capturas muestran la interfaz con datos de demostración. Los nombres y recuentos de proyectos no son métricas de uso.
+
 GitGatto es un cliente nativo de Git y GitHub para macOS, compatible con Apple Silicon e Intel. Incluye copias de código sin commit, registros de Agents externos, objetivos de entrega, investigación de regresiones e instalación de herramientas de desarrollo.
 
 <a id="why"></a>
@@ -51,23 +53,25 @@ Con Agents hay que comprobar qué cambiaron y por qué, qué pruebas dejó un fa
 <a id="recovery"></a>
 ### Guardar cambios sin commit y observar herramientas externas
 
-Copias programadas, manuales o ante cambios importantes en repositorios locales añadidos, sin repetir contenido idéntico. Cada repositorio conserva como máximo tres generaciones de Git bundle y archivos sin commit.
+Los repositorios locales añadidos guardan un Git bundle y archivos sin commit. Las copias programadas o por cambios importantes omiten contenido sin cambios; también hay puntos manuales. Se conservan como máximo tres generaciones por repositorio.
 
-Se puede crear un punto antes de que escriba el Agent integrado. La protección también observa borrados, pérdida de cambios, retrocesos de referencias y repositorios inaccesibles tras actividad de Agents externos, terminales o scripts. Muestra motivos y rutas; una alerta no demuestra la responsabilidad de un proceso.
+Crear un punto antes de las escrituras del Agent. La protección observa borrados, pérdida de cambios, retrocesos de referencias y repositorios inaccesibles tras cambios externos, con motivos y rutas. Inspeccionar, comparar o exportar archivos, restaurar en otro directorio y migrar copias al cambiar su ubicación.
 
-Escritura por etapas y marcadores de finalización distinguen copias incompletas tras cierres anormales. Consultar espacio, borrar copias individuales o de un repositorio y migrarlas al cambiar de directorio. Restaurar crea otra copia, sin sobrescribir el origen. No intercepta todos los comandos del sistema ni garantiza recuperar archivos sin guardar o excluidos.
+Ante un corte eléctrico se usa el último punto completo. Contenido y manifiesto se sincronizan antes del marcador final y de rotar copias antiguas. El siguiente inicio procesa escrituras interrumpidas. No se garantiza recuperar cambios posteriores, contenido sin guardar del editor ni archivos excluidos. La protección no bloquea cada comando de otras aplicaciones.
 
 <a id="monitoring"></a>
 ### Consultar repositorios desde la barra de menús
 
-Elegir todos o uno independientemente de la ventana principal: cambios, estado upstream, restauraciones, Actions, objetivos y un año de actividad diaria. Los puntos cuentan commits y cambios detectados, no horas trabajadas.
+Elegir todos los repositorios o uno, sin depender de la ventana: cambios, upstream, copias, Actions, objetivos y actividad diaria. La vista reducida incluye alcance, número de cambios y avisos; el panel se desplaza y sigue el tema. La actividad cuenta commits y cambios detectados, no horas.
 
-Ajustes separados para árbol de trabajo, remoto, protección, Actions y objetivos, más interruptor general, visibilidad e intervalo. Monitoriza mientras la aplicación se ejecuta en segundo plano; al salir, se detiene.
+Al activar la supervisión después de salir, un asistente independiente continúa la monitorización, las copias programadas o por grandes cambios y la protección según los ajustes. Al reabrir devuelve las tareas sin escaneos duplicados. Está desactivado por defecto y puede requerir aprobación de macOS.
+
+Interruptor general, canales, visibilidad e intervalos se configuran por separado. Ocultar el icono no detiene las copias activas; desactivar el motor o la protección sí detiene esas tareas.
 
 <a id="goals"></a>
 ### Retomar un objetivo de entrega
 
-Elegir entrega de cambios, entrega GitHub, publicación completa o un objetivo en lenguaje natural. Revisar pasos antes de crearlo, consultar progreso, bloqueos y registros, buscar y filtrar objetivos activos o históricos.
+Elegir Commit y Push, Crear PR, Publicar versión o Personalizado; también iniciar desde cambios, Issues, PR o checks fallidos. Se prioriza el progreso actual y se despliegan los detalles y el historial cuando se necesitan.
 
 Según el flujo se comprueban índice, commit, Push, PR, Review, Actions, artefactos, Release, DMG, Appcast y versión instalada. Las condiciones propuestas por el Agent requieren aprobación. Tras una interrupción se consulta el estado real, no se toma su texto como prueba de éxito. Fusionar, publicar etiquetas e instalar conservan confirmaciones independientes.
 
@@ -95,9 +99,11 @@ Entregar pruebas a un Agent para corregir, volver a validar y preparar una PR. E
 <a id="agent"></a>
 ### Agents para algo más que mensajes de commit
 
-Codex CLI, Claude Code, Gemini CLI, OpenCode y CLI personalizadas. Guías Git integradas para revisión del índice, borradores, conflictos, ramas, recuperación de historial, salud y publicación; pueden acompañarse de errores originales de LFS, hooks, firmas o sincronización.
+Codex CLI, Claude Code, Gemini CLI, OpenCode, DeepSeek Harness (dsh), Cursor Agent, GitHub Copilot CLI, Qwen Code y CLI personalizadas. Guías Git integradas para revisión del índice, borradores, conflictos, ramas, recuperación de historial, salud y publicación; pueden acompañarse de errores originales de LFS, hooks, firmas o sincronización.
 
 Proyecto, traducción, búsqueda e instalación tienen vías separadas. Ver la reescritura del README antes de aplicarla. Las respuestas Issue/PR se basan en discusión y diff, son editables y se envían tras confirmar. Se mantienen las CLI y modelos configurados.
+
+También admite una API compatible con OpenAI o DeepSeek sin instalar una CLI para ese modo. Proyecto y traducción tienen endpoints y modelos separados, lista de modelos, comprobaciones y respuestas en streaming. Las claves se guardan en el llavero de macOS. El Agent API lee proyectos, ejecuta comandos y escribe en rutas controladas; la traducción no recibe herramientas de escritura.
 
 <a id="project-tools"></a>
 ### Guardar el contexto al cambiar de tarea
@@ -154,7 +160,7 @@ Descargar DMG de [Releases](https://github.com/Lincb522/GitGatto/releases/latest
 | --- | --- |
 | Git local y sincronización normal | Git y autenticación Git / SSH del remoto |
 | GitHub, PR, Issue, Actions | [GitHub CLI](https://cli.github.com/) con sesión iniciada |
-| Agent, traducción, instalación Agent | CLI instalada con acceso/configuración del proveedor |
+| Agent, traducción, instalación Agent | CLI configurada o API compatible con OpenAI / DeepSeek, con modelo y permisos para la tarea |
 | Detección y actualización Homebrew | Homebrew |
 
 Abrir un repositorio o escanear manualmente y seleccionar, sin importación automática de todo el disco. GitHub y Agents se configuran en Ajustes; actualizaciones mediante Releases y Appcast.
@@ -164,7 +170,7 @@ Abrir un repositorio o escanear manualmente y seleccionar, sin importación auto
 
 Listas, ajustes, objetivos, investigaciones, conversaciones, traducciones, descargas y restauraciones son locales; el directorio de copias puede migrar. Git, SSH y las CLI conservan sus fuentes de credenciales.
 
-Local no significa totalmente offline: se contacta GitHub y se entrega contexto necesario a la CLI del Agent o traducción. El tratamiento posterior depende de herramienta y servicio del modelo. Revisar los envíos y no incluir credenciales en comandos, borradores o cápsulas. Los cambios en directorios del sistema requieren autorización macOS.
+Local no significa totalmente offline: se contacta GitHub y se entrega contexto necesario a la CLI o API del Agent o traducción. El tratamiento posterior depende de herramienta y servicio del modelo. Revisar los envíos y no incluir credenciales en comandos, borradores o cápsulas. Los cambios en directorios del sistema requieren autorización macOS.
 
 <a id="docs"></a>
 ## Planes, arquitectura e historial
@@ -177,7 +183,7 @@ Local no significa totalmente offline: se contacta GitHub y se entrega contexto 
 
 [![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
-La hoja de ruta sigue las versiones; trazos discontinuos indican planes. Star History es una instantánea guardada; el enlace abre el registro online.
+La hoja de ruta sigue el código y las versiones; los trazos discontinuos son planes. El gráfico del 2026-09-12 UTC acumula las fechas de los Stargazers actuales, sin estrellas retiradas. Pulsa para ver el registro en línea.
 
 <a id="development"></a>
 ## Ejecutar desde código
@@ -188,7 +194,7 @@ macOS 14+, Swift 6.1+; configuración Xcode en `project.yml`.
 git clone https://github.com/Lincb522/GitGatto.git
 cd GitGatto
 swift package resolve
-swift test
+swift test --no-parallel
 swift run GitGatto
 ```
 

@@ -34,6 +34,8 @@
   </tr>
 </table>
 
+Les captures présentent l’interface avec des données de démonstration. Les noms de projets et les compteurs ne sont pas des statistiques d’utilisation.
+
 GitGatto est un client Git et GitHub natif pour macOS, sur Apple Silicon et Intel. Il propose aussi la sauvegarde du code non committé, le suivi des Agents externes, des objectifs de livraison, la recherche de régressions et la configuration d'outils de développement.
 
 <a id="why"></a>
@@ -51,23 +53,25 @@ Les Agents ajoutent des questions : qu'ont-ils changé, pourquoi, quelles traces
 <a id="recovery"></a>
 ### Sauvegarder le travail non committé et observer les changements externes
 
-Sauvegardes programmées, manuelles ou déclenchées par des changements importants, sans dupliquer un contenu identique. Chaque dépôt local ajouté conserve au maximum trois générations comprenant un Git bundle et les fichiers non committés.
+Les dépôts locaux ajoutés disposent de Git bundles et de copies des fichiers non committés. Les sauvegardes programmées ou déclenchées par de gros changements ignorent le contenu inchangé ; des points manuels restent possibles. Trois générations maximum par dépôt.
 
-Un point peut être créé avant les écritures de l'Agent intégré. La protection observe aussi suppressions, pertes de modifications, retours de références et dépôts indisponibles après l'activité d'Agents externes, de terminaux ou de scripts. Les alertes donnent raisons et chemins, sans attribuer une faute certaine à un processus.
+Créer un point avant les écritures de l’Agent. La protection observe suppressions, modifications perdues, références reculées et dépôts indisponibles après des changements externes, avec raisons et chemins. Inspecter, comparer ou exporter des fichiers, restaurer dans un nouveau dossier ; changer de destination migre les sauvegardes existantes.
 
-L'écriture par étapes et les marqueurs de fin distinguent les copies incomplètes après un arrêt anormal. Consulter l'espace, supprimer une sauvegarde ou celles d'un dépôt, migrer le contenu en changeant de dossier. La restauration crée une nouvelle copie, sans écraser l'original. Ce n'est pas un intercepteur de commandes système ; les fichiers non enregistrés ou exclus ne sont pas garantis récupérables.
+Après une coupure de courant, la récupération repose sur le dernier point complet. Contenu et manifeste sont synchronisés avant le marqueur de fin, puis les anciennes copies sont renouvelées. Les écritures interrompues sont traitées au démarrage. Les modifications ultérieures, non enregistrées dans l’éditeur ou exclues ne sont pas garanties récupérables. La protection ne bloque pas toutes les commandes d’autres applications.
 
 <a id="monitoring"></a>
 ### Voir les dépôts depuis la barre des menus
 
-Choisir tous les dépôts ou un seul indépendamment de la fenêtre principale : modifications, amont, restaurations, Actions, objectifs et un an d'activité quotidienne. Les points comptent commits et changements observés, pas des heures travaillées.
+Choisir tous les dépôts ou un seul, indépendamment de la fenêtre principale : modifications, amont, sauvegardes, Actions, objectifs et activité quotidienne. L’affichage réduit indique aussi périmètre, nombre de changements et alertes. Le panneau défile et suit le thème. L’activité compte les commits et changements observés, pas le temps de travail.
 
-Les canaux arbre de travail, distant, protection, Actions et objectifs ont leurs interrupteurs dans les réglages, avec activation générale, affichage et intervalle. La surveillance continue tant que l'application tourne en arrière-plan et s'arrête lorsqu'elle quitte.
+Activer la surveillance après fermeture permet à un assistant indépendant de reprendre surveillance, sauvegardes programmées ou importantes et protection selon les réglages. À la réouverture, les tâches reviennent à l’application sans doubles analyses. Désactivé par défaut ; macOS peut demander une approbation.
+
+Activation générale, canaux, visibilité et intervalles sont séparés. Masquer l’icône n’arrête pas les sauvegardes actives. Désactiver le moteur ou la protection arrête les tâches correspondantes.
 
 <a id="goals"></a>
 ### Reprendre un objectif de livraison
 
-Choisir livraison des changements, livraison GitHub, release complète ou objectif en langage naturel. Vérifier les étapes avant création, suivre progression, blocages et traces, rechercher et filtrer les objectifs actifs ou passés.
+Choisir Commit et Push, Créer une PR, Publier une version ou Personnalisé, également depuis des changements, une Issue, une PR ou un check en échec. La progression reste visible ; étapes et historique se déplient au besoin.
 
 Selon le parcours, vérifier index, commit, Push, PR, Review, Actions, artefacts, Release, DMG, Appcast et version installée. Les conditions proposées par l'Agent doivent être approuvées. Après interruption, l'état réel est relu ; son texte ne prouve pas la réussite. Fusion, publication de tags et installation gardent leurs confirmations séparées.
 
@@ -95,9 +99,11 @@ Transmettre les preuves à un Agent pour correction, nouvelle vérification et p
 <a id="agent"></a>
 ### Des Agents au-delà des messages de commit
 
-Codex CLI, Claude Code, Gemini CLI, OpenCode et CLI personnalisées. Les instructions Git intégrées couvrent revue de l'index, brouillon de commit, conflits, branches, récupération d'historique, santé du dépôt et préparation de release ; les erreurs originales LFS, hooks, signature et synchronisation peuvent accompagner l'enquête.
+Codex CLI, Claude Code, Gemini CLI, OpenCode, DeepSeek Harness (dsh), Cursor Agent, GitHub Copilot CLI, Qwen Code et CLI personnalisées. Les instructions Git intégrées couvrent revue de l'index, brouillon de commit, conflits, branches, récupération d'historique, santé du dépôt et préparation de release ; les erreurs originales LFS, hooks, signature et synchronisation peuvent accompagner l'enquête.
 
 Projet, traduction, recherche et installation ont des voies d'exécution distinctes. Prévisualiser une réécriture README avant application. Les réponses Issue/PR utilisent discussion et diff, restent éditables et ne sont envoyées qu'après confirmation. Conserver les CLI et modèles déjà configurés.
+
+Une API compatible OpenAI ou DeepSeek peut aussi être configurée sans installer de CLI. Projet et traduction disposent de points d’accès et modèles distincts, listes de modèles, tests de capacités et réponses en streaming. Les clés sont dans le trousseau macOS. Les Agents API lisent le projet, exécutent des commandes et écrivent dans des chemins contrôlés ; la traduction n’a pas d’outil d’écriture.
 
 <a id="project-tools"></a>
 ### Conserver le contexte d'un changement de tâche
@@ -154,7 +160,7 @@ Télécharger le DMG depuis [Releases](https://github.com/Lincb522/GitGatto/rele
 | --- | --- |
 | Git local et synchronisation distante | Git et authentification Git / SSH correspondante |
 | GitHub, PR, Issue, Actions | [GitHub CLI](https://cli.github.com/) connectée |
-| Agent, traduction, installation Agent | CLI installée et connexion/configuration du fournisseur |
+| Agent, traduction, installation Agent | CLI configurée ou API compatible OpenAI / DeepSeek, avec modèle et droits adaptés à la tâche |
 | Détection et mises à jour Homebrew | Homebrew |
 
 Ouvrir un dépôt ou lancer une recherche manuelle et choisir les ajouts, sans importation automatique du disque entier. GitHub et Agents se règlent dans les paramètres. Mises à jour via GitHub Releases et Appcast.
@@ -164,7 +170,7 @@ Ouvrir un dépôt ou lancer une recherche manuelle et choisir les ajouts, sans i
 
 Listes, réglages, objectifs, enquêtes, conversations, traductions, téléchargements et restaurations sont locaux ; le dossier de sauvegarde peut migrer. Git, SSH et les CLI utilisent leurs sources d'authentification habituelles.
 
-Local ne signifie pas entièrement hors ligne : GitHub est contacté, Agents et traduction passent le contexte nécessaire à la CLI choisie. La suite dépend de l'outil et du service de modèle. Vérifier les envois et ne pas mettre d'identifiants dans commandes, brouillons ou capsules. Les changements système restent soumis aux autorisations macOS.
+Local ne signifie pas entièrement hors ligne : GitHub est contacté, Agents et traduction passent le contexte nécessaire à la CLI ou à l’API choisie. La suite dépend de l'outil et du service de modèle. Vérifier les envois et ne pas mettre d'identifiants dans commandes, brouillons ou capsules. Les changements système restent soumis aux autorisations macOS.
 
 <a id="docs"></a>
 ## Plans, architecture et historique
@@ -177,7 +183,7 @@ Local ne signifie pas entièrement hors ligne : GitHub est contacté, Agents et 
 
 [![GitGatto Star History](docs/media/star-history.svg)](https://www.star-history.com/#Lincb522/GitGatto&Date)
 
-La feuille de route suit les versions ; les pointillés indiquent les plans. Star History est un instantané enregistré, son lien donne le relevé en ligne.
+La feuille de route suit le code et les versions ; les pointillés sont des projets. Le graphique du 2026-09-12 UTC cumule les dates des Stargazers actuels, sans les étoiles retirées. Cliquer ouvre le suivi en ligne.
 
 <a id="development"></a>
 ## Exécuter les sources
@@ -188,7 +194,7 @@ macOS 14+, Swift 6.1+ ; configuration Xcode dans `project.yml`.
 git clone https://github.com/Lincb522/GitGatto.git
 cd GitGatto
 swift package resolve
-swift test
+swift test --no-parallel
 swift run GitGatto
 ```
 

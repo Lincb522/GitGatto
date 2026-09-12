@@ -10,7 +10,15 @@
 - `GitHubMarketplaceViewModel` 单独持有应用仓库搜索、详情、翻译与安装状态。
 - `DeveloperToolsViewModel` 持有工具探测、安装队列、升级队列和授权重试状态。
 - 服务对象执行 Git、网络、进程、文件与更新操作；SwiftUI `body` 不启动这些副作用。
-- 同一份可变状态只有一个所有者。长任务通过可取消的 `Task` 返回状态，不用任意延时作为同步条件。
+- 主程序和后台助手分别持有各自的界面状态；运行锁限定监控任务的执行者。交接时取消并等待任务结束，避免两边同时扫描和备份。
+
+## 前台与后台的交接
+
+`GitGattoMonitor.app` 是独立的菜单栏后台助手，通过 `SMAppService` 注册 `dev.gitgatto.monitor.agent`。后台运行默认关闭；“退出后继续监控”和“在状态栏显示”分别配置，需要系统批准时从设置进入授权页面。
+
+主程序持有 `foreground.lock` 表示正在运行。`MonitoringHelperHost` 仅在主程序不存在、后台运行与监控总开关均开启时取得 `runtime.lock`，创建后台模式的 `WorkspaceViewModel`。`startBackgroundMonitoring()` 加载全部已管理仓库，启动已开启的活动记录、仓库保护、远端、Actions 与目标状态检查。它不依赖主窗口当前选择。
+
+主程序重新打开时，助手先调用 `stopBackgroundMonitoring()`，取消并等待监听、备份、刷新和状态任务结束，再释放运行锁。主程序取得运行权后继续工作。隐藏状态栏不等于关闭后台灾备；仓库保护仍由其独立设置控制。
 
 ## Git 与仓库边界
 
@@ -26,7 +34,9 @@ PR Review、评论、Fork、Actions 重试或取消等远端写入，必须来�
 
 ## Agent 执行
 
-`CodexService` 为仓库操作、翻译和安装维护独立配置、进程与取消通道。支持 Codex CLI、Claude Code、Gemini CLI、OpenCode 和自定义参数模板。
+`CodexService` 为仓库操作、翻译和安装维护独立配置、进程与取消通道。支持 Codex CLI、Claude Code、Gemini CLI、OpenCode、DeepSeek Harness（dsh）、Cursor Agent、GitHub Copilot CLI、Qwen Code 和自定义参数模板。
+
+API 接入由 `AIAPIClient` 负责 OpenAI 兼容或 DeepSeek 的模型列表、能力检测和流式请求，密钥由 `AIAPICredentialStore` 存入系统钥匙串。项目与翻译可以独立配置；`AIAPIToolRunner` 在受控目录中执行文件读取、命令和写入工具。翻译不提供项目写入工具。
 
 ![Agent 执行闭环](media/agent-flow.svg)
 
@@ -38,7 +48,7 @@ Agent 结果不是成功依据。项目目标、错误修复、README 重写和�
 
 ## 变更中心
 
-`ChangeIntentService` 读取真实工作区补丁，把文本改动拆成可分配的 hunk，并在用户确认后按顺序创建本地提交。每次应用计划前先建立恢复点；仓库指纹变化、分配不完整或验证命令失败都会中止并恢复原来的 HEAD 与暂存状态。
+`ChangeIntentService` 读取真实工作区补丁，把文本改动拆成可分配的 hunk，并在用户确认后按顺序创建本地提交。每次应用计划前先建立恢复点；仓库指纹变化、分配不完整或验证命令失败都会中止；执行失败时尝试恢复原来的 HEAD 与暂存状态，恢复失败会保留错误和恢复点。
 
 `CodeProvenanceService` 以 `git blame` 和提交对象为本地证据。在 origin 与 GitHub CLI 可用时，再关联该提交对应的 Pull Request、Issue、Review 与 Checks；远端不可用不会覆盖本地结果。
 
@@ -52,7 +62,13 @@ Agent 结果不是成功依据。项目目标、错误修复、README 重写和�
 
 ![灾备与恢复流程](media/recovery-flow.svg)
 
-`RepositoryBackupService` 是备份目录的唯一写入者。创建、删除、裁剪与目录迁移在 actor 内串行执行；先写入暂存目录，清单完成后再移动到正式位置。定时与重大变更备份会跳过空工作区和相同内容。更换目录时先复制并比对清单，成功后才切换路径。
+`RepositoryBackupService` 串行处理创建、删除、裁剪和迁移。主程序与后台助手通过运行锁交接，避免两个进程同时管理备份。文件事件触发守卫检查或重大改动备份，定时任务按设置覆盖已管理仓库；实时刷新与状态栏关闭不影响已开启的仓库保护。
+
+备份先写入隐藏暂存目录：Git bundle、未提交文件和 manifest 全部同步后，才写 `commit.json`。完成标记及其目录同步后再移动到正式路径；同步备份根目录之后才轮换旧副本，每仓库最多保留三份。文件同步使用 `F_FULLFSYNC`，不支持时回退到 `fsync`，两者失败会返回错误。
+
+启动时检查暂存事务，带有效完成标记的事务继续发布，未完成事务不会列为恢复点。恢复写入新目录，更换备份目录时先复制并比对清单，成功后才切换路径。界面支持检查恢复点文件、对比内容和导出所选文件。
+
+断电恢复依赖最近已成功落盘的恢复点。未保存到磁盘、未进入备份或被规则排除的内容不在恢复范围；软件无法保证存储硬件故障后的数据安全。写入失败、完成标记顺序和中断重启由测试覆盖，物理断电尚未验证。
 
 ## 应用仓库与开发工具
 
@@ -65,7 +81,7 @@ Agent 结果不是成功依据。项目目标、错误修复、README 重写和�
 - 仓库目录、设置、目标、回归记录、Agent 对话、操作记录、下载和译文保存在应用支持目录。
 - 灾备数据默认位于应用支持目录，也可以迁移到用户选择的位置；每个仓库最多保留三份。
 - 移除侧边栏仓库只删除目录记录，不删除磁盘仓库或现有恢复点。
-- Git、SSH、GitHub CLI 与 Agent CLI 继续使用各自的凭据存储。
+- Git、SSH、GitHub CLI 与 Agent CLI 继续使用各自的凭据存储；自定义模型 API 密钥存入系统钥匙串。
 
 ## 构建与发布
 
@@ -73,7 +89,7 @@ Agent 结果不是成功依据。项目目标、错误修复、README 重写和�
 - `Package.swift` 提供相同源码和依赖的命令行构建入口。
 - `AppResourceBundle` 解析 Xcode 主 Bundle、SwiftPM 资源 Bundle 与发行包资源。
 - `scripts/package-macos.sh` 构建 Apple Silicon 与 Intel 通用应用并处理嵌套组件签名。
-- `.github/workflows/release-macos.yml` 使用 Developer ID 签名、创建 DMG、生成 Appcast 并发布 GitHub Release。
+- `.github/workflows/release-macos.yml` 使用 Developer ID 签名、创建 DMG、生成带 EdDSA 签名的 Appcast 并发布 GitHub Release。
 - `.github/workflows/notarize-macos.yml` 是独立的 Apple 公证流程；只有在 App Store Connect 凭据可用并且公证结果通过后，产物才可标记为已公证。
 
 ![构建与发布流程](media/release-flow.svg)
