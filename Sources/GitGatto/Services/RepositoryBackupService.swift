@@ -28,6 +28,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     private var rootURL: URL
     private let runner: GitCommandRunner
     private let fileManager: FileManager
+    private let synchronizeFileSystemItem: @Sendable (URL) throws -> Void
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
     private var activeStorageOperations = 0
@@ -43,10 +44,12 @@ actor RepositoryBackupService: RepositoryBackupServing {
     init(
         rootURL: URL? = nil,
         runner: GitCommandRunner = GitCommandRunner(),
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        synchronizeFileSystemItem: @escaping @Sendable (URL) throws -> Void = RepositoryBackupService.flushFileSystemItem
     ) {
         self.runner = runner
         self.fileManager = fileManager
+        self.synchronizeFileSystemItem = synchronizeFileSystemItem
         if let rootURL {
             self.rootURL = rootURL.standardizedFileURL
         } else {
@@ -230,15 +233,18 @@ actor RepositoryBackupService: RepositoryBackupServing {
             ),
             to: stagingURL
         )
-        try writeCommitMarker(for: backup, in: stagingURL)
+        // A durable completion marker must never precede the data it commits.
         try synchronizeTree(at: stagingURL)
+        try writeCommitMarker(for: backup, in: stagingURL)
+        try synchronizeFileSystemItem(stagingURL.appendingPathComponent("commit.json"))
+        try synchronizeFileSystemItem(stagingURL)
         try Task.checkCancellation()
         try fileManager.moveItem(at: stagingURL, to: finalURL)
         completed = true
-        try synchronizeFileSystemItem(at: rootURL)
+        try synchronizeFileSystemItem(rootURL)
         let retentionCount = RepositoryBackupPolicy.clampedRetentionCount(policy.retentionCount)
         try enforceRetention(for: repository.path, limit: retentionCount)
-        try synchronizeFileSystemItem(at: rootURL)
+        try synchronizeFileSystemItem(rootURL)
         return backup
     }
 
@@ -349,7 +355,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
             throw RepositoryBackupError.destinationExists
         }
         try fileManager.moveItem(at: staging, to: destination)
-        try synchronizeFileSystemItem(at: parent)
+        try synchronizeFileSystemItem(parent)
         return destination
     }
 
@@ -545,7 +551,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
             changedStorage = true
         }
         if changedStorage {
-            try synchronizeFileSystemItem(at: rootURL)
+            try synchronizeFileSystemItem(rootURL)
         }
     }
 
@@ -599,15 +605,15 @@ actor RepositoryBackupService: RepositoryBackupServing {
             if values.isDirectory == true {
                 directories.append(item)
             } else if values.isRegularFile == true, values.isSymbolicLink != true {
-                try synchronizeFileSystemItem(at: item)
+                try synchronizeFileSystemItem(item)
             }
         }
         for directory in directories.sorted(by: { $0.path.count > $1.path.count }) {
-            try synchronizeFileSystemItem(at: directory)
+            try synchronizeFileSystemItem(directory)
         }
     }
 
-    private func synchronizeFileSystemItem(at url: URL) throws {
+    private nonisolated static func flushFileSystemItem(_ url: URL) throws {
         let descriptor: Int32 = url.withUnsafeFileSystemRepresentation { path in
             guard let path else { return Int32(-1) }
             return Darwin.open(path, O_RDONLY)

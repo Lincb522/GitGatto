@@ -563,12 +563,49 @@ struct RepositoryBackupServiceTests {
         ))
     }
 
+    @Test("Flush failure never marks incomplete payload committed or removes retained backups", arguments: ["tracked.txt", "commit.json"])
+    func failedBackupFlushPreservesRecoveryPoints(failedItem: String) async throws {
+        let fixture = try BackupFixture()
+        defer { fixture.remove() }
+        let storeURL = fixture.root.appendingPathComponent("backups")
+        let service = RepositoryBackupService(rootURL: storeURL)
+        var contents: [UUID: String] = [:]
+        for revision in 1...3 {
+            let content = "saved revision \(revision)\n"
+            try content.write(to: fixture.repository.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+            let backup = try #require(await service.createBackup(for: fixture.repository, reason: .manual, policy: .standard))
+            contents[backup.id] = content
+        }
+        try "new unsaved backup revision\n".write(to: fixture.repository.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
+        let failing = RepositoryBackupService(rootURL: storeURL, synchronizeFileSystemItem: { url in
+            guard url.lastPathComponent == failedItem else { return }
+            if failedItem == "tracked.txt" {
+                let staging = url.deletingLastPathComponent().deletingLastPathComponent()
+                #expect(!FileManager.default.fileExists(atPath: staging.appendingPathComponent("commit.json").path))
+            }
+            throw CocoaError(.fileWriteUnknown)
+        })
+        await #expect(throws: CocoaError.self) {
+            try await failing.createBackup(for: fixture.repository, reason: .manual, policy: .standard)
+        }
+        let restarted = RepositoryBackupService(rootURL: storeURL)
+        let retained = try await restarted.loadBackups()
+        #expect(Set(retained.map(\.id)) == Set(contents.keys))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: storeURL.path).allSatisfy { !$0.hasSuffix(".staging") })
+        for backup in retained {
+            let restored = try await restarted.restore(backup, to: fixture.root.appendingPathComponent("restored-\(backup.id)"))
+            #expect(try String(contentsOf: restored.appendingPathComponent("tracked.txt"), encoding: .utf8) == contents[backup.id])
+        }
+    }
+
     @Test("Recovers a fully committed staging backup after an interrupted rename")
     func recoversCommittedStagingBackup() async throws {
         let fixture = try BackupFixture()
         defer { fixture.remove() }
         let storeURL = fixture.root.appendingPathComponent("backups", isDirectory: true)
         let service = RepositoryBackupService(rootURL: storeURL)
+        let content = "uncommitted content persisted before interruption\n"
+        try content.write(to: fixture.repository.appendingPathComponent("tracked.txt"), atomically: true, encoding: .utf8)
         let backup = try #require(await service.createBackup(
             for: fixture.repository,
             reason: .manual,
@@ -587,6 +624,8 @@ struct RepositoryBackupServiceTests {
         #expect(recovered.map(\.id) == [backup.id])
         #expect(FileManager.default.fileExists(atPath: finalURL.path))
         #expect(!FileManager.default.fileExists(atPath: stagingURL.path))
+        let restored = try await restarted.restore(try #require(recovered.first), to: fixture.root.appendingPathComponent("restored"))
+        #expect(try String(contentsOf: restored.appendingPathComponent("tracked.txt"), encoding: .utf8) == content)
     }
 
     @Test("Discards an incomplete staging backup without exposing it")
