@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WorkspaceView: View {
+    static let expandedSidebarMinimumWidth = 256.0
     @ObservedObject var model: WorkspaceViewModel
     let onInitialContentReady: () -> Void
     let canCaptureSnapshot: Bool
@@ -19,7 +20,7 @@ struct WorkspaceView: View {
     @AppStorage("appearance") private var appearanceRaw = AppAppearance.system.rawValue
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @AppStorage("workspace.sidebar.collapsed") private var isSidebarCollapsed = false
-    @AppStorage("workspace.sidebar.width") private var sidebarWidth = 232.0
+    @AppStorage("workspace.sidebar.width") private var sidebarWidth = WorkspaceView.expandedSidebarMinimumWidth
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
@@ -163,7 +164,7 @@ struct WorkspaceView: View {
                 case .standard:
                     HorizontalResizableSplitView(
                         primaryWidth: activeSidebarWidth,
-                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : 200,
+                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : Self.expandedSidebarMinimumWidth,
                         maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
                         minimumSecondaryWidth: 690,
                         separatorWidth: 7
@@ -182,7 +183,7 @@ struct WorkspaceView: View {
                 case .softGlass:
                     HorizontalResizableSplitView(
                         primaryWidth: activeSidebarWidth,
-                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : 200,
+                        minimumPrimaryWidth: isSidebarCollapsed ? 64 : Self.expandedSidebarMinimumWidth,
                         maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
                         minimumSecondaryWidth: 690,
                         separatorWidth: 7
@@ -231,7 +232,7 @@ struct WorkspaceView: View {
 
                         HorizontalResizableSplitView(
                             primaryWidth: lumenSidebarWidth,
-                            minimumPrimaryWidth: lumenSidebarCollapsed ? 64 : 196,
+                            minimumPrimaryWidth: lumenSidebarCollapsed ? 64 : Self.expandedSidebarMinimumWidth,
                             maximumPrimaryWidth: lumenSidebarCollapsed ? 64 : 320,
                             minimumSecondaryWidth: 710,
                             separatorWidth: 7
@@ -466,7 +467,7 @@ struct WorkspaceView: View {
     private func emeraldLayout(palette: AppPalette) -> some View {
         HorizontalResizableSplitView(
             primaryWidth: activeSidebarWidth,
-            minimumPrimaryWidth: isSidebarCollapsed ? 64 : 200,
+            minimumPrimaryWidth: isSidebarCollapsed ? 64 : Self.expandedSidebarMinimumWidth,
             maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
             minimumSecondaryWidth: 690,
             separatorWidth: 7
@@ -495,7 +496,7 @@ struct WorkspaceView: View {
             .frame(height: 88)
             HorizontalResizableSplitView(
                 primaryWidth: activeSidebarWidth,
-                minimumPrimaryWidth: isSidebarCollapsed ? 64 : 240,
+                minimumPrimaryWidth: isSidebarCollapsed ? 64 : Self.expandedSidebarMinimumWidth,
                 maximumPrimaryWidth: isSidebarCollapsed ? 64 : 330,
                 minimumSecondaryWidth: 660,
                 separatorWidth: 14
@@ -524,7 +525,7 @@ struct WorkspaceView: View {
             Rectangle().fill(palette.divider).frame(height: 1)
             HorizontalResizableSplitView(
                 primaryWidth: activeSidebarWidth,
-                minimumPrimaryWidth: isSidebarCollapsed ? 64 : 240,
+                minimumPrimaryWidth: isSidebarCollapsed ? 64 : Self.expandedSidebarMinimumWidth,
                 maximumPrimaryWidth: isSidebarCollapsed ? 64 : 340,
                 minimumSecondaryWidth: 660,
                 separatorWidth: 5

@@ -910,7 +910,7 @@ private struct CollapsedSidebarNavigationButton: View {
     }
 }
 
-private struct SidebarNavigationButton: View {
+struct SidebarNavigationButton: View {
     let titleKey: String
     let systemImage: String
     var count: Int?
@@ -946,13 +946,18 @@ private struct SidebarNavigationButton: View {
                     .layoutPriority(1)
                 Spacer()
                 if let count, count > 0 {
-                    if theme == .folio {
-                        Text(count.formatted())
-                            .font(.system(size: 10.5, weight: .medium).monospacedDigit())
-                            .foregroundStyle(palette.subtleInk)
-                    } else {
-                        CountBadge(count: count, emphasized: isSelected)
+                    Group {
+                        if theme == .folio {
+                            Text(count.formatted())
+                                .font(.system(size: 10.5, weight: .medium).monospacedDigit())
+                                .foregroundStyle(palette.subtleInk)
+                        } else {
+                            CountBadge(count: count, emphasized: isSelected)
+                        }
                     }
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .layoutPriority(2)
                 }
             }
             .padding(.horizontal, 8)

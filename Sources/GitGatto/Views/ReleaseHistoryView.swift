@@ -18,27 +18,41 @@ struct ReleaseHistoryView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: theme == .softGlass ? AppThemeLayout.panelSpacing : 0) {
-            header(palette)
-                .themedReleasePanel(theme: theme, cornerRadius: 16, elevated: false)
-
-            HStack(spacing: theme == .softGlass ? AppThemeLayout.panelSpacing : 0) {
-                releaseList(palette)
-                    .frame(width: 238)
-                    .themedReleasePanel(theme: theme, cornerRadius: 16, elevated: true)
-
-                if theme != .softGlass {
-                    Rectangle().fill(palette.divider).frame(width: 1)
+        Group {
+            if theme == .frost {
+                VStack(spacing: 12) {
+                    header(palette)
+                    FrostWorkspaceSplit(sidebarWidth: 238) {
+                        releaseDetail(palette)
+                    } sidebar: {
+                        releaseList(palette)
+                    }
                 }
+                .padding(20)
+            } else {
+                VStack(spacing: theme == .softGlass ? AppThemeLayout.panelSpacing : 0) {
+                    header(palette)
+                        .themedReleasePanel(theme: theme, cornerRadius: 16, elevated: false)
 
-                releaseDetail(palette)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .themedReleasePanel(theme: theme, cornerRadius: 16, elevated: true)
+                    HStack(spacing: theme == .softGlass ? AppThemeLayout.panelSpacing : 0) {
+                        releaseList(palette)
+                            .frame(width: 238)
+                            .themedReleasePanel(theme: theme, cornerRadius: 16, elevated: true)
+
+                        if theme != .softGlass {
+                            Rectangle().fill(palette.divider).frame(width: 1)
+                        }
+
+                        releaseDetail(palette)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .themedReleasePanel(theme: theme, cornerRadius: 16, elevated: true)
+                    }
+                }
+                .padding(theme == .softGlass ? AppThemeLayout.workspaceInset : 0)
             }
         }
-        .padding(theme == .softGlass ? AppThemeLayout.workspaceInset : 0)
         .frame(minWidth: 800, minHeight: 570)
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
         .ignoresSafeArea(.container, edges: .top)
         .task {
             selectAvailableRelease()
@@ -90,7 +104,7 @@ struct ReleaseHistoryView: View {
         .padding(.horizontal, 14)
         .padding(.top, 18)
         .frame(height: 76)
-        .background(palette.sidebar.opacity(theme == .softGlass ? 0.18 : 1))
+        .background(theme == .frost ? Color.clear : palette.sidebar.opacity(theme == .softGlass ? 0.18 : 1))
     }
 
     private func releaseList(_ palette: AppPalette) -> some View {
@@ -137,7 +151,7 @@ struct ReleaseHistoryView: View {
                 }
             }
         }
-        .background(palette.sidebar.opacity(theme == .softGlass ? 0.18 : 1))
+        .background(theme == .frost ? Color.clear : palette.sidebar.opacity(theme == .softGlass ? 0.18 : 1))
     }
 
     @ViewBuilder

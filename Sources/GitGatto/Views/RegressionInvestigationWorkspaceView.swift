@@ -14,9 +14,9 @@ struct RegressionInvestigationWorkspaceView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
+        ThemedWorkspacePage {
             commandBar(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
+        } content: {
             if model.currentRepositoryRegressionInvestigations.isEmpty || showsComposer {
                 setupWorkspace(palette)
             } else {
@@ -42,7 +42,7 @@ struct RegressionInvestigationWorkspaceView: View {
                 }
             }
         }
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
         .task(id: model.snapshot?.rootURL.standardizedFileURL.path) {
             if let investigation = model.currentRepositoryRegressionInvestigations.first {
                 model.selectRegressionInvestigation(investigation)
@@ -139,7 +139,7 @@ struct RegressionInvestigationWorkspaceView: View {
         }
         .padding(.horizontal, 18)
         .frame(height: 62)
-        .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface))
     }
 
     private func setupWorkspace(_ palette: AppPalette) -> some View {
@@ -283,7 +283,7 @@ struct RegressionInvestigationWorkspaceView: View {
                 .padding(10)
             }
         }
-        .background(theme == .softGlass ? palette.surface.opacity(0.10) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.10) : palette.surface))
     }
 
     private func compactInvestigationPicker(_ palette: AppPalette) -> some View {
@@ -315,7 +315,7 @@ struct RegressionInvestigationWorkspaceView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 46)
-        .background(theme == .softGlass ? palette.surface.opacity(0.10) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.10) : palette.surface))
     }
 
     private func investigationRow(
@@ -388,7 +388,7 @@ struct RegressionInvestigationWorkspaceView: View {
             }
             .padding(16)
         }
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
     }
 
     private func investigationHeader(

@@ -8,7 +8,16 @@ struct StashWorkspaceView: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         GeometryReader { proxy in
-            if AppVisualTheme.resolved(themeRaw) == .standard {
+            if AppVisualTheme.resolved(themeRaw) == .frost {
+                VStack(spacing: 12) {
+                    StashCommandBar(model: model)
+                    FrostWorkspaceSplit {
+                        StashInspector(model: model)
+                    } sidebar: {
+                        StashNavigator(model: model)
+                    }
+                }
+            } else if AppVisualTheme.resolved(themeRaw) == .standard {
                 content(proxy: proxy, spacing: 0)
             } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
                 content(proxy: proxy, spacing: 10)
@@ -19,7 +28,7 @@ struct StashWorkspaceView: View {
             } else {
                 content(proxy: proxy, spacing: 8)
                     .padding(8)
-                    .background(palette.background)
+                    .background(palette.workspaceBackground)
             }
         }
     }
@@ -117,7 +126,7 @@ private struct StashCommandBar: View {
         }
         .padding(.horizontal, 15)
         .frame(height: 64)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 }
 
@@ -185,7 +194,7 @@ private struct StashNavigator: View {
                 }
             }
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
 }
@@ -282,13 +291,13 @@ private struct StashInspector: View {
                     compactHeader(stash: stash, palette: palette)
                 }
                 .disabled(model.activeOperation != nil || model.repositoryOperationState != nil)
-                .background(palette.surface)
+                .background(palette.workspaceSurface)
 
                 Rectangle().fill(palette.divider).frame(height: 1)
 
                 if model.isLoadingStashDiff {
                     GattoLoadingState(text: L10n.text("loading.generic"))
-                        .background(palette.background)
+                        .background(palette.workspaceBackground)
                 } else if let document = model.stashDiffDocument {
                     DiffCodeView(document: document)
                 } else {
@@ -306,7 +315,7 @@ private struct StashInspector: View {
                 )
             }
         }
-        .background(palette.background)
+        .background(palette.workspaceBackground)
         .confirmationDialog(
             L10n.text("stash.drop.confirm.title"),
             isPresented: $isConfirmingDrop,

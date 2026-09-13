@@ -19,12 +19,18 @@ struct BranchesWorkspaceView: View {
             }
             .padding(contentPadding)
 
-            if theme == .standard {
+            if theme == .frost {
+                FrostWorkspaceSplit(sidebarWidth: 320) {
+                    RepositoryToolInspector(model: model, selectedTool: selectedTool)
+                } sidebar: {
+                    RepositoryToolNavigator(model: model, selectedTool: $selectedTool)
+                }
+            } else if theme == .standard {
                 content
                     .padding(0)
             } else {
                 content
-                    .background(palette.background)
+                    .background(palette.workspaceBackground)
             }
         }
     }
@@ -176,7 +182,7 @@ private struct RepositoryToolNavigator: View {
                 }
             }
             .padding(14)
-            .background(palette.surface)
+            .background(palette.workspaceSurface)
 
             Rectangle().fill(palette.divider).frame(height: 1)
 
@@ -235,7 +241,7 @@ private struct RepositoryToolNavigator: View {
                 }
             }
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .sheet(isPresented: $showingCreate) {
             switch selectedTool {
             case .branches:
@@ -442,7 +448,7 @@ private struct RepositoryToolInspector: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 56)
-            .background(palette.surface)
+            .background(palette.workspaceSurface)
             Rectangle().fill(palette.divider).frame(height: 1)
 
             switch selectedTool {
@@ -456,7 +462,7 @@ private struct RepositoryToolInspector: View {
                 ReflogInspector(model: model, entry: model.selectedReflogEntry)
             }
         }
-        .background(palette.background)
+        .background(palette.workspaceBackground)
     }
 }
 
@@ -643,7 +649,7 @@ private struct TagInspector: View {
                         Divider()
                         BranchMetadataRow(labelKey: "git_tools.tag.creator", value: tag.creator ?? "—", monospaced: false)
                     }
-                    .background(palette.surface)
+                    .background(palette.workspaceSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 11))
                     .overlay { RoundedRectangle(cornerRadius: 11).stroke(palette.divider) }
 
@@ -727,7 +733,7 @@ private struct RemoteInspector: View {
                         Divider()
                         BranchMetadataRow(labelKey: "git_tools.remote.push_url", value: remote.pushURL, monospaced: true)
                     }
-                    .background(palette.surface)
+                    .background(palette.workspaceSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 11))
                     .overlay { RoundedRectangle(cornerRadius: 11).stroke(palette.divider) }
                     HStack(spacing: 10) {
@@ -787,7 +793,7 @@ private struct ReflogInspector: View {
                         Divider()
                         BranchMetadataRow(labelKey: "git_tools.reflog.time", value: entry.createdAt.formatted(date: .abbreviated, time: .standard), monospaced: false)
                     }
-                    .background(palette.surface)
+                    .background(palette.workspaceSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 11))
                     .overlay { RoundedRectangle(cornerRadius: 11).stroke(palette.divider) }
                     Text(L10n.text("git_tools.reflog.restore_explanation"))

@@ -49,21 +49,23 @@ struct GitHubWorkspaceView: View {
     }
 
     private func conventionalWorkspace(_ palette: AppPalette, theme: AppVisualTheme) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: theme == .frost ? 12 : 0) {
             searchHeader(palette)
                 .emeraldSurface(.elevated, cornerRadius: 16)
-            Rectangle().fill(palette.divider).frame(height: 1)
+            if theme != .frost { Rectangle().fill(palette.divider).frame(height: 1) }
 
             if model.githubWorkspaceMode == .synchronization {
                 RepositorySyncWorkspaceView(syncModel: syncModel) { repositoryURL in
                     Task { await model.openRepository(repositoryURL) }
                 }
+                .frostDocumentSurface()
             } else if model.githubAvailability.state == .unavailable {
-                unavailableState(palette)
+                unavailableState(palette).frostDocumentSurface()
             } else if model.githubWorkspaceMode == .inbox {
                 GitHubInboxView(collaborationModel: collaborationModel) { url in
                     inAppBrowserPage = InAppBrowserPage(url: url, persistent: true)
                 }
+                .frostDocumentSurface()
             } else if model.githubWorkspaceMode == .issues {
                 GitHubIssuesView(
                     collaborationModel: collaborationModel,
@@ -82,9 +84,16 @@ struct GitHubWorkspaceView: View {
                         }
                     }
                 )
+                .frostDocumentSurface()
             } else {
                 Group {
-                    if theme == .standard {
+                    if theme == .frost {
+                        FrostWorkspaceSplit(sidebarWidth: 320) {
+                            detailPane(palette)
+                        } sidebar: {
+                            listPane(palette)
+                        }
+                    } else if theme == .standard {
                         HorizontalResizableSplitView(
                             primaryWidth: $repositoryListWidth,
                             minimumPrimaryWidth: 240,
@@ -160,7 +169,7 @@ struct GitHubWorkspaceView: View {
                 }
             }
         }
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
     }
 
     @ViewBuilder
@@ -288,7 +297,7 @@ struct GitHubWorkspaceView: View {
             .padding(.horizontal, compact ? 12 : 18)
         }
         .frame(height: 62)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     @ViewBuilder
@@ -410,7 +419,7 @@ struct GitHubWorkspaceView: View {
                 }
             }
         }
-        .background(palette.sidebar)
+        .background(AppStyleDefaults.theme == .frost ? Color.clear : palette.sidebar)
     }
 
     @ViewBuilder
@@ -500,7 +509,7 @@ struct GitHubWorkspaceView: View {
                 }
                 .padding(24)
             }
-            .background(palette.background)
+            .background(palette.workspaceBackground)
         } else if let error = model.githubDeveloperError {
             projectError(error, palette: palette)
                 .padding(22)
@@ -583,7 +592,7 @@ struct GitHubWorkspaceView: View {
                 }
             }
         }
-        .background(palette.sidebar)
+        .background(AppStyleDefaults.theme == .frost ? Color.clear : palette.sidebar)
     }
 
     private func collectionButton(
@@ -635,7 +644,7 @@ struct GitHubWorkspaceView: View {
                 projectTabContent(repository, palette: palette)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(palette.background)
+            .background(palette.workspaceBackground)
             .onChange(of: repository.id) { _, _ in
                 setRepositoryHeaderCollapsed(false)
             }
@@ -698,68 +707,26 @@ struct GitHubWorkspaceView: View {
             .buttonStyle(.plain)
             .help(L10n.text("github.repository.header.collapse"))
 
-            HStack(spacing: 14) {
-                GattoLabel(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
-                GattoLabel(GitHubNumberFormatter.string(repository.forks), systemImage: "arrow.triangle.branch")
-                GattoLabel(GitHubNumberFormatter.string(repository.openIssues), systemImage: "record.circle")
-                if let language = repository.language {
-                    GitHubLanguageStackBadge(language: language)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    GattoLabel(GitHubNumberFormatter.string(repository.stars), systemImage: "star")
+                    GattoLabel(GitHubNumberFormatter.string(repository.forks), systemImage: "arrow.triangle.branch")
+                    GattoLabel(GitHubNumberFormatter.string(repository.openIssues), systemImage: "record.circle")
+                    if let language = repository.language {
+                        GitHubLanguageStackBadge(language: language)
+                    }
+                    GattoLabel(repository.defaultBranch, systemImage: "point.topleft.down.to.point.bottomright.curvepath")
                 }
-                GattoLabel(repository.defaultBranch, systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(palette.subtleInk)
             }
-            .font(.system(size: 10.5, weight: .medium))
-            .foregroundStyle(palette.subtleInk)
 
-            HStack(spacing: 8) {
-                GitHubStarActionButton(
-                    title: L10n.text(model.isSelectedGitHubRepositoryStarred ? "github.action.unstar" : "github.action.star"),
-                    starCount: repository.stars,
-                    isStarred: model.isSelectedGitHubRepositoryStarred,
-                    isUpdating: model.isUpdatingGitHubStar,
-                    isDisabled: model.activeGitHubOperation != nil
-                ) {
-                    model.toggleSelectedGitHubRepositoryStar()
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { repositoryActions(repository, palette: palette) }
+                    .fixedSize(horizontal: true, vertical: false)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 192), alignment: .leading)], alignment: .leading, spacing: 8) {
+                    repositoryActions(repository, palette: palette)
                 }
-
-                CloneActionButton(
-                    title: L10n.text("github.action.clone"),
-                    activeTitle: L10n.text("github.status.cloning"),
-                    systemImage: "tray.and.arrow.down",
-                    isActive: model.activeGitHubOperation == .clone,
-                    isDisabled: model.isRefreshing
-                        || (model.activeGitHubOperation != nil && model.activeGitHubOperation != .clone)
-                ) {
-                    if model.activeGitHubOperation == .clone {
-                        model.cancelGitHubOperation()
-                    } else {
-                        model.chooseGitHubCloneDestination(fork: false)
-                    }
-                }
-
-                CloneActionButton(
-                    title: L10n.text("github.action.fork_clone"),
-                    activeTitle: L10n.text("github.status.forking"),
-                    systemImage: "arrow.triangle.branch",
-                    isActive: model.activeGitHubOperation == .fork,
-                    isDisabled: model.isRefreshing
-                        || (model.activeGitHubOperation != nil && model.activeGitHubOperation != .fork)
-                ) {
-                    if model.activeGitHubOperation == .fork {
-                        model.cancelGitHubOperation()
-                    } else {
-                        model.chooseGitHubCloneDestination(fork: true)
-                    }
-                }
-
-                Button {
-                    openProjectWeb(repository.webURL)
-                } label: {
-                    GattoLabel(L10n.text("github.action.open_web"), systemImage: "arrow.up.right")
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(palette.primary)
-                .disabled(model.activeGitHubOperation != nil)
             }
 
             if let error = model.githubError {
@@ -768,7 +735,60 @@ struct GitHubWorkspaceView: View {
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 18)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
+    }
+
+    @ViewBuilder
+    private func repositoryActions(_ repository: GitHubRepository, palette: AppPalette) -> some View {
+        GitHubStarActionButton(
+            title: L10n.text(model.isSelectedGitHubRepositoryStarred ? "github.action.unstar" : "github.action.star"),
+            starCount: repository.stars,
+            isStarred: model.isSelectedGitHubRepositoryStarred,
+            isUpdating: model.isUpdatingGitHubStar,
+            isDisabled: model.activeGitHubOperation != nil
+        ) {
+            model.toggleSelectedGitHubRepositoryStar()
+        }
+
+        CloneActionButton(
+            title: L10n.text("github.action.clone"),
+            activeTitle: L10n.text("github.status.cloning"),
+            systemImage: "tray.and.arrow.down",
+            isActive: model.activeGitHubOperation == .clone,
+            isDisabled: model.isRefreshing
+                || (model.activeGitHubOperation != nil && model.activeGitHubOperation != .clone)
+        ) {
+            if model.activeGitHubOperation == .clone {
+                model.cancelGitHubOperation()
+            } else {
+                model.chooseGitHubCloneDestination(fork: false)
+            }
+        }
+
+        CloneActionButton(
+            title: L10n.text("github.action.fork_clone"),
+            activeTitle: L10n.text("github.status.forking"),
+            systemImage: "arrow.triangle.branch",
+            isActive: model.activeGitHubOperation == .fork,
+            isDisabled: model.isRefreshing
+                || (model.activeGitHubOperation != nil && model.activeGitHubOperation != .fork)
+        ) {
+            if model.activeGitHubOperation == .fork {
+                model.cancelGitHubOperation()
+            } else {
+                model.chooseGitHubCloneDestination(fork: true)
+            }
+        }
+
+        Button {
+            openProjectWeb(repository.webURL)
+        } label: {
+            GattoLabel(L10n.text("github.action.open_web"), systemImage: "arrow.up.right")
+                .font(.system(size: 12, weight: .medium))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(palette.primary)
+        .disabled(model.activeGitHubOperation != nil)
     }
 
     private func compactRepositoryHeader(_ repository: GitHubRepository, palette: AppPalette) -> some View {
@@ -891,7 +911,7 @@ struct GitHubWorkspaceView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 52)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func setRepositoryHeaderCollapsed(_ collapsed: Bool) {
@@ -906,17 +926,19 @@ struct GitHubWorkspaceView: View {
     }
 
     private func projectTabBar(_ palette: AppPalette) -> some View {
-        HStack(spacing: 4) {
-            projectTab(.overview, image: "doc.richtext", palette: palette)
-            projectTab(.code, image: "code.source", palette: palette)
-            projectTab(.releases, image: "shippingbox", palette: palette, count: model.githubReleases.count)
-            projectTab(.pullRequests, image: "git.pull.request", palette: palette, count: model.githubPullRequests.count)
-            projectTab(.actions, image: "play.circle", palette: palette, count: model.githubActionRuns.count)
-            Spacer()
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                projectTab(.overview, image: "doc.richtext", palette: palette)
+                projectTab(.code, image: "code.source", palette: palette)
+                projectTab(.releases, image: "shippingbox", palette: palette, count: model.githubReleases.count)
+                projectTab(.pullRequests, image: "git.pull.request", palette: palette, count: model.githubPullRequests.count)
+                projectTab(.actions, image: "play.circle", palette: palette, count: model.githubActionRuns.count)
+                Spacer()
+            }
+            .padding(.horizontal, 18)
+            .frame(height: 44)
+            .background(palette.workspaceSurface)
         }
-        .padding(.horizontal, 18)
-        .frame(height: 44)
-        .background(palette.surface)
     }
 
     private func projectTab(
@@ -1030,84 +1052,99 @@ struct GitHubWorkspaceView: View {
     }
 
     private func readmeToolbar(_ document: GitHubReadmeDocument, palette: AppPalette) -> some View {
-        HStack(spacing: 9) {
-            Button {
-                model.navigateBackInGitHubReadme()
-            } label: {
-                Image(gattoSymbol: "chevron.left", pointSize: 18)
-                    .frame(width: 18, height: 18)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 9) {
+                readmeToolbarIdentity(document, palette: palette)
+                Spacer(minLength: 10)
+                readmeToolbarActions(palette).fixedSize(horizontal: true, vertical: false)
             }
-            .buttonStyle(.plain)
-            .disabled(!model.canNavigateBackInGitHubReadme)
-            .opacity(model.canNavigateBackInGitHubReadme ? 1 : 0.35)
-            .help(L10n.text("github.readme.back"))
-
-            Text(document.path)
-                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
-                .foregroundStyle(palette.mutedInk)
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-            Spacer(minLength: 10)
-
-            if model.isBeautifyingReadme {
-                Button {
-                    model.cancelReadmeRewrite()
-                } label: {
-                    ReadmeRewriteMotionLabel(
-                        title: L10n.text("github.readme.agent.rewriting"),
-                        isActive: true
-                    )
-                }
-                .buttonStyle(.plain)
-                .help(L10n.text("github.action.cancel"))
-            } else if model.readmeRewritePreview != nil {
-                HStack(spacing: 5) {
-                    Image(gattoSymbol: "eye", pointSize: 13)
-                        .frame(width: 13, height: 13)
-                    Text(L10n.text("github.readme.agent.local_preview"))
-                }
-                .font(.system(size: 10.5, weight: .semibold))
-                .foregroundStyle(palette.primary)
-                .padding(.horizontal, 8)
-                .frame(height: 24)
-                .background(palette.primarySoft)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-
-                readmeAgentMenu(titleKey: "github.readme.agent.rewrite_again")
-
-                Button {
-                    model.applyReadmeRewrite()
-                } label: {
-                    SubmitMotionLabel(
-                        title: L10n.text("github.readme.agent.apply"),
-                        activeTitle: L10n.text("sync.progress.commit_push"),
-                        systemImage: "checkmark.circle",
-                        isActive: model.isApplyingReadmeRewrite,
-                        completionID: model.notice?.message == L10n.text("github.readme.agent.applied")
-                            ? model.notice?.id
-                            : nil
-                    )
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(!model.canApplyReadmeRewrite)
-            } else {
-                DocumentTranslationControls(activeTarget: model.githubReadmeTranslationTarget,
-                    availableTargets: model.availableGitHubReadmeTranslationTargets,
-                    preferredTarget: model.githubReadmeLastTranslationTarget ?? model.codexTranslationTarget,
-                    isTranslating: model.isTranslatingGitHubReadme,
-                    isDisabled: !model.canTranslateGitHubReadme && !model.isTranslatingGitHubReadme,
-                    error: model.githubReadmeTranslationError, completionID: model.githubReadmeTranslationCompletionID,
-                    showOriginal: { readmeCardMovesBackward = true; model.showOriginalGitHubReadme() },
-                    showTranslation: { readmeCardMovesBackward = false; model.showGitHubReadmeTranslation($0) },
-                    translate: model.translateGitHubReadme, cancel: model.cancelGitHubReadmeTranslation,
-                    progressTitle: model.githubReadmeTranslationProgress.map { L10n.format("github.readme.translating_progress", $0.current, $0.total) })
-                if !model.isTranslatingGitHubReadme { readmeAgentMenu(titleKey: "github.readme.agent") }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack { readmeToolbarIdentity(document, palette: palette); Spacer(minLength: 0) }
+                RepositoryActionGroup { readmeToolbarActions(palette) }
             }
+            .padding(.vertical, 8)
         }
         .padding(.horizontal, 14)
-        .frame(height: 40)
-        .background(palette.surface)
+        .frame(minHeight: 40)
+        .background(palette.workspaceSurface)
+    }
+
+    @ViewBuilder
+    private func readmeToolbarIdentity(_ document: GitHubReadmeDocument, palette: AppPalette) -> some View {
+        Button {
+            model.navigateBackInGitHubReadme()
+        } label: {
+            Image(gattoSymbol: "chevron.left", pointSize: 18)
+                .frame(width: 18, height: 18)
+        }
+        .buttonStyle(.plain)
+        .disabled(!model.canNavigateBackInGitHubReadme)
+        .opacity(model.canNavigateBackInGitHubReadme ? 1 : 0.35)
+        .help(L10n.text("github.readme.back"))
+
+        Text(document.path)
+            .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+            .foregroundStyle(palette.mutedInk)
+            .lineLimit(1)
+            .truncationMode(.middle)
+    }
+
+    @ViewBuilder
+    private func readmeToolbarActions(_ palette: AppPalette) -> some View {
+        if model.isBeautifyingReadme {
+            Button {
+                model.cancelReadmeRewrite()
+            } label: {
+                ReadmeRewriteMotionLabel(
+                    title: L10n.text("github.readme.agent.rewriting"),
+                    isActive: true
+                )
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text("github.action.cancel"))
+        } else if model.readmeRewritePreview != nil {
+            HStack(spacing: 5) {
+                Image(gattoSymbol: "eye", pointSize: 13)
+                    .frame(width: 13, height: 13)
+                Text(L10n.text("github.readme.agent.local_preview"))
+            }
+            .font(.system(size: 10.5, weight: .semibold))
+            .foregroundStyle(palette.primary)
+            .padding(.horizontal, 8)
+            .frame(height: 24)
+            .background(palette.primarySoft)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+
+            readmeAgentMenu(titleKey: "github.readme.agent.rewrite_again")
+
+            Button {
+                model.applyReadmeRewrite()
+            } label: {
+                SubmitMotionLabel(
+                    title: L10n.text("github.readme.agent.apply"),
+                    activeTitle: L10n.text("sync.progress.commit_push"),
+                    systemImage: "checkmark.circle",
+                    isActive: model.isApplyingReadmeRewrite,
+                    completionID: model.notice?.message == L10n.text("github.readme.agent.applied")
+                        ? model.notice?.id
+                        : nil
+                )
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(!model.canApplyReadmeRewrite)
+        } else {
+            DocumentTranslationControls(activeTarget: model.githubReadmeTranslationTarget,
+                availableTargets: model.availableGitHubReadmeTranslationTargets,
+                preferredTarget: model.githubReadmeLastTranslationTarget ?? model.codexTranslationTarget,
+                isTranslating: model.isTranslatingGitHubReadme,
+                isDisabled: !model.canTranslateGitHubReadme && !model.isTranslatingGitHubReadme,
+                error: model.githubReadmeTranslationError, completionID: model.githubReadmeTranslationCompletionID,
+                showOriginal: { readmeCardMovesBackward = true; model.showOriginalGitHubReadme() },
+                showTranslation: { readmeCardMovesBackward = false; model.showGitHubReadmeTranslation($0) },
+                translate: model.translateGitHubReadme, cancel: model.cancelGitHubReadmeTranslation,
+                progressTitle: model.githubReadmeTranslationProgress.map { L10n.format("github.readme.translating_progress", $0.current, $0.total) })
+            if !model.isTranslatingGitHubReadme { readmeAgentMenu(titleKey: "github.readme.agent") }
+        }
     }
 
     private func readmeAgentMenu(titleKey: String) -> some View {
@@ -1167,7 +1204,7 @@ struct GitHubWorkspaceView: View {
                 }
             }
             .frame(minWidth: 210, idealWidth: 260, maxWidth: 390)
-            .background(palette.sidebar)
+            .background(AppStyleDefaults.theme == .frost ? Color.clear : palette.sidebar)
 
             GitHubCodeFileView(model: model, openInApp: openProjectWeb)
                 .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
@@ -1550,7 +1587,7 @@ private struct GitHubCodeFileView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
     }
 
     private func fileHeader(_ item: GitHubContentItem, palette: AppPalette) -> some View {

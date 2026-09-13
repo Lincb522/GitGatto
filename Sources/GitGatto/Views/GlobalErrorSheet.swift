@@ -121,10 +121,11 @@ struct GlobalErrorSheet: View {
             }
             .padding(.horizontal, 20)
             .frame(height: 64)
-            .background(palette.surface)
+            .background(palette.workspaceSurface)
         }
+        .frostDocumentSurface()
         .frame(minWidth: 640, idealWidth: 700, minHeight: 480, idealHeight: 560)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
 #if DEBUG
         .background(
             DebugSnapshotCapture(

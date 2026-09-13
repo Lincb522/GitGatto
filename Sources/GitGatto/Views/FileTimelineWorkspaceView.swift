@@ -11,7 +11,21 @@ struct FileTimelineWorkspaceView: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         GeometryReader { container in
-            if container.size.width < 960 {
+            if theme == .frost {
+                VStack(spacing: 12) {
+                    commandBar(palette)
+                    FrostWorkspaceSplit(wrapsSidebar: false) {
+                        fileInspector(palette)
+                    } sidebar: {
+                        VStack(spacing: 14) {
+                            fileNavigator(palette).frame(maxHeight: .infinity)
+                                .frostSurface(.panel, cornerRadius: 24)
+                            revisionTimeline(palette).frame(maxHeight: .infinity)
+                                .frostSurface(.panel, cornerRadius: 24)
+                        }
+                    }
+                }
+            } else if container.size.width < 960 {
                 VStack(spacing: 0) {
                     commandBar(palette)
                     HStack(spacing: 0) {
@@ -82,7 +96,7 @@ struct FileTimelineWorkspaceView: View {
                 }
             }
         }
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
         .task(id: model.snapshot?.rootURL.standardizedFileURL.path) {
             if model.repositoryFiles.isEmpty, model.snapshot != nil {
                 model.refreshRepositoryFiles()
@@ -134,7 +148,7 @@ struct FileTimelineWorkspaceView: View {
         }
         .padding(.horizontal, 18)
         .frame(height: 62)
-        .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface))
     }
 
     private func fileNavigator(_ palette: AppPalette) -> some View {
@@ -173,7 +187,7 @@ struct FileTimelineWorkspaceView: View {
                 }
             }
         }
-        .background(theme == .softGlass ? palette.sidebar.opacity(0.14) : palette.sidebar)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.sidebar.opacity(0.14) : palette.sidebar))
     }
 
     private func revisionTimeline(_ palette: AppPalette) -> some View {
@@ -220,7 +234,7 @@ struct FileTimelineWorkspaceView: View {
                 }
             }
         }
-        .background(theme == .softGlass ? palette.surface.opacity(0.10) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.10) : palette.surface))
     }
 
     @ViewBuilder
@@ -338,7 +352,7 @@ struct FileTimelineWorkspaceView: View {
         .padding(.vertical, 12)
         .frame(minHeight: 88)
         .fixedSize(horizontal: false, vertical: true)
-        .background(theme == .softGlass ? palette.surface.opacity(0.14) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.14) : palette.surface))
     }
 
     @ViewBuilder
@@ -592,7 +606,7 @@ private struct FileBlameView: View {
             }
             .defaultScrollAnchor(.topLeading)
         }
-        .background(theme == .softGlass ? palette.background.opacity(0.18) : palette.background)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.background.opacity(0.18) : palette.background))
     }
 
     private func commitButton(_ line: FileBlameLine, palette: AppPalette) -> some View {

@@ -10,6 +10,7 @@ struct RepositoryBackupComparison {
     let currentPaths: Set<String>
     let currentHead: String?
     let currentBranch: String?
+    let contentCache: RepositoryBackupContentCache
     private let fileManager = FileManager.default
 
     struct Result {
@@ -60,8 +61,8 @@ struct RepositoryBackupComparison {
         for (index, path) in candidates.enumerated() {
             try Task.checkCancellation()
             let currentURL = try contained(path, in: repository)
-            if copied.contains(path), fileManager.contentsEqual(
-                atPath: try contained(path, in: workspace).path, andPath: currentURL.path
+            if copied.contains(path), contentCache.contentsEqual(
+                try contained(path, in: workspace), currentURL
             ) { continue }
             let oldURL = before.appendingPathComponent(String(index))
             let newURL = after.appendingPathComponent(String(index))

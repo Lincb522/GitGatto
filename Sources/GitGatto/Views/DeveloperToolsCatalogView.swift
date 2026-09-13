@@ -211,7 +211,7 @@ struct DeveloperToolsCatalogView: View {
                 }
             }
         }
-        .background(palette.sidebar)
+        .background(AppStyleDefaults.theme == .frost ? Color.clear : palette.sidebar)
     }
 
     private func developerToolQueueBar(_ palette: AppPalette) -> some View {
@@ -242,7 +242,7 @@ struct DeveloperToolsCatalogView: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 38)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func developerToolQueueBadge(
@@ -299,7 +299,7 @@ struct DeveloperToolsCatalogView: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 42)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func developerToolRow(_ tool: DevelopmentTool, palette: AppPalette) -> some View {

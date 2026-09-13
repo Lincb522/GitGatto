@@ -138,7 +138,7 @@ struct AppThemeTests {
     }
 
     @MainActor
-    @Test("Frost folder workspace and settings fit wide and compact windows", .timeLimit(.minutes(2)))
+    @Test("Frost pages and sheets fit wide and compact windows", .timeLimit(.minutes(10)))
     func frostWorkspaceRendering() async throws {
         guard let directory = ProcessInfo.processInfo.environment["GITGATTO_THEME_UI_OUTPUT"],
               ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1",
@@ -159,7 +159,7 @@ struct AppThemeTests {
         emptyModel.selectedSection = .changes
         let originalAppearance = NSApp.appearance
         defer { NSApp.appearance = originalAppearance }
-        for (width, height, scheme, collapsed, settings, language, state) in [
+        var cases: [(Int, Int, ColorScheme, Bool, Bool, AppLanguage, String)] = [
             (1416, 878, ColorScheme.light, false, false, AppLanguage.simplifiedChinese, "workspace"),
             (1416, 878, ColorScheme.dark, false, false, AppLanguage.simplifiedChinese, "workspace"),
             (960, 620, ColorScheme.light, false, false, AppLanguage.simplifiedChinese, "workspace"),
@@ -167,20 +167,88 @@ struct AppThemeTests {
             (960, 760, ColorScheme.light, false, true, AppLanguage.simplifiedChinese, "settings"),
             (960, 620, ColorScheme.light, false, false, AppLanguage.german, "empty"),
             (960, 620, ColorScheme.dark, false, false, AppLanguage.arabic, "attention")
-        ] {
+        ]
+        if ProcessInfo.processInfo.environment["GITGATTO_THEME_ALL_PAGES"] == "1" {
+            for section in WorkspaceSection.allCases {
+                cases.append((960, 720, .light, false, false, .simplifiedChinese, "page-\(section.rawValue)"))
+                cases.append((1416, 878, .dark, false, false, .simplifiedChinese, "page-\(section.rawValue)"))
+            }
+            for scheme in [ColorScheme.light, .dark] {
+                cases.append((720, 720, scheme, false, false, .simplifiedChinese, "monitor"))
+                cases.append((740, 660, scheme, false, false, .german, "error-sheet"))
+                cases.append((680, 460, scheme, false, false, .simplifiedChinese, "about"))
+                cases.append((620, 660, scheme, false, false, .simplifiedChinese, "guide"))
+                cases.append((960, 720, scheme, false, false, .simplifiedChinese, "developer-tools"))
+                cases.append((960, 720, scheme, false, false, .simplifiedChinese, "help"))
+                cases.append((960, 720, scheme, false, false, .simplifiedChinese, "releases"))
+                cases.append((960, 720, scheme, false, false, .german, "conflict"))
+                cases.append((480, 660, scheme, false, false, .arabic, "bootstrap"))
+                for mode in [GitHubWorkspaceMode.synchronization, .inbox, .issues] {
+                    cases.append((960, 720, scheme, false, false, .simplifiedChinese, "github-\(mode.rawValue)"))
+                }
+            }
+        }
+        if let selected = ProcessInfo.processInfo.environment["GITGATTO_THEME_CASES"] {
+            let names = Set(selected.split(separator: ",").map(String.init))
+            cases = cases.filter { names.contains($0.6) }
+        }
+        for (width, height, scheme, collapsed, settings, language, state) in cases {
+            model.githubWorkspaceMode = .repositories
+            if state.hasPrefix("github-"), let mode = GitHubWorkspaceMode(rawValue: String(state.dropFirst(7))) {
+                model.githubWorkspaceMode = mode
+            }
+            model.selectedSection = state.hasPrefix("page-")
+                ? (WorkspaceSection(rawValue: String(state.dropFirst(5))) ?? .changes) : .changes
+            if state.hasPrefix("github-") { model.selectedSection = .github }
+            if state == "developer-tools" {
+                model.selectedSection = .marketplace
+                model.marketplaceRequestedSection = .developerTools
+            }
             L10n.activate(language)
             NSApp.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
             model.notice = state == "attention" ? OperationNotice(message: "Connection unavailable. Check your network and retry.", tone: .attention) : nil
             defaults.set(scheme == .dark ? "dark" : "light", forKey: "appearance")
             defaults.set(collapsed, forKey: "workspace.sidebar.collapsed")
             let content: AnyView
-            if settings {
+            if state == "monitor" {
+                content = AnyView(MonitoringStatusBarView(model: model, engine: model.monitoringEngine,
+                                                         availableSize: CGSize(width: width, height: height)))
+            } else if state == "about" {
+                content = AnyView(AboutGitGattoView(navigation: AppNavigationModel(), updateManager: AppUpdateManager()))
+            } else if state == "help" {
+                content = AnyView(HelpCenterView())
+            } else if state == "releases" {
+                content = AnyView(ReleaseHistoryView(manager: AppUpdateManager()))
+            } else if state == "bootstrap" {
+                let fixture = try BootstrapFixture()
+                defer { fixture.remove() }
+                let bootstrap = RepositoryBootstrapViewModel(service: fixture.service(), manualOptions: true)
+                bootstrap.name = "Repository with a longer name"
+                content = AnyView(RepositoryBootstrapSheet(workspace: model, model: bootstrap) { _, _ in })
+            } else if state == "conflict" {
+                let previous = ProcessInfo.processInfo.environment["GITGATTO_CONFLICT_PREVIEW"]
+                setenv("GITGATTO_CONFLICT_PREVIEW", "1", 1)
+                let conflictModel = WorkspaceViewModel(isBackgroundMonitor: true, monitoredRepositories: [])
+                await conflictModel.start()
+                if let previous { setenv("GITGATTO_CONFLICT_PREVIEW", previous, 1) }
+                else { unsetenv("GITGATTO_CONFLICT_PREVIEW") }
+                let operation = try #require(conflictModel.repositoryOperationState)
+                content = AnyView(ConflictResolutionWorkspaceView(model: conflictModel, state: operation).padding(20))
+            } else if state == "guide" {
+                content = AnyView(WorkspaceQuickGuideSheet(guide: .goals))
+            } else if state == "error-sheet" {
+                let report = GlobalErrorHandler.report(for: GitCommandError(arguments: ["push"], exitCode: 1,
+                    message: "Permission denied"), context: .git(.push), repositoryURL: URL(fileURLWithPath: "/tmp/fixture"))
+                content = AnyView(GlobalErrorSheet(report: report, canUseAgent: false, useAgent: {}, dismiss: {}))
+            } else if settings {
                 content = AnyView(AppSettingsView(model: model, updateManager: AppUpdateManager()))
             } else {
                 content = AnyView(WorkspaceView(model: state == "empty" ? emptyModel : model, canCaptureSnapshot: false))
             }
             let bounds = NSRect(x: 0, y: 0, width: width, height: height)
-            let host = NSHostingView(rootView: AppThemeRoot { content })
+            let host = NSHostingView(rootView: AppThemeRoot {
+                content.environment(\.layoutDirection, language == .arabic ? .rightToLeft : .leftToRight)
+            })
             host.sizingOptions = []
             let window = NSWindow(contentRect: bounds, styleMask: [.titled, .resizable], backing: .buffered, defer: false)
             window.isReleasedWhenClosed = false
@@ -195,11 +263,32 @@ struct AppThemeTests {
             host.layoutSubtreeIfNeeded()
             #expect(host.bounds.size == bounds.size)
             #expect(AppStyleDefaults.theme == .frost)
+            func descendants(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(descendants) }
+            let scrolls = descendants(host).compactMap { $0 as? NSScrollView }
+            for scroll in scrolls where !scroll.isHiddenOrHasHiddenAncestor {
+                let frame = host.convert(scroll.bounds, from: scroll)
+                #expect(frame.minX >= -2 && frame.maxX <= host.bounds.maxX + 2,
+                        "\(state) scroll frame \(frame) exceeds \(host.bounds)")
+            }
+            if let field = descendants(host).compactMap({ $0 as? NSTextField }).first(where: \.isEditable) {
+                #expect(window.makeFirstResponder(field), "\(state) field cannot receive keyboard focus")
+                window.makeFirstResponder(nil)
+            }
             let bitmap = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
             host.cacheDisplay(in: host.bounds, to: bitmap)
             let data = try #require(bitmap.representation(using: .png, properties: [:]))
             let name = state
             try data.write(to: URL(fileURLWithPath: directory).appendingPathComponent("frost-\(name)-\(scheme)-\(width).png"))
+            if ["page-goals", "page-regression", "help", "guide"].contains(state),
+               let scroll = scrolls.max(by: { $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height }),
+               let document = scroll.documentView, document.bounds.height > scroll.contentView.bounds.height {
+                document.scrollToVisible(NSRect(x: 0, y: document.bounds.maxY - 1, width: 1, height: 1))
+                host.layoutSubtreeIfNeeded()
+                #expect(scroll.documentVisibleRect.maxY >= document.bounds.maxY - 2)
+                host.cacheDisplay(in: host.bounds, to: bitmap)
+                let bottom = try #require(bitmap.representation(using: .png, properties: [:]))
+                try bottom.write(to: URL(fileURLWithPath: directory).appendingPathComponent("frost-\(name)-\(scheme)-\(width)-bottom.png"))
+            }
         }
     }
 

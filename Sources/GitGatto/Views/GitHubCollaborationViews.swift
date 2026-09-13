@@ -48,7 +48,7 @@ struct GitHubInboxView: View {
                 }
             }
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .onChange(of: collaborationModel.filteredInboxItems.map(\.id), initial: true) { _, ids in
             if selectedItemID == nil || !ids.contains(selectedItemID ?? "") {
                 selectedItemID = ids.first
@@ -146,7 +146,7 @@ struct GitHubInboxView: View {
         .padding(.horizontal, 10)
         .frame(minWidth: 220, idealWidth: 300, maxWidth: 360)
         .frame(height: 31)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: 8).stroke(palette.divider) }
     }
@@ -321,7 +321,7 @@ struct GitHubIssuesView: View {
                 }
             }
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .sheet(item: $editorContext) { context in
             IssueEditorSheet(
                 context: context,
@@ -442,7 +442,7 @@ struct GitHubIssuesView: View {
         .padding(.horizontal, 10)
         .frame(minWidth: 220, idealWidth: 300, maxWidth: 360)
         .frame(height: 31)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: 8).stroke(palette.divider) }
     }
@@ -786,7 +786,7 @@ private struct IssueEditorSheet: View {
                 .padding(20)
             }
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func editorField(_ label: String, text: Binding<String>) -> some View {

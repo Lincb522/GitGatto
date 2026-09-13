@@ -13,7 +13,7 @@ struct AboutGitGattoView: View {
         let palette = AppPalette(colorScheme)
         let theme = AppVisualTheme.resolved(themeRaw)
         let contentSize = aboutContentSize(for: theme)
-        VStack(spacing: theme == .softGlass ? 10 : 0) {
+        VStack(spacing: [.softGlass, .frost].contains(theme) ? 10 : 0) {
             aboutHeader(theme: theme)
 
             VStack(alignment: .leading, spacing: 11) {
@@ -44,6 +44,7 @@ struct AboutGitGattoView: View {
             }
             .padding(14)
             .modifier(AboutSectionChrome(theme: theme, role: .content))
+            .frostDocumentSurface()
 
             HStack(spacing: 10) {
                 GattoLabel("ZIJIU522", systemImage: "person.crop.circle")
@@ -80,7 +81,7 @@ struct AboutGitGattoView: View {
         .padding(.top, 28)
         .padding(.bottom, theme == .lumen ? 8 : 12)
         .frame(width: contentSize.width, height: contentSize.height)
-        .background(theme == .lumen ? Color.clear : palette.surface)
+        .background([.lumen, .frost].contains(theme) ? Color.clear : palette.surface)
         .ignoresSafeArea(.container, edges: .top)
         .environment(\.layoutDirection, .leftToRight)
         .background(AboutWindowSizeController(contentSize: contentSize))
@@ -130,7 +131,9 @@ struct AboutGitGattoView: View {
 
     private func aboutContentSize(for theme: AppVisualTheme) -> NSSize {
         switch theme {
-        case .softGlass, .frost:
+        case .frost:
+            NSSize(width: 680, height: 460)
+        case .softGlass:
             NSSize(width: 680, height: 410)
         case .lumen:
             NSSize(width: 680, height: 380)
@@ -166,7 +169,7 @@ private struct AboutHeaderChrome: ViewModifier {
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        if theme == .softGlass {
+        if theme == .softGlass || theme == .frost {
             content
         } else if theme == .lumen {
             content.overlay(alignment: .bottom) {
@@ -197,7 +200,10 @@ private struct AboutSectionChrome: ViewModifier {
                     Rectangle().fill(palette.divider).frame(height: 1)
                 }
             }
-        } else if theme == .softGlass || theme == .frost {
+        } else if theme == .frost {
+            if role == .footer { content.frostSurface(.inset, cornerRadius: 20) }
+            else { content }
+        } else if theme == .softGlass {
             content.appGlassPanel(cornerRadius: role == .content ? 16 : 10, elevated: false)
         } else if theme == .folio {
             content.folioSurface(role == .content ? .panel : .elevated, cornerRadius: 16)

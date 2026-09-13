@@ -10,9 +10,9 @@ struct RepositoryDiagnosticsView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
+        ThemedWorkspacePage {
             commandBar(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
+        } content: {
             if let diagnostics = model.repositoryDiagnostics {
                 diagnosticsContent(diagnostics, palette: palette)
             } else if model.activeDiagnosticOperation == .refresh {
@@ -32,7 +32,7 @@ struct RepositoryDiagnosticsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
         .task(id: model.snapshot?.rootURL.standardizedFileURL.path) {
             if model.repositoryDiagnostics == nil, model.snapshot != nil {
                 model.refreshRepositoryDiagnostics()
@@ -67,7 +67,7 @@ struct RepositoryDiagnosticsView: View {
         }
         .padding(.horizontal, 18)
         .frame(height: 62)
-        .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface))
     }
 
     private func diagnosticsContent(_ diagnostics: RepositoryDiagnostics, palette: AppPalette) -> some View {
@@ -289,7 +289,7 @@ private struct DiagnosticStatusStrip: View {
             item("diagnostics.hooks.title", icon: "link", status: diagnostics.hooksStatus, palette: palette)
         }
         .frame(height: 58)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .clipShape(RoundedRectangle(cornerRadius: theme == .console ? 4 : 10, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: theme == .console ? 4 : 10, style: .continuous)
@@ -351,10 +351,10 @@ private struct DiagnosticPanel<Content: View>: View {
             }
             .padding(12)
         }
-        .background(theme == .softGlass ? palette.surface.opacity(0.15) : palette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: theme == .console ? 4 : 10, style: .continuous))
+        .background(theme == .frost ? palette.raisedSurface.opacity(0.35) : (theme == .softGlass ? palette.surface.opacity(0.15) : palette.surface))
+        .clipShape(RoundedRectangle(cornerRadius: theme == .console ? 4 : (theme == .frost ? 20 : 10), style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: theme == .console ? 4 : 10, style: .continuous)
+            RoundedRectangle(cornerRadius: theme == .console ? 4 : (theme == .frost ? 20 : 10), style: .continuous)
                 .stroke(palette.divider, lineWidth: 1)
         }
     }

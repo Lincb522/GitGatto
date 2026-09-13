@@ -122,17 +122,17 @@ struct AppSettingsView: View {
     }
 
     private func frostLayout(_ palette: AppPalette) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 20) {
             settingsIndex(palette)
-                .frame(width: 190)
-            VStack(spacing: 10) {
+                .frame(width: 180)
+            VStack(spacing: 12) {
                 settingsPageBar(palette)
-                    .frostSurface(.chrome, cornerRadius: 18)
-                settingsContent(palette, includesPageTitle: false)
-                    .frostSurface(.panel)
+                FrostFolderPanel {
+                    settingsContent(palette, includesPageTitle: false)
+                }
             }
-            .padding(.trailing, 16)
-            .padding(.bottom, 16)
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
             .padding(.top, 28)
         }
     }

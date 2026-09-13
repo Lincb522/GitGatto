@@ -11,7 +11,16 @@ struct WorktreeWorkspaceView: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         Group {
-            if theme == .emerald {
+            if theme == .frost {
+                VStack(spacing: 12) {
+                    commandBar(palette)
+                    FrostWorkspaceSplit {
+                        inspector(palette)
+                    } sidebar: {
+                        collection(palette)
+                    }
+                }
+            } else if theme == .emerald {
                 VStack(spacing: 10) {
                     commandBar(palette)
                         .emeraldSurface(.elevated, cornerRadius: 16)
@@ -58,7 +67,7 @@ struct WorktreeWorkspaceView: View {
                 }
             }
         }
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
         .confirmationDialog(
             L10n.text("worktree.remove.confirm.title"),
             isPresented: $confirmsRemoval,
@@ -134,7 +143,7 @@ struct WorktreeWorkspaceView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 18)
-        .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface))
     }
 
     private func collection(_ palette: AppPalette) -> some View {

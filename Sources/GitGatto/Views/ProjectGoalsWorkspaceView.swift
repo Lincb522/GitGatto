@@ -15,9 +15,9 @@ struct ProjectGoalsWorkspaceView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
+        ThemedWorkspacePage {
             commandBar(palette)
-            Divider().overlay(palette.divider)
+        } content: {
             if showsHistory {
                 ProjectGoalHistoryView(model: model) { showsHistory = false }
             } else if showsComposer || model.projectGoalSourceDraft != nil || model.currentRepositoryGoals.isEmpty {
@@ -33,7 +33,7 @@ struct ProjectGoalsWorkspaceView: View {
         }
         .foregroundStyle(palette.ink)
         .fontDesign(theme == .console ? .monospaced : .default)
-        .background(theme == .softGlass ? Color.clear : palette.background)
+        .background([.softGlass, .frost].contains(theme) ? Color.clear : palette.background)
         .task(id: model.snapshot?.rootURL.standardizedFileURL.path) {
             showsComposer = false
             showsHistory = false
@@ -87,7 +87,7 @@ struct ProjectGoalsWorkspaceView: View {
         }
         .padding(.horizontal, 16)
         .frame(minHeight: 58)
-        .background(theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface)
+        .background(theme == .frost ? Color.clear : (theme == .softGlass ? palette.surface.opacity(0.16) : palette.surface))
     }
 }
 

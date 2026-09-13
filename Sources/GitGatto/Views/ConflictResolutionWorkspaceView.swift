@@ -5,33 +5,55 @@ struct ConflictResolutionWorkspaceView: View {
     let state: RepositoryOperationState
 
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
     @State private var selectedSource: ConflictSource = .ours
     @State private var isConfirmingAbort = false
     @State private var selectedBlockIndex = 0
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            operationHeader(palette: palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-
-            GeometryReader { proxy in
-                if state.conflictedPaths.isEmpty {
-                    resolvedState(palette: palette)
-                } else {
-                    HStack(spacing: 0) {
-                        conflictList(palette: palette)
-                            .frame(width: min(250, max(196, proxy.size.width * 0.21)))
-                        Rectangle().fill(palette.divider).frame(width: 1)
-                        conflictEditor(compact: proxy.size.width < 920, palette: palette)
+        Group {
+            if AppVisualTheme.resolved(themeRaw) == .frost {
+                VStack(spacing: 12) {
+                    operationHeader(palette: palette)
+                    if state.conflictedPaths.isEmpty {
+                        FrostFolderPanel { resolvedState(palette: palette) }
+                    } else {
+                        FrostWorkspaceSplit(sidebarWidth: 280) {
+                            GeometryReader { proxy in
+                                conflictEditor(compact: proxy.size.width < 920, palette: palette)
+                            }
+                        } sidebar: {
+                            conflictList(palette: palette)
+                        }
                     }
+                    operationControls(palette: palette)
+                        .frostSurface(.panel, cornerRadius: 24)
+                }
+            } else {
+                VStack(spacing: 0) {
+                    operationHeader(palette: palette)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+
+                    GeometryReader { proxy in
+                        if state.conflictedPaths.isEmpty {
+                            resolvedState(palette: palette)
+                        } else {
+                            HStack(spacing: 0) {
+                                conflictList(palette: palette)
+                                    .frame(width: min(250, max(196, proxy.size.width * 0.21)))
+                                Rectangle().fill(palette.divider).frame(width: 1)
+                                conflictEditor(compact: proxy.size.width < 920, palette: palette)
+                            }
+                        }
+                    }
+
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    operationControls(palette: palette)
                 }
             }
-
-            Rectangle().fill(palette.divider).frame(height: 1)
-            operationControls(palette: palette)
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .confirmationDialog(
             L10n.text("conflict.abort.confirm.title"),
             isPresented: $isConfirmingAbort,
@@ -239,14 +261,24 @@ struct ConflictResolutionWorkspaceView: View {
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(palette.ink)
                 Spacer()
-                Picker("", selection: $selectedSource) {
-                    ForEach(ConflictSource.allCases) { source in
-                        Text(L10n.text(source.titleKey)).tag(source)
+                ViewThatFits(in: .horizontal) {
+                    Picker("", selection: $selectedSource) {
+                        ForEach(ConflictSource.allCases) { source in
+                            Text(L10n.text(source.titleKey)).tag(source)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize(horizontal: true, vertical: false)
+                    Picker("", selection: $selectedSource) {
+                        ForEach(ConflictSource.allCases) { source in
+                            Text(L10n.text(source.titleKey)).tag(source)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 270)
+                .frame(maxWidth: 360, alignment: .trailing)
             }
             .padding(.horizontal, 12)
             .frame(height: 44)

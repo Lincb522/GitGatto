@@ -1332,3 +1332,83 @@ struct FrostFolderShape: Shape {
         return path
     }
 }
+
+/// Detail-first Frost layout; compact containers keep the catalogue above the document.
+struct FrostWorkspaceSplit<Main: View, Sidebar: View>: View {
+    var sidebarWidth: CGFloat = 310
+    var wrapsSidebar = true
+    @ViewBuilder var main: () -> Main
+    @ViewBuilder var sidebar: () -> Sidebar
+
+    var body: some View {
+        GeometryReader { proxy in
+            if proxy.size.width < 740 {
+                VStack(spacing: 14) {
+                    sidebarSurface.frame(height: min(240, max(140, proxy.size.height * 0.36)))
+                    FrostFolderPanel { main() }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else {
+                HStack(alignment: .top, spacing: 18) {
+                    FrostFolderPanel { main() }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    sidebarSurface
+                        .frame(width: min(sidebarWidth, proxy.size.width * 0.38))
+                        .padding(.top, 26)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var sidebarSurface: some View {
+        if wrapsSidebar {
+            sidebar().frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frostSurface(.panel, cornerRadius: 24)
+        } else {
+            sidebar().frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+/// Page actions stay on the window material; only the document receives the folder surface.
+struct ThemedWorkspacePage<Header: View, Content: View>: View {
+    @ViewBuilder var header: () -> Header
+    @ViewBuilder var content: () -> Content
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        if AppVisualTheme.resolved(themeRaw) == .frost {
+            VStack(spacing: 12) {
+                header()
+                FrostFolderPanel { content().frame(maxWidth: .infinity, maxHeight: .infinity) }
+            }
+        } else {
+            VStack(spacing: 0) {
+                header()
+                Rectangle().fill(AppPalette(colorScheme).divider).frame(height: 1)
+                content()
+            }
+        }
+    }
+}
+
+extension AppPalette {
+    var workspaceSurface: Color { AppStyleDefaults.theme == .frost ? .clear : surface }
+    var workspaceBackground: Color { AppStyleDefaults.theme == .frost ? .clear : background }
+}
+
+private struct FrostDocumentSurfaceModifier: ViewModifier {
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
+    func body(content: Content) -> some View {
+        if AppVisualTheme.resolved(themeRaw) == .frost {
+            FrostFolderPanel { content }
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func frostDocumentSurface() -> some View { modifier(FrostDocumentSurfaceModifier()) }
+}

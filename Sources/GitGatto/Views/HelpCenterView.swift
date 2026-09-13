@@ -6,6 +6,7 @@ struct HelpCenterView: View {
     @AppStorage("help.selectedTopic") private var selectedTopicRaw = HelpTopic.gettingStarted.rawValue
 
     @State private var query = ""
+    @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
     private var filteredTopics: [HelpTopic] { HelpTopic.allCases.filter { $0.matches(query) } }
 
@@ -15,59 +16,67 @@ struct HelpCenterView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        HStack(spacing: AppThemeLayout.panelSpacing) {
-            VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 6) {
-                    AppBrandLockup(iconSize: 32, wordmarkWidth: 88, spacing: 7)
-                    Text(L10n.text("help.short_title"))
-                        .font(.system(size: 13.5, weight: .semibold))
-                        .foregroundStyle(palette.ink)
-                }
-                .padding(18)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        let navigation = VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                AppBrandLockup(iconSize: 32, wordmarkWidth: 88, spacing: 7)
+                Text(L10n.text("help.short_title"))
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-                Rectangle().fill(palette.divider).frame(height: 1)
+            Rectangle().fill(palette.divider).frame(height: 1)
 
-                TextField(L10n.text("help.search"), text: $query)
-                    .textFieldStyle(.roundedBorder).padding(12)
-                if filteredTopics.isEmpty {
-                    Text(L10n.text("search.noResults")).font(.caption).padding(12)
-                }
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 4) {
-                            ForEach(filteredTopics) { topic in
-                                HelpTopicButton(
-                                    topic: topic,
-                                    isSelected: selectedTopic == topic
-                                ) {
-                                    selectedTopicRaw = topic.rawValue
-                                }
-                                .id(topic.id)
+            TextField(L10n.text("help.search"), text: $query)
+                .textFieldStyle(.roundedBorder).padding(12)
+            if filteredTopics.isEmpty {
+                Text(L10n.text("search.noResults")).font(.caption).padding(12)
+            }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(filteredTopics) { topic in
+                            HelpTopicButton(
+                                topic: topic,
+                                isSelected: selectedTopic == topic
+                            ) {
+                                selectedTopicRaw = topic.rawValue
                             }
+                            .id(topic.id)
                         }
-                        .padding(10)
                     }
-                    .onChange(of: selectedTopicRaw, initial: true) { _, _ in
-                        proxy.scrollTo(selectedTopic.id, anchor: .center)
-                    }
+                    .padding(10)
+                }
+                .onChange(of: selectedTopicRaw, initial: true) { _, _ in
+                    proxy.scrollTo(selectedTopic.id, anchor: .center)
                 }
             }
-            .frame(width: 226)
-            .background(palette.sidebar.opacity(0.28))
-            .appGlassPanel()
-
-            VStack(spacing: 0) {
-                if let openTopic, selectedTopic.workspaceSection != nil || selectedTopic.projectTool != nil {
-                    HStack {
-                        Spacer()
-                        Button(L10n.text("help.openFeature")) { openTopic(selectedTopic) }
-                            .buttonStyle(PrimaryButtonStyle())
-                    }.padding(12)
-                }
-                HelpArticleView(topic: selectedTopic)
+        }
+        let article = VStack(spacing: 0) {
+            if let openTopic, selectedTopic.workspaceSection != nil || selectedTopic.projectTool != nil {
+                HStack {
+                    Spacer()
+                    Button(L10n.text("help.openFeature")) { openTopic(selectedTopic) }
+                        .buttonStyle(PrimaryButtonStyle())
+                }.padding(12)
             }
-            .appGlassPanel()
+            HelpArticleView(topic: selectedTopic)
+        }
+        Group {
+            if AppVisualTheme.resolved(themeRaw) == .frost {
+                FrostWorkspaceSplit(sidebarWidth: 226) {
+                    article
+                } sidebar: {
+                    navigation
+                }
+            } else {
+                HStack(spacing: AppThemeLayout.panelSpacing) {
+                    navigation.frame(width: 226)
+                        .background(palette.sidebar.opacity(0.28)).appGlassPanel()
+                    article.appGlassPanel()
+                }
+            }
         }
         .padding(AppThemeLayout.workspaceInset)
         .frame(minWidth: 820, minHeight: 600)
@@ -228,8 +237,9 @@ struct WorkspaceQuickGuideSheet: View {
             .padding(14)
             .layoutPriority(1)
         }
+        .frostDocumentSurface()
         .frame(width: 470, height: 540)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
     }
 
     private func guideSection(
@@ -369,6 +379,6 @@ struct HelpArticleView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .id(topic.id)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
     }
 }

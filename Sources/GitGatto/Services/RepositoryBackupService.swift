@@ -31,6 +31,7 @@ actor RepositoryBackupService: RepositoryBackupServing {
     private let synchronizeFileSystemItem: @Sendable (URL) throws -> Void
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
+    private let comparisonContentCache = RepositoryBackupContentCache()
     private var activeStorageOperations = 0
     private var isMigratingStorage = false
     private var storageWaiters: [(id: UUID, continuation: CheckedContinuation<Void, Error>)] = []
@@ -270,7 +271,8 @@ actor RepositoryBackupService: RepositoryBackupServing {
                 repository: repository,
                 currentPaths: Set(current.changedPaths),
                 currentHead: current.headSHA,
-                currentBranch: current.branchName
+                currentBranch: current.branchName,
+                contentCache: comparisonContentCache
             ).run()
         }
         return RepositoryProtectionAssessment(

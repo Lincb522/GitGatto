@@ -5,6 +5,31 @@ import Testing
 
 @Suite("Repository guard regressions", .serialized)
 struct RepositoryGuardRegressionTests {
+    @Test("Repeated audits still find edits and deletion among cached backup payloads")
+    func cachedPayloadsPreserveProtection() async throws {
+        let fixture = try await GuardFixture.make()
+        defer { fixture.remove() }
+        for index in 0..<12 { try fixture.write("payload-\(index)", "uncommitted payload\n") }
+        let baseline = try #require(await fixture.service.createBackup(
+            for: fixture.repository, reason: .manual, policy: .standard))
+        let indexURL = fixture.repository.appendingPathComponent(".git/index")
+        let originalIndex = try Data(contentsOf: indexURL)
+        for edit in 0..<3 {
+            try fixture.write("tracked.txt", "edit \(edit)\n")
+            let result = try await fixture.service.assessChanges(after: baseline, in: fixture.repository)
+            #expect(result.changedPathsSinceBaseline == ["tracked.txt"])
+            #expect(result.deletedPaths.isEmpty)
+        }
+        try fixture.write("payload-1", "new payload content\n")
+        try FileManager.default.removeItem(at: fixture.repository.appendingPathComponent("payload-2"))
+        let result = try await fixture.service.assessChanges(after: baseline, in: fixture.repository)
+        #expect(Set(result.changedPathsSinceBaseline) == ["tracked.txt", "payload-1", "payload-2"])
+        #expect(result.deletedPaths == ["payload-2"])
+        #expect(try Data(contentsOf: indexURL) == originalIndex)
+        let restored = try await fixture.service.restore(baseline, to: fixture.root.appendingPathComponent("restored"))
+        #expect(try String(contentsOf: restored.appendingPathComponent("payload-2"), encoding: .utf8) == "uncommitted payload\n")
+    }
+
     @Test("Read-only backup comparison does not retrigger monitoring or follow symlinks", .timeLimit(.minutes(1)))
     func comparisonDoesNotRetriggerMonitoring() async throws {
         let fixture = try await GuardFixture.make()

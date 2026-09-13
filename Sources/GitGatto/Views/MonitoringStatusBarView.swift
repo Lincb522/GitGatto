@@ -70,6 +70,7 @@ struct MonitoringStatusBarView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     repositorySummary
+                        .frostDocumentSurface()
                     if !engine.repositories.isEmpty {
                         repositoryPanel
                         activityPanel
@@ -85,7 +86,7 @@ struct MonitoringStatusBarView: View {
         // Give MenuBarExtra a stable preferred size while repository results load;
         // the scroll viewport takes the remaining space between header and footer.
         .frame(width: size.width, height: size.height)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
         .onAppear { screenSize = Self.currentScreenSize }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
             screenSize = Self.currentScreenSize
@@ -620,7 +621,9 @@ private extension View {
         elevated: Bool = false
     ) -> some View {
         switch theme {
-        case .softGlass, .frost:
+        case .frost:
+            frostSurface(elevated ? .panel : .inset, cornerRadius: 24)
+        case .softGlass:
             appGlassPanel(cornerRadius: 14, elevated: elevated)
         case .emerald:
             emeraldSurface(elevated ? .elevated : .panel, cornerRadius: 14)

@@ -40,7 +40,7 @@ struct RepositorySyncWorkspaceView: View {
                 }
             }
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func summary(_ palette: AppPalette) -> some View {
@@ -75,7 +75,7 @@ struct RepositorySyncWorkspaceView: View {
         }
         .padding(.horizontal, 18)
         .frame(minHeight: 68)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func operationBar(_ palette: AppPalette) -> some View {

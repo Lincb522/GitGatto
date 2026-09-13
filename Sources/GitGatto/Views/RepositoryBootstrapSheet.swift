@@ -111,8 +111,9 @@ struct RepositoryBootstrapSheet: View {
             }
             .padding(16)
         }
+        .frostDocumentSurface()
         .frame(minWidth: 380, idealWidth: 560, minHeight: 460, idealHeight: 660)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .interactiveDismissDisabled(model.isRunning)
         .onChange(of: model.createRemote) { _, enabled in if enabled { model.accountRefreshID = UUID() } }
         .task(id: model.accountRefreshID) { await model.refreshAccount(); model.startAutomaticAgentIfReady() }

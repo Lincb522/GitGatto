@@ -59,7 +59,7 @@ struct MarketplaceCatalogHeader<Controls: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(height: 62)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 }
 
@@ -74,7 +74,16 @@ struct MarketplaceWorkspaceLayout<Header: View, Catalog: View, Detail: View>: Vi
         let palette = AppPalette(colorScheme)
         let theme = AppVisualTheme.resolved(themeRaw)
         Group {
-            if theme == .emerald {
+            if theme == .frost {
+                VStack(spacing: 12) {
+                    header()
+                    FrostWorkspaceSplit(sidebarWidth: 320) {
+                        detail()
+                    } sidebar: {
+                        catalog()
+                    }
+                }
+            } else if theme == .emerald {
                 VStack(spacing: 10) {
                     header()
                         .emeraldSurface(.elevated, cornerRadius: 16)
@@ -115,6 +124,6 @@ struct MarketplaceWorkspaceLayout<Header: View, Catalog: View, Detail: View>: Vi
                 }
             }
         }
-        .background(palette.background)
+        .background(palette.workspaceBackground)
     }
 }

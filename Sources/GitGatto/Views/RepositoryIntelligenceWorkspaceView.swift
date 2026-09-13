@@ -10,9 +10,9 @@ struct RepositoryIntelligenceWorkspaceView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
+        ThemedWorkspacePage {
             header(palette: palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
+        } content: {
 
             Group {
                 switch model.selectedTab {
@@ -113,7 +113,7 @@ struct RepositoryIntelligenceWorkspaceView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 52)
-        .background(palette.surface.opacity(theme == .softGlass ? 0.32 : 1))
+        .background(palette.workspaceSurface.opacity(theme == .softGlass ? 0.32 : 1))
     }
 }
 
@@ -227,7 +227,7 @@ private struct CodeProvenanceWorkspace: View {
                                 .foregroundStyle(palette.ink)
                                 .padding(10)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(palette.background)
+                                .background(palette.workspaceBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                 .textSelection(.enabled)
                         }

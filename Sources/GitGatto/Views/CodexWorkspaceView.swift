@@ -9,20 +9,38 @@ struct CodexWorkspaceView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            header(palette)
-            Rectangle()
-                .fill(palette.divider)
-                .frame(height: 1)
-
-            if model.codexAvailability.state == .unavailable {
-                unavailableState(palette)
+        Group {
+            if AppStyleDefaults.theme == .frost {
+                VStack(spacing: 12) {
+                    header(palette)
+                    FrostFolderPanel {
+                        if model.codexAvailability.state == .unavailable {
+                            unavailableState(palette)
+                        } else {
+                            conversation(palette)
+                        }
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if model.codexAvailability.state != .unavailable {
+                        composer(palette).frostSurface(.panel, cornerRadius: 24)
+                    }
+                }
             } else {
-                conversation(palette)
-                composer(palette)
+                VStack(spacing: 0) {
+                    header(palette)
+                    Rectangle()
+                        .fill(palette.divider)
+                        .frame(height: 1)
+
+                    if model.codexAvailability.state == .unavailable {
+                        unavailableState(palette)
+                    } else {
+                        conversation(palette)
+                        composer(palette)
+                    }
+                }
             }
         }
-        .background(palette.background)
+        .background(palette.workspaceBackground)
 #if DEBUG
         .onAppear {
             if ProcessInfo.processInfo.environment["GITGATTO_COMPOSER_TOOLS_PREVIEW"] == "1" {
@@ -93,7 +111,7 @@ struct CodexWorkspaceView: View {
         }
         .padding(.horizontal, 20)
         .frame(height: 68)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private var scopeText: String {
@@ -324,7 +342,7 @@ struct CodexWorkspaceView: View {
                 }
                 .frame(maxWidth: 808)
                 .frame(maxWidth: .infinity)
-                .background(palette.surface)
+                .background(palette.workspaceSurface)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
@@ -430,7 +448,7 @@ struct CodexWorkspaceView: View {
             .padding(.top, 16)
             .padding(.bottom, promptStatus == nil ? 16 : 6)
             .frame(maxWidth: .infinity)
-            .background(palette.surface)
+            .background(palette.workspaceSurface)
 
             if let promptStatus {
                 HStack(spacing: 7) {
@@ -445,7 +463,7 @@ struct CodexWorkspaceView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
-                .background(palette.surface)
+                .background(palette.workspaceSurface)
             }
         }
     }

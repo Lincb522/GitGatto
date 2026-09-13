@@ -100,7 +100,7 @@ struct DeveloperToolDetailView: View {
                     }
                 }
                 .padding(20)
-                .background(palette.surface)
+                .background(palette.workspaceSurface)
 
                 Rectangle().fill(palette.divider).frame(height: 1)
 
@@ -272,7 +272,7 @@ struct DeveloperToolDetailView: View {
             }
         }
         .padding(14)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 13, style: .continuous)

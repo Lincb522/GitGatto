@@ -1,5 +1,13 @@
 ## Added
 
-- Added the Frost theme with light and dark appearances, frosted white and blue-gray surfaces, circular navigation and graphite pill buttons.
-- Frost uses a layered folder-style diff panel with separate file-list and commit cards on the right. File selection and commit composition scroll independently.
-- Open the repository picker from the top-left logo and access other destinations through the navigation menu. Settings, the monitoring panel and code surfaces support the new theme.
+- Added Frost, a theme with light and dark appearances, frosted surfaces, circular navigation and a layered folder-style workspace.
+- Frost covers projects, the app catalog, goals, Agent, recovery and repository tools. Settings, the menu-bar panel and guides use matching surfaces, with panels adapting to the window width.
+
+## Improved
+
+- Widened the expanded sidebar to give labels, icons and counts more room. Previously saved narrow widths use the new minimum.
+- Repository Guard reuses verified comparisons for unchanged files, reducing repeated reads of source files and backups. Edits, replacements and deletions invalidate the comparison.
+
+## Fixed
+
+- Fixed large sidebar counts wrapping or being clipped.

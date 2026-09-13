@@ -16,37 +16,43 @@ struct RepositoryRecoveryView: View {
 
     var body: some View {
         let palette = AppPalette(colorScheme)
-        VStack(spacing: 0) {
-            header(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            metrics(palette)
-            Rectangle().fill(palette.divider).frame(height: 1)
-            if !model.repositoryProtectionIncidents.isEmpty {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(model.repositoryProtectionIncidents) { incident in
-                            protectionIncident(incident, palette: palette)
+        Group {
+            if AppStyleDefaults.theme == .frost {
+                frostWorkspace(palette)
+            } else {
+                VStack(spacing: 0) {
+                    header(palette)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    metrics(palette)
+                    Rectangle().fill(palette.divider).frame(height: 1)
+                    if !model.repositoryProtectionIncidents.isEmpty {
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(model.repositoryProtectionIncidents) { incident in
+                                    protectionIncident(incident, palette: palette)
+                                }
+                            }
+                        }
+                        .frame(maxHeight: 180)
+                        Rectangle().fill(palette.divider).frame(height: 1)
+                    }
+
+                    if model.isLoadingRepositoryBackups, model.repositoryBackups.isEmpty {
+                        GattoLoadingState(text: L10n.text("recovery.loading"))
+                    } else if model.repositoryBackups.isEmpty {
+                        emptyState(palette)
+                    } else {
+                        HStack(spacing: 0) {
+                            backupList(palette)
+                                .frame(minWidth: 270, idealWidth: 320, maxWidth: 360)
+                            Rectangle().fill(palette.divider).frame(width: 1)
+                            backupDetail(palette)
                         }
                     }
                 }
-                .frame(maxHeight: 180)
-                Rectangle().fill(palette.divider).frame(height: 1)
-            }
-
-            if model.isLoadingRepositoryBackups, model.repositoryBackups.isEmpty {
-                GattoLoadingState(text: L10n.text("recovery.loading"))
-            } else if model.repositoryBackups.isEmpty {
-                emptyState(palette)
-            } else {
-                HStack(spacing: 0) {
-                    backupList(palette)
-                        .frame(minWidth: 270, idealWidth: 320, maxWidth: 360)
-                    Rectangle().fill(palette.divider).frame(width: 1)
-                    backupDetail(palette)
-                }
             }
         }
-        .background(palette.background)
+        .background(palette.workspaceBackground)
         .task {
             if model.repositoryBackups.isEmpty {
                 await model.reloadRepositoryBackups()
@@ -83,6 +89,36 @@ struct RepositoryRecoveryView: View {
             }
             Button(L10n.text("action.cancel"), role: .cancel) { pendingExpectedIncident = nil }
         } message: { Text(L10n.text("recovery.guard.expectedHelp")) }
+    }
+
+    private func frostWorkspace(_ palette: AppPalette) -> some View {
+        VStack(spacing: 12) {
+            header(palette)
+            if !model.repositoryProtectionIncidents.isEmpty {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(model.repositoryProtectionIncidents) { incident in
+                            protectionIncident(incident, palette: palette)
+                        }
+                    }
+                }.frame(maxHeight: 150).frostSurface(.inset, cornerRadius: 22)
+            }
+            FrostWorkspaceSplit(sidebarWidth: 320, wrapsSidebar: false) {
+                if model.isLoadingRepositoryBackups, model.repositoryBackups.isEmpty {
+                    GattoLoadingState(text: L10n.text("recovery.loading"))
+                } else if model.repositoryBackups.isEmpty {
+                    emptyState(palette)
+                } else {
+                    backupDetail(palette)
+                }
+            } sidebar: {
+                VStack(spacing: 14) {
+                    frostMetrics(palette).frostSurface(.panel, cornerRadius: 24)
+                    backupList(palette).frame(maxHeight: .infinity)
+                        .frostSurface(.panel, cornerRadius: 24)
+                }
+            }
+        }
     }
 
     private func protectionIncident(
@@ -190,7 +226,7 @@ struct RepositoryRecoveryView: View {
                 .stroke(palette.warning.opacity(0.38), lineWidth: 1)
         }
         .padding(12)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func header(_ palette: AppPalette) -> some View {
@@ -273,7 +309,7 @@ struct RepositoryRecoveryView: View {
         }
         .padding(.horizontal, 18)
         .frame(height: 64)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func metrics(_ palette: AppPalette) -> some View {
@@ -310,7 +346,44 @@ struct RepositoryRecoveryView: View {
             )
         }
         .padding(12)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
+    }
+
+    private func frostMetrics(_ palette: AppPalette) -> some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            metric(
+                title: L10n.text("recovery.metric.repositories"),
+                value: String(model.protectedRepositoryCount),
+                icon: "folder.badge.plus",
+                palette: palette
+            )
+            metric(
+                title: L10n.text("recovery.metric.backups"),
+                value: String(model.repositoryBackups.count),
+                icon: "archivebox",
+                palette: palette
+            )
+            metric(
+                title: L10n.text("recovery.metric.storage"),
+                value: ByteCountFormatter.string(
+                    fromByteCount: model.repositoryBackupStorageBytes,
+                    countStyle: .file
+                ),
+                icon: "externaldrive.fill",
+                palette: palette
+            )
+            metric(
+                title: L10n.text("recovery.metric.latest"),
+                value: model.lastRepositoryBackupAt.map {
+                    $0.formatted(.dateTime.month(.twoDigits).day(.twoDigits)) + "\n"
+                        + $0.formatted(date: .omitted, time: .shortened)
+                } ?? L10n.text("recovery.value.none"),
+                icon: "clock.arrow.circlepath",
+                palette: palette
+            )
+        }
+        .padding(12)
+        .background(palette.workspaceSurface)
     }
 
     private func metric(
@@ -332,12 +405,12 @@ struct RepositoryRecoveryView: View {
                 Text(value)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(palette.ink)
-                    .lineLimit(1)
+                    .lineLimit(AppStyleDefaults.theme == .frost ? 2 : 1)
             }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 11)
-        .frame(maxWidth: .infinity, minHeight: 48)
+        .frame(maxWidth: .infinity, minHeight: AppStyleDefaults.theme == .frost ? 62 : 48)
         .background(palette.raisedSurface)
         .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
         .overlay {
@@ -511,7 +584,7 @@ struct RepositoryRecoveryView: View {
                 .frame(maxWidth: 760, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .background(palette.background)
+            .background(palette.workspaceBackground)
         } else {
             Text(L10n.text("recovery.detail.select"))
                 .font(.system(size: 12, weight: .medium))
@@ -592,7 +665,7 @@ struct RepositoryRecoveryView: View {
             .foregroundStyle(palette.ink)
             .padding(.horizontal, 7)
             .frame(height: 20)
-            .background(palette.surface)
+            .background(palette.workspaceSurface)
             .clipShape(Capsule())
             .overlay {
                 Capsule().stroke(palette.divider, lineWidth: 1)

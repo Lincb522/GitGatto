@@ -193,7 +193,7 @@ struct ApplicationMarketplaceView: View {
                 }
             }
         }
-        .background(palette.sidebar)
+        .background(AppStyleDefaults.theme == .frost ? Color.clear : palette.sidebar)
     }
 
     private func applicationCollectionBar(_ palette: AppPalette) -> some View {
@@ -246,7 +246,7 @@ struct ApplicationMarketplaceView: View {
             }
         }
         .padding(8)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private var applicationResultTitle: String {
@@ -283,22 +283,21 @@ struct ApplicationMarketplaceView: View {
             VStack(spacing: 0) {
                 applicationHeader(application, palette: palette)
                 Rectangle().fill(palette.divider).frame(height: 1)
-                HStack(spacing: 12) {
-                    Picker("", selection: $selectedDetailTab) {
-                        ForEach(MarketplaceDetailTab.allCases) { tab in
-                            Text(L10n.text("marketplace.detail.\(tab.rawValue)"))
-                                .tag(tab)
-                        }
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) {
+                        detailTabPicker
+                        Spacer(minLength: 8)
+                        translationMenu(palette).fixedSize(horizontal: true, vertical: false)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: 240)
-                    Spacer()
-                    translationMenu(palette)
+                    VStack(alignment: .leading, spacing: 10) {
+                        detailTabPicker
+                        translationMenu(palette).fixedSize(horizontal: true, vertical: false)
+                    }
+                    .padding(.vertical, 10)
                 }
                 .padding(.horizontal, 20)
-                .frame(height: 50)
-                .background(palette.surface)
+                .frame(minHeight: 50)
+                .background(palette.workspaceSurface)
                 Rectangle().fill(palette.divider).frame(height: 1)
 
                 switch selectedDetailTab {
@@ -320,6 +319,18 @@ struct ApplicationMarketplaceView: View {
         } else {
             ProjectEmptyState(systemImage: "arrow.down.app", titleKey: "marketplace.select")
         }
+    }
+
+    private var detailTabPicker: some View {
+        Picker("", selection: $selectedDetailTab) {
+            ForEach(MarketplaceDetailTab.allCases) { tab in
+                Text(L10n.text("marketplace.detail.\(tab.rawValue)"))
+                    .tag(tab)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .frame(width: 240)
     }
 
     private func applicationHeader(
@@ -346,7 +357,7 @@ struct ApplicationMarketplaceView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
     }
 
     private func applicationIdentity(

@@ -11,7 +11,13 @@ struct HistoryWorkspaceView: View {
         let palette = AppPalette(colorScheme)
         let selectedNode = model.commitGraph.nodes.first { $0.hash == model.selectedCommit?.hash }
         GeometryReader { proxy in
-            if AppVisualTheme.resolved(themeRaw) == .standard {
+            if AppVisualTheme.resolved(themeRaw) == .frost {
+                FrostWorkspaceSplit(sidebarWidth: 350) {
+                    CommitInspector(model: model, node: selectedNode)
+                } sidebar: {
+                    CommitNavigator(model: model)
+                }
+            } else if AppVisualTheme.resolved(themeRaw) == .standard {
                 HStack(spacing: 0) {
                     CommitNavigator(model: model)
                         .frame(width: min(480, max(350, proxy.size.width * 0.44)))
@@ -63,7 +69,7 @@ struct HistoryWorkspaceView: View {
                         .appConsolePanel()
                 }
                 .padding(8)
-                .background(palette.background)
+                .background(palette.workspaceBackground)
             }
         }
     }
@@ -167,7 +173,7 @@ private struct CommitNavigator: View {
                 }
             }
         }
-        .background(palette.surface)
+        .background(palette.workspaceSurface)
         .sheet(isPresented: $showingComparison) {
             ReferenceComparisonSheet(model: model, isPresented: $showingComparison)
         }
@@ -392,10 +398,10 @@ private struct CommitInspector: View {
                     if geometry.size.width >= 600 { wideHeader(commit: commit, palette: palette) }
                     else { compactHeader(commit: commit, palette: palette) }
                 }
-                .background(palette.surface)
+                .background(palette.workspaceSurface)
                 CommitActionsBar(model: model, commit: commit)
                     .padding(.horizontal, 14).padding(.bottom, 10)
-                    .background(palette.surface)
+                    .background(palette.workspaceSurface)
             } else {
                 HStack {
                     Text(L10n.text("history.detail.title"))
@@ -405,7 +411,7 @@ private struct CommitInspector: View {
                 }
                 .padding(.horizontal, 16)
                 .frame(height: 56)
-                .background(palette.surface)
+                .background(palette.workspaceSurface)
             }
 
             Rectangle()
@@ -451,7 +457,7 @@ private struct CommitInspector: View {
                 }
                 .padding(.horizontal, 14)
                 .frame(height: 42)
-                .background(palette.surface)
+                .background(palette.workspaceSurface)
                 Rectangle().fill(palette.divider).frame(height: 1)
             }
 
@@ -484,7 +490,7 @@ private struct CommitInspector: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .background(palette.background)
+        .background(palette.workspaceBackground)
         .onChange(of: commit?.id) { _, _ in
             presentation = .preview
         }
@@ -668,7 +674,7 @@ private struct ReorderCommitsSheet: View {
                         }
                         .padding(.horizontal, 12)
                         .frame(height: 58)
-                        .background(palette.surface)
+                        .background(palette.workspaceSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay { RoundedRectangle(cornerRadius: 10).stroke(palette.divider) }
                     }
@@ -689,7 +695,7 @@ private struct ReorderCommitsSheet: View {
             .padding(16)
         }
         .frame(width: 620, height: 560)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
     }
 }
 
@@ -753,7 +759,7 @@ private struct ReferenceComparisonSheet: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 920, minHeight: 640)
-        .background(palette.background)
+        .background(palette.workspaceBackground)
     }
 
     private func revisionField(titleKey: String, value: Binding<String>) -> some View {
