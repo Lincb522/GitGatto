@@ -15,7 +15,7 @@ struct ChangesWorkspaceView: View {
             if let operationState = model.repositoryOperationState {
                 if AppVisualTheme.resolved(themeRaw) == .standard {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
-                } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
+                } else if AppVisualTheme.resolved(themeRaw) == .softGlass || AppVisualTheme.resolved(themeRaw) == .frost {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
                 } else if AppVisualTheme.resolved(themeRaw) == .emerald {
                     ConflictResolutionWorkspaceView(model: model, state: operationState)
@@ -40,6 +40,25 @@ struct ChangesWorkspaceView: View {
                         .frame(width: min(380, max(310, proxy.size.width * 0.36)))
                     Rectangle().fill(palette.divider).frame(width: 1)
                     fileInspector
+                }
+            } else if AppVisualTheme.resolved(themeRaw) == .frost {
+                HStack(alignment: .top, spacing: 20) {
+                    FrostFolderPanel {
+                        fileInspector
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack(spacing: 18) {
+                        ChangeNavigator(model: model, showsComposer: false)
+                            .frostSurface(.panel, cornerRadius: 24)
+                            .frame(maxHeight: .infinity)
+                        ScrollView {
+                            CommitComposer(model: model, isInspector: true)
+                        }
+                        .frame(height: min(290, max(260, proxy.size.height * 0.49)))
+                        .frostSurface(.panel, cornerRadius: 24)
+                    }
+                    .frame(width: min(330, max(280, proxy.size.width * 0.27)))
+                    .padding(.top, 24)
                 }
             } else if AppVisualTheme.resolved(themeRaw) == .emerald {
                 HorizontalResizableSplitView(
@@ -196,6 +215,7 @@ struct ChangesWorkspaceView: View {
 private struct ChangeNavigator: View {
     @ObservedObject var model: WorkspaceViewModel
     var showsTitle = true
+    var showsComposer = true
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppStyleDefaults.themeKey) private var themeRaw = AppStyleDefaults.defaultTheme.rawValue
 
@@ -290,13 +310,12 @@ private struct ChangeNavigator: View {
                 }
             }
 
-            Rectangle()
-                .fill(palette.divider)
-                .frame(height: 1)
-
-            CommitComposer(model: model)
+            if showsComposer {
+                Rectangle().fill(palette.divider).frame(height: 1)
+                CommitComposer(model: model)
+            }
         }
-        .background(palette.surface)
+        .background(AppVisualTheme.resolved(themeRaw) == .frost ? Color.clear : palette.surface)
     }
 }
 
@@ -304,6 +323,7 @@ private struct WorkingFileActionsMenu: View {
     @ObservedObject var model: WorkspaceViewModel
     let change: WorkingTreeChange
     @State private var isConfirmingDiscard = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Menu {
@@ -312,11 +332,17 @@ private struct WorkingFileActionsMenu: View {
                 else { Task { await model.discard(change) } }
             }
         } label: {
-            GattoLabel(L10n.text("repository.actions.file"), systemImage: "doc.text")
+            Text(L10n.text("repository.actions.file"))
         }
         .menuStyle(.borderlessButton)
         .fixedSize(horizontal: true, vertical: false)
+        .padding(.leading, 23)
         .frame(minHeight: 28)
+        .overlay(alignment: .leading) {
+            Image(gattoSymbol: "doc.text", pointSize: 17)
+                .foregroundStyle(AppPalette(colorScheme).primary)
+                .allowsHitTesting(false)
+        }
         .confirmationDialog(L10n.text("discard.confirm.title"), isPresented: $isConfirmingDiscard, titleVisibility: .visible) {
             Button(L10n.text("discard.confirm.action"), role: .destructive) {
                 Task { await model.discard(change) }
@@ -598,7 +624,7 @@ private struct CommitComposer: View {
                     .padding(.horizontal, 5)
                     .padding(.vertical, 3)
             }
-                .frame(height: isInspector ? 172 : 68)
+                .frame(height: isInspector && AppStyleDefaults.theme != .frost ? 172 : 68)
                 .background(palette.raisedSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 .overlay {
@@ -652,7 +678,7 @@ private struct CommitComposer: View {
             .opacity(canCommit || model.activeOperation == .commit ? 1 : 0.45)
         }
         .padding(14)
-        .background(palette.surface)
+        .background(AppStyleDefaults.theme == .frost ? Color.clear : palette.surface)
     }
     private var draftButton: some View {
         Button {

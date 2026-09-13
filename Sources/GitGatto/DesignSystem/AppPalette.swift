@@ -100,6 +100,26 @@ struct AppPalette {
             dangerSoft = colors[.dangerSoft]
             warning = colors[.warning]
             warningSoft = colors[.warningSoft]
+        } else if theme == .frost {
+            let dark = scheme == .dark
+            background = OKLCHColor(dark ? 0.245 : 0.940, 0.012, 245).color
+            sidebar = OKLCHColor(dark ? 0.270 : 0.950, 0.012, 245).color
+            surface = OKLCHColor(dark ? 0.290 : 0.985, 0.006, 245).color
+            raisedSurface = OKLCHColor(dark ? 0.345 : 0.998, 0.008, 245).color
+            ink = OKLCHColor(dark ? 0.955 : 0.235, 0.022, 255).color
+            mutedInk = OKLCHColor(dark ? 0.790 : 0.440, 0.020, 255).color
+            subtleInk = OKLCHColor(dark ? 0.745 : 0.475, 0.016, 255).color
+            divider = OKLCHColor(dark ? 0.450 : 0.820, 0.020, 245).color.opacity(0.55)
+            primary = selectedPrimary
+            primarySoft = selectedPrimary.opacity(dark ? 0.18 : 0.10)
+            accent = OKLCHColor(dark ? 0.800 : 0.510, 0.115, 235).color
+            accentSoft = accent.opacity(0.12)
+            success = OKLCHColor(dark ? 0.770 : 0.460, 0.120, 155).color
+            successSoft = success.opacity(0.12)
+            danger = OKLCHColor(dark ? 0.780 : 0.520, 0.155, 25).color
+            dangerSoft = danger.opacity(0.12)
+            warning = OKLCHColor(dark ? 0.830 : 0.510, 0.105, 80).color
+            warningSoft = warning.opacity(0.12)
         } else if theme == .standard, scheme == .dark {
             background = OKLCHColor(0.225, 0.004, 255).color
             sidebar = OKLCHColor(0.265, 0.004, 255).color
@@ -357,6 +377,7 @@ enum AppThemeLayout {
     static var workspaceInset: CGFloat {
         switch AppStyleDefaults.theme {
         case .softGlass: 12
+        case .frost: 16
         case .emerald: 12
         case .folio: 14
         case .lumen: 16
@@ -366,6 +387,7 @@ enum AppThemeLayout {
     static var panelSpacing: CGFloat {
         switch AppStyleDefaults.theme {
         case .softGlass: 12
+        case .frost: 16
         case .emerald: 12
         case .folio: 16
         case .lumen: 14
@@ -375,6 +397,7 @@ enum AppThemeLayout {
     static var panelCornerRadius: CGFloat {
         switch AppStyleDefaults.theme {
         case .softGlass: 16
+        case .frost: 22
         case .emerald: 16
         case .folio: 16
         case .lumen: 18
@@ -386,6 +409,7 @@ enum AppThemeLayout {
         switch AppStyleDefaults.theme {
         case .standard: 6
         case .softGlass: 10
+        case .frost: 18
         case .console: 4
         case .emerald: 10
         case .folio: 12
@@ -461,6 +485,13 @@ struct AppThemeBackdrop: View {
             ZStack {
                 WindowThemeSurface(theme: theme, colorScheme: colorScheme, lumenColors: colors)
                 LumenBackdrop(colorScheme: colorScheme, colors: colors)
+            }
+            .ignoresSafeArea()
+            .accessibilityHidden(true)
+        } else if theme == .frost {
+            ZStack {
+                WindowThemeSurface(theme: theme, colorScheme: colorScheme)
+                FrostBackdrop(colorScheme: colorScheme)
             }
             .ignoresSafeArea()
             .accessibilityHidden(true)
@@ -653,13 +684,15 @@ struct WindowThemeSurface: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        let usesGlass = theme == .softGlass || theme == .lumen
+        let usesGlass = theme == .softGlass || theme == .lumen || theme == .frost
         nsView.material = usesGlass ? .underWindowBackground : .contentBackground
         nsView.blendingMode = usesGlass ? .behindWindow : .withinWindow
         nsView.state = usesGlass ? .followsWindowActiveState : .inactive
         if let effectView = nsView as? GlassEffectView {
             effectView.usesGlass = usesGlass
-            if theme == .lumen {
+            if theme == .frost {
+                effectView.opaqueBackgroundColor = NSColor(AppPalette(colorScheme, theme: .frost).background)
+            } else if theme == .lumen {
                 effectView.opaqueBackgroundColor = NSColor(AppPalette(colorScheme, theme: .lumen, lumenColors: lumenColors).background)
             } else {
                 effectView.opaqueBackgroundColor = colorScheme == .dark
@@ -752,7 +785,9 @@ private struct AppGlassPanelModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         let palette = AppPalette(colorScheme)
-        if AppVisualTheme.resolved(themeRaw) == .softGlass {
+        if AppVisualTheme.resolved(themeRaw) == .frost {
+            content.frostSurface(elevated ? .panel : .inset, cornerRadius: cornerRadius)
+        } else if AppVisualTheme.resolved(themeRaw) == .softGlass {
             content
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .background {
@@ -1032,5 +1067,71 @@ extension Color {
             green: Double((rgb >> 8) & 0xFF) / 255,
             blue: Double(rgb & 0xFF) / 255
         )
+    }
+}
+
+// One native window material supplies blur; inner surfaces only composite tint and edge light.
+struct FrostBackdrop: View {
+    let colorScheme: ColorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        let palette = AppPalette(colorScheme, theme: .frost)
+        ZStack {
+            palette.background.opacity(reduceTransparency ? 1 : (colorScheme == .dark ? 0.82 : 0.64))
+            if !reduceTransparency {
+                GeometryReader { geometry in
+                    RadialGradient(
+                        colors: [palette.accent.opacity(colorScheme == .dark ? 0.12 : 0.11), .clear],
+                        center: .topLeading, startRadius: 0,
+                        endRadius: max(geometry.size.width, geometry.size.height) * 0.8
+                    )
+                    LinearGradient(colors: [.white.opacity(colorScheme == .dark ? 0.035 : 0.26), .clear],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+enum FrostSurfaceRole { case chrome, panel, inset }
+
+private struct FrostSurfaceModifier: ViewModifier {
+    let role: FrostSurfaceRole
+    let cornerRadius: CGFloat
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
+        let palette = AppPalette(colorScheme, theme: .frost)
+        let dark = colorScheme == .dark
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let opacity = reduceTransparency ? 1.0 : (role == .panel ? 0.78 : (role == .chrome ? 0.58 : 0.48))
+        content
+            .background {
+                shape.fill((role == .inset ? palette.sidebar : palette.surface).opacity(opacity))
+            }
+            .clipShape(shape)
+            .overlay {
+                shape.strokeBorder(
+                    LinearGradient(colors: [
+                        .white.opacity(dark ? 0.19 : 0.95),
+                        palette.divider.opacity(0.45),
+                        .white.opacity(dark ? 0.05 : 0.42)
+                    ], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1
+                )
+                if contrast == .increased {
+                    shape.strokeBorder(palette.mutedInk, lineWidth: 1)
+                }
+            }
+            .shadow(color: .black.opacity(role == .panel ? (dark ? 0.16 : 0.055) : 0), radius: 12, y: 5)
+    }
+}
+
+extension View {
+    func frostSurface(_ role: FrostSurfaceRole = .panel, cornerRadius: CGFloat = 22) -> some View {
+        modifier(FrostSurfaceModifier(role: role, cornerRadius: cornerRadius))
     }
 }

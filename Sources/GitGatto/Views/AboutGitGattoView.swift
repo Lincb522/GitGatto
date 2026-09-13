@@ -130,7 +130,7 @@ struct AboutGitGattoView: View {
 
     private func aboutContentSize(for theme: AppVisualTheme) -> NSSize {
         switch theme {
-        case .softGlass:
+        case .softGlass, .frost:
             NSSize(width: 680, height: 410)
         case .lumen:
             NSSize(width: 680, height: 380)
@@ -197,7 +197,7 @@ private struct AboutSectionChrome: ViewModifier {
                     Rectangle().fill(palette.divider).frame(height: 1)
                 }
             }
-        } else if theme == .softGlass {
+        } else if theme == .softGlass || theme == .frost {
             content.appGlassPanel(cornerRadius: role == .content ? 16 : 10, elevated: false)
         } else if theme == .folio {
             content.folioSurface(role == .content ? .panel : .elevated, cornerRadius: 16)

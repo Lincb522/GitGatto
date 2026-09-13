@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import GitGatto
 
-@Suite("Application themes")
+@Suite("Application themes", .serialized)
 struct AppThemeTests {
     @MainActor
     @Test("Ambient lights retain their motion configuration and honor visibility and reduced motion")
@@ -81,6 +81,128 @@ struct AppThemeTests {
         }
     }
 
+    @MainActor
+    @Test("Frost panels share one native blur in both appearances and widths")
+    func frostMaterialRendering() async throws {
+        for scheme in [ColorScheme.light, .dark] {
+                for width in [480, 960] {
+                    let palette = AppPalette(scheme, theme: .frost)
+                    let root = ZStack {
+                        AppThemeBackdrop(theme: .frost, colorScheme: scheme)
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Repository · 仓库 · Repository with a longer name")
+                                .font(.headline).foregroundStyle(palette.ink)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(18).frostSurface(.chrome)
+                            VStack(alignment: .leading, spacing: 18) {
+                                Text("Changes · 改动").font(.headline).foregroundStyle(palette.ink)
+                                Text("Sources / RepositoryStatus.swift")
+                                    .foregroundStyle(palette.mutedInk)
+                                Text("No changes · 暂无改动").foregroundStyle(palette.subtleInk)
+                                    .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                                    .frostSurface(.inset, cornerRadius: 16)
+                            }
+                            .padding(20).frostSurface()
+                        }
+                        .padding(20)
+                    }
+                    .environment(\.colorScheme, scheme)
+                    .frame(width: CGFloat(width), height: 360)
+                    let host = NSHostingView(rootView: root)
+                    host.sizingOptions = []
+                    let bounds = NSRect(x: 0, y: 0, width: width, height: 360)
+                    let window = NSWindow(contentRect: bounds, styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+                    window.isReleasedWhenClosed = false
+                    window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+                    window.contentView = host
+                    host.frame = bounds
+                    window.orderFront(nil)
+                    defer { window.orderOut(nil); window.contentView = nil }
+                    await Task.yield()
+                    host.layoutSubtreeIfNeeded()
+                    func effects(_ view: NSView) -> [NSVisualEffectView] {
+                        (view as? NSVisualEffectView).map { [$0] } ?? view.subviews.flatMap(effects)
+                    }
+                    #expect(effects(host).count == 1)
+                    #expect(host.bounds.size == bounds.size)
+                    let bitmap = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+                    host.cacheDisplay(in: host.bounds, to: bitmap)
+                    if let directory = ProcessInfo.processInfo.environment["GITGATTO_THEME_UI_OUTPUT"] {
+                        let output = URL(fileURLWithPath: directory)
+                        try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+                        let data = try #require(bitmap.representation(using: .png, properties: [:]))
+                        try data.write(to: output.appendingPathComponent("frost-material-\(scheme)-\(width).png"))
+                    }
+                }
+        }
+    }
+
+    @MainActor
+    @Test("Frost folder workspace and settings fit wide and compact windows", .timeLimit(.minutes(2)))
+    func frostWorkspaceRendering() async throws {
+        guard let directory = ProcessInfo.processInfo.environment["GITGATTO_THEME_UI_OUTPUT"],
+              ProcessInfo.processInfo.environment["GITGATTO_WORKSPACE_PREVIEW"] == "1",
+              ProcessInfo.processInfo.environment["GITGATTO_MARKETPLACE_PREVIEW"] == "1" else { return }
+        let defaults = UserDefaults.standard
+        let keys = [AppStyleDefaults.themeKey, "appearance", "workspace.sidebar.collapsed", AppStyleDefaults.accentKey]
+        let saved = keys.map { defaults.object(forKey: $0) }
+        defer {
+            for (key, value) in zip(keys, saved) { defaults.set(value, forKey: key) }
+            L10n.activate(AppPreferencesStore.load().language)
+        }
+        defaults.set("frost", forKey: AppStyleDefaults.themeKey)
+        defaults.set("blue", forKey: AppStyleDefaults.accentKey)
+        let model = WorkspaceViewModel(isBackgroundMonitor: true, monitoredRepositories: [])
+        await model.start()
+        model.selectedSection = .changes
+        let emptyModel = WorkspaceViewModel(isBackgroundMonitor: true, monitoredRepositories: [])
+        emptyModel.selectedSection = .changes
+        let originalAppearance = NSApp.appearance
+        defer { NSApp.appearance = originalAppearance }
+        for (width, height, scheme, collapsed, settings, language, state) in [
+            (1416, 878, ColorScheme.light, false, false, AppLanguage.simplifiedChinese, "workspace"),
+            (1416, 878, ColorScheme.dark, false, false, AppLanguage.simplifiedChinese, "workspace"),
+            (960, 620, ColorScheme.light, false, false, AppLanguage.simplifiedChinese, "workspace"),
+            (960, 620, ColorScheme.dark, true, false, AppLanguage.simplifiedChinese, "compact"),
+            (960, 760, ColorScheme.light, false, true, AppLanguage.simplifiedChinese, "settings"),
+            (960, 620, ColorScheme.light, false, false, AppLanguage.german, "empty"),
+            (960, 620, ColorScheme.dark, false, false, AppLanguage.arabic, "attention")
+        ] {
+            L10n.activate(language)
+            NSApp.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            model.notice = state == "attention" ? OperationNotice(message: "Connection unavailable. Check your network and retry.", tone: .attention) : nil
+            defaults.set(scheme == .dark ? "dark" : "light", forKey: "appearance")
+            defaults.set(collapsed, forKey: "workspace.sidebar.collapsed")
+            let content: AnyView
+            if settings {
+                content = AnyView(AppSettingsView(model: model, updateManager: AppUpdateManager()))
+            } else {
+                content = AnyView(WorkspaceView(model: state == "empty" ? emptyModel : model, canCaptureSnapshot: false))
+            }
+            let bounds = NSRect(x: 0, y: 0, width: width, height: height)
+            let host = NSHostingView(rootView: AppThemeRoot { content })
+            host.sizingOptions = []
+            let window = NSWindow(contentRect: bounds, styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            window.contentView = host; host.frame = bounds
+            window.orderFront(nil)
+            defer { window.orderOut(nil); window.contentView = nil }
+            for _ in 0..<10 { await Task.yield() }
+            // The material installs a full-size content view; size the frame only after that transition.
+            window.setFrame(bounds, display: true)
+            for _ in 0..<10 { await Task.yield() }
+            host.layoutSubtreeIfNeeded()
+            #expect(host.bounds.size == bounds.size)
+            #expect(AppStyleDefaults.theme == .frost)
+            let bitmap = try #require(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: bitmap)
+            let data = try #require(bitmap.representation(using: .png, properties: [:]))
+            let name = state
+            try data.write(to: URL(fileURLWithPath: directory).appendingPathComponent("frost-\(name)-\(scheme)-\(width).png"))
+        }
+    }
+
     @Test("Uses glass by default and preserves saved theme selections")
     func resolvesStoredTheme() {
         #expect(AppVisualTheme.resolved(nil) == .softGlass)
@@ -91,6 +213,8 @@ struct AppThemeTests {
         #expect(AppVisualTheme.resolved(AppVisualTheme.emerald.rawValue) == .emerald)
         #expect(AppVisualTheme.resolved(AppVisualTheme.folio.rawValue) == .folio)
         #expect(AppVisualTheme.resolved(AppVisualTheme.lumen.rawValue) == .lumen)
+        #expect(AppVisualTheme.resolved("frost") == .frost)
+        #expect(AppVisualTheme.allCases.filter { $0 == .frost }.count == 1)
     }
 
     @MainActor
@@ -104,7 +228,7 @@ struct AppThemeTests {
             }
             return 0.2126 * linear(rgb.redComponent) + 0.7152 * linear(rgb.greenComponent) + 0.0722 * linear(rgb.blueComponent)
         }
-        for theme in [AppVisualTheme.console, .emerald, .folio] {
+        for theme in [AppVisualTheme.console, .emerald, .folio, .frost] {
             let palette = AppPalette(colorScheme, theme: theme)
             for background in [palette.background, palette.sidebar, palette.surface, palette.raisedSurface] {
                 let ink = try luminance(palette.subtleInk)
@@ -139,6 +263,7 @@ struct AppThemeTests {
             .emerald,
             .folio,
             .lumen,
+            .frost,
             .softGlass,
             .standard,
             .softGlass
@@ -149,7 +274,7 @@ struct AppThemeTests {
             )
             hostingView.layoutSubtreeIfNeeded()
             try await Task.sleep(for: .milliseconds(20))
-            #expect(window.isOpaque == (theme != .softGlass && theme != .lumen))
+            #expect(window.isOpaque == (theme != .softGlass && theme != .lumen && theme != .frost))
         }
 
         #expect(window.titleVisibility == .hidden)

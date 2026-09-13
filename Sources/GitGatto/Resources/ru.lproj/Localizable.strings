@@ -3030,3 +3030,5 @@
 "repository.actions.commit" = "Действия с коммитом";
 
 "repository.actions.file" = "Действия с файлом";
+
+"theme.frost" = "Матовое стекло";

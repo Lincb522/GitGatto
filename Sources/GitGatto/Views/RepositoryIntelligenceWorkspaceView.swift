@@ -1072,7 +1072,7 @@ private struct IntelligencePanelModifier: ViewModifier {
         switch AppVisualTheme.resolved(themeRaw) {
         case .standard:
             content
-        case .softGlass:
+        case .softGlass, .frost:
             content.appGlassPanel(cornerRadius: 14, elevated: elevated)
         case .emerald:
             content.emeraldSurface(elevated ? .elevated : .panel, cornerRadius: 16)

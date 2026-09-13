@@ -620,7 +620,7 @@ private extension View {
         elevated: Bool = false
     ) -> some View {
         switch theme {
-        case .softGlass:
+        case .softGlass, .frost:
             appGlassPanel(cornerRadius: 14, elevated: elevated)
         case .emerald:
             emeraldSurface(elevated ? .elevated : .panel, cornerRadius: 14)

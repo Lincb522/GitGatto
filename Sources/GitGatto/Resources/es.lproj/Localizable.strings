@@ -3030,3 +3030,5 @@
 "repository.actions.commit" = "Acciones del commit";
 
 "repository.actions.file" = "Acciones del archivo";
+
+"theme.frost" = "Vidrio esmerilado";

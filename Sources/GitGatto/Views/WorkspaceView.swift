@@ -201,6 +201,20 @@ struct WorkspaceView: View {
                         .padding(.bottom, 12)
                         .padding(.leading, 5)
                     }
+                case .frost:
+                    HStack(spacing: 0) {
+                        RepositorySidebar(model: model, appearanceRaw: $appearanceRaw, isCollapsed: $isSidebarCollapsed)
+                            .frame(width: 80)
+                        Rectangle().fill(palette.divider.opacity(0.45)).frame(width: 1)
+                        VStack(spacing: 18) {
+                            RepositoryTopBar(model: model, activeCommands: activeProjectCommands)
+                            workspaceDetail
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                        .padding(.top, 38)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 24)
+                    }
                 case .emerald:
                     emeraldLayout(palette: palette)
                 case .folio:
@@ -660,7 +674,28 @@ private struct RepositoryTopBar: View {
     @ViewBuilder
     var body: some View {
         let palette = AppPalette(colorScheme)
-        if AppVisualTheme.resolved(themeRaw) == .lumen {
+        if AppVisualTheme.resolved(themeRaw) == .frost {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 12) {
+                    Text(model.repositoryName ?? L10n.text("app.name"))
+                        .font(.system(size: 23, weight: .semibold))
+                        .foregroundStyle(palette.ink)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    if let snapshot = model.snapshot {
+                        BranchQuickSwitcher(model: model, snapshot: snapshot)
+                        RepositorySyncStatusView(state: snapshot.syncState, error: model.liveSyncError)
+                    }
+                }
+                HStack {
+                    repositoryActions(palette: palette, compact: true)
+                    Spacer(minLength: 0)
+                }
+            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 4)
+            .frame(minHeight: 80)
+        } else if AppVisualTheme.resolved(themeRaw) == .lumen {
             GeometryReader { proxy in
                 let compact = proxy.size.width < 860
                 HStack(spacing: compact ? 10 : 14) {
@@ -806,8 +841,16 @@ private struct RepositoryTopBar: View {
                     Button(tool.title) { model.projectTool = tool }
                         .disabled(tool != .search && model.snapshot == nil)
                 }
-            } label: { Image(gattoSymbol: "command", pointSize: 17) }
-            .menuStyle(.borderlessButton).fixedSize().help(L10n.text("tools.title"))
+            } label: {
+                Color.clear.frame(width: 17, height: 24)
+            }
+            .menuStyle(.borderlessButton).fixedSize()
+            .overlay(alignment: .leading) {
+                Image(gattoSymbol: "command", pointSize: 17)
+                    .foregroundStyle(palette.mutedInk)
+                    .allowsHitTesting(false)
+            }
+            .help(L10n.text("tools.title"))
             .accessibilityLabel(L10n.text("tools.title"))
             if activeCommands > 0 {
                 Button { model.projectTool = .commands } label: { Text(activeCommands.formatted()).monospacedDigit() }

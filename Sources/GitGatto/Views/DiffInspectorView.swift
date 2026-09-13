@@ -354,7 +354,7 @@ private struct DiffLineView: View {
     private func gutterBackground(_ palette: AppPalette) -> Color {
         switch theme {
         case .standard: palette.sidebar.opacity(0.62)
-        case .emerald, .folio, .lumen: palette.background.opacity(0.72)
+        case .emerald, .folio, .lumen, .frost: palette.background.opacity(0.72)
         case .softGlass: palette.sidebar.opacity(0.20)
         case .console: palette.sidebar.opacity(0.76)
         }

@@ -3030,3 +3030,5 @@
 "repository.actions.commit" = "커밋 작업";
 
 "repository.actions.file" = "파일 작업";
+
+"theme.frost" = "프로스트";

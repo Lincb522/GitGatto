@@ -44,6 +44,8 @@ struct AppSettingsView: View {
                 standardLayout(palette)
             case .softGlass:
                 softGlassLayout(palette)
+            case .frost:
+                frostLayout(palette)
             case .console:
                 consoleLayout(palette)
             case .emerald:
@@ -116,6 +118,22 @@ struct AppSettingsView: View {
                 settingsContent(palette, includesPageTitle: false)
             }
             .padding(.trailing, 8)
+        }
+    }
+
+    private func frostLayout(_ palette: AppPalette) -> some View {
+        HStack(spacing: 16) {
+            settingsIndex(palette)
+                .frame(width: 190)
+            VStack(spacing: 10) {
+                settingsPageBar(palette)
+                    .frostSurface(.chrome, cornerRadius: 18)
+                settingsContent(palette, includesPageTitle: false)
+                    .frostSurface(.panel)
+            }
+            .padding(.trailing, 16)
+            .padding(.bottom, 16)
+            .padding(.top, 28)
         }
     }
 
@@ -672,6 +690,32 @@ private struct ThemeLayoutPreview: View {
 
     var body: some View {
         switch theme {
+        case .frost:
+            HStack(spacing: 9) {
+                VStack(spacing: 9) {
+                    Circle().fill(palette.ink).frame(width: 10, height: 10)
+                    ForEach(0 ..< 4, id: \.self) { index in
+                        Circle().fill(index == 0 ? palette.accent : palette.surface)
+                            .frame(width: 8, height: 8)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(width: 14)
+                VStack(alignment: .leading, spacing: 10) {
+                    Capsule().fill(palette.ink).frame(width: 44, height: 4)
+                    HStack(spacing: 7) {
+                        FrostFolderShape().fill(palette.surface)
+                        VStack(spacing: 7) {
+                            RoundedRectangle(cornerRadius: 7).fill(palette.surface.opacity(0.7))
+                            RoundedRectangle(cornerRadius: 7).fill(palette.surface.opacity(0.7))
+                        }
+                        .frame(width: 26)
+                        .padding(.top, 5)
+                    }
+                }
+            }
+            .padding(9)
+            .background(palette.background)
         case .standard, .softGlass:
             HStack(spacing: theme == .softGlass ? 6 : 0) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -1739,6 +1783,15 @@ private struct SettingsSection<Content: View>: View {
     var body: some View {
         let palette = AppPalette(colorScheme)
         switch AppVisualTheme.resolved(themeRaw) {
+        case .frost:
+            VStack(alignment: .leading, spacing: 16) {
+                Text(L10n.text(titleKey))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(palette.ink)
+                VStack(alignment: .leading, spacing: 16) { content }
+            }
+            .padding(18)
+            .frostSurface(.inset, cornerRadius: 16)
         case .softGlass:
             VStack(alignment: .leading, spacing: 16) {
                 Text(L10n.text(titleKey))

@@ -294,7 +294,7 @@ private extension View {
         cornerRadius: CGFloat,
         elevated: Bool
     ) -> some View {
-        if theme == .softGlass {
+        if theme == .softGlass || theme == .frost {
             appGlassPanel(cornerRadius: cornerRadius, elevated: elevated)
         } else {
             self

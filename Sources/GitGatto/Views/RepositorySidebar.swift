@@ -26,7 +26,9 @@ struct RepositorySidebar: View {
         let theme = AppVisualTheme.resolved(themeRaw)
         let showsBrand = theme != .lumen && theme != .folio
         Group {
-            if theme == .folio {
+            if theme == .frost {
+                frostRail(palette: palette)
+            } else if theme == .folio {
                 folioSidebar(palette: palette)
             } else if theme == .console {
                 consoleSidebar(palette: palette)
@@ -40,8 +42,84 @@ struct RepositorySidebar: View {
                 expandedSidebar(palette: palette, showsBrand: showsBrand)
             }
         }
-        .background(theme == .folio ? Color.clear : palette.sidebar)
+        .background(theme == .folio || theme == .frost ? Color.clear : palette.sidebar)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.20), value: isCollapsed)
+    }
+
+    private var frostPrimarySections: [WorkspaceSection] { [.github, .changes, .history, .codex] }
+
+    private func frostRail(palette: AppPalette) -> some View {
+        VStack(spacing: 0) {
+            Button { showsRepositorySwitcher.toggle() } label: {
+                AppBrandIcon(size: 30)
+                    .frame(width: 48, height: 48)
+                    .frostSurface(.chrome, cornerRadius: 17)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.text("sidebar.repositories"))
+            .accessibilityLabel(L10n.text("sidebar.repositories"))
+            .popover(isPresented: $showsRepositorySwitcher, arrowEdge: .trailing) {
+                repositorySwitcher(palette: palette)
+            }
+            .padding(.top, 42)
+            .padding(.bottom, 28)
+
+            ScrollView(.vertical) {
+                VStack(spacing: 18) {
+                    ForEach(frostPrimarySections) { section in
+                        CollapsedSidebarNavigationButton(
+                            section: section, isSelected: model.selectedSection == section, count: count(for: section)
+                        ) { model.selectedSection = section }
+                    }
+                    Menu {
+                        ForEach(collapsedSections.filter { !frostPrimarySections.contains($0) }) { section in
+                            Button {
+                                model.selectedSection = section
+                            } label: {
+                                if model.selectedSection == section {
+                                    Label(L10n.text("nav.\(section.rawValue)"), systemImage: "checkmark")
+                                } else {
+                                    Text(L10n.text("nav.\(section.rawValue)"))
+                                }
+                            }
+                        }
+                    } label: {
+                        Color.clear.frame(width: 44, height: 44).contentShape(Circle())
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .frame(width: 44, height: 44)
+                    .overlay {
+                        GattoIcon(symbol: "ellipsis", size: 19)
+                            .foregroundStyle(palette.ink).allowsHitTesting(false)
+                    }
+                    .frostSurface(.chrome, cornerRadius: 22)
+                    .help(L10n.text("sidebar.navigation"))
+                    .accessibilityLabel(L10n.text("sidebar.navigation"))
+                    if !frostPrimarySections.contains(model.selectedSection) {
+                        CollapsedSidebarNavigationButton(
+                            section: model.selectedSection, isSelected: true, count: count(for: model.selectedSection)
+                        ) {}
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+            }
+            .scrollIndicators(.hidden)
+
+            VStack(spacing: 16) {
+                railAppearanceMenu(palette: palette)
+                Button { openSettings() } label: {
+                    GattoIcon(symbol: "gearshape", size: 20)
+                        .foregroundStyle(palette.ink).frame(width: 44, height: 44)
+                        .frostSurface(.chrome, cornerRadius: 22)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.text("settings.title"))
+                .accessibilityLabel(L10n.text("settings.title"))
+            }
+            .padding(.vertical, 24)
+        }
     }
 
     private func consoleSidebar(palette: AppPalette) -> some View {
@@ -332,7 +410,7 @@ struct RepositorySidebar: View {
             .scrollIndicators(.visible)
         }
         .frame(width: inline ? nil : 310, height: inline ? nil : 480)
-        .background(palette.sidebar)
+        .background(AppStyleDefaults.theme == .frost ? Color.clear : palette.sidebar)
         .onDisappear {
             repositoryQuery = ""
         }
@@ -459,17 +537,21 @@ struct RepositorySidebar: View {
             Button(L10n.text("action.open_repository")) { model.chooseRepository() }
             Button(L10n.text("repository.scan.open")) { openWindow(id: "repository-scanner") }
         } label: {
-            HStack(spacing: 5) {
-                if model.isScanningRepositories { GattoLoadingGlyph(size: 16) }
-                else { GattoIcon(symbol: "folder.badge.plus", size: 17) }
-                Text(L10n.text("repository.actions.add"))
-                    .font(.system(size: 11.5, weight: .medium))
-            }
-            .foregroundStyle(palette.ink)
-            .padding(.horizontal, 5).frame(minHeight: 32)
+            Text(L10n.text("repository.actions.add"))
+                .font(.system(size: 11.5, weight: .medium))
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+        .padding(.leading, 22)
+        .frame(minHeight: 32)
+        .overlay(alignment: .leading) {
+            Group {
+                if model.isScanningRepositories { GattoLoadingGlyph(size: 16) }
+                else { GattoIcon(symbol: "folder.badge.plus", size: 17) }
+            }
+            .foregroundStyle(palette.ink)
+            .allowsHitTesting(false)
+        }
         .help(L10n.text("repository.actions.add"))
     }
 
@@ -769,15 +851,27 @@ private struct CollapsedSidebarNavigationButton: View {
     let action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
+    @State private var isHovering = false
+
     var body: some View {
         let palette = AppPalette(colorScheme)
         Button(action: action) {
             ZStack(alignment: .topTrailing) {
+                if AppStyleDefaults.theme == .frost {
+                    Image(gattoSymbol: icon, pointSize: 19)
+                        .foregroundStyle(isSelected ? palette.accent : palette.ink)
+                        .frame(width: 44, height: 44)
+                        .background((isSelected || isHovering) ? palette.accent.opacity(0.13) : Color.clear)
+                        .frostSurface(.chrome, cornerRadius: 22)
+                        .overlay { Circle().strokeBorder(isSelected ? palette.accent.opacity(0.55) : Color.clear, lineWidth: 1) }
+                } else {
                 Image(gattoSymbol: icon, pointSize: 14)
                     .foregroundStyle(isSelected ? palette.primary : palette.mutedInk)
                     .frame(width: 38, height: 36)
                     .background(isSelected ? palette.primarySoft : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: AppStyleDefaults.theme == .console ? 3 : 9, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppStyleDefaults.theme == .console ? 3 : (AppStyleDefaults.theme == .frost ? 18 : 9), style: .continuous))
+
+                }
 
                 if let count, count > 0 {
                     Circle()
@@ -790,6 +884,7 @@ private struct CollapsedSidebarNavigationButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
         .help(L10n.text("nav.\(section.rawValue)"))
         .accessibilityLabel(L10n.text("nav.\(section.rawValue)"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -829,10 +924,13 @@ private struct SidebarNavigationButton: View {
         let palette = AppPalette(colorScheme)
         let theme = AppStyleDefaults.theme
         let isLumen = theme == .lumen
+        let isFrost = theme == .frost
         Button(action: action) {
             HStack(spacing: 10) {
                 ZStack {
-                    if theme == .softGlass {
+                    if theme == .frost {
+                        Circle().fill(isSelected ? palette.accentSoft : palette.raisedSurface.opacity(0.5))
+                    } else if theme == .softGlass {
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .fill(isSelected ? palette.primary.opacity(0.12) : palette.raisedSurface.opacity(0.72))
                     }
@@ -859,14 +957,14 @@ private struct SidebarNavigationButton: View {
             }
             .padding(.horizontal, 8)
             .frame(maxWidth: .infinity)
-            .frame(height: isLumen ? 40 : (theme == .console ? 34 : (theme == .emerald ? 44 : 38)))
+            .frame(height: isLumen || isFrost ? 40 : (theme == .console ? 34 : (theme == .emerald ? 44 : 38)))
             .contentShape(Rectangle())
-            .background(isSelected ? ((isLumen || theme == .folio || theme == .emerald) ? palette.raisedSurface : palette.primarySoft) : (isHovering ? palette.raisedSurface : Color.clear))
+            .background(isSelected ? ((isLumen || isFrost || theme == .folio || theme == .emerald) ? palette.raisedSurface : palette.primarySoft) : (isHovering ? palette.raisedSurface : Color.clear))
             .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                     .stroke(
-                        isSelected && (isLumen || theme == .softGlass || theme == .folio) ? ((isLumen || theme == .folio) ? palette.divider : palette.primary.opacity(0.24)) : Color.clear,
+                        isSelected && (isLumen || isFrost || theme == .softGlass || theme == .folio) ? ((isLumen || isFrost || theme == .folio) ? palette.divider : palette.primary.opacity(0.24)) : Color.clear,
                         lineWidth: 1
                     )
             }

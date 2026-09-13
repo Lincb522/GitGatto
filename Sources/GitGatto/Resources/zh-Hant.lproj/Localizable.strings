@@ -3030,3 +3030,5 @@
 "repository.actions.commit" = "提交操作";
 
 "repository.actions.file" = "檔案操作";
+
+"theme.frost" = "霜璃";

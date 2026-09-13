@@ -152,6 +152,23 @@ struct PrimaryButtonStyle: ButtonStyle {
                 .clipShape(RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous))
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
+        case .frost:
+            configuration.label
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 18)
+                .frame(height: 34)
+                .background {
+                    Capsule().fill(LinearGradient(
+                        colors: [Color(red: 0.24, green: 0.29, blue: 0.36), Color(red: 0.13, green: 0.18, blue: 0.24)],
+                        startPoint: .top, endPoint: .bottom
+                    ))
+                }
+                .overlay { Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 1) }
+                .shadow(color: .black.opacity(configuration.isPressed ? 0.02 : 0.14), radius: 5, y: 3)
+                .opacity(configuration.isPressed ? 0.82 : 1)
+                .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: configuration.isPressed)
         case .lumen:
             configuration.label
                 .font(.system(size: 12.5, weight: .semibold))
@@ -229,6 +246,15 @@ struct SecondaryButtonStyle: ButtonStyle {
                     RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                         .stroke(palette.divider, lineWidth: 1)
                 }
+        case .frost:
+            configuration.label
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(palette.ink)
+                .padding(.horizontal, 14)
+                .frame(height: 32)
+                .frostSurface(.chrome, cornerRadius: 16)
+                .overlay { Capsule().fill(palette.ink.opacity(configuration.isPressed ? 0.08 : 0)).allowsHitTesting(false) }
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: configuration.isPressed)
         case .lumen:
             configuration.label
                 .font(.system(size: 12.5, weight: .medium))
@@ -372,7 +398,7 @@ struct SearchField: View {
         .frame(height: theme == .softGlass || theme == .lumen ? 34 : 30)
         .background {
             switch theme {
-            case .standard, .emerald, .folio:
+            case .standard, .emerald, .folio, .frost:
                 RoundedRectangle(cornerRadius: AppThemeLayout.controlCornerRadius, style: .continuous)
                     .fill(palette.raisedSurface)
             case .lumen:
@@ -1241,5 +1267,68 @@ struct RepositoryActionGroup<Content: View>: View {
             VStack(alignment: .leading, spacing: 8) { content }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// A single document surface with a raised folder tab; the back sheet never affects content layout.
+struct FrostFolderPanel<Content: View>: View {
+    @ViewBuilder let content: Content
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        let palette = AppPalette(colorScheme, theme: .frost)
+        let shape = FrostFolderShape()
+        content
+            .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
+            .padding(10)
+            .padding(.top, 28)
+            .background {
+                shape.fill(palette.surface.opacity(reduceTransparency ? 1 : 0.55))
+                    .padding(.leading, 18)
+                    .padding(.top, -8)
+                    .padding(.bottom, 16)
+                    .overlay(alignment: .topTrailing) {
+                        Capsule().fill(palette.divider.opacity(0.6))
+                            .frame(width: 48, height: 3)
+                            .padding(.top, 14).padding(.trailing, 34)
+                    }
+                shape.fill(palette.surface.opacity(reduceTransparency ? 1 : 0.83))
+                shape.stroke(
+                    LinearGradient(colors: [.white.opacity(colorScheme == .dark ? 0.22 : 0.95), palette.divider.opacity(0.5)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1
+                )
+                if contrast == .increased { shape.stroke(palette.mutedInk, lineWidth: 1) }
+            }
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.16 : 0.055), radius: 18, y: 9)
+    }
+}
+
+struct FrostFolderShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let radius = min(26.0, min(rect.width, rect.height) / 5)
+        let roof = min(26.0, rect.height / 6)
+        let tab = rect.minX + rect.width * 0.58
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + radius, y: rect.minY + roof))
+        path.addLine(to: CGPoint(x: tab - roof, y: rect.minY + roof))
+        path.addCurve(to: CGPoint(x: tab + roof, y: rect.minY),
+                      control1: CGPoint(x: tab, y: rect.minY + roof),
+                      control2: CGPoint(x: tab, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + radius),
+                          control: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - radius))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX - radius, y: rect.maxY),
+                          control: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + radius, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - radius),
+                          control: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + roof + radius))
+        path.addQuadCurve(to: CGPoint(x: rect.minX + radius, y: rect.minY + roof),
+                          control: CGPoint(x: rect.minX, y: rect.minY + roof))
+        path.closeSubpath()
+        return path
     }
 }

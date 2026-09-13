@@ -963,6 +963,8 @@ private extension View {
         level: RegressionSurfaceLevel
     ) -> some View {
         switch theme {
+        case .frost:
+            frostSurface(level == .elevated ? .panel : .inset, cornerRadius: 16)
         case .emerald:
             emeraldSurface(level == .elevated ? .elevated : .panel, cornerRadius: 16)
         case .folio:

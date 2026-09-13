@@ -129,7 +129,7 @@ private struct StashPanelModifier: ViewModifier {
         switch theme {
         case .standard:
             content
-        case .softGlass:
+        case .softGlass, .frost:
             content.appGlassPanel(cornerRadius: 14, elevated: false)
         case .console:
             content.appConsolePanel()

@@ -147,6 +147,7 @@ enum WindowCloseBehavior: String, CaseIterable, Identifiable, Codable, Sendable 
 enum AppVisualTheme: String, CaseIterable, Identifiable, Sendable {
     case standard = "default"
     case softGlass
+    case frost
     case console
     case emerald
     case folio

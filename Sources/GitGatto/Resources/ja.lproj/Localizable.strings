@@ -3030,3 +3030,5 @@
 "repository.actions.commit" = "コミット操作";
 
 "repository.actions.file" = "ファイル操作";
+
+"theme.frost" = "フロスト";
