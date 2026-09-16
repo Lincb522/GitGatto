@@ -99,7 +99,7 @@ def base_svg(width: int, height: int, title: str, description: str, body: str) -
 
 
 def roadmap() -> str:
-    width, height = 1520, 560
+    width, height = 1520, 780
     stages = [
         ("0.14–0.18.10", ["Git · GitHub · 工作区", "Agent · 工具安装"], "panel-green"),
         ("0.18.11–0.18.26", ["目标 · 回归 · 灾备", "编排与项目工具"], "panel-green"),
@@ -133,7 +133,19 @@ def roadmap() -> str:
         body.append(f'<text class="badge" x="{x + 18}" y="410">{badge}</text>')
         if index < len(planned) - 1:
             body.append(arrow(x + plan_w + 12, 440, x + plan_w + plan_gap - 12, 440))
-    return base_svg(width, height, "GitGatto 路线图", "已实现版本和下一阶段计划。", "\n".join(body))
+    body.extend([
+        '<text class="section" x="64" y="550">移动端与远程连接 · 已暂停</text>',
+        '<text class="detail" x="64" y="576">Swift 移动端 / TypeScript 后端；公网连接，不限局域网；以下待完成，未上线</text>',
+    ])
+    remote_plans = [
+        ("后端服务", ["账号 · 设备授权 · 消息回执", "通知与部署"]),
+        ("Mac 后台连接器", ["重连 · 任务记录 · 本地授权", "接入仓库与 Agent"]),
+        ("Swift 移动端", ["项目 · 协作 · 任务进度", "设备管理与操作审批"]),
+        ("跨网络验收", ["主程序退出 · 休眠 · 断线恢复", "真实设备验证后再发布"]),
+    ]
+    for index, (title, details) in enumerate(remote_plans):
+        body.append(card(62 + index * 356, 610, 324, 112, title, details, "panel-muted"))
+    return base_svg(width, height, "GitGatto 路线图", "已实现版本、下一阶段计划，以及已暂停的移动端与远程连接计划。", "\n".join(body))
 
 
 def architecture() -> str:

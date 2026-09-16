@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="560" viewBox="0 0 1520 560" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="780" viewBox="0 0 1520 780" role="img" aria-labelledby="title desc">
 <title id="title">GitGatto 路线图</title>
-<desc id="desc">已实现版本和下一阶段计划。</desc>
+<desc id="desc">已实现版本、下一阶段计划，以及已暂停的移动端与远程连接计划。</desc>
 <style>
     :root { color-scheme: light dark; }
     .bg { fill: #ffffff; }
@@ -38,7 +38,7 @@
     <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b979f"/>
   </marker>
 </defs>
-<rect class="bg" x="0" y="0" width="1520" height="560" rx="24"/>
+<rect class="bg" x="0" y="0" width="1520" height="780" rx="24"/>
 <text class="title" x="64" y="58">GitGatto 路线图</text>
 <text class="detail" x="64" y="84">源码已实现范围见 CHANGELOG；发布状态见 Releases；虚线为计划</text>
 <text class="section" x="64" y="138">已实现</text>
@@ -57,4 +57,10 @@
 <path class="connector" d="M932 440 L986 440" marker-end="url(#arrow)"/>
 <rect class="panel-muted" x="998" y="386" width="390" height="108" rx="16"/><text class="label" x="1193.0" y="430.0" text-anchor="middle"><tspan x="1193.0" dy="0">公证与更新</tspan></text><text class="detail" x="1193.0" y="454.0" text-anchor="middle"><tspan x="1193.0" dy="0">发行验证</tspan></text>
 <text class="badge" x="1016" y="410">NEXT 03</text>
+<text class="section" x="64" y="550">移动端与远程连接 · 已暂停</text>
+<text class="detail" x="64" y="576">Swift 移动端 / TypeScript 后端；公网连接，不限局域网；以下待完成，未上线</text>
+<rect class="panel-muted" x="62" y="610" width="324" height="112" rx="16"/><text class="label" x="224.0" y="656.0" text-anchor="middle"><tspan x="224.0" dy="0">后端服务</tspan></text><text class="detail" x="224.0" y="680.0" text-anchor="middle"><tspan x="224.0" dy="0">账号 · 设备授权 · 消息回执</tspan><tspan x="224.0" dy="18">通知与部署</tspan></text>
+<rect class="panel-muted" x="418" y="610" width="324" height="112" rx="16"/><text class="label" x="580.0" y="656.0" text-anchor="middle"><tspan x="580.0" dy="0">Mac 后台连接器</tspan></text><text class="detail" x="580.0" y="680.0" text-anchor="middle"><tspan x="580.0" dy="0">重连 · 任务记录 · 本地授权</tspan><tspan x="580.0" dy="18">接入仓库与 Agent</tspan></text>
+<rect class="panel-muted" x="774" y="610" width="324" height="112" rx="16"/><text class="label" x="936.0" y="656.0" text-anchor="middle"><tspan x="936.0" dy="0">Swift 移动端</tspan></text><text class="detail" x="936.0" y="680.0" text-anchor="middle"><tspan x="936.0" dy="0">项目 · 协作 · 任务进度</tspan><tspan x="936.0" dy="18">设备管理与操作审批</tspan></text>
+<rect class="panel-muted" x="1130" y="610" width="324" height="112" rx="16"/><text class="label" x="1292.0" y="656.0" text-anchor="middle"><tspan x="1292.0" dy="0">跨网络验收</tspan></text><text class="detail" x="1292.0" y="680.0" text-anchor="middle"><tspan x="1292.0" dy="0">主程序退出 · 休眠 · 断线恢复</tspan><tspan x="1292.0" dy="18">真实设备验证后再发布</tspan></text>
 </svg>

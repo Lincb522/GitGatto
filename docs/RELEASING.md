@@ -1,5 +1,7 @@
 # 发布与应用内更新
 
+独立移动连接后端位于 `Development/mobile-remote/Backend/relay`，运行、验证和容器说明见 [后端 README](../Development/mobile-remote/Backend/relay/README.md)。它有独立 Node.js 依赖锁；测试工作流草稿一并保存在开发目录，未启用，不随下面的 macOS DMG 发布；目前暂停开发，未部署公网服务。
+
 GitGatto 使用 GitHub Releases 作为唯一发布源，并使用 Sparkle 2.9.6 完成下载、安装和重新启动。更新中心通过 GitHub Releases API 展示版本历史与 Markdown 更新日志。
 
 ## 持续集成

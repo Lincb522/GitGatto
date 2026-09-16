@@ -2,6 +2,10 @@
 
 GitGatto includes the following third-party software and visual assets.
 
+## Mobile relay backend
+
+The independent `Development/mobile-remote/Backend/relay` service uses Fastify 5.12.4 (MIT), @fastify/websocket 11.3.0 (MIT), and Zod 4.6.3 (MIT). The exact dependency graph is recorded in [package-lock.json](Development/mobile-remote/Backend/relay/package-lock.json); installed packages include their upstream license files. These server dependencies are not bundled into the macOS application. Direct dependency licenses are preserved in [Development/mobile-remote/Backend/relay/licenses](Development/mobile-remote/Backend/relay/licenses).
+
 ## Reicon
 
 Project: https://github.com/Lincb522/reicon

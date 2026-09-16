@@ -1,0 +1,30 @@
+{
+  "name": "@gitgatto/relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.14.0 <27"
+  },
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run build",
+    "test": "tsx --test --test-concurrency=1 test/*.test.ts",
+    "check": "npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "@fastify/websocket": "11.3.0",
+    "fastify": "5.12.4",
+    "zod": "4.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.2",
+    "@types/ws": "8.18.1",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "ws": "8.21.3"
+  }
+}

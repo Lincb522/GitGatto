@@ -1,0 +1,28 @@
+name: Mobile relay
+on:
+  push:
+    paths: ['Development/mobile-remote/Backend/relay/**', '.github/workflows/relay.yml']
+  pull_request:
+    paths: ['Development/mobile-remote/Backend/relay/**', '.github/workflows/relay.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        node: ['24.21.0', '26.8.1']
+    defaults:
+      run:
+        working-directory: Development/mobile-remote/Backend/relay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: Development/mobile-remote/Backend/relay/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm audit --omit=dev --audit-level=high
